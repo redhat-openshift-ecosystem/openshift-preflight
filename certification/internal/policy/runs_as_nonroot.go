@@ -1,5 +1,7 @@
 package policy
 
+import "github.com/komish/preflight/certification/errors"
+
 func RunsAsNonRootUser() *Definition {
 	return &Definition{
 		ValidatorFunc: nonRootUserValidatorFunc,
@@ -9,7 +11,7 @@ func RunsAsNonRootUser() *Definition {
 }
 
 var nonRootUserValidatorFunc = func(image string) (bool, error) {
-	return false, nil // placeholder failing test
+	return false, errors.ErrFeatureNotImplemented
 }
 
 var nonRootUserPolicyMeta = Metadata{

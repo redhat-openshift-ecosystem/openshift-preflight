@@ -1,5 +1,7 @@
 package policy
 
+import "github.com/komish/preflight/certification/errors"
+
 func UnderLayerMax() *Definition {
 	return &Definition{
 		ValidatorFunc: isUnderLayerMaxValidatorFunc,
@@ -9,7 +11,7 @@ func UnderLayerMax() *Definition {
 }
 
 var isUnderLayerMaxValidatorFunc = func(image string) (bool, error) {
-	return true, nil // placeholder!
+	return false, errors.ErrFeatureNotImplemented
 }
 
 var isUnderLayerMaxPolicyMeta = Metadata{

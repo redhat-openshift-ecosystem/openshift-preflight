@@ -1,6 +1,6 @@
 package policy
 
-import "errors"
+import "github.com/komish/preflight/certification/errors"
 
 func HasRequiredLabels() *Definition {
 	return &Definition{
@@ -11,7 +11,7 @@ func HasRequiredLabels() *Definition {
 }
 
 var hasRequiredLabelsValidatorFunc = func(image string) (bool, error) {
-	return false, errors.New("placeholder error of some kinds") // placeholder demonstrating error handling
+	return false, errors.ErrFeatureNotImplemented
 }
 
 var hasRequiredLabelsPolicyMeta = Metadata{
