@@ -1,95 +1,88 @@
 package formatters
 
 import (
-	"encoding/json"
-	"encoding/xml"
 	"fmt"
 
 	"github.com/komish/preflight/certification/errors"
-	"github.com/komish/preflight/certification/internal/policy"
 	"github.com/komish/preflight/certification/runtime"
-	"github.com/komish/preflight/version"
 )
+
+// ResponseFormatter describes the expected methods a formatter
+// must implement.
+type ResponseFormatter interface {
+	PrettyName() string
+	Format(runtime.Results) (response []byte, formattingError error)
+}
+
+// GenericFormatter represents a generic approach to formatting that implements the
+// ResponseFormatter interface. Can be leveraged to build a custom formatter quickly.
+type GenericFormatter struct {
+	Name          string
+	FormatterFunc FormatterFunc
+}
+
+// Name returns a string identification of the formatter that's in use.
+func (f *GenericFormatter) PrettyName() string {
+	return f.Name
+}
+
+func (f *GenericFormatter) Format(r runtime.Results) ([]byte, error) {
+	return f.FormatterFunc(r)
+}
 
 // FormatterFunc describes a function that formats the policy validation
 // results.
-type FormatterFunc = func(runtime.Results) (response []byte, formatError error)
+type FormatterFunc = func(runtime.Results) (response []byte, formattingError error)
 
-func GetResponse(r runtime.Results) runtime.UserResponse {
-	passedPolicies := make([]policy.Metadata, len(r.Passed))
-	failedPolicies := make([]policy.PolicyInfo, len(r.Failed))
-	erroredPolicies := make([]policy.HelpText, len(r.Errors))
-
-	if len(r.Passed) > 0 {
-		for i, policyData := range r.Passed {
-			passedPolicies[i] = policyData.Meta()
-		}
-	}
-
-	if len(r.Failed) > 0 {
-		for i, policyData := range r.Failed {
-			failedPolicies[i] = policy.PolicyInfo{
-				Metadata: policyData.Meta(),
-				HelpText: policyData.Help(),
-			}
-		}
-	}
-
-	if len(r.Errors) > 0 {
-		for i, policyData := range r.Errors {
-			erroredPolicies[i] = policyData.Help()
-		}
-	}
-
-	response := runtime.UserResponse{
-		Image:             r.TestedImage,
-		ValidationVersion: version.Version,
-		Results: runtime.UserResponseText{
-			Passed: passedPolicies,
-			Failed: failedPolicies,
-			Errors: erroredPolicies,
-		},
-	}
-
-	return response
-}
-
-// GenericJSONFormatter is a FormatterFunc that formats results as JSON
-func GenericJSONFormatter(r runtime.Results) ([]byte, error) {
-	response := GetResponse(r)
-
-	responseJSON, err := json.MarshalIndent(response, "", "    ")
-	if err != nil {
-		e := fmt.Errorf("%w with formatter %s: %s",
-			errors.ErrFormattingResults,
-			"json",
-			err,
+// NewForConfig returns a new formatter based on the user-provided configuration. It relies
+// on config values which should align with known/supported/built-in formatters.
+func NewForConfig(cfg runtime.Config) (ResponseFormatter, error) {
+	formatter, defined := availableFormatters[cfg.ResponseFormat]
+	if !defined {
+		return nil, fmt.Errorf(
+			"failed to create a new formatter from config \"%s\": %w",
+			cfg.ResponseFormat,
+			errors.ErrRequestedFormatterNotFound,
 		)
-
-		return nil, e
 	}
 
-	return responseJSON, nil
+	return formatter, nil
 }
 
-// GenericXMLFormatter is a FormatterFunc that formats results as XML
-func GenericXMLFormatter(r runtime.Results) ([]byte, error) {
-	response := GetResponse(r)
-
-	responseJSON, err := xml.MarshalIndent(response, "", "    ")
-	if err != nil {
-		e := fmt.Errorf("%w with formatter %s: %s",
-			errors.ErrFormattingResults,
-			"json",
-			err,
+// New returns a new formatter with the provided name and FormatterFunc.
+func New(name string, fn FormatterFunc) (ResponseFormatter, error) {
+	if len(name) == 0 {
+		return nil, fmt.Errorf(
+			"failed to create a new generic formatter: %w",
+			errors.ErrFormatterNameNotProvided,
 		)
-
-		return nil, e
 	}
 
-	return responseJSON, nil
+	gf := GenericFormatter{
+		Name:          name,
+		FormatterFunc: fn,
+	}
+
+	return &gf, nil
 }
 
-func JUnitXMLFormatter(r runtime.Results) ([]byte, error) {
-	return nil, fmt.Errorf("%w: The JUnit XML Formatter is not implemented", errors.ErrFeatureNotImplemented)
+// availableFormatters maps configuration-friendly values to pretty representations
+// of the same value, and their corresponding Formatter included with this library.
+var availableFormatters = map[string]ResponseFormatter{
+	"json":     &GenericFormatter{"Generic JSON", genericJSONFormatter},
+	"xml":      &GenericFormatter{"Generic XML", genericXMLFormatter},
+	"junitxml": &GenericFormatter{"JUnit XML", junitXMLFormatter},
+}
+
+// AllPolicies returns all formats and formatters made available by this library.
+func AllFormats() []string {
+	all := make([]string, len(availableFormatters))
+	i := 0
+
+	for k := range availableFormatters {
+		all[i] = k
+		i++
+	}
+
+	return all
 }
