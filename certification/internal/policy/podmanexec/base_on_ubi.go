@@ -1,4 +1,4 @@
-package policy
+package podmanexec
 
 import (
 	"os/exec"
@@ -7,10 +7,9 @@ import (
 	"github.com/komish/preflight/certification"
 )
 
-type BasedOnUbiPolicy struct {
-}
+type BasedOnUbiPolicy struct{}
 
-func (p BasedOnUbiPolicy) Validate(image string) (bool, error) {
+func (p *BasedOnUbiPolicy) Validate(image string) (bool, error) {
 	stdouterr, err := exec.Command("podman", "run", "-it", image, "cat", "/etc/os-release").CombinedOutput()
 	if err != nil {
 		return false, err
@@ -33,11 +32,11 @@ func (p BasedOnUbiPolicy) Validate(image string) (bool, error) {
 	return false, nil
 }
 
-func (p BasedOnUbiPolicy) Name() string {
+func (p *BasedOnUbiPolicy) Name() string {
 	return "BasedOnUbi"
 }
 
-func (p BasedOnUbiPolicy) Metadata() certification.Metadata {
+func (p *BasedOnUbiPolicy) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checking if the container's base image is based on UBI",
 		Level:            "best",
@@ -46,7 +45,7 @@ func (p BasedOnUbiPolicy) Metadata() certification.Metadata {
 	}
 }
 
-func (p BasedOnUbiPolicy) Help() certification.HelpText {
+func (p *BasedOnUbiPolicy) Help() certification.HelpText {
 	return certification.HelpText{
 		Message:    "It is recommened that your image be based upon the Red Hat Universal Base Image (UBI)",
 		Suggestion: "Change the FROM directive in your Dockerfile or Containerfile to FROM registry.access.redhat.com/ubi8/ubi",

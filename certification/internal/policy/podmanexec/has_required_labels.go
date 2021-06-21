@@ -1,4 +1,4 @@
-package policy
+package podmanexec
 
 import (
 	"github.com/komish/preflight/certification"
@@ -8,15 +8,15 @@ import (
 type HasRequiredLabelPolicy struct {
 }
 
-func (p HasRequiredLabelPolicy) Validate(image string) (bool, error) {
+func (p *HasRequiredLabelPolicy) Validate(image string) (bool, error) {
 	return false, errors.ErrFeatureNotImplemented
 }
 
-func (p HasRequiredLabelPolicy) Name() string {
+func (p *HasRequiredLabelPolicy) Name() string {
 	return "HasRequiredLabel"
 }
 
-func (p HasRequiredLabelPolicy) Metadata() certification.Metadata {
+func (p *HasRequiredLabelPolicy) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checking if the container's base image is based on UBI",
 		Level:            "best",
@@ -25,7 +25,7 @@ func (p HasRequiredLabelPolicy) Metadata() certification.Metadata {
 	}
 }
 
-func (p HasRequiredLabelPolicy) Help() certification.HelpText {
+func (p *HasRequiredLabelPolicy) Help() certification.HelpText {
 	return certification.HelpText{
 		Message:    "It is recommened that your image be based upon the Red Hat Universal Base Image (UBI)",
 		Suggestion: "Change the FROM directive in your Dockerfile or Containerfile to FROM registry.access.redhat.com/ubi8/ubi",
