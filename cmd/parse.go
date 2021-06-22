@@ -24,7 +24,7 @@ func getConfigStringValueFrom(flagValue, envValue, defaultValue string) string {
 func parseEnabledPoliciesValue() []string {
 	val := getConfigStringValueFrom(userEnabledPolicies, os.Getenv(EnvEnabledPolicies), "")
 	if len(val) == 0 {
-		return runtime.GetPoliciesByName()
+		return runtime.AllPolicies()
 	}
 
 	return strings.Split(val, ",")

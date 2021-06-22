@@ -1,12 +1,15 @@
 package policy
 
-import "github.com/komish/preflight/certification"
+import (
+	"github.com/komish/preflight/certification"
+	"github.com/komish/preflight/certification/errors"
+)
 
 type RunAsNonRootPolicy struct {
 }
 
 func (p RunAsNonRootPolicy) Validate(image string) (bool, error) {
-	return false, nil
+	return false, errors.ErrFeatureNotImplemented
 }
 
 func (p RunAsNonRootPolicy) Name() string {

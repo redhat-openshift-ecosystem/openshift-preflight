@@ -16,7 +16,7 @@ var NameToPoliciesMap = map[string]certification.Policy{
 	policy.BasedOnUbiPolicy{}.Name():       policy.BasedOnUbiPolicy{},
 }
 
-func GetPoliciesByName() []string {
+func AllPolicies() []string {
 	all := make([]string, len(NameToPoliciesMap))
 	i := 0
 

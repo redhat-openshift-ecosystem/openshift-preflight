@@ -16,7 +16,7 @@ var rootCmd = &cobra.Command{
 	Short: "Preflight Red Hat certification prep tool.",
 	Long: "A utility that allows you to pre-test your bundles, operators, and container before submitting for Red Hat Certification." +
 		"\nChoose from any of the following policies:" +
-		"\n\t" + strings.Join(runtime.GetPoliciesByName(), ", ") +
+		"\n\t" + strings.Join(runtime.AllPolicies(), ", ") +
 		"\nChoose from any of the following output formats:" +
 		"\n\t" + strings.Join(formatters.AllFormats(), ", "),
 	RunE: func(cmd *cobra.Command, args []string) error {
