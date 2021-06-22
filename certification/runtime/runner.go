@@ -6,10 +6,26 @@ import (
 	"github.com/komish/preflight/certification"
 	"github.com/komish/preflight/certification/errors"
 	"github.com/komish/preflight/certification/internal/policy"
-	"github.com/komish/preflight/version"
 )
 
-// TODO: Decide what of this file actually needs exporting
+// Register all policies
+var NameToPoliciesMap = map[string]certification.Policy{
+	policy.RunAsNonRootPolicy{}.Name():     policy.RunAsNonRootPolicy{},
+	policy.UnderLayerMaxPolicy{}.Name():    policy.UnderLayerMaxPolicy{},
+	policy.HasRequiredLabelPolicy{}.Name(): policy.HasRequiredLabelPolicy{},
+	policy.BasedOnUbiPolicy{}.Name():       policy.BasedOnUbiPolicy{},
+}
+
+func GetPoliciesByName() []string {
+	all := make([]string, len(NameToPoliciesMap))
+	i := 0
+
+	for k := range NameToPoliciesMap {
+		all[i] = k
+		i++
+	}
+	return all
+}
 
 type PolicyRunner interface {
 	ExecutePolicies()
@@ -25,7 +41,7 @@ func NewForConfig(config Config) (*policyRunner, error) {
 
 	policies := make([]certification.Policy, len(config.EnabledPolicies))
 	for i, policyString := range config.EnabledPolicies {
-		policyFunc, exists := certification.PolicyMap[policyString]
+		policy, exists := NameToPoliciesMap[policyString]
 		if !exists {
 			err := fmt.Errorf("%w: %s",
 				errors.ErrRequestedPolicyNotFound,
@@ -33,7 +49,7 @@ func NewForConfig(config Config) (*policyRunner, error) {
 			return nil, err
 		}
 
-		policies[i] = policyFunc()
+		policies[i] = policy
 	}
 
 	runner := &policyRunner{
@@ -42,12 +58,6 @@ func NewForConfig(config Config) (*policyRunner, error) {
 	}
 
 	return runner, nil
-}
-
-type policyRunner struct {
-	Image    string
-	Policies []certification.Policy
-	Results  Results
 }
 
 // ExecutePolicies runs all policies stored in the policy runner.
@@ -78,25 +88,4 @@ func (pr *policyRunner) StorePolicies(policies ...certification.Policy) {
 // GetResults will return the results of policy execution
 func (pr *policyRunner) GetResults() Results {
 	return pr.Results
-}
-
-type Results struct {
-	TestedImage string
-	Passed      []certification.Policy
-	Failed      []certification.Policy
-	Errors      []certification.Policy
-}
-
-type UserResponse struct {
-	Image             string                 `json:"image" xml:"image"`
-	ValidationVersion version.VersionContext `json:"validation_lib_version" xml:"validationLibVersion"`
-	Results           UserResponseText       `json:"results" xml:"results"`
-}
-
-type UserResponseText struct {
-	Passed []policy.Metadata
-	Failed []policy.PolicyInfo
-	Errors []policy.HelpText
-	// TODO: Errors does not actually include any error information
-	// and it needs to do so.
 }

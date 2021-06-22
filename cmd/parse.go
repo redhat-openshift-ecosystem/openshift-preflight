@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/komish/preflight/certification"
+	"github.com/komish/preflight/certification/runtime"
 )
 
 // getStringConfigValueFrom will return a value from the options if they're
@@ -24,7 +24,7 @@ func getConfigStringValueFrom(flagValue, envValue, defaultValue string) string {
 func parseEnabledPoliciesValue() []string {
 	val := getConfigStringValueFrom(userEnabledPolicies, os.Getenv(EnvEnabledPolicies), "")
 	if len(val) == 0 {
-		return certification.AllPolicies()
+		return runtime.GetPoliciesByName()
 	}
 
 	return strings.Split(val, ",")
