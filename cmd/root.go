@@ -17,7 +17,9 @@ var rootCmd = &cobra.Command{
 	Short: "Preflight Red Hat certification prep tool.",
 	Long: "A utility that allows you to pre-test your bundles, operators, and container before submitting for Red Hat Certification." +
 		"\nChoose from any of the following policies:" +
-		"\n\n" + strings.Join(certification.AllPolicies(), "\n"),
+		"\n\t" + strings.Join(certification.AllPolicies(), ", ") +
+		"\nChoose from any of the following output formats:" +
+		"\n\t" + strings.Join(formatters.AllFormats(), ", "),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Expect exactly one positional arg. Check here instead of using builtin Args key
 		// so that we can get a more user-friendly error message
@@ -29,6 +31,7 @@ var rootCmd = &cobra.Command{
 		cfg := runtime.Config{
 			Image:           containerImage,
 			EnabledPolicies: parseEnabledPoliciesValue(),
+			ResponseFormat:  parseOutputFormat(),
 		}
 
 		runner, err := runtime.NewForConfig(cfg)
@@ -36,10 +39,15 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
+		formatter, err := formatters.NewForConfig(cfg)
+		if err != nil {
+			return err
+		}
+
 		runner.ExecutePolicies()
 		results := runner.GetResults()
 
-		formattedResults, err := formatters.GenericJSONFormatter(results)
+		formattedResults, err := formatter.Format(results)
 		if err != nil {
 			return err
 		}
