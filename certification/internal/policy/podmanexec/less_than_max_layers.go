@@ -1,4 +1,4 @@
-package policy
+package podmanexec
 
 import (
 	"github.com/komish/preflight/certification"
@@ -8,15 +8,15 @@ import (
 type UnderLayerMaxPolicy struct {
 }
 
-func (p UnderLayerMaxPolicy) Validate(image string) (bool, error) {
+func (p *UnderLayerMaxPolicy) Validate(image string) (bool, error) {
 	return false, errors.ErrFeatureNotImplemented
 }
 
-func (p UnderLayerMaxPolicy) Name() string {
+func (p *UnderLayerMaxPolicy) Name() string {
 	return "MaximumLayerPolicy"
 }
 
-func (p UnderLayerMaxPolicy) Metadata() certification.Metadata {
+func (p *UnderLayerMaxPolicy) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checking if container has less than 40 layers",
 		Level:            "better",
@@ -25,7 +25,7 @@ func (p UnderLayerMaxPolicy) Metadata() certification.Metadata {
 	}
 }
 
-func (p UnderLayerMaxPolicy) Help() certification.HelpText {
+func (p *UnderLayerMaxPolicy) Help() certification.HelpText {
 	return certification.HelpText{
 		Message:    "Uncompressed container images should have less than 40 layers. Too many layers within the container images can degrade container performance.",
 		Suggestion: "Optimize your Dockerfile to consolidate and minimize the number of layers. Each RUN command will produce a new layer. Try combining RUN commands using && where possible.",

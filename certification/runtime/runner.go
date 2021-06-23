@@ -5,22 +5,35 @@ import (
 
 	"github.com/komish/preflight/certification"
 	"github.com/komish/preflight/certification/errors"
-	"github.com/komish/preflight/certification/internal/policy"
+	"github.com/komish/preflight/certification/internal/policy/podmanexec"
 )
 
 // Register all policies
-var NameToPoliciesMap = map[string]certification.Policy{
-	policy.RunAsNonRootPolicy{}.Name():     policy.RunAsNonRootPolicy{},
-	policy.UnderLayerMaxPolicy{}.Name():    policy.UnderLayerMaxPolicy{},
-	policy.HasRequiredLabelPolicy{}.Name(): policy.HasRequiredLabelPolicy{},
-	policy.BasedOnUbiPolicy{}.Name():       policy.BasedOnUbiPolicy{},
+var runAsNonRootPolicy certification.Policy = &podmanexec.RunAsNonRootPolicy{}
+var underLayerMaxPolicy certification.Policy = &podmanexec.UnderLayerMaxPolicy{}
+var hasRequiredLabelPolicy certification.Policy = &podmanexec.HasRequiredLabelPolicy{}
+var basedOnUbiPolicy certification.Policy = &podmanexec.BasedOnUbiPolicy{}
+var hasLicensePolicy certification.Policy = &podmanexec.HasLicensePolicy{}
+var hasMinimalVulnerabilitiesPolicy certification.Policy = &podmanexec.HasMinimalVulnerabilitiesPolicy{}
+var hasUniqueTag certification.Policy = &podmanexec.HasUniqueTagPolicy{}
+var hasNoProhibitedPackages certification.Policy = &podmanexec.HasNoProhibitedPackagesPolicy{}
+
+var nameToPoliciesMap = map[string]certification.Policy{
+	runAsNonRootPolicy.Name():              runAsNonRootPolicy,
+	underLayerMaxPolicy.Name():             underLayerMaxPolicy,
+	hasRequiredLabelPolicy.Name():          hasRequiredLabelPolicy,
+	basedOnUbiPolicy.Name():                basedOnUbiPolicy,
+	hasLicensePolicy.Name():                hasLicensePolicy,
+	hasMinimalVulnerabilitiesPolicy.Name(): hasMinimalVulnerabilitiesPolicy,
+	hasUniqueTag.Name():                    hasUniqueTag,
+	hasNoProhibitedPackages.Name():         hasNoProhibitedPackages,
 }
 
 func AllPolicies() []string {
-	all := make([]string, len(NameToPoliciesMap))
+	all := make([]string, len(nameToPoliciesMap))
 	i := 0
 
-	for k := range NameToPoliciesMap {
+	for k := range nameToPoliciesMap {
 		all[i] = k
 		i++
 	}
@@ -41,7 +54,7 @@ func NewForConfig(config Config) (*policyRunner, error) {
 
 	policies := make([]certification.Policy, len(config.EnabledPolicies))
 	for i, policyString := range config.EnabledPolicies {
-		policy, exists := NameToPoliciesMap[policyString]
+		policy, exists := nameToPoliciesMap[policyString]
 		if !exists {
 			err := fmt.Errorf("%w: %s",
 				errors.ErrRequestedPolicyNotFound,
