@@ -3,17 +3,14 @@ package policy
 import (
 	"os/exec"
 	"strings"
+
+	"github.com/komish/preflight/certification"
 )
 
-func BasedOnUBI() *Definition {
-	return &Definition{
-		ValidatorFunc: basedOnUBIValidatorFunc,
-		Metadata:      basedOnUBIPolicyMeta,
-		HelpText:      basedOnUBIPolicyHelp,
-	}
+type BasedOnUbiPolicy struct {
 }
 
-var basedOnUBIValidatorFunc = func(image string) (bool, error) {
+func (p BasedOnUbiPolicy) Validate(image string) (bool, error) {
 	stdouterr, err := exec.Command("podman", "run", "-it", image, "cat", "/etc/os-release").CombinedOutput()
 	if err != nil {
 		return false, err
@@ -36,14 +33,22 @@ var basedOnUBIValidatorFunc = func(image string) (bool, error) {
 	return false, nil
 }
 
-var basedOnUBIPolicyMeta = Metadata{
-	Description:      "Checking if the container's base image is based on UBI",
-	Level:            "best",
-	KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide", // Placeholder
-	PolicyURL:        "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+func (p BasedOnUbiPolicy) Name() string {
+	return "BasedOnUbi"
 }
 
-var basedOnUBIPolicyHelp = HelpText{
-	Message:    "It is recommened that your image be based upon the Red Hat Universal Base Image (UBI)",
-	Suggestion: "Change the FROM directive in your Dockerfile or Containerfile to FROM registry.access.redhat.com/ubi8/ubi",
+func (p BasedOnUbiPolicy) Metadata() certification.Metadata {
+	return certification.Metadata{
+		Description:      "Checking if the container's base image is based on UBI",
+		Level:            "best",
+		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide", // Placeholder
+		PolicyURL:        "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+	}
+}
+
+func (p BasedOnUbiPolicy) Help() certification.HelpText {
+	return certification.HelpText{
+		Message:    "It is recommened that your image be based upon the Red Hat Universal Base Image (UBI)",
+		Suggestion: "Change the FROM directive in your Dockerfile or Containerfile to FROM registry.access.redhat.com/ubi8/ubi",
+	}
 }

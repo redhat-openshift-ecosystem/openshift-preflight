@@ -1,7 +1,7 @@
 package formatters
 
 import (
-	"github.com/komish/preflight/certification/internal/policy"
+	"github.com/komish/preflight/certification"
 	"github.com/komish/preflight/certification/runtime"
 	"github.com/komish/preflight/version"
 )
@@ -9,20 +9,20 @@ import (
 // getResponse will extract the runtime's results and format it to fit the
 // UserResponse definition in a way that can then be formatted.
 func getResponse(r runtime.Results) runtime.UserResponse {
-	passedPolicies := make([]policy.Metadata, len(r.Passed))
-	failedPolicies := make([]policy.PolicyInfo, len(r.Failed))
-	erroredPolicies := make([]policy.HelpText, len(r.Errors))
+	passedPolicies := make([]certification.Metadata, len(r.Passed))
+	failedPolicies := make([]certification.PolicyInfo, len(r.Failed))
+	erroredPolicies := make([]certification.HelpText, len(r.Errors))
 
 	if len(r.Passed) > 0 {
 		for i, policyData := range r.Passed {
-			passedPolicies[i] = policyData.Meta()
+			passedPolicies[i] = policyData.Metadata()
 		}
 	}
 
 	if len(r.Failed) > 0 {
 		for i, policyData := range r.Failed {
-			failedPolicies[i] = policy.PolicyInfo{
-				Metadata: policyData.Meta(),
+			failedPolicies[i] = certification.PolicyInfo{
+				Metadata: policyData.Metadata(),
 				HelpText: policyData.Help(),
 			}
 		}

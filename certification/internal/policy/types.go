@@ -1,39 +1,21 @@
 package policy
 
+import "github.com/komish/preflight/certification"
+
 type Definition struct {
 	ValidatorFunc func(string) (bool, error)
-	Metadata      Metadata
-	HelpText      HelpText
+	Metadata      certification.Metadata
+	HelpText      certification.HelpText
 }
 
 func (pd *Definition) Validate(image string) (bool, error) {
 	return pd.ValidatorFunc(image)
 }
 
-func (pd *Definition) Meta() Metadata {
+func (pd *Definition) Meta() certification.Metadata {
 	return pd.Metadata
 }
 
-func (pd *Definition) Help() HelpText {
+func (pd *Definition) Help() certification.HelpText {
 	return pd.HelpText
-}
-
-type PolicyInfo struct {
-	Metadata `json:"metadata" xml:"metadata"`
-	HelpText `json:"helptext"`
-}
-
-// Metadata contains useful information regarding the policy
-// being enforced
-type Metadata struct {
-	Description      string `json:"description" xml:"description"`
-	Level            string `json:"level" xml:"level"`
-	KnowledgeBaseURL string `json:"knowledge_base_url,omitempty" xml:"knowledgeBaseURL"`
-	PolicyURL        string `json:"policy_url,omitempty" xml:"policyURL"`
-}
-
-// HelpText is the help message associated with any given policy.
-type HelpText struct {
-	Message    string `json:"message" xml:"message"`
-	Suggestion string `json:"suggestion" xml:"suggestion"`
 }

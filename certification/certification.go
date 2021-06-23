@@ -1,62 +1,33 @@
 package certification
 
-import "github.com/komish/preflight/certification/internal/policy"
-
-// PolicyFunc is a function that returns a policy.
-type PolicyFunc = func() Policy
-
 // Policy as an interface containing all methods necessary
 // to use and identify a given policy.
 type Policy interface {
-	// Validate identify whether the asset enforces
-	// the policy.
+	// Validate whether the asset enforces the policy.
 	Validate(image string) (result bool, err error)
-	Meta() policy.Metadata
-	// Help returns the policy's help information.
-	Help() policy.HelpText
+	// return the name of the policy
+	Name() string
+	// return the policy's metadata
+	Metadata() Metadata
+	// return the policy's help text
+	Help() HelpText
 }
 
-// PolicyMap maps policy string names to policy functions.
-var PolicyMap = map[string]PolicyFunc{
-	"under_40_layers":     PolicyHasLessThan40Layers,
-	"is_ubi_based":        PolicyIsUBIBased,
-	"nonroot":             PolicyRunsAsNonRootUser,
-	"has_required_labels": PolicyImageHasRequiredLabels,
+// Metadata contains useful information regarding the policy
+type Metadata struct {
+	Description      string `json:"description" xml:"description"`
+	Level            string `json:"level" xml:"level"`
+	KnowledgeBaseURL string `json:"knowledge_base_url,omitempty" xml:"knowledgeBaseURL"`
+	PolicyURL        string `json:"policy_url,omitempty" xml:"policyURL"`
 }
 
-// AllPolicies returns all policies made available by this library.
-func AllPolicies() []string {
-	all := make([]string, len(PolicyMap))
-	i := 0
-
-	for k := range PolicyMap {
-		all[i] = k
-		i++
-	}
-
-	return all
+// HelpText is the help message associated with any given policy
+type HelpText struct {
+	Message    string `json:"message" xml:"message"`
+	Suggestion string `json:"suggestion" xml:"suggestion"`
 }
 
-// PolicyHasLessThan40Layers checks the container image and ensures
-// it has less than 40 layers.
-func PolicyHasLessThan40Layers() Policy {
-	return policy.UnderLayerMax()
-}
-
-// PolicyIsUBIBased checks the container image and ensures
-// it is based on the Red Hat Universal Base Image.
-func PolicyIsUBIBased() Policy {
-	return policy.BasedOnUBI()
-}
-
-// PolicyRunsAsNonRootUser checks that the container image is not
-// configured to run as the root user
-func PolicyRunsAsNonRootUser() Policy {
-	return policy.RunsAsNonRootUser()
-}
-
-// PolicyImageHasRequiredLabels checks that the container image has
-// the required labels
-func PolicyImageHasRequiredLabels() Policy {
-	return policy.HasRequiredLabels()
+type PolicyInfo struct {
+	Metadata `json:"metadata" xml:"metadata"`
+	HelpText `json:"helptext"`
 }
