@@ -27,3 +27,7 @@ preflight
 
 # MacOS related artifacts
 .DS_Store
+
+# Vagrant
+.vagrant
+
