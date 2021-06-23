@@ -24,6 +24,7 @@ preflight
 *.swp
 *.swo
 *~
+.vscode
 
 # MacOS related artifacts
 .DS_Store
