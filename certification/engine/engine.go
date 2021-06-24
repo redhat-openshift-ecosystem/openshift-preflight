@@ -5,7 +5,7 @@ import (
 
 	"github.com/komish/preflight/certification"
 	"github.com/komish/preflight/certification/errors"
-	"github.com/komish/preflight/certification/internal/policy/podmanexec"
+	podmanexec "github.com/komish/preflight/certification/internal/shell"
 	"github.com/komish/preflight/certification/runtime"
 )
 
