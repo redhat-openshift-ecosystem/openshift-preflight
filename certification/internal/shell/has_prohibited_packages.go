@@ -1,4 +1,4 @@
-package podmanexec
+package shell
 
 import (
 	"github.com/komish/preflight/certification"
