@@ -3,12 +3,13 @@ package shell
 import (
 	"github.com/komish/preflight/certification"
 	"github.com/komish/preflight/certification/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type HasRequiredLabelPolicy struct {
 }
 
-func (p *HasRequiredLabelPolicy) Validate(image string) (bool, error) {
+func (p *HasRequiredLabelPolicy) Validate(image string, logger *logrus.Logger) (bool, error) {
 	return false, errors.ErrFeatureNotImplemented
 }
 

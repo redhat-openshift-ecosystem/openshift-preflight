@@ -7,6 +7,7 @@ import (
 	"github.com/komish/preflight/certification/errors"
 	podmanexec "github.com/komish/preflight/certification/internal/shell"
 	"github.com/komish/preflight/certification/runtime"
+	"github.com/sirupsen/logrus"
 )
 
 type PolicyEngine interface {
@@ -20,16 +21,16 @@ type ContainerFileManager interface {
 	// IsRemote will check user-provided path and determine if that path is
 	// local or remote. Here local means that it's a location on the filesystem, and
 	// remote means that it's an image in a registry.
-	ContainerIsRemote(path string) (isRemote bool, remotecheckErr error)
+	ContainerIsRemote(path string, logger *logrus.Logger) (isRemote bool, remotecheckErr error)
 	// ExtractContainerTar will accept a path on the filesystem and extract it.
-	ExtractContainerTar(path string) (tarballPath string, extractionErr error)
+	ExtractContainerTar(path string, logger *logrus.Logger) (tarballPath string, extractionErr error)
 	// GetContainerFromRegistry will accept a container location and write it locally
 	// as a tarball as done by `podman save`
-	GetContainerFromRegistry(containerLoc string) (containerDownloadPath string, containerDownloadErro error)
+	GetContainerFromRegistry(containerLoc string, logger *logrus.Logger) (containerDownloadPath string, containerDownloadErro error)
 }
 
 type PolicyRunner interface {
-	ExecutePolicies()
+	ExecutePolicies(logger *logrus.Logger)
 	// StorePolicies(...[]certification.Policy)
 	Results() runtime.Results
 }

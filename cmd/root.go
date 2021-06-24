@@ -44,9 +44,10 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		engine.ExecutePolicies()
+		engine.ExecutePolicies(logger)
 		results := engine.Results()
 
+		// return results to the user
 		formattedResults, err := formatter.Format(results)
 		if err != nil {
 			return err

@@ -14,23 +14,23 @@ func getResponse(r runtime.Results) runtime.UserResponse {
 	erroredPolicies := make([]certification.HelpText, len(r.Errors))
 
 	if len(r.Passed) > 0 {
-		for i, policyData := range r.Passed {
-			passedPolicies[i] = policyData.Metadata()
+		for i, policy := range r.Passed {
+			passedPolicies[i] = policy.Metadata()
 		}
 	}
 
 	if len(r.Failed) > 0 {
-		for i, policyData := range r.Failed {
+		for i, policyInfo := range r.Failed {
 			failedPolicies[i] = certification.PolicyInfo{
-				Metadata: policyData.Metadata(),
-				HelpText: policyData.Help(),
+				Metadata: policyInfo.Metadata(),
+				HelpText: policyInfo.Help(),
 			}
 		}
 	}
 
 	if len(r.Errors) > 0 {
-		for i, policyData := range r.Errors {
-			erroredPolicies[i] = policyData.Help()
+		for i, policy := range r.Errors {
+			erroredPolicies[i] = policy.Help()
 		}
 	}
 

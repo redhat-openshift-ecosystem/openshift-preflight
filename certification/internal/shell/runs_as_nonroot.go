@@ -3,12 +3,13 @@ package shell
 import (
 	"github.com/komish/preflight/certification"
 	"github.com/komish/preflight/certification/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type RunAsNonRootPolicy struct {
 }
 
-func (p *RunAsNonRootPolicy) Validate(image string) (bool, error) {
+func (p *RunAsNonRootPolicy) Validate(image string, logger *logrus.Logger) (bool, error) {
 	return false, errors.ErrFeatureNotImplemented
 }
 
