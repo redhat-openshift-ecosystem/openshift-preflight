@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/komish/preflight/certification"
 	"github.com/komish/preflight/certification/errors"
@@ -26,6 +27,7 @@ type CheckEngine struct {
 func (e *CheckEngine) ExecuteChecks(logger *logrus.Logger) {
 	logger.Info("target image: ", e.Image)
 	for _, check := range e.Checks {
+		checkStartTime := time.Now()
 		e.results.TestedImage = e.Image
 		targetImage := e.Image
 
@@ -34,7 +36,7 @@ func (e *CheckEngine) ExecuteChecks(logger *logrus.Logger) {
 			isRemote, err := e.ContainerIsRemote(e.Image, logger)
 			if err != nil {
 				logger.Error("unable to determine if the image was remote: ", err)
-				e.results.Errors = append(e.results.Errors, check)
+				e.results.Errors = append(e.results.Errors, runtime.Result{Check: check, ElapsedTime: time.Since(checkStartTime)})
 				continue
 			}
 
@@ -44,7 +46,7 @@ func (e *CheckEngine) ExecuteChecks(logger *logrus.Logger) {
 				imageTarballPath, err := e.GetContainerFromRegistry(e.Image, logger)
 				if err != nil {
 					logger.Error("unable to the container from the registry: ", err)
-					e.results.Errors = append(e.results.Errors, check)
+					e.results.Errors = append(e.results.Errors, runtime.Result{Check: check, ElapsedTime: time.Since(checkStartTime)})
 					continue
 				}
 
@@ -54,7 +56,7 @@ func (e *CheckEngine) ExecuteChecks(logger *logrus.Logger) {
 				localImagePath, err = e.ExtractContainerTar(imageTarballPath, logger)
 				if err != nil {
 					logger.Error("unable to extract the container: ", err)
-					e.results.Errors = append(e.results.Errors, check)
+					e.results.Errors = append(e.results.Errors, runtime.Result{Check: check, ElapsedTime: time.Since(checkStartTime)})
 					continue
 				}
 			}
@@ -70,23 +72,28 @@ func (e *CheckEngine) ExecuteChecks(logger *logrus.Logger) {
 		}
 
 		logger.Info("running check: ", check.Name())
+		// We want to know the time just for the check itself, so reset checkStartTime
+		checkStartTime = time.Now()
+
 		// run the validation
 		passed, err := check.Validate(targetImage, logger)
 
+		checkElapsedTime := time.Since(checkStartTime)
+
 		if err != nil {
 			logger.WithFields(logrus.Fields{"result": "ERROR", "error": err.Error()}).Info("check completed: ", check.Name())
-			e.results.Errors = append(e.results.Errors, check)
+			e.results.Errors = append(e.results.Errors, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
 		if !passed {
 			logger.WithFields(logrus.Fields{"result": "FAILED"}).Info("check completed: ", check.Name())
-			e.results.Failed = append(e.results.Failed, check)
+			e.results.Failed = append(e.results.Failed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
 		logger.WithFields(logrus.Fields{"result": "PASSED"}).Info("check completed: ", check.Name())
-		e.results.Passed = append(e.results.Passed, check)
+		e.results.Passed = append(e.results.Passed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 	}
 }
 

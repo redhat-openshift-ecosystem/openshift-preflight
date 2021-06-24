@@ -3,6 +3,7 @@ package formatters
 import (
 	"encoding/xml"
 	"fmt"
+	"time"
 
 	"github.com/komish/preflight/certification/errors"
 	"github.com/komish/preflight/certification/runtime"
@@ -60,21 +61,23 @@ func junitXMLFormatter(r runtime.Results) ([]byte, error) {
 		TestCases:  []JUnitTestCase{},
 	}
 
+	totalDuration := time.Duration(0)
 	for _, result := range r.Passed {
 		testCase := JUnitTestCase{
 			Classname: response.Image,
 			Name:      result.Name(),
-			Time:      "0s",
+			Time:      result.ElapsedTime.String(),
 			Failure:   nil,
 		}
 		testsuite.TestCases = append(testsuite.TestCases, testCase)
+		totalDuration += result.ElapsedTime
 	}
 
 	for _, result := range append(r.Errors, r.Failed...) {
 		testCase := JUnitTestCase{
 			Classname: response.Image,
 			Name:      result.Name(),
-			Time:      "0s",
+			Time:      result.ElapsedTime.String(),
 			Failure: &JUnitFailure{
 				Message:  "Failed",
 				Type:     "",
@@ -82,8 +85,10 @@ func junitXMLFormatter(r runtime.Results) ([]byte, error) {
 			},
 		}
 		testsuite.TestCases = append(testsuite.TestCases, testCase)
+		totalDuration += result.ElapsedTime
 	}
 
+	testsuite.Time = totalDuration.String()
 	suites.Suites = append(suites.Suites, testsuite)
 
 	bytes, err := xml.MarshalIndent(suites, "", "\t")
