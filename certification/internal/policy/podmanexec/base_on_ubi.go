@@ -10,7 +10,7 @@ import (
 type BasedOnUbiPolicy struct{}
 
 func (p *BasedOnUbiPolicy) Validate(image string) (bool, error) {
-	stdouterr, err := exec.Command("podman", "run", "-it", image, "cat", "/etc/os-release").CombinedOutput()
+	stdouterr, err := exec.Command("podman", "run", "--rm", "-it", image, "cat", "/etc/os-release").CombinedOutput()
 	if err != nil {
 		return false, err
 	}

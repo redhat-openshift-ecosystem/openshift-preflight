@@ -10,13 +10,6 @@ type Config struct {
 	EnabledPolicies []string
 	ResponseFormat  string
 }
-
-type policyRunner struct {
-	Image    string
-	Policies []certification.Policy
-	Results  Results
-}
-
 type Results struct {
 	TestedImage string
 	Passed      []certification.Policy
