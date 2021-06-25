@@ -10,9 +10,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type PolicyEngine interface {
+type CheckEngine interface {
 	ContainerFileManager
-	PolicyRunner
+	CheckRunner
 }
 
 // ContainerFileManager describes the functionality necessary to interact
@@ -29,65 +29,65 @@ type ContainerFileManager interface {
 	GetContainerFromRegistry(containerLoc string, logger *logrus.Logger) (containerDownloadPath string, containerDownloadErro error)
 }
 
-type PolicyRunner interface {
-	ExecutePolicies(logger *logrus.Logger)
-	// StorePolicies(...[]certification.Policy)
+type CheckRunner interface {
+	ExecuteChecks(logger *logrus.Logger)
+	// StoreChecks(...[]certification.Check)
 	Results() runtime.Results
 }
 
-func NewForConfig(config runtime.Config) (PolicyRunner, error) {
-	if len(config.EnabledPolicies) == 0 {
-		// refuse to run if the user has not specified any policies
-		return nil, errors.ErrNoPoliciesEnabled
+func NewForConfig(config runtime.Config) (CheckRunner, error) {
+	if len(config.EnabledChecks) == 0 {
+		// refuse to run if the user has not specified any checks
+		return nil, errors.ErrNoChecksEnabled
 	}
 
-	policies := make([]certification.Policy, len(config.EnabledPolicies))
-	for i, policyString := range config.EnabledPolicies {
-		policy, exists := nameToPoliciesMap[policyString]
+	checks := make([]certification.Check, len(config.EnabledChecks))
+	for i, checkString := range config.EnabledChecks {
+		check, exists := nameToChecksMap[checkString]
 		if !exists {
 			err := fmt.Errorf("%w: %s",
-				errors.ErrRequestedPolicyNotFound,
-				policyString)
+				errors.ErrRequestedCheckNotFound,
+				checkString)
 			return nil, err
 		}
 
-		policies[i] = policy
+		checks[i] = check
 	}
 
-	engine := &podmanexec.PolicyEngine{
-		Image:    config.Image,
-		Policies: policies,
+	engine := &podmanexec.CheckEngine{
+		Image:  config.Image,
+		Checks: checks,
 	}
 
 	return engine, nil
 }
 
-// Register all policies
-var runAsNonRootPolicy certification.Policy = &podmanexec.RunAsNonRootPolicy{}
-var underLayerMaxPolicy certification.Policy = &podmanexec.UnderLayerMaxPolicy{}
-var hasRequiredLabelPolicy certification.Policy = &podmanexec.HasRequiredLabelPolicy{}
-var basedOnUbiPolicy certification.Policy = &podmanexec.BasedOnUbiPolicy{}
-var hasLicensePolicy certification.Policy = &podmanexec.HasLicensePolicy{}
-var hasMinimalVulnerabilitiesPolicy certification.Policy = &podmanexec.HasMinimalVulnerabilitiesPolicy{}
-var hasUniqueTag certification.Policy = &podmanexec.HasUniqueTagPolicy{}
-var hasNoProhibitedPackages certification.Policy = &podmanexec.HasNoProhibitedPackagesPolicy{}
+// Register all checks
+var runAsNonRootCheck certification.Check = &podmanexec.RunAsNonRootCheck{}
+var underLayerMaxCheck certification.Check = &podmanexec.UnderLayerMaxCheck{}
+var hasRequiredLabelCheck certification.Check = &podmanexec.HasRequiredLabelsCheck{}
+var basedOnUbiCheck certification.Check = &podmanexec.BaseOnUBICheck{}
+var hasLicenseCheck certification.Check = &podmanexec.HasLicenseCheck{}
+var hasMinimalVulnerabilitiesCheck certification.Check = &podmanexec.HasMinimalVulnerabilitiesCheck{}
+var hasUniqueTagCheck certification.Check = &podmanexec.HasUniqueTagCheck{}
+var hasNoProhibitedCheck certification.Check = &podmanexec.HasNoProhibitedPackagesCheck{}
 
-var nameToPoliciesMap = map[string]certification.Policy{
-	runAsNonRootPolicy.Name():              runAsNonRootPolicy,
-	underLayerMaxPolicy.Name():             underLayerMaxPolicy,
-	hasRequiredLabelPolicy.Name():          hasRequiredLabelPolicy,
-	basedOnUbiPolicy.Name():                basedOnUbiPolicy,
-	hasLicensePolicy.Name():                hasLicensePolicy,
-	hasMinimalVulnerabilitiesPolicy.Name(): hasMinimalVulnerabilitiesPolicy,
-	hasUniqueTag.Name():                    hasUniqueTag,
-	hasNoProhibitedPackages.Name():         hasNoProhibitedPackages,
+var nameToChecksMap = map[string]certification.Check{
+	runAsNonRootCheck.Name():              runAsNonRootCheck,
+	underLayerMaxCheck.Name():             underLayerMaxCheck,
+	hasRequiredLabelCheck.Name():          hasRequiredLabelCheck,
+	basedOnUbiCheck.Name():                basedOnUbiCheck,
+	hasLicenseCheck.Name():                hasLicenseCheck,
+	hasMinimalVulnerabilitiesCheck.Name(): hasMinimalVulnerabilitiesCheck,
+	hasUniqueTagCheck.Name():              hasUniqueTagCheck,
+	hasNoProhibitedCheck.Name():           hasNoProhibitedCheck,
 }
 
-func AllPolicies() []string {
-	all := make([]string, len(nameToPoliciesMap))
+func AllChecks() []string {
+	all := make([]string, len(nameToChecksMap))
 	i := 0
 
-	for k := range nameToPoliciesMap {
+	for k := range nameToChecksMap {
 		all[i] = k
 		i++
 	}

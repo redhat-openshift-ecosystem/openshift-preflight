@@ -2,8 +2,8 @@ package errors
 
 import "errors"
 
-var ErrNoPoliciesEnabled = errors.New("no policies have been enabled")
-var ErrRequestedPolicyNotFound = errors.New("requested policy not found")
+var ErrNoChecksEnabled = errors.New("no checks have been enabled")
+var ErrRequestedCheckNotFound = errors.New("requested check not found")
 var ErrRequestedFormatterNotFound = errors.New("requested formatter is not known")
 var ErrFormatterNameNotProvided = errors.New("formatter name is required")
 var ErrFormattingResults = errors.New("error formatting results")

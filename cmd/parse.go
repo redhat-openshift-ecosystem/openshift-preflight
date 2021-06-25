@@ -21,10 +21,10 @@ func getConfigStringValueFrom(flagValue, envValue, defaultValue string) string {
 	return defaultValue
 }
 
-func parseEnabledPoliciesValue() []string {
-	val := getConfigStringValueFrom(userEnabledPolicies, os.Getenv(EnvEnabledPolicies), "")
+func parseEnabledChecksValue() []string {
+	val := getConfigStringValueFrom(userEnabledChecks, os.Getenv(EnvEnabledChecks), "")
 	if len(val) == 0 {
-		return engine.AllPolicies()
+		return engine.AllChecks()
 	}
 
 	return strings.Split(val, ",")

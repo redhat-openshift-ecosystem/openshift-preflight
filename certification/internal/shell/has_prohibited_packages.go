@@ -9,9 +9,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type HasNoProhibitedPackagesPolicy struct{}
+type HasNoProhibitedPackagesCheck struct{}
 
-func (p *HasNoProhibitedPackagesPolicy) Validate(image string, logger *logrus.Logger) (bool, error) {
+func (p *HasNoProhibitedPackagesCheck) Validate(image string, logger *logrus.Logger) (bool, error) {
 	stdouterr, err := exec.Command("podman", "run", "-it", "--rm", "--entrypoint", "rpm", image, "-qa", "--queryformat", "%{NAME}\n").CombinedOutput()
 	if err != nil {
 		logger.Error("unable to get a list of all packages in the image")
@@ -31,19 +31,19 @@ func (p *HasNoProhibitedPackagesPolicy) Validate(image string, logger *logrus.Lo
 	return true, nil
 }
 
-func (p *HasNoProhibitedPackagesPolicy) Name() string {
+func (p *HasNoProhibitedPackagesCheck) Name() string {
 	return "HasNoProhibitedPackages"
 }
-func (p *HasNoProhibitedPackagesPolicy) Metadata() certification.Metadata {
+func (p *HasNoProhibitedPackagesCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checks to ensure that the image in use does not contain prohibited packages.",
 		Level:            "best",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
-		PolicyURL:        "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 	}
 }
 
-func (p *HasNoProhibitedPackagesPolicy) Help() certification.HelpText {
+func (p *HasNoProhibitedPackagesCheck) Help() certification.HelpText {
 	return certification.HelpText{
 		Message:    "The container image should not include Red Hat Enterprise Linux (RHEL) kernel packages.",
 		Suggestion: "Remove any RHEL packages that are not distributable outside of UBI",
