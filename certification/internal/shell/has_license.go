@@ -1,15 +1,35 @@
 package shell
 
 import (
+	"os/exec"
+	"strings"
+
 	"github.com/komish/preflight/certification"
-	"github.com/komish/preflight/certification/errors"
 	"github.com/sirupsen/logrus"
 )
 
 type HasLicensePolicy struct{}
 
 func (p *HasLicensePolicy) Validate(image string, logger *logrus.Logger) (bool, error) {
-	return false, errors.ErrFeatureNotImplemented
+	stdouterr, err := exec.Command("podman", "run", "--rm", image, "ls", "-A", "/licenses").CombinedOutput()
+	result := string(stdouterr)
+	if err != nil {
+		if strings.Contains(result, "No such file or directory") || result == "" {
+			logger.Warn("license not found in the container image at /licenses")
+			return false, nil
+		}
+
+		logger.Error("some error attempting to identify if /licenses container the license: ", err)
+		return false, err
+	}
+
+	// sanity check - in case we don't get an error, but also don't have the file.
+	if strings.Contains(result, "No such file or directory") || result == "" {
+		logger.Warn("license not found in the container image at /licenses")
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (p *HasLicensePolicy) Name() string {
