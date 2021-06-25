@@ -10,7 +10,6 @@ Vagrant.configure("2") do |config|
     skopeo \
     jq \
     make \
-    golang \
     bats \
     btrfs-progs-devel \
     device-mapper-devel \
@@ -34,7 +33,7 @@ Vagrant.configure("2") do |config|
     export OPERATOR_SDK_DL_URL=https://github.com/operator-framework/operator-sdk/releases/download/v1.9.0
     curl -LO ${OPERATOR_SDK_DL_URL}/operator-sdk_${OS}_${ARCH}
     chmod +x operator-sdk_${OS}_${ARCH} && sudo mv operator-sdk_${OS}_${ARCH} /usr/local/bin/operator-sdk    
-    echo "PATH=$PATH:/usr/local/go/bin" >> /home/vagrant/.bashrc
-    echo "PATH=$PATH:/usr/local/go/bin" >> /root/.bashrc
+    echo "PATH=/usr/local/go/bin:$PATH" >> /home/vagrant/.bashrc
+    echo "PATH=/usr/local/go/bin:$PATH" >> /root/.bashrc
   SHELL
 end
