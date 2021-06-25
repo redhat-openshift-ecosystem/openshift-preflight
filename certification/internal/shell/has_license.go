@@ -3,13 +3,15 @@ package shell
 import (
 	"github.com/komish/preflight/certification"
 	"github.com/komish/preflight/certification/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type HasLicensePolicy struct{}
 
-func (p *HasLicensePolicy) Validate(image string) (bool, error) {
+func (p *HasLicensePolicy) Validate(image string, logger *logrus.Logger) (bool, error) {
 	return false, errors.ErrFeatureNotImplemented
 }
+
 func (p *HasLicensePolicy) Name() string {
 	return "HasLicense"
 }

@@ -3,11 +3,12 @@ package shell
 import (
 	"github.com/komish/preflight/certification"
 	"github.com/komish/preflight/certification/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type HasNoProhibitedPackagesPolicy struct{}
 
-func (p *HasNoProhibitedPackagesPolicy) Validate(image string) (bool, error) {
+func (p *HasNoProhibitedPackagesPolicy) Validate(image string, logger *logrus.Logger) (bool, error) {
 	return false, errors.ErrFeatureNotImplemented
 }
 func (p *HasNoProhibitedPackagesPolicy) Name() string {

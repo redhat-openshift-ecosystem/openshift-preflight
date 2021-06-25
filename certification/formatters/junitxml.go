@@ -30,6 +30,7 @@ type JUnitTestCase struct {
 	Time        string            `xml:"time,attr"`
 	SkipMessage *JUnitSkipMessage `xml:"skipped,omitempty"`
 	Failure     *JUnitFailure     `xml:"failure,omitempty"`
+	SystemOut   string            `xml:"system-out,omitempty"`
 }
 
 type JUnitSkipMessage struct {

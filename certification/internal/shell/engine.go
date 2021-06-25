@@ -9,6 +9,7 @@ import (
 	"github.com/komish/preflight/certification"
 	"github.com/komish/preflight/certification/errors"
 	"github.com/komish/preflight/certification/runtime"
+	"github.com/sirupsen/logrus"
 )
 
 type PolicyEngine struct {
@@ -21,31 +22,34 @@ type PolicyEngine struct {
 }
 
 // ExecutePolicies runs all policies stored in the policy engine.
-func (e *PolicyEngine) ExecutePolicies() {
+func (e *PolicyEngine) ExecutePolicies(logger *logrus.Logger) {
+	logger.Info("target image: ", e.Image)
 	for _, policy := range e.Policies {
 		e.results.TestedImage = e.Image
 		targetImage := e.Image
 
 		// check if the image needs downloading
 		if !e.isDownloaded {
-			// TODO: consider returning an error in the ExecutePolicies instead
-			// of logging those policies as errors in the output.
-			isRemote, err := e.ContainerIsRemote(e.Image)
+			isRemote, err := e.ContainerIsRemote(e.Image, logger)
 			if err != nil {
+				logger.Error("unable to determine if the image was remote: ", err)
 				e.results.Errors = append(e.results.Errors, policy)
 				continue
 			}
 
 			var localImagePath string
 			if isRemote {
-				imageTarballPath, err := e.GetContainerFromRegistry(e.Image)
+				logger.Info("downloading image")
+				imageTarballPath, err := e.GetContainerFromRegistry(e.Image, logger)
 				if err != nil {
+					logger.Error("unable to the container from the registry: ", err)
 					e.results.Errors = append(e.results.Errors, policy)
 					continue
 				}
 
-				localImagePath, err = e.ExtractContainerTar(imageTarballPath)
+				localImagePath, err = e.ExtractContainerTar(imageTarballPath, logger)
 				if err != nil {
+					logger.Error("unable to extract the container: ", err)
 					e.results.Errors = append(e.results.Errors, policy)
 					continue
 				}
@@ -55,23 +59,29 @@ func (e *PolicyEngine) ExecutePolicies() {
 		}
 
 		// if we downloaded an image to disk, lets test against that.
-		if len(e.localImagePath) == 0 {
-			targetImage = e.localImagePath
-		}
+		// COMMENTED: tests aren't currently written to support this
+		// remove if we decide we do not care to have a tarball.
+		// if len(e.localImagePath) != 0 {
+		// 	targetImage = e.localImagePath
+		// }
 
+		logger.Info("running check: ", policy.Name())
 		// run the validation
-		passed, err := policy.Validate(targetImage)
+		passed, err := policy.Validate(targetImage, logger)
 
 		if err != nil {
+			logger.WithFields(logrus.Fields{"result": "ERROR", "error": err.Error()}).Info("check completed: ", policy.Name())
 			e.results.Errors = append(e.results.Errors, policy)
 			continue
 		}
 
 		if !passed {
+			logger.WithFields(logrus.Fields{"result": "FAILED"}).Info("check completed: ", policy.Name())
 			e.results.Failed = append(e.results.Failed, policy)
 			continue
 		}
 
+		logger.WithFields(logrus.Fields{"result": "PASSED"}).Info("check completed: ", policy.Name())
 		e.results.Passed = append(e.results.Passed, policy)
 	}
 }
@@ -86,7 +96,7 @@ func (e *PolicyEngine) Results() runtime.Results {
 	return e.results
 }
 
-func (e *PolicyEngine) ExtractContainerTar(tarball string) (string, error) {
+func (e *PolicyEngine) ExtractContainerTar(tarball string, logger *logrus.Logger) (string, error) {
 	// we assume the input path is something like "abcdefg.tar", representing a container image,
 	// so we need to remove the extension.
 	containerIDSlice := strings.Split(tarball, ".tar")
@@ -109,7 +119,7 @@ func (e *PolicyEngine) ExtractContainerTar(tarball string) (string, error) {
 	return outputDir, nil
 }
 
-func (e *PolicyEngine) GetContainerFromRegistry(containerLoc string) (string, error) {
+func (e *PolicyEngine) GetContainerFromRegistry(containerLoc string, logger *logrus.Logger) (string, error) {
 	stdouterr, err := exec.Command("podman", "pull", containerLoc).CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", errors.ErrGetRemoteContainerFailed, err)
@@ -117,7 +127,7 @@ func (e *PolicyEngine) GetContainerFromRegistry(containerLoc string) (string, er
 	lines := strings.Split(string(stdouterr), "\n")
 
 	imgSig := lines[len(lines)-2]
-	_, err = exec.Command("podman", "save", containerLoc, "--output", imgSig+".tar").CombinedOutput()
+	stdouterr, err = exec.Command("podman", "save", containerLoc, "--output", imgSig+".tar").CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", errors.ErrSaveContainerFailed, err)
 	}
@@ -126,7 +136,7 @@ func (e *PolicyEngine) GetContainerFromRegistry(containerLoc string) (string, er
 	return imgSig + ".tar", nil
 }
 
-func (e *PolicyEngine) ContainerIsRemote(path string) (bool, error) {
+func (e *PolicyEngine) ContainerIsRemote(path string, logger *logrus.Logger) (bool, error) {
 	// TODO: Implement, for not this is just returning
 	// that the resource is remote and needs to be pulled.
 	return true, nil

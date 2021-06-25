@@ -3,12 +3,13 @@ package shell
 import (
 	"github.com/komish/preflight/certification"
 	"github.com/komish/preflight/certification/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type UnderLayerMaxPolicy struct {
 }
 
-func (p *UnderLayerMaxPolicy) Validate(image string) (bool, error) {
+func (p *UnderLayerMaxPolicy) Validate(image string, logger *logrus.Logger) (bool, error) {
 	return false, errors.ErrFeatureNotImplemented
 }
 

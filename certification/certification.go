@@ -1,10 +1,12 @@
 package certification
 
+import "github.com/sirupsen/logrus"
+
 // Policy as an interface containing all methods necessary
 // to use and identify a given policy.
 type Policy interface {
 	// Validate whether the asset enforces the policy.
-	Validate(image string) (result bool, err error)
+	Validate(image string, logger *logrus.Logger) (result bool, err error)
 	// return the name of the policy
 	Name() string
 	// return the policy's metadata

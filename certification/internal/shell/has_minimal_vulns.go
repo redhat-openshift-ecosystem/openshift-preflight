@@ -3,11 +3,12 @@ package shell
 import (
 	"github.com/komish/preflight/certification"
 	"github.com/komish/preflight/certification/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type HasMinimalVulnerabilitiesPolicy struct{}
 
-func (p *HasMinimalVulnerabilitiesPolicy) Validate(image string) (bool, error) {
+func (p *HasMinimalVulnerabilitiesPolicy) Validate(image string, logger *logrus.Logger) (bool, error) {
 	return false, errors.ErrFeatureNotImplemented
 }
 func (p *HasMinimalVulnerabilitiesPolicy) Name() string {
