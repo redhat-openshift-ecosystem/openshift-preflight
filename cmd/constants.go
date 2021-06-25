@@ -1,8 +1,8 @@
 package cmd
 
 var (
-	EnvEnabledPolicies = "PREFLIGHT_ENABLED_POLICIES"
-	EnvOutputFormat    = "PREFLIGHT_OUTPUT_FORMAT"
+	EnvEnabledChecks = "PREFLIGHT_ENABLED_CHECKS"
+	EnvOutputFormat  = "PREFLIGHT_OUTPUT_FORMAT"
 )
 
 var (

@@ -16,8 +16,8 @@ var rootCmd = &cobra.Command{
 	Use:   "preflight <container-image>",
 	Short: "Preflight Red Hat certification prep tool.",
 	Long: "A utility that allows you to pre-test your bundles, operators, and container before submitting for Red Hat Certification." +
-		"\nChoose from any of the following policies:" +
-		"\n\t" + strings.Join(engine.AllPolicies(), ", ") +
+		"\nChoose from any of the following checks:" +
+		"\n\t" + strings.Join(engine.AllChecks(), ", ") +
 		"\nChoose from any of the following output formats:" +
 		"\n\t" + strings.Join(formatters.AllFormats(), ", "),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -29,9 +29,9 @@ var rootCmd = &cobra.Command{
 		containerImage := args[0]
 
 		cfg := runtime.Config{
-			Image:           containerImage,
-			EnabledPolicies: parseEnabledPoliciesValue(),
-			ResponseFormat:  parseOutputFormat(),
+			Image:          containerImage,
+			EnabledChecks:  parseEnabledChecksValue(),
+			ResponseFormat: parseOutputFormat(),
 		}
 
 		engine, err := engine.NewForConfig(cfg)
@@ -44,7 +44,7 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		engine.ExecutePolicies(logger)
+		engine.ExecuteChecks(logger)
 		results := engine.Results()
 
 		// return results to the user
@@ -60,20 +60,20 @@ var rootCmd = &cobra.Command{
 }
 
 var (
-	userEnabledPolicies string
-	userOutputFormat    string
+	userEnabledChecks string
+	userOutputFormat  string
 )
 
 func Execute() {
 	// We don't set default values here because we want to parse the environment
 	// in addition to the flags and enforce precedence between the two.
-	rootCmd.Flags().StringVarP(&userEnabledPolicies,
-		"enabled-policies", "p", "", fmt.Sprintf(
-			"Which policies to apply to the bundle to ensure compliance.\n(Env) %s",
-			EnvEnabledPolicies))
+	rootCmd.Flags().StringVarP(&userEnabledChecks,
+		"enabled-checks", "c", "", fmt.Sprintf(
+			"Which checks to apply to the image to ensure compliance.\n(Env) %s",
+			EnvEnabledChecks))
 	rootCmd.Flags().StringVarP(&userOutputFormat,
 		"output-format", "o", "", fmt.Sprintf(
-			"The format for the policy test results.\n(Env) %s (Default) %s",
+			"The format for the check test results.\n(Env) %s (Default) %s",
 			EnvOutputFormat, defaultOutputFormat))
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

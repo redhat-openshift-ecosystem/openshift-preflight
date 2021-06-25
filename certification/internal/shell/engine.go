@@ -12,19 +12,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type PolicyEngine struct {
-	Image    string
-	Policies []certification.Policy
+type CheckEngine struct {
+	Image  string
+	Checks []certification.Check
 
 	results        runtime.Results
 	localImagePath string
 	isDownloaded   bool
 }
 
-// ExecutePolicies runs all policies stored in the policy engine.
-func (e *PolicyEngine) ExecutePolicies(logger *logrus.Logger) {
+// ExecuteChecks runs all checks stored in the check engine.
+func (e *CheckEngine) ExecuteChecks(logger *logrus.Logger) {
 	logger.Info("target image: ", e.Image)
-	for _, policy := range e.Policies {
+	for _, check := range e.Checks {
 		e.results.TestedImage = e.Image
 		targetImage := e.Image
 
@@ -33,7 +33,7 @@ func (e *PolicyEngine) ExecutePolicies(logger *logrus.Logger) {
 			isRemote, err := e.ContainerIsRemote(e.Image, logger)
 			if err != nil {
 				logger.Error("unable to determine if the image was remote: ", err)
-				e.results.Errors = append(e.results.Errors, policy)
+				e.results.Errors = append(e.results.Errors, check)
 				continue
 			}
 
@@ -43,14 +43,14 @@ func (e *PolicyEngine) ExecutePolicies(logger *logrus.Logger) {
 				imageTarballPath, err := e.GetContainerFromRegistry(e.Image, logger)
 				if err != nil {
 					logger.Error("unable to the container from the registry: ", err)
-					e.results.Errors = append(e.results.Errors, policy)
+					e.results.Errors = append(e.results.Errors, check)
 					continue
 				}
 
 				localImagePath, err = e.ExtractContainerTar(imageTarballPath, logger)
 				if err != nil {
 					logger.Error("unable to extract the container: ", err)
-					e.results.Errors = append(e.results.Errors, policy)
+					e.results.Errors = append(e.results.Errors, check)
 					continue
 				}
 			}
@@ -65,38 +65,38 @@ func (e *PolicyEngine) ExecutePolicies(logger *logrus.Logger) {
 		// 	targetImage = e.localImagePath
 		// }
 
-		logger.Info("running check: ", policy.Name())
+		logger.Info("running check: ", check.Name())
 		// run the validation
-		passed, err := policy.Validate(targetImage, logger)
+		passed, err := check.Validate(targetImage, logger)
 
 		if err != nil {
-			logger.WithFields(logrus.Fields{"result": "ERROR", "error": err.Error()}).Info("check completed: ", policy.Name())
-			e.results.Errors = append(e.results.Errors, policy)
+			logger.WithFields(logrus.Fields{"result": "ERROR", "error": err.Error()}).Info("check completed: ", check.Name())
+			e.results.Errors = append(e.results.Errors, check)
 			continue
 		}
 
 		if !passed {
-			logger.WithFields(logrus.Fields{"result": "FAILED"}).Info("check completed: ", policy.Name())
-			e.results.Failed = append(e.results.Failed, policy)
+			logger.WithFields(logrus.Fields{"result": "FAILED"}).Info("check completed: ", check.Name())
+			e.results.Failed = append(e.results.Failed, check)
 			continue
 		}
 
-		logger.WithFields(logrus.Fields{"result": "PASSED"}).Info("check completed: ", policy.Name())
-		e.results.Passed = append(e.results.Passed, policy)
+		logger.WithFields(logrus.Fields{"result": "PASSED"}).Info("check completed: ", check.Name())
+		e.results.Passed = append(e.results.Passed, check)
 	}
 }
 
-// StorePolicy stores a given policy that needs to be executed in the policy runner.
-func (e *PolicyEngine) StorePolicies(policies ...certification.Policy) {
-	e.Policies = append(e.Policies, policies...)
+// StoreCheck stores a given check that needs to be executed in the check engine.
+func (e *CheckEngine) StoreCheck(checks ...certification.Check) {
+	e.Checks = append(e.Checks, checks...)
 }
 
-// Results will return the results of policy execution.
-func (e *PolicyEngine) Results() runtime.Results {
+// Results will return the results of check execution.
+func (e *CheckEngine) Results() runtime.Results {
 	return e.results
 }
 
-func (e *PolicyEngine) ExtractContainerTar(tarball string, logger *logrus.Logger) (string, error) {
+func (e *CheckEngine) ExtractContainerTar(tarball string, logger *logrus.Logger) (string, error) {
 	// we assume the input path is something like "abcdefg.tar", representing a container image,
 	// so we need to remove the extension.
 	containerIDSlice := strings.Split(tarball, ".tar")
@@ -119,7 +119,7 @@ func (e *PolicyEngine) ExtractContainerTar(tarball string, logger *logrus.Logger
 	return outputDir, nil
 }
 
-func (e *PolicyEngine) GetContainerFromRegistry(containerLoc string, logger *logrus.Logger) (string, error) {
+func (e *CheckEngine) GetContainerFromRegistry(containerLoc string, logger *logrus.Logger) (string, error) {
 	stdouterr, err := exec.Command("podman", "pull", containerLoc).CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", errors.ErrGetRemoteContainerFailed, err)
@@ -136,7 +136,7 @@ func (e *PolicyEngine) GetContainerFromRegistry(containerLoc string, logger *log
 	return imgSig + ".tar", nil
 }
 
-func (e *PolicyEngine) ContainerIsRemote(path string, logger *logrus.Logger) (bool, error) {
+func (e *CheckEngine) ContainerIsRemote(path string, logger *logrus.Logger) (bool, error) {
 	// TODO: Implement, for not this is just returning
 	// that the resource is remote and needs to be pulled.
 	return true, nil

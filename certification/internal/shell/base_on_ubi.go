@@ -8,9 +8,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type BasedOnUbiPolicy struct{}
+type BaseOnUBICheck struct{}
 
-func (p *BasedOnUbiPolicy) Validate(image string, logger *logrus.Logger) (bool, error) {
+func (p *BaseOnUBICheck) Validate(image string, logger *logrus.Logger) (bool, error) {
 	stdouterr, err := exec.Command("podman", "run", "--rm", "-it", image, "cat", "/etc/os-release").CombinedOutput()
 	if err != nil {
 		logger.Error("unable to inspect the os-release file in the target container: ", err)
@@ -34,20 +34,20 @@ func (p *BasedOnUbiPolicy) Validate(image string, logger *logrus.Logger) (bool, 
 	return false, nil
 }
 
-func (p *BasedOnUbiPolicy) Name() string {
+func (p *BaseOnUBICheck) Name() string {
 	return "BasedOnUbi"
 }
 
-func (p *BasedOnUbiPolicy) Metadata() certification.Metadata {
+func (p *BaseOnUBICheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checking if the container's base image is based on UBI",
 		Level:            "best",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide", // Placeholder
-		PolicyURL:        "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 	}
 }
 
-func (p *BasedOnUbiPolicy) Help() certification.HelpText {
+func (p *BaseOnUBICheck) Help() certification.HelpText {
 	return certification.HelpText{
 		Message:    "It is recommened that your image be based upon the Red Hat Universal Base Image (UBI)",
 		Suggestion: "Change the FROM directive in your Dockerfile or Containerfile to FROM registry.access.redhat.com/ubi8/ubi",

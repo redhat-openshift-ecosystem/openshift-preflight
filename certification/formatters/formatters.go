@@ -30,7 +30,7 @@ func (f *GenericFormatter) Format(r runtime.Results) ([]byte, error) {
 	return f.FormatterFunc(r)
 }
 
-// FormatterFunc describes a function that formats the policy validation
+// FormatterFunc describes a function that formats the check validation
 // results.
 type FormatterFunc = func(runtime.Results) (response []byte, formattingError error)
 
@@ -74,7 +74,7 @@ var availableFormatters = map[string]ResponseFormatter{
 	"junitxml": &GenericFormatter{"JUnit XML", junitXMLFormatter},
 }
 
-// AllPolicies returns all formats and formatters made available by this library.
+// AllFormats returns all formats and formatters made available by this library.
 func AllFormats() []string {
 	all := make([]string, len(availableFormatters))
 	i := 0

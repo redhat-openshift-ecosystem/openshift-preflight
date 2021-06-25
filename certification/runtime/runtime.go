@@ -6,15 +6,15 @@ import (
 )
 
 type Config struct {
-	Image           string
-	EnabledPolicies []string
-	ResponseFormat  string
+	Image          string
+	EnabledChecks  []string
+	ResponseFormat string
 }
 type Results struct {
 	TestedImage string
-	Passed      []certification.Policy
-	Failed      []certification.Policy
-	Errors      []certification.Policy
+	Passed      []certification.Check
+	Failed      []certification.Check
+	Errors      []certification.Check
 }
 
 type UserResponse struct {
@@ -25,8 +25,6 @@ type UserResponse struct {
 
 type UserResponseText struct {
 	Passed []certification.Metadata
-	Failed []certification.PolicyInfo
+	Failed []certification.CheckInfo
 	Errors []certification.HelpText
-	// TODO: Errors does not actually include any error information
-	// and it needs to do so.
 }

@@ -6,24 +6,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type HasUniqueTagPolicy struct{}
+type HasUniqueTagCheck struct{}
 
-func (p *HasUniqueTagPolicy) Validate(image string, logger *logrus.Logger) (bool, error) {
+func (p *HasUniqueTagCheck) Validate(image string, logger *logrus.Logger) (bool, error) {
 	return false, errors.ErrFeatureNotImplemented
 }
-func (p *HasUniqueTagPolicy) Name() string {
+func (p *HasUniqueTagCheck) Name() string {
 	return "HasUniqueTag"
 }
-func (p *HasUniqueTagPolicy) Metadata() certification.Metadata {
+func (p *HasUniqueTagCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checking if container has a tag other than 'latest'.",
 		Level:            "best",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
-		PolicyURL:        "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 	}
 }
 
-func (p *HasUniqueTagPolicy) Help() certification.HelpText {
+func (p *HasUniqueTagCheck) Help() certification.HelpText {
 	return certification.HelpText{
 		Message:    "Containers should have a tag other than latest, so that the image can be uniquely identfied.",
 		Suggestion: "Add a tag to your image. Consider using Semantic Versioning. https://semver.org/",
