@@ -73,6 +73,9 @@ var hasUniqueTagCheck certification.Check = &podmanexec.HasUniqueTagCheck{}
 var hasNoProhibitedCheck certification.Check = &podmanexec.HasNoProhibitedPackagesCheck{}
 
 var nameToChecksMap = map[string]certification.Check{
+	// NOTE(komish): these checks do not all apply to bundles, which is the current
+	// scope. Eventually, I expect we'll split out container checks to their
+	// on map and pass it to the CheckEngine when the right cobra command is invoked.
 	runAsNonRootCheck.Name():              runAsNonRootCheck,
 	underLayerMaxCheck.Name():             underLayerMaxCheck,
 	hasRequiredLabelCheck.Name():          hasRequiredLabelCheck,
