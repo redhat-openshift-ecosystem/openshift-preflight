@@ -1,16 +1,40 @@
 package shell
 
 import (
+	"os/exec"
+	"strconv"
+	"strings"
+
 	"github.com/komish/preflight/certification"
-	"github.com/komish/preflight/certification/errors"
 	"github.com/sirupsen/logrus"
 )
 
-type RunAsNonRootCheck struct {
-}
+type RunAsNonRootCheck struct{}
 
 func (p *RunAsNonRootCheck) Validate(image string, logger *logrus.Logger) (bool, error) {
-	return false, errors.ErrFeatureNotImplemented
+	stdouterr, err := exec.Command("podman", "run", "-it", "--rm", "--entrypoint", "id", image, "-u").CombinedOutput()
+	if err != nil {
+		logger.Error("unable to get the id of the runtime user of this image")
+		logger.Debug(string(stdouterr), err)
+		return false, err
+	}
+
+	// The output we get from the exec.Command includes returns
+	stdouterrString := strings.TrimSuffix(string(stdouterr), "\r\n")
+	uid, err := strconv.Atoi(stdouterrString)
+	if err != nil {
+		logger.Error("unable to determine the runtime user id of the image")
+		logger.Debug("expected a value that could be converted to an integer, and got: ", stdouterr)
+		return false, err
+	}
+
+	logger.Debugf("the runtime user id is %d", uid)
+
+	if uid != 0 {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (p *RunAsNonRootCheck) Name() string {
