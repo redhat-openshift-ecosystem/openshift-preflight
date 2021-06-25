@@ -11,7 +11,7 @@ import (
 type HasLicenseCheck struct{}
 
 func (p *HasLicenseCheck) Validate(image string, logger *logrus.Logger) (bool, error) {
-	stdouterr, err := exec.Command("podman", "run", "--rm", image, "ls", "-A", "/licenses").CombinedOutput()
+	stdouterr, err := exec.Command("podman", "run", "-it", "--rm", "--entrypoint", "ls", image, "-A", "/licenses").CombinedOutput()
 	result := string(stdouterr)
 	if err != nil {
 		if strings.Contains(result, "No such file or directory") || result == "" {

@@ -11,7 +11,7 @@ import (
 type BaseOnUBICheck struct{}
 
 func (p *BaseOnUBICheck) Validate(image string, logger *logrus.Logger) (bool, error) {
-	stdouterr, err := exec.Command("podman", "run", "--rm", "-it", image, "cat", "/etc/os-release").CombinedOutput()
+	stdouterr, err := exec.Command("podman", "run", "--rm", "-it", "--entrypoint", "cat", image, "/etc/os-release").CombinedOutput()
 	if err != nil {
 		logger.Error("unable to inspect the os-release file in the target container: ", err)
 		return false, err
