@@ -1,20 +1,75 @@
 package shell
 
 import (
+	"encoding/json"
+	"os/exec"
+
+	"github.com/itchyny/gojq"
 	"github.com/komish/preflight/certification"
-	"github.com/komish/preflight/certification/errors"
 	"github.com/sirupsen/logrus"
 )
 
-type HasRequiredLabelPolicy struct {
-}
+type HasRequiredLabelPolicy struct{}
 
 func (p *HasRequiredLabelPolicy) Validate(image string, logger *logrus.Logger) (bool, error) {
-	return false, errors.ErrFeatureNotImplemented
+	// TODO: if we're going have the image json on disk already, we should use it here instead of podman inspect-ing.
+	stdouterr, err := exec.Command("podman", "inspect", image).CombinedOutput()
+	if err != nil {
+		logger.Error("unable to execute inspect on the image: ", err)
+		return false, nil
+	}
+
+	// we must send gojq a []interface{}, so we have to convert our inspect output to that type
+	var inspectData []interface{}
+	err = json.Unmarshal(stdouterr, &inspectData)
+	if err != nil {
+		logger.Error("unable to parse podman inspect data for image")
+		logger.Debug("error marshaling podman inspect data: ", err)
+		logger.Trace("failure in attempt to convert the raw bytes from `podman inspect` to a []interface{}")
+		return false, err
+	}
+
+	jqQueryString := ".[0] | .Labels | {name: .name, vendor: .vendor, version: .version, release: .release, summary: .summary, description: .description}"
+
+	query, err := gojq.Parse(jqQueryString)
+	if err != nil {
+		logger.Error("unable to parse podman inspect data for image")
+		logger.Debug("unable to successfully parse the gojq query string:", err)
+		return false, err
+	}
+
+	// gojq expects us to iterate in the event that our query returned multiple matching values, but we only expect one.
+	iter := query.Run(inspectData)
+	val, nextOk := iter.Next()
+
+	if !nextOk {
+		logger.Warn("did not receive any label information when parsing container image")
+		// in this case, there was no data returned from jq, so we need to fail the check.
+		return false, nil
+	}
+
+	// gojq can return an error in iteration, so we need to check for that.
+	if err, ok := val.(error); ok {
+		logger.Error("unable to parse podman inspect data for image")
+		logger.Debug("unable to successfully parse the podman inspect output with the query string provided:", err)
+		// this is an error, as we didn't get the proper input from `podman inspect`
+		return false, err
+	}
+
+	labels := val.(map[string]interface{})
+
+	for _, label := range labels {
+		if label == nil {
+			logger.Warn("an expected label is missing:", label)
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 func (p *HasRequiredLabelPolicy) Name() string {
-	return "HasRequiredLabel"
+	return "HasRequiredLabels"
 }
 
 func (p *HasRequiredLabelPolicy) Metadata() certification.Metadata {

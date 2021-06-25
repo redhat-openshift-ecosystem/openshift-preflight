@@ -1,16 +1,36 @@
 package shell
 
 import (
+	"bufio"
+	"bytes"
+	"os/exec"
+
 	"github.com/komish/preflight/certification"
-	"github.com/komish/preflight/certification/errors"
 	"github.com/sirupsen/logrus"
 )
 
 type HasNoProhibitedPackagesPolicy struct{}
 
 func (p *HasNoProhibitedPackagesPolicy) Validate(image string, logger *logrus.Logger) (bool, error) {
-	return false, errors.ErrFeatureNotImplemented
+	stdouterr, err := exec.Command("podman", "run", "-it", "--rm", "--entrypoint", "rpm", image, "-qa", "--queryformat", "%{NAME}\n").CombinedOutput()
+	if err != nil {
+		logger.Error("unable to get a list of all packages in the image")
+		return false, err
+	}
+
+	scanner := bufio.NewScanner(bytes.NewReader(stdouterr))
+	for scanner.Scan() {
+		for _, pkg := range prohibitedPackageList {
+			if pkg == scanner.Text() {
+				logger.Warn("found a prohibited package in the container image: ", pkg)
+				return false, nil
+			}
+		}
+	}
+
+	return true, nil
 }
+
 func (p *HasNoProhibitedPackagesPolicy) Name() string {
 	return "HasNoProhibitedPackages"
 }
@@ -21,7 +41,6 @@ func (p *HasNoProhibitedPackagesPolicy) Metadata() certification.Metadata {
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 		PolicyURL:        "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 	}
-
 }
 
 func (p *HasNoProhibitedPackagesPolicy) Help() certification.HelpText {
@@ -34,7 +53,7 @@ func (p *HasNoProhibitedPackagesPolicy) Help() certification.HelpText {
 // prohibitedPackageList is a list of packages commonly present in the RHEL contianer images that are not redistributable
 // without proper licensing (i.e. packages that are not under the same availability as those found in UBI).
 // TODO: Confirm these packages are the only packages in immediate scope.
-var prohibitedPackageList []string = []string{
+var prohibitedPackageList = []string{
 	"grub",
 	"grub2",
 	"kernel",
