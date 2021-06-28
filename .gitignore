@@ -12,6 +12,7 @@
 *.dylib
 bin
 preflight
+preflight-*.log
 
 # Test binary, build with `go test -c`
 *.test
@@ -31,4 +32,3 @@ preflight
 
 # Vagrant
 .vagrant
-
