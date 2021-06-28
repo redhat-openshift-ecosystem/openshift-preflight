@@ -12,7 +12,7 @@ fmt:
 	git diff --exit-code
 
 .PHONY: test
-test: 
+test:
 	go test -v ./... 
 
 .PHONY: vet
