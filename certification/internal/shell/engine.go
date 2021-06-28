@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/komish/preflight/certification"
@@ -47,6 +48,9 @@ func (e *CheckEngine) ExecuteChecks(logger *logrus.Logger) {
 					continue
 				}
 
+				logger.Debugf("Tarball path: %s", imageTarballPath)
+				defer os.RemoveAll(filepath.Dir(imageTarballPath))
+
 				localImagePath, err = e.ExtractContainerTar(imageTarballPath, logger)
 				if err != nil {
 					logger.Error("unable to extract the container: ", err)
@@ -61,9 +65,9 @@ func (e *CheckEngine) ExecuteChecks(logger *logrus.Logger) {
 		// if we downloaded an image to disk, lets test against that.
 		// COMMENTED: tests aren't currently written to support this
 		// remove if we decide we do not care to have a tarball.
-		// if len(e.localImagePath) != 0 {
-		// 	targetImage = e.localImagePath
-		// }
+		if len(e.localImagePath) != 0 {
+			targetImage = e.localImagePath
+		}
 
 		logger.Info("running check: ", check.Name())
 		// run the validation
@@ -99,13 +103,13 @@ func (e *CheckEngine) Results() runtime.Results {
 func (e *CheckEngine) ExtractContainerTar(tarball string, logger *logrus.Logger) (string, error) {
 	// we assume the input path is something like "abcdefg.tar", representing a container image,
 	// so we need to remove the extension.
-	containerIDSlice := strings.Split(tarball, ".tar")
+	containerIDSlice := strings.Split(filepath.Base(tarball), ".tar")
 	if len(containerIDSlice) != 2 {
 		// we expect a single entry in the slice, otherwise we split incorrectly
 		return "", fmt.Errorf("%w: %s: %s", errors.ErrExtractingTarball, "received an improper container tarball name to extract", tarball)
 	}
 
-	outputDir := containerIDSlice[0]
+	outputDir := filepath.Join(filepath.Dir(tarball), containerIDSlice[0])
 	err := os.Mkdir(outputDir, 0755)
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
@@ -126,14 +130,20 @@ func (e *CheckEngine) GetContainerFromRegistry(containerLoc string, logger *logr
 	}
 	lines := strings.Split(string(stdouterr), "\n")
 
+	tempdir, err := os.MkdirTemp(os.TempDir(), "preflight-*")
+	if err != nil {
+		return "", fmt.Errorf("%w: %s", errors.ErrCreateTempDir, err)
+	}
+
 	imgSig := lines[len(lines)-2]
-	stdouterr, err = exec.Command("podman", "save", containerLoc, "--output", imgSig+".tar").CombinedOutput()
+	tarpath := filepath.Join(tempdir, imgSig+".tar")
+	_, err = exec.Command("podman", "save", containerLoc, "--output", tarpath).CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", errors.ErrSaveContainerFailed, err)
 	}
 
 	e.isDownloaded = true
-	return imgSig + ".tar", nil
+	return tarpath, nil
 }
 
 func (e *CheckEngine) ContainerIsRemote(path string, logger *logrus.Logger) (bool, error) {

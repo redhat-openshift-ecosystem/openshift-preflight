@@ -1,6 +1,6 @@
 module github.com/komish/preflight
 
-go 1.14
+go 1.16
 
 require (
 	github.com/itchyny/gojq v0.12.4
