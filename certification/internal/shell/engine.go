@@ -65,9 +65,9 @@ func (e *CheckEngine) ExecuteChecks(logger *logrus.Logger) {
 		// if we downloaded an image to disk, lets test against that.
 		// COMMENTED: tests aren't currently written to support this
 		// remove if we decide we do not care to have a tarball.
-		if len(e.localImagePath) != 0 {
-			targetImage = e.localImagePath
-		}
+		// if len(e.localImagePath) != 0 {
+		// 	targetImage = e.localImagePath
+		// }
 
 		logger.Info("running check: ", check.Name())
 		// run the validation
