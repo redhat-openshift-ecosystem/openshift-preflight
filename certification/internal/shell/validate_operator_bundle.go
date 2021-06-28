@@ -12,7 +12,7 @@ type ValidateOperatorBundlePolicy struct {
 }
 
 func (p ValidateOperatorBundlePolicy) Validate(bundle string, logger *logrus.Logger) (bool, error) {
-	stdouterr, err := exec.Command("operator-sdk", "bundle", "validate", "--verbose", bundle).CombinedOutput()
+	stdouterr, err := exec.Command("operator-sdk", "bundle", "validate", "-b", "podman", "--verbose", bundle).CombinedOutput()
 	if err != nil {
 		logger.Error("Error will executing operator-sdk validate bundle: ", err)
 		return false, err
