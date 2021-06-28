@@ -16,7 +16,7 @@ func (p *HasRequiredLabelsCheck) Validate(image string, logger *logrus.Logger) (
 	stdouterr, err := exec.Command("podman", "inspect", image).CombinedOutput()
 	if err != nil {
 		logger.Error("unable to execute inspect on the image: ", err)
-		return false, nil
+		return false, err
 	}
 
 	// we must send gojq a []interface{}, so we have to convert our inspect output to that type
