@@ -5,7 +5,7 @@ import (
 
 	"github.com/komish/preflight/certification"
 	"github.com/komish/preflight/certification/errors"
-	podmanexec "github.com/komish/preflight/certification/internal/shell"
+	"github.com/komish/preflight/certification/internal/shell"
 	"github.com/komish/preflight/certification/runtime"
 	"github.com/sirupsen/logrus"
 )
@@ -54,7 +54,7 @@ func NewForConfig(config runtime.Config) (CheckRunner, error) {
 		checks[i] = check
 	}
 
-	engine := &podmanexec.CheckEngine{
+	engine := &shell.CheckEngine{
 		Image:  config.Image,
 		Checks: checks,
 	}
@@ -63,15 +63,15 @@ func NewForConfig(config runtime.Config) (CheckRunner, error) {
 }
 
 // Register all checks
-var runAsNonRootCheck certification.Check = &podmanexec.RunAsNonRootCheck{}
-var underLayerMaxCheck certification.Check = &podmanexec.UnderLayerMaxCheck{}
-var hasRequiredLabelCheck certification.Check = &podmanexec.HasRequiredLabelsCheck{}
-var basedOnUbiCheck certification.Check = &podmanexec.BaseOnUBICheck{}
-var hasLicenseCheck certification.Check = &podmanexec.HasLicenseCheck{}
-var hasMinimalVulnerabilitiesCheck certification.Check = &podmanexec.HasMinimalVulnerabilitiesCheck{}
-var hasUniqueTagCheck certification.Check = &podmanexec.HasUniqueTagCheck{}
-var hasNoProhibitedCheck certification.Check = &podmanexec.HasNoProhibitedPackagesCheck{}
-var validateOperatorBundle certification.Check = &podmanexec.ValidateOperatorBundlePolicy{}
+var runAsNonRootCheck certification.Check = &shell.RunAsNonRootCheck{}
+var underLayerMaxCheck certification.Check = &shell.UnderLayerMaxCheck{}
+var hasRequiredLabelCheck certification.Check = &shell.HasRequiredLabelsCheck{}
+var basedOnUbiCheck certification.Check = &shell.BaseOnUBICheck{}
+var hasLicenseCheck certification.Check = &shell.HasLicenseCheck{}
+var hasMinimalVulnerabilitiesCheck certification.Check = &shell.HasMinimalVulnerabilitiesCheck{}
+var hasUniqueTagCheck certification.Check = &shell.HasUniqueTagCheck{}
+var hasNoProhibitedCheck certification.Check = &shell.HasNoProhibitedPackagesCheck{}
+var validateOperatorBundle certification.Check = &shell.ValidateOperatorBundlePolicy{}
 
 var nameToChecksMap = map[string]certification.Check{
 	// NOTE(komish): these checks do not all apply to bundles, which is the current
