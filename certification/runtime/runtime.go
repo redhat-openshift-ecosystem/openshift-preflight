@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"time"
+
 	"github.com/komish/preflight/certification"
 	"github.com/komish/preflight/version"
 )
@@ -10,11 +12,17 @@ type Config struct {
 	EnabledChecks  []string
 	ResponseFormat string
 }
+
+type Result struct {
+	certification.Check
+	ElapsedTime time.Duration
+}
+
 type Results struct {
 	TestedImage string
-	Passed      []certification.Check
-	Failed      []certification.Check
-	Errors      []certification.Check
+	Passed      []Result
+	Failed      []Result
+	Errors      []Result
 }
 
 type UserResponse struct {
