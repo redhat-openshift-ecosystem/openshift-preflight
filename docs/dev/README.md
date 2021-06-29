@@ -97,9 +97,9 @@ support additional locations).
 
 ## CheckRunner Implementation
 
-The built-in checkrunner is referred to as `podmanexec` (this name may change
+The built-in checkrunner is referred to as `shell` (this name may change
 as we make calls to other tools as well). It issues calls out to `podman` and
-other related tools directly in order to determine if the provided asset is in
+other shell tools directly in order to determine if the provided asset is in
 compliance.
 
 ## Formatter Implementation
