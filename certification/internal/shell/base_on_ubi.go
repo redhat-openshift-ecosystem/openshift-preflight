@@ -1,23 +1,36 @@
 package shell
 
 import (
-	"os/exec"
 	"strings"
 
 	"github.com/komish/preflight/certification"
+	"github.com/komish/preflight/cli"
 	"github.com/sirupsen/logrus"
 )
 
 type BaseOnUBICheck struct{}
 
 func (p *BaseOnUBICheck) Validate(image string, logger *logrus.Logger) (bool, error) {
-	stdouterr, err := exec.Command("podman", "run", "--rm", "-it", "--entrypoint", "cat", image, "/etc/os-release").CombinedOutput()
+	podmanEngine := PodmanCLIEngine{}
+	return p.validate(podmanEngine, image, logger)
+}
+
+func (p *BaseOnUBICheck) validate(podmanEngine cli.PodmanEngine, image string, logger *logrus.Logger) (bool, error) {
+	runOpts := cli.ImageRunOptions{
+		EntryPoint:     "cat",
+		EntryPointArgs: []string{"/etc/os-release"},
+		LogLevel:       "debug",
+		Image:          image,
+	}
+	runReport, err := podmanEngine.Run(runOpts)
 	if err != nil {
 		logger.Error("unable to inspect the os-release file in the target container: ", err)
+		logger.Debugf("Stdout: %s", runReport.Stdout)
+		logger.Debugf("Stderr: %s", runReport.Stderr)
 		return false, err
 	}
 
-	lines := strings.Split(string(stdouterr), "\n")
+	lines := strings.Split(runReport.Stdout, "\n")
 
 	var hasRHELID, hasRHELName bool
 	for _, value := range lines {
