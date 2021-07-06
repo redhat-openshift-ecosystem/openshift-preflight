@@ -15,7 +15,6 @@ import (
 var _ = Describe("BaseOnUBI", func() {
 	var (
 		baseOnUbiCheck BaseOnUBICheck
-		originalEngine cli.PodmanEngine
 		fakeEngine     cli.PodmanEngine
 	)
 
@@ -26,10 +25,6 @@ NAME="Red Hat Enterprise Linux"
 `,
 			RunReportStderr: "",
 		}
-		originalEngine = podmanEngine
-	})
-	AfterEach(func() {
-		podmanEngine = originalEngine
 	})
 	Describe("Checking for UBI as a base", func() {
 		Context("When it is based on UBI", func() {

@@ -35,7 +35,7 @@ func (e *CheckEngine) ExecuteChecks() {
 
 			if isRemote {
 				log.Info("downloading image")
-				err := GetContainerFromRegistry(e.Image)
+				_, err := GetContainerFromRegistry(e.Image)
 				if err != nil {
 					log.Error("unable to the container from the registry: ", err)
 					e.results.Errors = append(e.results.Errors, runtime.Result{Check: check, ElapsedTime: time.Since(checkStartTime)})
