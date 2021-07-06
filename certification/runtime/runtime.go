@@ -3,8 +3,8 @@ package runtime
 import (
 	"time"
 
-	"github.com/komish/preflight/certification"
-	"github.com/komish/preflight/version"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 )
 
 type Config struct {

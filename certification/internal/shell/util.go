@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/komish/preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 )
 
 func ExtractContainerTar(tarball string) (string, error) {

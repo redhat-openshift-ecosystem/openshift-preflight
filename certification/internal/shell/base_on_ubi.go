@@ -3,8 +3,8 @@ package shell
 import (
 	"strings"
 
-	"github.com/komish/preflight/certification"
-	"github.com/komish/preflight/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	"github.com/sirupsen/logrus"
 )
 

@@ -1,8 +1,8 @@
 package shell
 
 import (
-	"github.com/komish/preflight/certification"
-	"github.com/komish/preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/sirupsen/logrus"
 )
 

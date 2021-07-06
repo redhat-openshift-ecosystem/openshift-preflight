@@ -5,10 +5,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/komish/preflight/certification/engine"
-	"github.com/komish/preflight/certification/errors"
-	"github.com/komish/preflight/certification/formatters"
-	"github.com/komish/preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/spf13/cobra"
 )
 

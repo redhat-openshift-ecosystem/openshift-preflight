@@ -3,8 +3,8 @@ package shell
 import (
 	"time"
 
-	"github.com/komish/preflight/certification"
-	"github.com/komish/preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/sirupsen/logrus"
 )
 

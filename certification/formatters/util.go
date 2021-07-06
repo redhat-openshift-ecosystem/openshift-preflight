@@ -1,9 +1,9 @@
 package formatters
 
 import (
-	"github.com/komish/preflight/certification"
-	"github.com/komish/preflight/certification/runtime"
-	"github.com/komish/preflight/version"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 )
 
 // getResponse will extract the runtime's results and format it to fit the
