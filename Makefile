@@ -1,5 +1,7 @@
 .DEFAULT_GOAL:=help
 
+IMAGE_BUILDER=podman
+IMAGE_REPO=quay.io/opdev
 VERSION=$(shell git rev-parse HEAD)
 
 .PHONY: build
@@ -10,6 +12,14 @@ build:
 fmt:
 	go fmt ./...
 	git diff --exit-code
+
+.PHONY: image-build
+image-build:
+	$(IMAGE_BUILDER) build -t $(IMAGE_REPO)/preflight:$(VERSION) .
+
+.PHONY: image-push
+image-push:
+	$(IMAGE_BUILDER) push $(IMAGE_REPO)/preflight:$(VERSION) .
 
 .PHONY: test
 test:
