@@ -1,9 +1,11 @@
 package shell
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
@@ -11,11 +13,16 @@ import (
 type BaseOnUBICheck struct{}
 
 func (p *BaseOnUBICheck) Validate(image string) (bool, error) {
-	podmanEngine := PodmanCLIEngine{}
-	return p.validate(podmanEngine, image)
+	lines, err := p.getDataToValidate(image)
+	if err != nil {
+		log.Debugf("Stdout: %s", lines)
+		return false, fmt.Errorf("%w: %s", errors.ErrRunContainerFailed, err)
+	}
+
+	return p.validate(lines)
 }
 
-func (p *BaseOnUBICheck) validate(podmanEngine cli.PodmanEngine, image string) (bool, error) {
+func (p *BaseOnUBICheck) getDataToValidate(image string) ([]string, error) {
 	runOpts := cli.ImageRunOptions{
 		EntryPoint:     "cat",
 		EntryPointArgs: []string{"/etc/os-release"},
@@ -27,11 +34,13 @@ func (p *BaseOnUBICheck) validate(podmanEngine cli.PodmanEngine, image string) (
 		log.Error("unable to inspect the os-release file in the target container: ", err)
 		log.Debugf("Stdout: %s", runReport.Stdout)
 		log.Debugf("Stderr: %s", runReport.Stderr)
-		return false, err
+		return nil, err
 	}
 
-	lines := strings.Split(runReport.Stdout, "\n")
+	return strings.Split(runReport.Stdout, "\n"), nil
+}
 
+func (p *BaseOnUBICheck) validate(lines []string) (bool, error) {
 	var hasRHELID, hasRHELName bool
 	for _, value := range lines {
 		if strings.HasPrefix(value, `ID="rhel"`) {
