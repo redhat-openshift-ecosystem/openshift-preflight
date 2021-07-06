@@ -15,7 +15,7 @@ including writing and ensuring your bundle complies with your own custom tests.
 ## Design
 
 The current design leverages a series of interfaces for handling the following
-tasks related to check enforcement:
+tasks related to check validation:
 
 * managing container image assets (e.g. pulling from an external registry,
   managing an image tarball on disk, etc.)
@@ -29,16 +29,13 @@ tasks related to check enforcement:
 The interface definitions for managing each of these tasks should allow for
 developers to:
 
-* define their own approach for managing container assets in their own test
-  environments if the included approach is not preferred.
-
 * define their own checks and implementation details in addition to the
   built-in checks
 
 * define custom output formats other than those built-in to the tooling.
 
 The included CLI will leverage these interfaces to provide built-in checks,
-built-in formatters, and built-in container asset managers. 
+built-in formatters, and built-in container asset managers.
 
 ## Libraries
 
@@ -53,12 +50,6 @@ build out your own custom formatters. Developers can leverage the included
 formatters by simply passing in a `certification/formatters.FormatterFunc` and
 additional metadata, or they can build out their own by implementing the
 `certification/formatters.ResponseFormatter` interface.
-
-The `certification/inputmanager` library includes the necessary constructs to
-build out your own custom input managers. Input management just refers to the
-managing of container image assets on disk, and to/from remote registries if
-needed.
-*TODO: complete implementation and documentation*
 
 The `certification/runtime` library includes the necessary constructs to build
 out your own check runner. A check runner just refers to the interface that
@@ -81,19 +72,15 @@ taking precedence. See `cmd/constants.go` for the existing supported environment
 variables. 
 
 The CLI will take all user input and derive a `certification/runtime.Config`
-instance with the appropriate values filled in. Then, an inputmanager,
-formatter, and checkrunner is derived based on that configuration (commonly
-seen as `NewForConfig(...)` functions available in each package).
+instance with the appropriate values filled in. Then, a check runner and a
+formatter are derived based on that configuration (commonly seen as
+`NewForConfig(...)` functions available in each package).
 
-The inputmanager manager is then used to gather the required assets. The
-runtime, will execute checks and store results, and finally the formatter will
-prepare that output. The CLI will end execution by writing that output to
-whatever output has been specified (`os.Stdout` today, but this will eventually
-support additional locations).
+The check engine will execute validation functions based on enabled checks
+defined in the environment, or alternatively all checks if no checks were specified.
 
-## Input Manager Implementation
-
-*TODO Currently Unimplemented*
+Finally, the results of those validations will be passed to the formatter which
+will prepare them for final output to the user.
 
 ## CheckRunner Implementation
 
