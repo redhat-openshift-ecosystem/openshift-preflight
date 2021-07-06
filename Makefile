@@ -4,7 +4,7 @@ VERSION=$(shell git rev-parse HEAD)
 
 .PHONY: build
 build:
-	go build -o preflight -ldflags "-X github.com/komish/preflight/version.commit=$(VERSION)" main.go
+	go build -o preflight -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION)" main.go
 
 .PHONY: fmt
 fmt:

@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/komish/preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/sirupsen/logrus"
 )
 

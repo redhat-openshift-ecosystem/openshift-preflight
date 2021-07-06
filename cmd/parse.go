@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/komish/preflight/certification/engine"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 )
 
 // getStringConfigValueFrom will return a value from the options if they're

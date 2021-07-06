@@ -3,10 +3,10 @@ package engine
 import (
 	"fmt"
 
-	"github.com/komish/preflight/certification"
-	"github.com/komish/preflight/certification/errors"
-	"github.com/komish/preflight/certification/internal/shell"
-	"github.com/komish/preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/shell"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/sirupsen/logrus"
 )
 

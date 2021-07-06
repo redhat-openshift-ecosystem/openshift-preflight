@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"os/exec"
 
-	"github.com/komish/preflight/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 )
 
 type PodmanCLIEngine struct{}

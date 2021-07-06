@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/komish/preflight/cmd"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/cmd"
 )
 
 func main() {

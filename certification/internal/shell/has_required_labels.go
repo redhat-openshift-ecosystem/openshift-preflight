@@ -5,7 +5,7 @@ import (
 	"os/exec"
 
 	"github.com/itchyny/gojq"
-	"github.com/komish/preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/sirupsen/logrus"
 )
 

@@ -1,6 +1,6 @@
 package shell
 
-import "github.com/komish/preflight/cli"
+import "github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 
 type FakePodmanEngine struct {
 	RunReportStdout     string

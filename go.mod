@@ -1,4 +1,4 @@
-module github.com/komish/preflight
+module github.com/redhat-openshift-ecosystem/openshift-preflight
 
 go 1.16
 

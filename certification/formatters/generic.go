@@ -5,8 +5,8 @@ import (
 	"encoding/xml"
 	"fmt"
 
-	"github.com/komish/preflight/certification/errors"
-	"github.com/komish/preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
 // genericJSONFormatter is a FormatterFunc that formats results as JSON

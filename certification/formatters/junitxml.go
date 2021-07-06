@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/komish/preflight/certification/errors"
-	"github.com/komish/preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
 type JUnitTestSuites struct {
