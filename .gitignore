@@ -4,6 +4,9 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
+# openscap vulnerability report
+vuln.html
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -12,6 +15,7 @@
 *.dylib
 bin
 preflight
+openshift-preflight
 preflight-*.log
 
 # Test binary, build with `go test -c`
