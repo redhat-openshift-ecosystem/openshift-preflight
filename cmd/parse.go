@@ -33,3 +33,7 @@ func parseEnabledChecksValue() []string {
 func parseOutputFormat() string {
 	return getConfigStringValueFrom(userOutputFormat, os.Getenv(EnvOutputFormat), defaultOutputFormat)
 }
+
+func parseCLILogFile() string {
+	return getConfigStringValueFrom(userCLILogFile, os.Getenv(EnvCLILogFile), defaultCLILogFileName)
+}

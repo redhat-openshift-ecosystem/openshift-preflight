@@ -24,6 +24,8 @@ Flags:
   -c, --enabled-checks string   Which checks to apply to the image to ensure compliance.
                                 (Env) PREFLIGHT_ENABLED_CHECKS
   -h, --help                    help for preflight
+  -l, --log-file string         Where to write cli log output.
+                                (Env) PREFLIGHT_CLI_LOG_FILE (Default) preflight.log
   -o, --output-format string    The format for the check test results.
                                 (Env) PREFLIGHT_OUTPUT_FORMAT (Default) json
   -v, --version                 version for preflight

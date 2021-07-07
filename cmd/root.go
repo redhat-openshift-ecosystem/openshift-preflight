@@ -16,6 +16,7 @@ var rootCmd = &cobra.Command{
 var (
 	userEnabledChecks string
 	userOutputFormat  string
+	userCLILogFile    string
 )
 
 func Execute() {
@@ -29,6 +30,10 @@ func Execute() {
 		"output-format", "o", "", fmt.Sprintf(
 			"The format for the check test results.\n(Env) %s (Default) %s",
 			EnvOutputFormat, defaultOutputFormat))
+	rootCmd.Flags().StringVarP(&userCLILogFile,
+		"log-file", "l", "", fmt.Sprintf(
+			"Where to write cli log output.\n(Env) %s (Default) %s",
+			EnvCLILogFile, defaultCLILogFileName))
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

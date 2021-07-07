@@ -31,6 +31,11 @@ var checkContainerCmd = &cobra.Command{
 			Image:          containerImage,
 			EnabledChecks:  engine.ContainerPolicy(),
 			ResponseFormat: parseOutputFormat(),
+			CLILogFile:     parseCLILogFile(),
+		}
+
+		if err := initLogger(cfg); err != nil {
+			return fmt.Errorf("unable to initialize the logger for the configuration: %e", err)
 		}
 
 		engine, err := engine.NewForConfig(cfg)

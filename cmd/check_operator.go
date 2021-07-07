@@ -31,6 +31,11 @@ var checkOperatorCmd = &cobra.Command{
 			Image:          operatorImage,
 			EnabledChecks:  engine.OperatorPolicy(),
 			ResponseFormat: parseOutputFormat(),
+			CLILogFile:     parseCLILogFile(),
+		}
+
+		if err := initLogger(cfg); err != nil {
+			return fmt.Errorf("unable to initialize the logger for the configuration: %e", err)
 		}
 
 		engine, err := engine.NewForConfig(cfg)

@@ -16,7 +16,9 @@ vuln.html
 bin
 preflight
 openshift-preflight
+# Avoid committing preflight log files
 preflight-*.log
+*.log
 
 # Test binary, build with `go test -c`
 *.test

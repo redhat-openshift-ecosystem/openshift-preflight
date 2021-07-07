@@ -11,6 +11,7 @@ type Config struct {
 	Image          string
 	EnabledChecks  []string
 	ResponseFormat string
+	CLILogFile     string
 }
 
 type Result struct {
