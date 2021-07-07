@@ -9,12 +9,14 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "preflight <container-image>",
-	Short: "Preflight Red Hat certification prep tool.",
+	Use:     "preflight <container-image>",
+	Short:   "Preflight Red Hat certification prep tool.",
+	Version: version.Version.String(),
 	Long: "A utility that allows you to pre-test your bundles, operators, and container before submitting for Red Hat Certification." +
 		"\nChoose from any of the following checks:" +
 		"\n\t" + strings.Join(engine.AllChecks(), ", ") +

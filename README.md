@@ -13,9 +13,9 @@ subject to change.
 ```shell
 A utility that allows you to pre-test your bundles, operators, and container before submitting for Red Hat Certification.
 Choose from any of the following checks:
-        RunAsNonRoot, LayerCountAcceptable, HasUniqueTag, HasNoProhibitedPackages, ValidateOperatorBundle, HasRequiredLabel, BasedOnUbi, HasLicense, HasMinimalVulnerabilities
+        HasLicense, HasUniqueTag, RunAsNonRoot, LayerCountAcceptable, HasMinimalVulnerabilities, HasNoProhibitedPackages, ValidateOperatorBundle, HasRequiredLabel, BasedOnUbi
 Choose from any of the following output formats:
-        xml, junitxml, json
+        json, xml, junitxml
 
 Usage:
   preflight <container-image> [flags]
@@ -26,5 +26,6 @@ Flags:
   -h, --help                    help for preflight
   -o, --output-format string    The format for the check test results.
                                 (Env) PREFLIGHT_OUTPUT_FORMAT (Default) json
+  -v, --version                 version for preflight
 ```
 
