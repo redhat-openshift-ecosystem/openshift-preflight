@@ -7,12 +7,12 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type RunAsNonRootCheck struct{}
 
-func (p *RunAsNonRootCheck) Validate(image string, logger *logrus.Logger) (bool, error) {
+func (p *RunAsNonRootCheck) Validate(image string) (bool, error) {
 	cmd := exec.Command("podman", "run", "-it", "--rm", "--entrypoint", "id", image, "-u")
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -20,9 +20,9 @@ func (p *RunAsNonRootCheck) Validate(image string, logger *logrus.Logger) (bool,
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		logger.Error("unable to get the id of the runtime user of this image")
-		logger.Debugf("stdout: %s", out.String())
-		logger.Debugf("stderr: %s", stderr.String())
+		log.Error("unable to get the id of the runtime user of this image")
+		log.Debugf("stdout: %s", out.String())
+		log.Debugf("stderr: %s", stderr.String())
 		return false, err
 	}
 
@@ -30,12 +30,12 @@ func (p *RunAsNonRootCheck) Validate(image string, logger *logrus.Logger) (bool,
 	stdoutString := strings.TrimSpace(out.String())
 	uid, err := strconv.Atoi(stdoutString)
 	if err != nil {
-		logger.Error("unable to determine the runtime user id of the image")
-		logger.Debug("expected a value that could be converted to an integer, and got: ", out.String())
+		log.Error("unable to determine the runtime user id of the image")
+		log.Debug("expected a value that could be converted to an integer, and got: ", out.String())
 		return false, err
 	}
 
-	logger.Debugf("the runtime user id is %d", uid)
+	log.Debugf("the runtime user id is %d", uid)
 
 	if uid != 0 {
 		return true, nil

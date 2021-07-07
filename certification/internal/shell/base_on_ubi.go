@@ -5,17 +5,17 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type BaseOnUBICheck struct{}
 
-func (p *BaseOnUBICheck) Validate(image string, logger *logrus.Logger) (bool, error) {
+func (p *BaseOnUBICheck) Validate(image string) (bool, error) {
 	podmanEngine := PodmanCLIEngine{}
-	return p.validate(podmanEngine, image, logger)
+	return p.validate(podmanEngine, image)
 }
 
-func (p *BaseOnUBICheck) validate(podmanEngine cli.PodmanEngine, image string, logger *logrus.Logger) (bool, error) {
+func (p *BaseOnUBICheck) validate(podmanEngine cli.PodmanEngine, image string) (bool, error) {
 	runOpts := cli.ImageRunOptions{
 		EntryPoint:     "cat",
 		EntryPointArgs: []string{"/etc/os-release"},
@@ -24,9 +24,9 @@ func (p *BaseOnUBICheck) validate(podmanEngine cli.PodmanEngine, image string, l
 	}
 	runReport, err := podmanEngine.Run(runOpts)
 	if err != nil {
-		logger.Error("unable to inspect the os-release file in the target container: ", err)
-		logger.Debugf("Stdout: %s", runReport.Stdout)
-		logger.Debugf("Stderr: %s", runReport.Stderr)
+		log.Error("unable to inspect the os-release file in the target container: ", err)
+		log.Debugf("Stdout: %s", runReport.Stdout)
+		log.Debugf("Stderr: %s", runReport.Stderr)
 		return false, err
 	}
 

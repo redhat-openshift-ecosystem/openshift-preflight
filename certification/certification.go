@@ -1,12 +1,10 @@
 package certification
 
-import "github.com/sirupsen/logrus"
-
 // Check as an interface containing all methods necessary
 // to use and identify a given check.
 type Check interface {
 	// Validate checks whether the asset enforces the check.
-	Validate(image string, logger *logrus.Logger) (result bool, err error)
+	Validate(image string) (result bool, err error)
 	// Name returns the name of the check.
 	Name() string
 	// Metadata returns the check's metadata.

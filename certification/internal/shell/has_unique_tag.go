@@ -7,16 +7,16 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type HasUniqueTagCheck struct{}
 
-func (p *HasUniqueTagCheck) Validate(image string, logger *logrus.Logger) (bool, error) {
+func (p *HasUniqueTagCheck) Validate(image string) (bool, error) {
 	imageName := strings.Split(image, ":")[0]
 	stdouterr, err := exec.Command("skopeo", "list-tags", "docker://"+imageName).CombinedOutput()
 	if err != nil {
-		logger.Error("unable to execute skopeo on the image: ", err)
+		log.Error("unable to execute skopeo on the image: ", err)
 		return false, err
 	}
 
@@ -24,9 +24,9 @@ func (p *HasUniqueTagCheck) Validate(image string, logger *logrus.Logger) (bool,
 	var skopeoData map[string]interface{}
 	err = json.Unmarshal(stdouterr, &skopeoData)
 	if err != nil {
-		logger.Error("unable to parse skopeo list-tags data for image", err)
-		logger.Debug("error marshaling skopeo list-tags data: ", err)
-		logger.Trace("failure in attempt to convert the raw bytes from `skopeo list-tags` to a [map[string]interface{}")
+		log.Error("unable to parse skopeo list-tags data for image", err)
+		log.Debug("error marshaling skopeo list-tags data: ", err)
+		log.Trace("failure in attempt to convert the raw bytes from `skopeo list-tags` to a [map[string]interface{}")
 		return false, err
 	}
 	tags := skopeoData["Tags"].([]interface{})
@@ -35,7 +35,7 @@ func (p *HasUniqueTagCheck) Validate(image string, logger *logrus.Logger) (bool,
 	for _, tag := range tags {
 		tagsString = tagsString + tag.(string) + " "
 	}
-	logger.Debugf(fmt.Sprintf("detected these tags for %s image: %s", imageName, tagsString))
+	log.Debugf(fmt.Sprintf("detected these tags for %s image: %s", imageName, tagsString))
 
 	if len(tags) > 1 || len(tags) == 1 && strings.ToLower(tags[0].(string)) != "latest" {
 		return true, nil

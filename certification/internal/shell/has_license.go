@@ -5,27 +5,27 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type HasLicenseCheck struct{}
 
-func (p *HasLicenseCheck) Validate(image string, logger *logrus.Logger) (bool, error) {
+func (p *HasLicenseCheck) Validate(image string) (bool, error) {
 	stdouterr, err := exec.Command("podman", "run", "-it", "--rm", "--entrypoint", "ls", image, "-A", "/licenses").CombinedOutput()
 	result := string(stdouterr)
 	if err != nil {
 		if strings.Contains(result, "No such file or directory") || result == "" {
-			logger.Warn("license not found in the container image at /licenses")
+			log.Warn("license not found in the container image at /licenses")
 			return false, nil
 		}
 
-		logger.Error("some error attempting to identify if /licenses container the license: ", err)
+		log.Error("some error attempting to identify if /licenses container the license: ", err)
 		return false, err
 	}
 
 	// sanity check - in case we don't get an error, but also don't have the file.
 	if strings.Contains(result, "No such file or directory") || result == "" {
-		logger.Warn("license not found in the container image at /licenses")
+		log.Warn("license not found in the container image at /licenses")
 		return false, nil
 	}
 
