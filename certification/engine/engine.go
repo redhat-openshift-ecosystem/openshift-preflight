@@ -88,6 +88,21 @@ var nameToChecksMap = map[string]certification.Check{
 	validateOperatorBundle.Name():         validateOperatorBundle,
 }
 
+var containerPolicyChecks = map[string]certification.Check{
+	runAsNonRootCheck.Name():              runAsNonRootCheck,
+	underLayerMaxCheck.Name():             underLayerMaxCheck,
+	hasRequiredLabelCheck.Name():          hasRequiredLabelCheck,
+	basedOnUbiCheck.Name():                basedOnUbiCheck,
+	hasLicenseCheck.Name():                hasLicenseCheck,
+	hasMinimalVulnerabilitiesCheck.Name(): hasMinimalVulnerabilitiesCheck,
+	hasUniqueTagCheck.Name():              hasUniqueTagCheck,
+	hasNoProhibitedCheck.Name():           hasNoProhibitedCheck,
+}
+
+var operatorPolicyChecks = map[string]certification.Check{
+	validateOperatorBundle.Name(): validateOperatorBundle,
+}
+
 func AllChecks() []string {
 	all := make([]string, len(nameToChecksMap))
 	i := 0
@@ -97,4 +112,26 @@ func AllChecks() []string {
 		i++
 	}
 	return all
+}
+
+func OperatorPolicy() []string {
+	checks := make([]string, len(operatorPolicyChecks))
+	i := 0
+
+	for k := range operatorPolicyChecks {
+		checks[i] = k
+		i++
+	}
+	return checks
+}
+
+func ContainerPolicy() []string {
+	checks := make([]string, len(containerPolicyChecks))
+	i := 0
+
+	for k := range containerPolicyChecks {
+		checks[i] = k
+		i++
+	}
+	return checks
 }
