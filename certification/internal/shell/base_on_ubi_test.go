@@ -23,7 +23,7 @@ NAME="Red Hat Enterprise Linux"
 	Describe("Checking for UBI as a base", func() {
 		Context("When it is based on UBI", func() {
 			It("should succeed the check", func() {
-				ok, err := base_on_ubi.validate(engine, "dummy/image", logger)
+				ok, err := base_on_ubi.validate(engine, "dummy/image")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -35,7 +35,7 @@ NAME="Some Other Linux"
 `
 			})
 			It("should not succeed the check", func() {
-				ok, err := base_on_ubi.validate(engine, "dummy/image", logger)
+				ok, err := base_on_ubi.validate(engine, "dummy/image")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

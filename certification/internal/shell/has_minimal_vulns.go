@@ -3,12 +3,11 @@ package shell
 import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
-	"github.com/sirupsen/logrus"
 )
 
 type HasMinimalVulnerabilitiesCheck struct{}
 
-func (p *HasMinimalVulnerabilitiesCheck) Validate(image string, logger *logrus.Logger) (bool, error) {
+func (p *HasMinimalVulnerabilitiesCheck) Validate(image string) (bool, error) {
 	return false, errors.ErrFeatureNotImplemented
 }
 func (p *HasMinimalVulnerabilitiesCheck) Name() string {

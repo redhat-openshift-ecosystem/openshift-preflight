@@ -1,10 +1,8 @@
 package certification
 
-import "github.com/sirupsen/logrus"
-
 // ValidatorFunc describes a function that, when executed, will check that an
 // artifact (e.g. operator bundle) complies with a given check.
-type ValidatorFunc = func(string, *logrus.Logger) (bool, error)
+type ValidatorFunc = func(string) (bool, error)
 
 type genericCheckDefinition struct {
 	name        string
@@ -17,8 +15,8 @@ func (pd *genericCheckDefinition) Name() string {
 	return pd.name
 }
 
-func (pd *genericCheckDefinition) Validate(image string, logger *logrus.Logger) (bool, error) {
-	return pd.validatorFn(image, logger)
+func (pd *genericCheckDefinition) Validate(image string) (bool, error) {
+	return pd.validatorFn(image)
 }
 
 func (pd *genericCheckDefinition) Metadata() Metadata {

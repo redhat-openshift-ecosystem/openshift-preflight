@@ -7,7 +7,6 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/shell"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
-	"github.com/sirupsen/logrus"
 )
 
 type CheckEngine interface {
@@ -21,16 +20,16 @@ type ContainerFileManager interface {
 	// IsRemote will check user-provided path and determine if that path is
 	// local or remote. Here local means that it's a location on the filesystem, and
 	// remote means that it's an image in a registry.
-	ContainerIsRemote(path string, logger *logrus.Logger) (isRemote bool, remotecheckErr error)
+	ContainerIsRemote(path string) (isRemote bool, remotecheckErr error)
 	// ExtractContainerTar will accept a path on the filesystem and extract it.
-	ExtractContainerTar(path string, logger *logrus.Logger) (tarballPath string, extractionErr error)
+	ExtractContainerTar(path string) (tarballPath string, extractionErr error)
 	// GetContainerFromRegistry will accept a container location and write it locally
 	// as a tarball as done by `podman save`
-	GetContainerFromRegistry(containerLoc string, logger *logrus.Logger) (containerDownloadPath string, containerDownloadErro error)
+	GetContainerFromRegistry(containerLoc string) (containerDownloadPath string, containerDownloadErro error)
 }
 
 type CheckRunner interface {
-	ExecuteChecks(logger *logrus.Logger)
+	ExecuteChecks()
 	// StoreChecks(...[]certification.Check)
 	Results() runtime.Results
 }

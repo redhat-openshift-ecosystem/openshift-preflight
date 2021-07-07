@@ -5,16 +5,16 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type ValidateOperatorBundlePolicy struct {
 }
 
-func (p ValidateOperatorBundlePolicy) Validate(bundle string, logger *logrus.Logger) (bool, error) {
+func (p ValidateOperatorBundlePolicy) Validate(bundle string) (bool, error) {
 	stdouterr, err := exec.Command("operator-sdk", "bundle", "validate", "-b", "podman", "--verbose", bundle).CombinedOutput()
 	if err != nil {
-		logger.Error("Error will executing operator-sdk validate bundle: ", err)
+		log.Error("Error will executing operator-sdk validate bundle: ", err)
 		return false, err
 	}
 
@@ -23,7 +23,7 @@ func (p ValidateOperatorBundlePolicy) Validate(bundle string, logger *logrus.Log
 	if strings.Contains(lines[len(lines)-1], "All validation tests have completed successfully") {
 		return true, nil
 	}
-	logger.Warn("The bundle image did not pass all of the validation tests")
+	log.Warn("The bundle image did not pass all of the validation tests")
 	return false, nil
 }
 

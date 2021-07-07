@@ -7,7 +7,7 @@ import (
 
 	"github.com/itchyny/gojq"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -16,11 +16,11 @@ const (
 
 type UnderLayerMaxCheck struct{}
 
-func (p *UnderLayerMaxCheck) Validate(image string, logger *logrus.Logger) (bool, error) {
+func (p *UnderLayerMaxCheck) Validate(image string) (bool, error) {
 	// TODO: if we're going have the image json on disk already, we should use it here instead of podman inspect-ing.
 	stdouterr, err := exec.Command("podman", "inspect", image).CombinedOutput()
 	if err != nil {
-		logger.Error("unable to execute inspect on the image: ", err)
+		log.Error("unable to execute inspect on the image: ", err)
 		return false, err
 	}
 
@@ -28,16 +28,16 @@ func (p *UnderLayerMaxCheck) Validate(image string, logger *logrus.Logger) (bool
 	var inspectData []interface{}
 	err = json.Unmarshal(stdouterr, &inspectData)
 	if err != nil {
-		logger.Error("unable to parse podman inspect data for image", err)
-		logger.Debug("error marshaling podman inspect data: ", err)
-		logger.Trace("failure in attempt to convert the raw bytes from `podman inspect` to a []interface{}")
+		log.Error("unable to parse podman inspect data for image", err)
+		log.Debug("error marshaling podman inspect data: ", err)
+		log.Trace("failure in attempt to convert the raw bytes from `podman inspect` to a []interface{}")
 		return false, err
 	}
 
 	query, err := gojq.Parse(".[0].RootFS.Layers")
 	if err != nil {
-		logger.Error("unable to parse podman inspect data for image", err)
-		logger.Debug("unable to successfully parse the gojq query string:", err)
+		log.Error("unable to parse podman inspect data for image", err)
+		log.Debug("unable to successfully parse the gojq query string:", err)
 		return false, err
 	}
 
@@ -46,22 +46,22 @@ func (p *UnderLayerMaxCheck) Validate(image string, logger *logrus.Logger) (bool
 	val, nextOk := iter.Next()
 
 	if !nextOk {
-		logger.Warn("did not receive any layer information when parsing container image")
+		log.Warn("did not receive any layer information when parsing container image")
 		// in this case, there was no data returned from jq, so we need to fail the check.
 		return false, nil
 	}
 
 	// gojq can return an error in iteration, so we need to check for that.
 	if err, ok := val.(error); ok {
-		logger.Error("unable to parse podman inspect data for image", err)
-		logger.Debug("unable to successfully parse the podman inspect output with the query string provided:", err)
+		log.Error("unable to parse podman inspect data for image", err)
+		log.Debug("unable to successfully parse the podman inspect output with the query string provided:", err)
 		// this is an error, as we didn't get the proper input from `podman inspect`
 		return false, err
 	}
 
 	layers := val.([]interface{})
 
-	logger.Debugf("detected %d layers in image", len(layers))
+	log.Debugf("detected %d layers in image", len(layers))
 	if len(layers) < acceptableLayerMax {
 		return true, nil
 	}

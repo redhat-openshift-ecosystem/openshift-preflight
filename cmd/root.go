@@ -46,7 +46,7 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		engine.ExecuteChecks(logger)
+		engine.ExecuteChecks()
 		results := engine.Results()
 
 		// return results to the user

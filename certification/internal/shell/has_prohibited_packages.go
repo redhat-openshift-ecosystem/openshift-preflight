@@ -6,15 +6,15 @@ import (
 	"os/exec"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type HasNoProhibitedPackagesCheck struct{}
 
-func (p *HasNoProhibitedPackagesCheck) Validate(image string, logger *logrus.Logger) (bool, error) {
+func (p *HasNoProhibitedPackagesCheck) Validate(image string) (bool, error) {
 	stdouterr, err := exec.Command("podman", "run", "-it", "--rm", "--entrypoint", "rpm", image, "-qa", "--queryformat", "%{NAME}\n").CombinedOutput()
 	if err != nil {
-		logger.Error("unable to get a list of all packages in the image")
+		log.Error("unable to get a list of all packages in the image")
 		return false, err
 	}
 
@@ -22,7 +22,7 @@ func (p *HasNoProhibitedPackagesCheck) Validate(image string, logger *logrus.Log
 	for scanner.Scan() {
 		for _, pkg := range prohibitedPackageList {
 			if pkg == scanner.Text() {
-				logger.Warn("found a prohibited package in the container image: ", pkg)
+				log.Warn("found a prohibited package in the container image: ", pkg)
 				return false, nil
 			}
 		}
