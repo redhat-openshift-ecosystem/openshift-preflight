@@ -21,6 +21,11 @@ func (p ValidateOperatorBundlePolicy) Validate(bundle string) (bool, error) {
 	lines := strings.Split(string(stdouterr), "time=")
 
 	if strings.Contains(lines[len(lines)-1], "All validation tests have completed successfully") {
+		for _, line := range lines {
+			if strings.Contains(line, "level=warning") {
+				log.Warn("time= ", line)
+			}
+		}
 		return true, nil
 	}
 	log.Warn("The bundle image did not pass all of the validation tests")
