@@ -30,7 +30,7 @@ var checkOperatorCmd = &cobra.Command{
 		cfg := runtime.Config{
 			Image:          operatorImage,
 			EnabledChecks:  engine.OperatorPolicy(),
-			ResponseFormat: parseOutputFormat(),
+			ResponseFormat: defaultOutputFormat,
 		}
 
 		engine, err := engine.NewForConfig(cfg)
