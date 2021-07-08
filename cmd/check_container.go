@@ -30,7 +30,7 @@ var checkContainerCmd = &cobra.Command{
 		cfg := runtime.Config{
 			Image:          containerImage,
 			EnabledChecks:  engine.ContainerPolicy(),
-			ResponseFormat: parseOutputFormat(),
+			ResponseFormat: defaultOutputFormat,
 		}
 
 		engine, err := engine.NewForConfig(cfg)
