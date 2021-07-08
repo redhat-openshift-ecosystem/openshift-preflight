@@ -102,35 +102,26 @@ var operatorPolicyChecks = map[string]certification.Check{
 	validateOperatorBundle.Name(): validateOperatorBundle,
 }
 
-func AllChecks() []string {
-	all := make([]string, len(nameToChecksMap))
+func makeCheckList(checkMap map[string]certification.Check) []string {
+	checks := make([]string, len(checkMap))
 	i := 0
 
-	for k := range nameToChecksMap {
-		all[i] = k
+	for key := range checkMap {
+		checks[i] = key
 		i++
 	}
-	return all
+
+	return checks
+}
+
+func AllChecks() []string {
+	return makeCheckList(nameToChecksMap)
 }
 
 func OperatorPolicy() []string {
-	checks := make([]string, len(operatorPolicyChecks))
-	i := 0
-
-	for k := range operatorPolicyChecks {
-		checks[i] = k
-		i++
-	}
-	return checks
+	return makeCheckList(operatorPolicyChecks)
 }
 
 func ContainerPolicy() []string {
-	checks := make([]string, len(containerPolicyChecks))
-	i := 0
-
-	for k := range containerPolicyChecks {
-		checks[i] = k
-		i++
-	}
-	return checks
+	return makeCheckList(containerPolicyChecks)
 }
