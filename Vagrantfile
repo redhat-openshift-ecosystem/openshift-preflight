@@ -21,7 +21,9 @@ Vagrant.configure("2") do |config|
     bzip2 \
     go-md2man \
     runc \
-    containers-common
+    containers-common \
+    openscap-utils
+  
     curl -L https://golang.org/dl/go1.16.3.linux-amd64.tar.gz --output go1.16.3.linux-amd64.tar.gz
     rm -rf /usr/local/go && tar -C /usr/local -xzf go1.16.3.linux-amd64.tar.gz
     rm go1.16.3.linux-amd64.tar.gz
