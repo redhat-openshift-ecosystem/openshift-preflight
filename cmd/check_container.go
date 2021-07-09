@@ -31,6 +31,11 @@ var checkContainerCmd = &cobra.Command{
 			Image:          containerImage,
 			EnabledChecks:  engine.ContainerPolicy(),
 			ResponseFormat: defaultOutputFormat,
+			LogFile:        defaultLogFile,
+		}
+
+		if err := initLogger(cfg); err != nil {
+			return fmt.Errorf("%w: %s", errors.ErrInitializingLogger, err)
 		}
 
 		engine, err := engine.NewForConfig(cfg)

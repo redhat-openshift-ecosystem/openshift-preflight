@@ -31,6 +31,11 @@ var checkOperatorCmd = &cobra.Command{
 			Image:          operatorImage,
 			EnabledChecks:  engine.OperatorPolicy(),
 			ResponseFormat: defaultOutputFormat,
+			LogFile:        defaultLogFile,
+		}
+
+		if err := initLogger(cfg); err != nil {
+			return fmt.Errorf("%w: %s", errors.ErrInitializingLogger, err)
 		}
 
 		engine, err := engine.NewForConfig(cfg)
