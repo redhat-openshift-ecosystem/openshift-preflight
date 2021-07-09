@@ -30,8 +30,8 @@ var checkOperatorCmd = &cobra.Command{
 		cfg := runtime.Config{
 			Image:          operatorImage,
 			EnabledChecks:  engine.OperatorPolicy(),
-			ResponseFormat: defaultOutputFormat,
-			LogFile:        defaultLogFile,
+			ResponseFormat: DefaultOutputFormat,
+			LogFile:        DefaultLogFile,
 		}
 
 		if err := initLogger(cfg); err != nil {

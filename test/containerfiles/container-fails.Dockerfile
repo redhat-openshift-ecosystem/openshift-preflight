@@ -1,3 +1,4 @@
+# TODO: find an image that is vulnerable for this to fully fail
 FROM docker.io/ubuntu:20.04
 
 RUN apt update && apt -y install kpatch
