@@ -1,24 +1,31 @@
 package cmd
 
 import (
-	"fmt"
 	"io"
 	"os"
-	"time"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 
 	log "github.com/sirupsen/logrus"
 )
 
-func init() {
-	time := time.Now().Unix()
-	logname := fmt.Sprintf("preflight-%d.log", time)
-	logFile, err := os.OpenFile(logname, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0700)
+// initLogger will configure the logger so that it matches the
+// user's specified configuration, such as configuring output files.
+func initLogger(config runtime.Config) error {
+	logname := config.LogFile
+
+	logFile, err := os.OpenFile(logname, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0700)
 	if err == nil {
-		mw := io.MultiWriter(os.Stdout, logFile)
+		// if we could open the file for writing, write to both stderr and the file
+		// otherwise, just use stderr
+		mw := io.MultiWriter(os.Stderr, logFile)
 		log.SetOutput(mw)
 	} else {
 		log.Info("Failed to log to file, using default stderr")
 	}
+
 	log.SetFormatter(&log.TextFormatter{})
 	log.SetLevel(log.TraceLevel)
+
+	return nil
 }
