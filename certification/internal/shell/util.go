@@ -1,7 +1,6 @@
 package shell
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 )
 
 func ExtractContainerTar(tarball string) (string, error) {
@@ -34,27 +34,23 @@ func ExtractContainerTar(tarball string) (string, error) {
 	return outputDir, nil
 }
 
-func GetContainerFromRegistry(imageLoc string) error {
-	_, err := exec.Command("podman", "pull", imageLoc).CombinedOutput()
+func GetContainerFromRegistry(imageLoc string) (string, error) {
+	pullReport, err := podmanEngine.Pull(imageLoc, cli.ImagePullOptions{})
 	if err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrGetRemoteContainerFailed, err)
+		return "", fmt.Errorf("%w: %s", errors.ErrGetRemoteContainerFailed, err)
 	}
 
-	return nil
+	return pullReport.StdoutErr, nil
 }
 
-// Calls podman to save the image to a temporary directory in /tmp/preflight-???, where
-// ??? will be a a generated string. Should be follwed with:
+// Calls podman to save the image to a temporary directory in /tmp/preflight-{randomString}.
+// Should be followed with:
 // defer os.RemoveAll(tarballDir)
 // Returns the locataion of the tarball.
-func SaveContainerToFilesystem(imageLoc string) (string, error) {
-	cmd := exec.Command("podman", "image", "inspect", "--format", "{{.Id}}", imageLoc)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
+func SaveContainerToFilesystem(podmanEngine cli.PodmanEngine, imageLog string) (string, error) {
+	inspectReport, err := podmanEngine.InspectImage(imageLog, cli.ImageInspectOptions{})
 	if err != nil {
-		return "", fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
+		return "", fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
 	}
 
 	tempdir, err := os.MkdirTemp(os.TempDir(), "preflight-*")
@@ -62,9 +58,9 @@ func SaveContainerToFilesystem(imageLoc string) (string, error) {
 		return "", fmt.Errorf("%w: %s", errors.ErrCreateTempDir, err)
 	}
 
-	imgSig := stdout.String()
+	imgSig := inspectReport.Images[0].Id
 	tarpath := filepath.Join(tempdir, imgSig+".tar")
-	_, err = exec.Command("podman", "save", imageLoc, "--output", tarpath).CombinedOutput()
+	err = podmanEngine.Save(imgSig, []string{}, cli.ImageSaveOptions{Destination: tarpath})
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", errors.ErrSaveContainerFailed, err)
 	}
