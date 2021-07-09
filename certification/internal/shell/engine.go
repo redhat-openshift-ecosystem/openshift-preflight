@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	containerutil "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/container"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	log "github.com/sirupsen/logrus"
 )
@@ -35,7 +36,8 @@ func (e *CheckEngine) ExecuteChecks() {
 
 			if isRemote {
 				log.Info("downloading image")
-				_, err := GetContainerFromRegistry(e.Image)
+
+				_, err := containerutil.GetContainerFromRegistry(podmanEngine, e.Image)
 				if err != nil {
 					log.Error("unable to pull the container from the registry: ", err)
 					e.results.Errors = append(e.results.Errors, runtime.Result{Check: check, ElapsedTime: time.Since(checkStartTime)})
@@ -76,11 +78,6 @@ func (e *CheckEngine) ExecuteChecks() {
 		log.WithFields(log.Fields{"result": "PASSED"}).Info("check completed: ", check.Name())
 		e.results.Passed = append(e.results.Passed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 	}
-}
-
-// StoreCheck stores a given check that needs to be executed in the check engine.
-func (e *CheckEngine) StoreCheck(checks ...certification.Check) {
-	e.Checks = append(e.Checks, checks...)
 }
 
 // Results will return the results of check execution.
