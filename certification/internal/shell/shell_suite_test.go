@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
@@ -90,4 +91,39 @@ func (bpe BadPodmanEngine) Save(nameOrID string, tags []string, opts cli.ImageSa
 
 func (bpe BadPodmanEngine) InspectImage(rawImage string, opts cli.ImageInspectOptions) (*cli.ImageInspectReport, error) {
 	return nil, errors.New("the Podman Inspect Image has failed")
+}
+
+func checkPodmanErrors(check certification.Check) func() {
+	return func() {
+		Describe("Checking that Podman errors are handled correctly", func() {
+			BeforeEach(func() {
+				fakeEngine := BadPodmanEngine{}
+				podmanEngine = fakeEngine
+			})
+			Context("When PodMan throws an error", func() {
+				It("should fail Validate and return an error", func() {
+					ok, err := check.Validate("dummy/image")
+					Expect(err).To(HaveOccurred())
+					Expect(ok).To(BeFalse())
+				})
+			})
+		})
+
+	}
+}
+
+func checkShouldPassValidate(check certification.Check) func() {
+	return func() {
+		ok, err := check.Validate("dummy/image")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(ok).To(BeTrue())
+	}
+}
+
+func checkShouldNotPassValidate(check certification.Check) func() {
+	return func() {
+		ok, err := check.Validate("dummy/image")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(ok).To(BeFalse())
+	}
 }

@@ -2,7 +2,6 @@ package shell
 
 import (
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 )
 
@@ -38,35 +37,15 @@ var _ = Describe("HasRequiredLabels", func() {
 
 	Describe("Checking for required labels", func() {
 		Context("When it has required labels", func() {
-			It("should pass Validate", func() {
-				ok, err := hasRequiredLabelsCheck.Validate("dummy/image")
-				Expect(err).ToNot(HaveOccurred())
-				Expect(ok).To(BeTrue())
-			})
+			It("should pass Validate", checkShouldPassValidate(&hasRequiredLabelsCheck))
 		})
 		Context("When it does not have required labels", func() {
 			BeforeEach(func() {
 				engine := fakeEngine.(FakePodmanEngine)
 				delete(engine.ImageInspectReport.Images[0].Config.Labels, "description")
 			})
-			It("should not succeed the check", func() {
-				ok, err := hasRequiredLabelsCheck.Validate("dummy/image")
-				Expect(err).ToNot(HaveOccurred())
-				Expect(ok).To(BeFalse())
-			})
+			It("should not pass Validate", checkShouldNotPassValidate(&hasRequiredLabelsCheck))
 		})
 	})
-	Describe("Checking that PodMan errors are handled correctly", func() {
-		BeforeEach(func() {
-			fakeEngine = BadPodmanEngine{}
-			podmanEngine = fakeEngine
-		})
-		Context("When PodMan throws an error", func() {
-			It("should fail Validate and return an error", func() {
-				ok, err := hasRequiredLabelsCheck.Validate("dummy/image")
-				Expect(err).To(HaveOccurred())
-				Expect(ok).To(BeFalse())
-			})
-		})
-	})
+	checkPodmanErrors(&hasRequiredLabelsCheck)()
 })

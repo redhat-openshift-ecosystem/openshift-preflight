@@ -2,9 +2,7 @@ package shell
 
 import (
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
-	log "github.com/sirupsen/logrus"
 )
 
 // podmanEngine is a package-level variable. In some tests, we
@@ -31,11 +29,7 @@ NAME="Red Hat Enterprise Linux"
 			BeforeEach(func() {
 				podmanEngine = fakeEngine
 			})
-			It("should pass Validate", func() {
-				ok, err := baseOnUbiCheck.Validate("dummy/image")
-				Expect(err).ToNot(HaveOccurred())
-				Expect(ok).To(BeTrue())
-			})
+			checkShouldPassValidate(&baseOnUbiCheck)()
 		})
 		Context("When it is not based on UBI", func() {
 			BeforeEach(func() {
@@ -43,25 +37,8 @@ NAME="Red Hat Enterprise Linux"
 				engine.RunReportStdout = `ID="notrhel"`
 				podmanEngine = engine
 			})
-			It("should not pass Validate", func() {
-				log.Errorf("Run Report: %s", podmanEngine)
-				ok, err := baseOnUbiCheck.Validate("dummy/image")
-				Expect(err).ToNot(HaveOccurred())
-				Expect(ok).To(BeFalse())
-			})
+			checkShouldNotPassValidate(&baseOnUbiCheck)()
 		})
 	})
-	Describe("Checking that PodMan errors are handled correctly", func() {
-		BeforeEach(func() {
-			fakeEngine = BadPodmanEngine{}
-			podmanEngine = fakeEngine
-		})
-		Context("When PodMan throws an error", func() {
-			It("should fail Validate and return an error", func() {
-				ok, err := baseOnUbiCheck.Validate("dummy/image")
-				Expect(err).To(HaveOccurred())
-				Expect(ok).To(BeFalse())
-			})
-		})
-	})
+	checkPodmanErrors(&baseOnUbiCheck)()
 })
