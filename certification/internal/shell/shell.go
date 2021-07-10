@@ -9,8 +9,10 @@ import "github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 // at the test level.
 var (
 	podmanEngine cli.PodmanEngine
+	skopeoEngine cli.SkopeoEngine
 )
 
 func init() {
 	podmanEngine = PodmanCLIEngine{}
+	skopeoEngine = SkopeoCLIEngine{}
 }
