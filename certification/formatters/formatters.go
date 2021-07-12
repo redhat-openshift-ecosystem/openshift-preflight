@@ -14,22 +14,6 @@ type ResponseFormatter interface {
 	Format(runtime.Results) (response []byte, formattingError error)
 }
 
-// GenericFormatter represents a generic approach to formatting that implements the
-// ResponseFormatter interface. Can be leveraged to build a custom formatter quickly.
-type GenericFormatter struct {
-	Name          string
-	FormatterFunc FormatterFunc
-}
-
-// Name returns a string identification of the formatter that's in use.
-func (f *GenericFormatter) PrettyName() string {
-	return f.Name
-}
-
-func (f *GenericFormatter) Format(r runtime.Results) ([]byte, error) {
-	return f.FormatterFunc(r)
-}
-
 // FormatterFunc describes a function that formats the check validation
 // results.
 type FormatterFunc = func(runtime.Results) (response []byte, formattingError error)
@@ -58,7 +42,7 @@ func New(name string, fn FormatterFunc) (ResponseFormatter, error) {
 		)
 	}
 
-	gf := GenericFormatter{
+	gf := genericFormatter{
 		Name:          name,
 		FormatterFunc: fn,
 	}
@@ -66,11 +50,27 @@ func New(name string, fn FormatterFunc) (ResponseFormatter, error) {
 	return &gf, nil
 }
 
+// genericFormatter represents a generic approach to formatting that implements the
+// ResponseFormatter interface. Can be leveraged to build a custom formatter quickly.
+type genericFormatter struct {
+	Name          string
+	FormatterFunc FormatterFunc
+}
+
+// Name returns a string identification of the formatter that's in use.
+func (f *genericFormatter) PrettyName() string {
+	return f.Name
+}
+
+func (f *genericFormatter) Format(r runtime.Results) ([]byte, error) {
+	return f.FormatterFunc(r)
+}
+
 // availableFormatters maps configuration-friendly values to pretty representations
 // of the same value, and their corresponding Formatter included with this library.
 var availableFormatters = map[string]ResponseFormatter{
-	"json": &GenericFormatter{"Generic JSON", genericJSONFormatter},
-	"xml":  &GenericFormatter{"Generic XML", genericXMLFormatter},
+	"json": &genericFormatter{"Generic JSON", genericJSONFormatter},
+	"xml":  &genericFormatter{"Generic XML", genericXMLFormatter},
 }
 
 // AllFormats returns all formats and formatters made available by this library.
