@@ -69,9 +69,8 @@ func New(name string, fn FormatterFunc) (ResponseFormatter, error) {
 // availableFormatters maps configuration-friendly values to pretty representations
 // of the same value, and their corresponding Formatter included with this library.
 var availableFormatters = map[string]ResponseFormatter{
-	"json":     &GenericFormatter{"Generic JSON", genericJSONFormatter},
-	"xml":      &GenericFormatter{"Generic XML", genericXMLFormatter},
-	"junitxml": &GenericFormatter{"JUnit XML", junitXMLFormatter},
+	"json": &GenericFormatter{"Generic JSON", genericJSONFormatter},
+	"xml":  &GenericFormatter{"Generic XML", genericXMLFormatter},
 }
 
 // AllFormats returns all formats and formatters made available by this library.
