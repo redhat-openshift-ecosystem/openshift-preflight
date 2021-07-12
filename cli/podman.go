@@ -37,10 +37,16 @@ type ImageSaveOptions struct {
 type PodmanImage struct {
 	Id     string
 	Config PodmanImageConfig
+	RootFS PodmanRootFS
 }
 
 type PodmanImageConfig struct {
 	Labels map[string]string
+}
+
+type PodmanRootFS struct {
+	Type   string
+	Layers []string
 }
 
 type PodmanEngine interface {
