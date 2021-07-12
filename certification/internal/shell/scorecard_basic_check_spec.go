@@ -38,6 +38,15 @@ func (p *ScorecardBasicSpecCheck) Validate(bundleImage string) (bool, error) {
 	stdouterr, err := exec.Command("operator-sdk", "scorecard",
 		"--selector=test=basic-check-spec-test",
 		"--output", "json", bundleImage).CombinedOutput()
+	
+	// Scorecard expects K8s Cluster
+	lines := strings.Split(string(stdouterr), "Error:")
+
+	if strings.Contains(lines[len(lines)-1], "error running tests error creating ConfigMap configmaps is forbidden") {
+		log.Error("error running tests error creating ConfigMap configmaps is forbidden")
+        log.Debug("Make sure K8s cluster is configured.")
+		return false, err
+	}
 
 	scorecardFile := filepath.Join(artifactsDir, "/", scorecardBasicCheckResult)
 
