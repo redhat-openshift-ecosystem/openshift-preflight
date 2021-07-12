@@ -1,6 +1,6 @@
 package cmd
 
 var (
-	defaultOutputFormat = "junitxml"
+	defaultOutputFormat = "json"
 	defaultLogFile      = "preflight.log"
 )
