@@ -45,8 +45,8 @@ func initConfig() {
 	}
 
 	// Set up logging config defaults
-	viper.SetDefault("logfile", "preflight.log")
-	viper.SetDefault("loglevel", "warn")
+	viper.SetDefault("logfile", DefaultLogFile)
+	viper.SetDefault("loglevel", DefaultLogLevel)
 
 	// set up logging
 	logname := viper.GetString("logfile")
