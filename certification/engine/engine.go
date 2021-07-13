@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/shell"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 )
 
 type CheckEngine interface {
@@ -25,12 +26,11 @@ type ContainerFileManager interface {
 	ExtractContainerTar(path string) (tarballPath string, extractionErr error)
 	// GetContainerFromRegistry will accept a container location and write it locally
 	// as a tarball as done by `podman save`
-	GetContainerFromRegistry(containerLoc string) (containerDownloadPath string, containerDownloadErro error)
+	GetContainerFromRegistry(podmanEngine cli.PodmanEngine, containerLoc string) (containerDownloadPath string, containerDownloadErro error)
 }
 
 type CheckRunner interface {
 	ExecuteChecks()
-	// StoreChecks(...[]certification.Check)
 	Results() runtime.Results
 }
 
@@ -42,8 +42,8 @@ func NewForConfig(config runtime.Config) (CheckRunner, error) {
 
 	checks := make([]certification.Check, len(config.EnabledChecks))
 	for i, checkString := range config.EnabledChecks {
-		check, exists := nameToChecksMap[checkString]
-		if !exists {
+		check := queryChecks(checkString)
+		if check == nil {
 			err := fmt.Errorf("%w: %s",
 				errors.ErrRequestedCheckNotFound,
 				checkString)
@@ -61,6 +61,23 @@ func NewForConfig(config runtime.Config) (CheckRunner, error) {
 	return engine, nil
 }
 
+// queryChecks queries Operator and Container checks by name, and return certification.Check
+// if found; nil otherwise
+func queryChecks(checkName string) certification.Check {
+	// query Operator checks
+	check, exists := operatorPolicy[checkName]
+	if exists {
+		return check
+	}
+	// if not found in Operator Policy, query container policy
+	check, exists = containerPolicy[checkName]
+	if exists {
+		return check
+	}
+
+	return nil
+}
+
 // Register all checks
 var runAsNonRootCheck certification.Check = &shell.RunAsNonRootCheck{}
 var underLayerMaxCheck certification.Check = &shell.UnderLayerMaxCheck{}
@@ -74,24 +91,7 @@ var validateOperatorBundle certification.Check = &shell.ValidateOperatorBundlePo
 var scorecardBasicSpecCheck certification.Check = &shell.ScorecardBasicSpecCheck{}
 var scorecardOlmSuiteCheck certification.Check = &shell.ScorecardOlmSuiteCheck{}
 
-var nameToChecksMap = map[string]certification.Check{
-	// NOTE(komish): these checks do not all apply to bundles, which is the current
-	// scope. Eventually, I expect we'll split out container checks to their
-	// on map and pass it to the CheckEngine when the right cobra command is invoked.
-	runAsNonRootCheck.Name():              runAsNonRootCheck,
-	underLayerMaxCheck.Name():             underLayerMaxCheck,
-	hasRequiredLabelCheck.Name():          hasRequiredLabelCheck,
-	basedOnUbiCheck.Name():                basedOnUbiCheck,
-	hasLicenseCheck.Name():                hasLicenseCheck,
-	hasMinimalVulnerabilitiesCheck.Name(): hasMinimalVulnerabilitiesCheck,
-	hasUniqueTagCheck.Name():              hasUniqueTagCheck,
-	hasNoProhibitedCheck.Name():           hasNoProhibitedCheck,
-	validateOperatorBundle.Name():         validateOperatorBundle,
-	scorecardBasicSpecCheck.Name():        scorecardBasicSpecCheck,
-	scorecardOlmSuiteCheck.Name():         scorecardOlmSuiteCheck,
-}
-
-var containerPolicyChecks = map[string]certification.Check{
+var containerPolicy = map[string]certification.Check{
 	runAsNonRootCheck.Name():              runAsNonRootCheck,
 	underLayerMaxCheck.Name():             underLayerMaxCheck,
 	hasRequiredLabelCheck.Name():          hasRequiredLabelCheck,
@@ -102,7 +102,7 @@ var containerPolicyChecks = map[string]certification.Check{
 	hasNoProhibitedCheck.Name():           hasNoProhibitedCheck,
 }
 
-var operatorPolicyChecks = map[string]certification.Check{
+var operatorPolicy = map[string]certification.Check{
 	validateOperatorBundle.Name():  validateOperatorBundle,
 	scorecardBasicSpecCheck.Name(): scorecardBasicSpecCheck,
 	scorecardOlmSuiteCheck.Name():  scorecardOlmSuiteCheck,
@@ -120,14 +120,10 @@ func makeCheckList(checkMap map[string]certification.Check) []string {
 	return checks
 }
 
-func AllChecks() []string {
-	return makeCheckList(nameToChecksMap)
-}
-
 func OperatorPolicy() []string {
-	return makeCheckList(operatorPolicyChecks)
+	return makeCheckList(operatorPolicy)
 }
 
 func ContainerPolicy() []string {
-	return makeCheckList(containerPolicyChecks)
+	return makeCheckList(containerPolicy)
 }

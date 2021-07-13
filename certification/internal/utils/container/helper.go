@@ -34,7 +34,7 @@ func ExtractContainerTar(tarball string) (string, error) {
 	return outputDir, nil
 }
 
-func GetContainerFromRegistry(imageLoc string) (string, error) {
+func GetContainerFromRegistry(podmanEngine cli.PodmanEngine, imageLoc string) (string, error) {
 	pullReport, err := podmanEngine.Pull(imageLoc, cli.ImagePullOptions{})
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", errors.ErrGetRemoteContainerFailed, err)
