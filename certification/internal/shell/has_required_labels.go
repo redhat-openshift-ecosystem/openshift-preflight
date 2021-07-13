@@ -50,8 +50,8 @@ func (p *HasRequiredLabelsCheck) Name() string {
 
 func (p *HasRequiredLabelsCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Checking if the container's base image is based on UBI",
-		Level:            "best",
+		Description:      "Checking if the required labels are present in the container metadata.",
+		Level:            "good",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 	}
@@ -59,7 +59,7 @@ func (p *HasRequiredLabelsCheck) Metadata() certification.Metadata {
 
 func (p *HasRequiredLabelsCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "It is recommened that your image be based upon the Red Hat Universal Base Image (UBI)",
-		Suggestion: "Change the FROM directive in your Dockerfile or Containerfile to FROM registry.access.redhat.com/ubi8/ubi",
+		Message:    "Container images must include the following metadata: name, vendor, version, release, summary, description",
+		Suggestion: "Add the following labels to your Dockerfile or Containerfile: name, vendor, version, release, summary, description",
 	}
 }
