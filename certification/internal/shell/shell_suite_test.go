@@ -21,18 +21,21 @@ func init() {
 }
 
 var (
-	originalPodmanEngine cli.PodmanEngine
-	originalSkopeoEngine cli.SkopeoEngine
+	originalPodmanEngine      cli.PodmanEngine
+	originalSkopeoEngine      cli.SkopeoEngine
+	originalOperatorSdkEngine cli.OperatorSdkEngine
 )
 
 var _ = BeforeSuite(func() {
 	originalPodmanEngine = podmanEngine
 	originalSkopeoEngine = skopeoEngine
+	originalOperatorSdkEngine = operatorSdkEngine
 })
 
 var _ = AfterSuite(func() {
 	podmanEngine = originalPodmanEngine
 	skopeoEngine = originalSkopeoEngine
+	operatorSdkEngine = originalOperatorSdkEngine
 })
 
 /*
@@ -141,4 +144,27 @@ func (bse BadSkopeoEngine) ListTags(string) (*cli.SkopeoListTagsReport, error) {
 		Tags:   []string{""},
 	}
 	return &skopeoReport, errors.New("the Skopeo ListTags has failed")
+}
+
+/*
+------------------- Operator Sdk Engine -------------------
+*/
+
+type FakeOperatorSdkEngine struct {
+	OperatorSdkReport cli.OperatorSdkScorecardReport
+}
+
+func (fose FakeOperatorSdkEngine) Scorecard(bundleImage string, opts cli.OperatorSdkScorecardOptions) (*cli.OperatorSdkScorecardReport, error) {
+	return &fose.OperatorSdkReport, nil
+}
+
+type BadOperatorSdkEngine struct{}
+
+func (bose BadOperatorSdkEngine) Scorecard(bundleImage string, opts cli.OperatorSdkScorecardOptions) (*cli.OperatorSdkScorecardReport, error) {
+	operatorSdkReport := cli.OperatorSdkScorecardReport{
+		Stdout: "Bad Stdout",
+		Stderr: "Bad Stderr",
+		Items:  []cli.OperatorSdkScorecardItem{},
+	}
+	return &operatorSdkReport, errors.New("the Operator Sdk Scorecard has failed")
 }
