@@ -10,7 +10,13 @@ import (
 // ResponseFormatter describes the expected methods a formatter
 // must implement.
 type ResponseFormatter interface {
+	// PrettyName is the name used to represent this formatter.
 	PrettyName() string
+	// FileExtension represents the file extension one might use when creating
+	// a file with the contents of this formatter.
+	FileExtension() string
+	// Format takes Results, formats it as needed, and returns the formatted
+	// results ready to write as a byte slice.
 	Format(runtime.Results) (response []byte, formattingError error)
 }
 
@@ -34,7 +40,7 @@ func NewForConfig(cfg runtime.Config) (ResponseFormatter, error) {
 }
 
 // New returns a new formatter with the provided name and FormatterFunc.
-func New(name string, fn FormatterFunc) (ResponseFormatter, error) {
+func New(name, extension string, fn FormatterFunc) (ResponseFormatter, error) {
 	if len(name) == 0 {
 		return nil, fmt.Errorf(
 			"failed to create a new generic formatter: %w",
@@ -43,8 +49,9 @@ func New(name string, fn FormatterFunc) (ResponseFormatter, error) {
 	}
 
 	gf := genericFormatter{
-		Name:          name,
-		FormatterFunc: fn,
+		name:          name,
+		formatterFunc: fn,
+		fileExtension: extension,
 	}
 
 	return &gf, nil
@@ -53,35 +60,27 @@ func New(name string, fn FormatterFunc) (ResponseFormatter, error) {
 // genericFormatter represents a generic approach to formatting that implements the
 // ResponseFormatter interface. Can be leveraged to build a custom formatter quickly.
 type genericFormatter struct {
-	Name          string
-	FormatterFunc FormatterFunc
+	name          string
+	fileExtension string
+	formatterFunc FormatterFunc
 }
 
 // Name returns a string identification of the formatter that's in use.
 func (f *genericFormatter) PrettyName() string {
-	return f.Name
+	return f.name
 }
 
 func (f *genericFormatter) Format(r runtime.Results) ([]byte, error) {
-	return f.FormatterFunc(r)
+	return f.formatterFunc(r)
+}
+
+func (f *genericFormatter) FileExtension() string {
+	return f.fileExtension
 }
 
 // availableFormatters maps configuration-friendly values to pretty representations
 // of the same value, and their corresponding Formatter included with this library.
 var availableFormatters = map[string]ResponseFormatter{
-	"json": &genericFormatter{"Generic JSON", genericJSONFormatter},
-	"xml":  &genericFormatter{"Generic XML", genericXMLFormatter},
-}
-
-// AllFormats returns all formats and formatters made available by this library.
-func AllFormats() []string {
-	all := make([]string, len(availableFormatters))
-	i := 0
-
-	for k := range availableFormatters {
-		all[i] = k
-		i++
-	}
-
-	return all
+	"json": &genericFormatter{"Generic JSON", "json", genericJSONFormatter},
+	"xml":  &genericFormatter{"Generic XML", "xml", genericXMLFormatter},
 }

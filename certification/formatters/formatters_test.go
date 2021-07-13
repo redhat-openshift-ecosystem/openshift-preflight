@@ -1,11 +1,9 @@
-package formatters_test
+package formatters
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/cmd"
 )
 
 var _ = Describe("Formatters", func() {
@@ -16,7 +14,7 @@ var _ = Describe("Formatters", func() {
 			}
 
 			It("should return a formatter and no error", func() {
-				formatter, err := formatters.NewForConfig(cfg)
+				formatter, err := NewForConfig(cfg)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(formatter).ToNot(BeNil())
 			})
@@ -28,7 +26,7 @@ var _ = Describe("Formatters", func() {
 			}
 
 			It("should return an error", func() {
-				formatter, err := formatters.NewForConfig(cfg)
+				formatter, err := NewForConfig(cfg)
 
 				Expect(err).To(HaveOccurred())
 				Expect(formatter).To(BeNil())
@@ -40,11 +38,12 @@ var _ = Describe("Formatters", func() {
 		Context("with proper arguments", func() {
 			var expectedResult []byte = []byte("this is a test")
 			var name string = "testFormatter"
-			var fn formatters.FormatterFunc = func(runtime.Results) ([]byte, error) {
+			var extension string = "txt"
+			var fn FormatterFunc = func(runtime.Results) ([]byte, error) {
 				return expectedResult, nil
 			}
 
-			formatter, err := formatters.New(name, fn)
+			formatter, err := New(name, extension, fn)
 			It("should not return an error", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(formatter).ToNot(BeNil())
@@ -59,25 +58,6 @@ var _ = Describe("Formatters", func() {
 			It("should be identifiable as the provided name", func() {
 				Expect(formatter.PrettyName()).To(Equal(name))
 			})
-		})
-	})
-
-	Describe("When querying all supported formats", func() {
-		all := formatters.AllFormats()
-		It("should support at least one format", func() {
-			Expect(len(all)).ToNot(BeZero())
-		})
-
-		It("should support the default format", func() {
-			var exists = false
-			for _, format := range all {
-				if format == cmd.DefaultOutputFormat {
-					exists = true
-					break
-				}
-			}
-
-			Expect(exists).To(BeTrue())
 		})
 	})
 })
