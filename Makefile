@@ -29,3 +29,7 @@ test:
 .PHONY: vet
 vet:
 	go vet ./...
+
+.PHONY: test-e2e
+test-e2e:
+	go test -v ./test/e2e/ 
