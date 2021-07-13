@@ -49,9 +49,15 @@ type PodmanRootFS struct {
 	Layers []string
 }
 
+type ImageScanReport struct {
+	Stdout string
+	Stderr string
+}
+
 type PodmanEngine interface {
 	InspectImage(rawImage string, opts ImageInspectOptions) (*ImageInspectReport, error)
 	Pull(rawImage string, opts ImagePullOptions) (*ImagePullReport, error)
 	Run(opts ImageRunOptions) (*ImageRunReport, error)
 	Save(nameOrID string, tags []string, opts ImageSaveOptions) error
+	ScanImage(image string) (*ImageScanReport, error)
 }

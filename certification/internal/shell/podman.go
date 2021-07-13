@@ -4,10 +4,22 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
+	log "github.com/sirupsen/logrus"
+)
+
+const (
+	ovalFilename = "rhel-8.oval.xml.bz2"
+	ovalUrl      = "https://www.redhat.com/security/data/oval/v2/RHEL8/"
+	reportFile   = "vuln.html"
 )
 
 type PodmanCLIEngine struct{}
@@ -67,4 +79,60 @@ func (pe PodmanCLIEngine) InspectImage(rawImage string, opts cli.ImageInspectOpt
 		return nil, fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
 	}
 	return &cli.ImageInspectReport{Images: inspectData}, nil
+}
+
+// ScanImage takes the `image` and runs `oscap-podman` against the image.
+// It also saves results to the vuln.html file in the current directory,
+// for the end users' reference.
+
+func (pe PodmanCLIEngine) ScanImage(image string) (*cli.ImageScanReport, error) {
+	ovalFileUrl := fmt.Sprintf("%s%s", ovalUrl, ovalFilename)
+	dir, err := ioutil.TempDir(".", "oval-")
+
+	if err != nil {
+		log.Error("Unable to create temp dir", err)
+		return nil, err
+	}
+	log.Debugf("Oval file dir: %s", dir)
+	defer os.RemoveAll(dir)
+
+	ovalFilePath := filepath.Join(dir, ovalFilename)
+	log.Debugf("Oval file path: %s", ovalFilePath)
+
+	err = file.DownloadFile(ovalFilePath, ovalFileUrl)
+	if err != nil {
+		log.Error("Unable to download Oval file", err)
+		return nil, err
+	}
+	// get the file name
+	r := regexp.MustCompile(`(?P<filename>.*).bz2`)
+	ovalFilePathDecompressed := filepath.Join(dir, r.FindStringSubmatch(ovalFilename)[1])
+
+	err = file.Unzip(ovalFilePath, ovalFilePathDecompressed)
+	if err != nil {
+		log.Error("Unable to unzip Oval file: ", err)
+		return nil, err
+	}
+
+	// run oscap-podman command and save the report to vuln.html
+	cmd := exec.Command("oscap-podman", image, "oval", "eval", "--report", reportFile, ovalFilePathDecompressed)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+
+	if err != nil {
+		log.Error("unable to execute oscap-podman on the image: ", cmd.Stderr, reportFile)
+		return nil, err
+	}
+	// get the current directory
+	path, err := os.Getwd()
+	if err != nil {
+		log.Error("unable to get the current directory: ", err)
+	}
+
+	log.Debugf("The path to vulnerability report: %s/%s ", path, reportFile)
+
+	return &cli.ImageScanReport{Stdout: out.String(), Stderr: stderr.String()}, nil
 }
