@@ -8,11 +8,13 @@ import "github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 // Create a package-level podmanEngine variable, that can be overridden
 // at the test level.
 var (
-	podmanEngine cli.PodmanEngine
-	skopeoEngine cli.SkopeoEngine
+	podmanEngine      cli.PodmanEngine
+	skopeoEngine      cli.SkopeoEngine
+	operatorSdkEngine cli.OperatorSdkEngine
 )
 
 func init() {
 	podmanEngine = PodmanCLIEngine{}
 	skopeoEngine = SkopeoCLIEngine{}
+	operatorSdkEngine = OperatorSdkCLIEngine{}
 }
