@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/shell"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
 var _ = Describe("TestPolicyEngine", func() {
@@ -30,6 +31,55 @@ var _ = Describe("TestPolicyEngine", func() {
 			It("should return nil", func() {
 				check := queryChecks("abc")
 				Expect(check).To(BeNil())
+			})
+		})
+	})
+})
+
+var _ = Describe("Engine Creation", func() {
+	Describe("When getting a new engine for a configuration", func() {
+		Context("with a valid configuration", func() {
+			cfg := runtime.Config{
+				Image:          "dummy/image",
+				EnabledChecks:  ContainerPolicy(),
+				ResponseFormat: "json",
+				LogFile:        "some.log",
+			}
+
+			It("should return an engine and no error", func() {
+				engine, err := NewForConfig(cfg)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(engine).ToNot(BeNil())
+			})
+		})
+
+		Context("with a configuration that has no checks", func() {
+			cfg := runtime.Config{
+				Image:          "dummy/image",
+				EnabledChecks:  []string{},
+				ResponseFormat: "json",
+				LogFile:        "some.log",
+			}
+
+			It("should return an error indicating no checks were provided", func() {
+				engine, err := NewForConfig(cfg)
+				Expect(err).To(HaveOccurred())
+				Expect(engine).To(BeNil())
+			})
+		})
+
+		Context("with a configuration that has an unknown check", func() {
+			cfg := runtime.Config{
+				Image:          "dummy/image",
+				EnabledChecks:  []string{"UnknownCheck"},
+				ResponseFormat: "json",
+				LogFile:        "some.log",
+			}
+
+			It("should return an error indicating no checks were provided", func() {
+				engine, err := NewForConfig(cfg)
+				Expect(err).To(HaveOccurred())
+				Expect(engine).To(BeNil())
 			})
 		})
 	})
