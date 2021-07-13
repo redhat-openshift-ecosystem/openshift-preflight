@@ -16,7 +16,12 @@ vuln.html
 bin
 preflight
 openshift-preflight
-preflight-*.log
+
+# Config files
+config.yaml
+
+# Log files
+*.log
 
 # Test binary, build with `go test -c`
 *.test

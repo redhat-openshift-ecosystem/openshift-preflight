@@ -43,7 +43,6 @@ var _ = Describe("Engine Creation", func() {
 				Image:          "dummy/image",
 				EnabledChecks:  ContainerPolicy(),
 				ResponseFormat: "json",
-				LogFile:        "some.log",
 			}
 
 			It("should return an engine and no error", func() {
@@ -58,7 +57,6 @@ var _ = Describe("Engine Creation", func() {
 				Image:          "dummy/image",
 				EnabledChecks:  []string{},
 				ResponseFormat: "json",
-				LogFile:        "some.log",
 			}
 
 			It("should return an error indicating no checks were provided", func() {
@@ -73,7 +71,6 @@ var _ = Describe("Engine Creation", func() {
 				Image:          "dummy/image",
 				EnabledChecks:  []string{"UnknownCheck"},
 				ResponseFormat: "json",
-				LogFile:        "some.log",
 			}
 
 			It("should return an error indicating no checks were provided", func() {
