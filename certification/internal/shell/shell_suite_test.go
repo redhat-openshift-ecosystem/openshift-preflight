@@ -21,16 +21,23 @@ func init() {
 }
 
 var (
-	originalEngine cli.PodmanEngine
+	originalPodmanEngine cli.PodmanEngine
+	originalSkopeoEngine cli.SkopeoEngine
 )
 
 var _ = BeforeSuite(func() {
-	originalEngine = podmanEngine
+	originalPodmanEngine = podmanEngine
+	originalSkopeoEngine = skopeoEngine
 })
 
 var _ = AfterSuite(func() {
-	podmanEngine = originalEngine
+	podmanEngine = originalPodmanEngine
+	skopeoEngine = originalSkopeoEngine
 })
+
+/*
+------------------- Podman Engine ---------------------
+*/
 
 // This struct is meant to implement cli.PodmanEngine
 // It is used for unit testing, allowing the package-level
@@ -90,4 +97,34 @@ func (bpe BadPodmanEngine) Save(nameOrID string, tags []string, opts cli.ImageSa
 
 func (bpe BadPodmanEngine) InspectImage(rawImage string, opts cli.ImageInspectOptions) (*cli.ImageInspectReport, error) {
 	return nil, errors.New("the Podman Inspect Image has failed")
+}
+
+/*
+------------------- Skopeo Engine ---------------------
+*/
+
+type FakeSkopeoEngine struct {
+	SkopeoReportStdout string
+	SkopeoReportStderr string
+	Tags               []string
+}
+
+func (fse FakeSkopeoEngine) ListTags(image string) (*cli.SkopeoListTagsReport, error) {
+	skopeoReport := cli.SkopeoListTagsReport{
+		Stdout: fse.SkopeoReportStdout,
+		Stderr: fse.SkopeoReportStderr,
+		Tags:   fse.Tags,
+	}
+	return &skopeoReport, nil
+}
+
+type BadSkopeoEngine struct{}
+
+func (bse BadSkopeoEngine) ListTags(string) (*cli.SkopeoListTagsReport, error) {
+	skopeoReport := cli.SkopeoListTagsReport{
+		Stdout: "Bad Stdout",
+		Stderr: "Bad stderr",
+		Tags:   []string{""},
+	}
+	return &skopeoReport, errors.New("the Skopeo ListTags has failed")
 }
