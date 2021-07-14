@@ -36,11 +36,13 @@ func (o OperatorSdkCLIEngine) Scorecard(image string, opts cli.OperatorSdkScorec
 	}
 
 	cmd := exec.Command("operator-sdk", cmdArgs...)
+	log.Trace("running scorecard with the following invocation", cmd.Args)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err = cmd.Run()
 	if err != nil {
+		log.Error("stderr: ", stderr.String())
 		return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkScorecardFailed, err)
 	}
 
