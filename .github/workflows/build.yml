@@ -29,11 +29,11 @@ jobs:
       id: push-image
       uses: redhat-actions/push-to-registry@v2
       with:
-        image: ${{ steps.build-image.outputs.image }}
+        image: preflight
         tags: ${{ steps.build-image.outputs.tags }}
         registry: ${{ env.IMAGE_REGISTRY }}
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
     - name: Print image url
-      run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
+      run: echo "Image pushed to ${{ steps.push-image.outputs.registry-paths }}"
