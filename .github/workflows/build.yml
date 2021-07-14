@@ -1,0 +1,39 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  release:
+    types: [ published, created, edited ]
+
+jobs:
+  build:
+    name: Build and push image
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_REGISTRY: quay.io/opdev
+      RELEASE_TAG: "0.0.0"
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build Image
+      id: build-image
+      uses: redhat-actions/buildah-build@v2
+      with:
+        image: ${{ env.IMAGE_REGISTRY }}/preflight
+        tags: ${{ github.sha }} ${{ env.RELEASE_TAG }}
+        dockerfiles: |
+          ./Dockerfile
+
+    - name: Push Image
+      id: push-image
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: ${{ steps.build-image.outputs.image }}
+        tags: ${{ steps.build-image.outputs.tags }}
+        registry: ${{ env.IMAGE_REGISTRY }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+
+    - name: Print image url
+      run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
