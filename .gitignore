@@ -26,6 +26,9 @@ config.yaml
 # Test binary, build with `go test -c`
 *.test
 
+# Testing dirs
+artifacts
+
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
