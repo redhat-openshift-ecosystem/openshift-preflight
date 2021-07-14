@@ -38,9 +38,11 @@ func initConfig() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
+
+	configFileUsed := true
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Info("Config file not found.  Proceeding without it.")
+			configFileUsed = false
 		}
 	}
 
@@ -57,9 +59,12 @@ func initConfig() {
 	} else {
 		log.Info("Failed to log to file, using default stderr")
 	}
-
-	log.SetFormatter(&log.TextFormatter{})
 	if ll, err := log.ParseLevel(viper.GetString("loglevel")); err == nil {
 		log.SetLevel(ll)
+	}
+
+	log.SetFormatter(&log.TextFormatter{})
+	if !configFileUsed {
+		log.Info("config file not found, proceeding without it")
 	}
 }
