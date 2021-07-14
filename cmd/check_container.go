@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
@@ -43,16 +44,35 @@ var checkContainerCmd = &cobra.Command{
 			return err
 		}
 
+		// create the results file early to catch cases where we are not
+		// able to write to the filesystem before we attempt to execute checks.
+		resultsFile, err := os.OpenFile(
+			resultsFilenameWithExtension(formatter.FileExtension()),
+			os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
+			0600,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		// also write to stdout
+		resultsOutputTarget := io.MultiWriter(os.Stdout, resultsFile)
+
+		// execute the checks
 		engine.ExecuteChecks()
 		results := engine.Results()
 
-		// return results to the user
+		// return results to the user and then close output files
 		formattedResults, err := formatter.Format(results)
 		if err != nil {
 			return err
 		}
 
-		fmt.Fprint(os.Stdout, string(formattedResults))
+		fmt.Fprint(resultsOutputTarget, string(formattedResults))
+		if err := resultsFile.Close(); err != nil {
+			return err
+		}
 
 		return nil
 	},
