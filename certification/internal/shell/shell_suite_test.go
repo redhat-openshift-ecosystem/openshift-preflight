@@ -48,6 +48,7 @@ type FakePodmanEngine struct {
 	RunReportStderr     string
 	PullReportStdouterr string
 	ImageInspectReport  cli.ImageInspectReport
+	ImageScanReport     cli.ImageScanReport
 }
 
 func (fpe FakePodmanEngine) Run(opts cli.ImageRunOptions) (*cli.ImageRunReport, error) {
@@ -72,6 +73,10 @@ func (fpe FakePodmanEngine) Save(nameOrID string, tags []string, opts cli.ImageS
 
 func (fpe FakePodmanEngine) InspectImage(rawImage string, opts cli.ImageInspectOptions) (*cli.ImageInspectReport, error) {
 	return &fpe.ImageInspectReport, nil
+}
+
+func (fpe FakePodmanEngine) ScanImage(rawImage string) (*cli.ImageScanReport, error) {
+	return &fpe.ImageScanReport, nil
 }
 
 type BadPodmanEngine struct{}
@@ -99,6 +104,10 @@ func (bpe BadPodmanEngine) InspectImage(rawImage string, opts cli.ImageInspectOp
 	return nil, errors.New("the Podman Inspect Image has failed")
 }
 
+func (bpe BadPodmanEngine) ScanImage(rawImage string) (*cli.ImageScanReport, error) {
+	return nil, errors.New("the Podman Scan Image has failed")
+}
+
 /*
 ------------------- Skopeo Engine ---------------------
 */
@@ -107,6 +116,11 @@ type FakeSkopeoEngine struct {
 	SkopeoReportStdout string
 	SkopeoReportStderr string
 	Tags               []string
+}
+
+type SkopeoData struct {
+	Repository string
+	Tags       []string
 }
 
 func (fse FakeSkopeoEngine) ListTags(image string) (*cli.SkopeoListTagsReport, error) {
