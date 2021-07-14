@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
@@ -57,6 +58,45 @@ func (o OperatorSdkCLIEngine) Scorecard(image string, opts cli.OperatorSdkScorec
 	scorecardData.Stdout = stdout.String()
 	scorecardData.Stderr = stderr.String()
 	return &scorecardData, nil
+}
+
+func (o OperatorSdkCLIEngine) BundleValidate(image string, opts cli.OperatorSdkBundleValidateOptions) (*cli.OperatorSdkBundleValidateReport, error) {
+	cmdArgs := []string{"bundle", "validate"}
+	if opts.OutputFormat == "" {
+		opts.OutputFormat = "json-alpha1"
+	}
+	cmdArgs = append(cmdArgs, "--output", opts.OutputFormat)
+	if opts.Selector != nil {
+		for _, selector := range opts.Selector {
+			cmdArgs = append(cmdArgs, "--select-optional", fmt.Sprintf("name=%s", selector))
+		}
+	}
+	cmdArgs = append(cmdArgs, image)
+
+	cmd := exec.Command("operator-sdk", cmdArgs...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkBundleValidateFailed, err)
+	}
+
+	var bundleValidateData cli.OperatorSdkBundleValidateReport
+	if strings.Contains(opts.OutputFormat, "json") {
+		err = json.Unmarshal(stdout.Bytes(), &bundleValidateData)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkBundleValidateFailed, err)
+		}
+	} else {
+		if strings.Contains(stdout.String(), "ERRO") || strings.Contains(stdout.String(), "FATA") {
+			bundleValidateData.Passed = false
+		}
+	}
+	bundleValidateData.Stdout = stdout.String()
+	bundleValidateData.Stderr = stderr.String()
+
+	return &bundleValidateData, nil
 }
 
 func (o OperatorSdkCLIEngine) writeScorecardFile(artifactsDir, resultFile, stdout string) error {

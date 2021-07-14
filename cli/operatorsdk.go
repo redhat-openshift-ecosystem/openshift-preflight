@@ -27,6 +27,26 @@ type OperatorSdkScorecardResult struct {
 	State string `json:"state"`
 }
 
+type OperatorSdkBundleValidateOptions struct {
+	LogLevel         string
+	ContainerEnginer string
+	Selector         []string
+	OutputFormat     string
+}
+
+type OperatorSdkBundleValidateReport struct {
+	Stdout  string
+	Stderr  string
+	Passed  bool                              `json:"passed"`
+	Outputs []OperatorSdkBundleValidateOutput `json:"outputs"`
+}
+
+type OperatorSdkBundleValidateOutput struct {
+	Type    string `json:"type"`
+	Message string `json:"message"`
+}
+
 type OperatorSdkEngine interface {
 	Scorecard(image string, opts OperatorSdkScorecardOptions) (*OperatorSdkScorecardReport, error)
+	BundleValidate(image string, opts OperatorSdkBundleValidateOptions) (*OperatorSdkBundleValidateReport, error)
 }

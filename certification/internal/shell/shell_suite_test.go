@@ -151,11 +151,16 @@ func (bse BadSkopeoEngine) ListTags(string) (*cli.SkopeoListTagsReport, error) {
 */
 
 type FakeOperatorSdkEngine struct {
-	OperatorSdkReport cli.OperatorSdkScorecardReport
+	OperatorSdkReport   cli.OperatorSdkScorecardReport
+	OperatorSdkBVReport cli.OperatorSdkBundleValidateReport
 }
 
 func (fose FakeOperatorSdkEngine) Scorecard(bundleImage string, opts cli.OperatorSdkScorecardOptions) (*cli.OperatorSdkScorecardReport, error) {
 	return &fose.OperatorSdkReport, nil
+}
+
+func (fose FakeOperatorSdkEngine) BundleValidate(bundleImage string, opts cli.OperatorSdkBundleValidateOptions) (*cli.OperatorSdkBundleValidateReport, error) {
+	return &fose.OperatorSdkBVReport, nil
 }
 
 type BadOperatorSdkEngine struct{}
@@ -167,4 +172,14 @@ func (bose BadOperatorSdkEngine) Scorecard(bundleImage string, opts cli.Operator
 		Items:  []cli.OperatorSdkScorecardItem{},
 	}
 	return &operatorSdkReport, errors.New("the Operator Sdk Scorecard has failed")
+}
+
+func (bose BadOperatorSdkEngine) BundleValidate(bundleImage string, opts cli.OperatorSdkBundleValidateOptions) (*cli.OperatorSdkBundleValidateReport, error) {
+	operatorSdkReport := cli.OperatorSdkBundleValidateReport{
+		Stdout:  "Bad Stdout",
+		Stderr:  "Bad Stderr",
+		Passed:  false,
+		Outputs: []cli.OperatorSdkBundleValidateOutput{},
+	}
+	return &operatorSdkReport, errors.New("the Operator Sdk Bundle Validate has failed")
 }
