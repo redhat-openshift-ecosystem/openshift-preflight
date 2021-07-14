@@ -42,8 +42,18 @@ func (o OperatorSdkCLIEngine) Scorecard(image string, opts cli.OperatorSdkScorec
 	cmd.Stderr = &stderr
 	err = cmd.Run()
 	if err != nil {
-		log.Error("stderr: ", stderr.String())
-		return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkScorecardFailed, err)
+		// This is a workaround due to operator-sdk scorecard always returning a 1 exit code
+		// whether a test failed or the tool encountered a fatal error.
+		//
+		// Until resolved, we are concluding/assuming that non-zero exit codes with len(stderr) == 0
+		// means that we failed a test, but the command execution succeeded.
+		//
+		// We also conclude/assume that anything being in stderr would indicate an error in the
+		// check execution itself.
+		if stderr.Len() != 0 {
+			log.Error("stderr: ", stdout.String())
+			return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkScorecardFailed, err)
+		}
 	}
 
 	err = o.writeScorecardFile(artifactsDir, opts.ResultFile, stdout.String())
