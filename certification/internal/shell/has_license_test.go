@@ -14,25 +14,25 @@ var _ = Describe("HasLicense", func() {
 
 	BeforeEach(func() {
 		fakeEngine = FakePodmanEngine{
-			RunReportStdout: `/licenses`,
+			RunReportStdout: "license\n",
 			RunReportStderr: "",
 		}
 	})
-	Describe("Checking if license can be found", func() {
-		Context("When license is found", func() {
+	Describe("Checking if licenses can be found", func() {
+		Context("When license(s) are found", func() {
 			BeforeEach(func() {
 				podmanEngine = fakeEngine
 			})
-			It("should pass Validate", func() {
+			It("Should pass Validate", func() {
 				ok, err := HasLicense.Validate("dummy/image")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
 		})
-		Context("When license is not found", func() {
+		Context("When licenses directory is not found", func() {
 			BeforeEach(func() {
 				engine := fakeEngine.(FakePodmanEngine)
-				engine.RunReportStdout = "No such file or directory"
+				engine.RunReportStdout = "stat: cannot stat '/licenses': No such file or directory"
 				podmanEngine = engine
 			})
 			It("Should not pass Validate", func() {
@@ -41,7 +41,7 @@ var _ = Describe("HasLicense", func() {
 				Expect(ok).To(BeFalse())
 			})
 		})
-		Context("License can't be found when directory exists", func() {
+		Context("Licenses can't be found when directory exists", func() {
 			BeforeEach(func() {
 				engine := fakeEngine.(FakePodmanEngine)
 				engine.RunReportStdout = ""
