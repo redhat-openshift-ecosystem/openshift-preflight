@@ -1,7 +1,6 @@
 package shell
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -31,9 +30,6 @@ func (p *HasUniqueTagCheck) getDataToValidate(image string) ([]string, error) {
 }
 
 func (p *HasUniqueTagCheck) validate(image string, tags []string) (bool, error) {
-
-	log.Debugf(fmt.Sprintf("detected these tags for %s: %s", strings.Split(image, ":")[0], tags))
-
 	// An image passes the check if:
 	// 1) it has more than one tag (`latest` is acceptable)
 	// OR
