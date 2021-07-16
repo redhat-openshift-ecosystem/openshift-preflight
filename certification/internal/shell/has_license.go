@@ -50,7 +50,7 @@ func (p *HasLicenseCheck) Name() string {
 
 func (p *HasLicenseCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Checking if terms and conditions for images are present.",
+		Description:      "Checking if terms and conditions applicable to the software including open source licensing information are present. The license must be at /licenses",
 		Level:            "best",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
@@ -59,7 +59,7 @@ func (p *HasLicenseCheck) Metadata() certification.Metadata {
 
 func (p *HasLicenseCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "Container images must include terms and conditions applicable to the software including open source licensing information. The license must be at /licenses",
+		Message:    "Check HasLicense encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Create a directory named /licenses and include all relevant licensing and/or terms and conditions as text file(s) in that directory.",
 	}
 }

@@ -43,7 +43,6 @@ func getResponse(r runtime.Results) UserResponse {
 				ElapsedTime: check.ElapsedTime.String(),
 				Description: check.Metadata().Description,
 				Help:        check.Help().Message,
-				Suggestion:  check.Help().Suggestion,
 			}
 		}
 	}

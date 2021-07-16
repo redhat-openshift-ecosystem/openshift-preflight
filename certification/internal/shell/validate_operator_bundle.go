@@ -38,7 +38,7 @@ func (p ValidateOperatorBundlePolicy) Name() string {
 
 func (p ValidateOperatorBundlePolicy) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Validating Bundle image",
+		Description:      "Validating Bundle image that checks if it can validate the content and format of the operator bundle",
 		Level:            "best",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
@@ -47,7 +47,7 @@ func (p ValidateOperatorBundlePolicy) Metadata() certification.Metadata {
 
 func (p ValidateOperatorBundlePolicy) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "Operator sdk validation test failed, this test checks if it can validate the content and format of the operator bundle",
+		Message:    "Check ValidateOperatorBundle encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Valid bundles are definied by bundle spec, so make sure that this bundle conforms to that spec. More Information: https://github.com/operator-framework/operator-registry/blob/master/docs/design/operator-bundle.md",
 	}
 }

@@ -62,7 +62,7 @@ func (p *BaseOnUBICheck) Name() string {
 
 func (p *BaseOnUBICheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Checking if the container's base image is based on UBI",
+		Description:      "Checking if the container's base image is based upon the Red Hat Universal Base Image (UBI)",
 		Level:            "best",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide", // Placeholder
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
@@ -71,7 +71,7 @@ func (p *BaseOnUBICheck) Metadata() certification.Metadata {
 
 func (p *BaseOnUBICheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "It is recommened that your image be based upon the Red Hat Universal Base Image (UBI)",
+		Message:    "Check BasedOnUbi encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Change the FROM directive in your Dockerfile or Containerfile to FROM registry.access.redhat.com/ubi8/ubi",
 	}
 }
