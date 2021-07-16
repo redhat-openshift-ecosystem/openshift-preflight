@@ -62,7 +62,7 @@ func (p *HasNoProhibitedPackagesCheck) Name() string {
 }
 func (p *HasNoProhibitedPackagesCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Checks to ensure that the image in use does not contain prohibited packages.",
+		Description:      "Checks to ensure that the image in use does not include prohibited packages, such as Red Hat Enterprise Linux (RHEL) kernel packages.",
 		Level:            "best",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
@@ -71,7 +71,7 @@ func (p *HasNoProhibitedPackagesCheck) Metadata() certification.Metadata {
 
 func (p *HasNoProhibitedPackagesCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "The container image should not include Red Hat Enterprise Linux (RHEL) kernel packages.",
+		Message:    "Check HasNoProhibitedPackages encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Remove any RHEL packages that are not distributable outside of UBI",
 	}
 }

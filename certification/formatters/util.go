@@ -39,10 +39,10 @@ func getResponse(r runtime.Results) UserResponse {
 	if len(r.Errors) > 0 {
 		for i, check := range r.Errors {
 			erroredChecks[i] = checkExecutionInfo{
-				Name:         check.Name(),
-				ElapsedTime:  check.ElapsedTime.String(),
-				Description:  check.Metadata().Description,
-				ErrorMessage: "Check " + check.Name() + " encountered an error. Please review the logs for more information",
+				Name:        check.Name(),
+				ElapsedTime: check.ElapsedTime.String(),
+				Description: check.Metadata().Description,
+				Help:        check.Help().Message,
 			}
 		}
 	}
@@ -80,5 +80,4 @@ type checkExecutionInfo struct {
 	Suggestion       string `json:"suggestion,omitempty" xml:"suggestion,omitempty"`
 	KnowledgeBaseURL string `json:"knowledgebase_url,omitempty" xml:"knowledgebase_url,omitempty"`
 	CheckURL         string `json:"check_url,omitempty" xml:"check_url,omitempty"`
-	ErrorMessage     string `json:"error_message,omitempty" xml:"error_message,omitempty"`
 }

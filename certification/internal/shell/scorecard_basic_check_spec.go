@@ -38,7 +38,7 @@ func (p *ScorecardBasicSpecCheck) Metadata() certification.Metadata {
 
 func (p *ScorecardBasicSpecCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "Operator-sdk scorecard basic spec check failed.",
+		Message:    "Check ScorecardBasicSpecCheck encountered an error. Please review the artifacts/operator_bundle_scorecard_BasicSpecCheck.json file for more information.",
 		Suggestion: "Make sure that all CRs have a spec block",
 	}
 }

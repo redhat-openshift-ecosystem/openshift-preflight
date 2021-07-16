@@ -62,7 +62,7 @@ func (p *RunAsNonRootCheck) Name() string {
 
 func (p *RunAsNonRootCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Checking if container runs as the root user",
+		Description:      "Checking if container runs as the root user because a container that does not specify a non-root user will fail the automatic certification, and will be subject to a manual review before the container can be approved for publication",
 		Level:            "best",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
@@ -71,7 +71,7 @@ func (p *RunAsNonRootCheck) Metadata() certification.Metadata {
 
 func (p *RunAsNonRootCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "A container that does not specify a non-root user will fail the automatic certification, and will be subject to a manual review before the container can be approved for publication",
+		Message:    "Check RunAsNonRoot encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Indicate a specific USER in the dockerfile or containerfile",
 	}
 }

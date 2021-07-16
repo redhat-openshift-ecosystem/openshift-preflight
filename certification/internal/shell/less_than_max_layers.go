@@ -44,7 +44,7 @@ func (p *UnderLayerMaxCheck) Name() string {
 
 func (p *UnderLayerMaxCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      fmt.Sprintf("Checking if container has less than %d layers", acceptableLayerMax),
+		Description:      fmt.Sprintf("Checking if container has less than %d layers.  Too many layers within the container images can degrade container performance.", acceptableLayerMax),
 		Level:            "better",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
@@ -53,7 +53,7 @@ func (p *UnderLayerMaxCheck) Metadata() certification.Metadata {
 
 func (p *UnderLayerMaxCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    fmt.Sprintf("Uncompressed container images should have less than %d layers. Too many layers within the container images can degrade container performance.", acceptableLayerMax),
+		Message:    "Check LayerCountAcceptable encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Optimize your Dockerfile to consolidate and minimize the number of layers. Each RUN command will produce a new layer. Try combining RUN commands using && where possible.",
 	}
 }

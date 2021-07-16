@@ -57,7 +57,7 @@ func (p *HasMinimalVulnerabilitiesCheck) Name() string {
 
 func (p *HasMinimalVulnerabilitiesCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Checking for critical or important security vulnerabilites.",
+		Description:      "Checking container image does not contain any critical or important security vulnerabilites, as defined at https://access.redhat.com/security/updates/classification.",
 		Level:            "good",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
@@ -66,7 +66,7 @@ func (p *HasMinimalVulnerabilitiesCheck) Metadata() certification.Metadata {
 
 func (p *HasMinimalVulnerabilitiesCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "Components in the container image cannot contain any critical or important vulnerabilities, as defined at https://access.redhat.com/security/updates/classification",
+		Message:    "Check HasMinimalVulnerabilities encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Update your UBI image to the latest version or update the packages in your image to the latest versions distrubuted by Red Hat.",
 	}
 }

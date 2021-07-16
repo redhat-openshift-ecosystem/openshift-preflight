@@ -29,7 +29,7 @@ func (p *ScorecardOlmSuiteCheck) Name() string {
 
 func (p *ScorecardOlmSuiteCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "OLM Test Suite Check",
+		Description:      "Operator-sdk scorecard OLM Test Suite Check",
 		Level:            "best",
 		KnowledgeBaseURL: "https://sdk.operatorframework.io/docs/advanced-topics/scorecard/scorecard/#overview", // Placeholder
 		CheckURL:         "https://sdk.operatorframework.io/docs/advanced-topics/scorecard/scorecard/#olm-test-suite",
@@ -38,7 +38,7 @@ func (p *ScorecardOlmSuiteCheck) Metadata() certification.Metadata {
 
 func (p *ScorecardOlmSuiteCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "Operator-sdk scorecard OLM Test Suite. One or more checks failed.",
+		Message:    "Check ScorecardOlmSuiteCheck encountered an error. Please review the artifacts/operator_bundle_scorecard_OlmSuiteCheck.json file for more information.",
 		Suggestion: "See scorecard output for details, artifacts/operator_bundle_scorecard_OlmSuiteCheck.json",
 	}
 }
