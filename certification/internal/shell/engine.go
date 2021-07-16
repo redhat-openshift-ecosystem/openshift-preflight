@@ -1,14 +1,17 @@
 package shell
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	containerutil "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/container"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	log "github.com/sirupsen/logrus"
 )
 
+// CheckEngine implements a CheckRunner.
 type CheckEngine struct {
 	Image  string
 	Checks []certification.Check
@@ -18,45 +21,33 @@ type CheckEngine struct {
 }
 
 // ExecuteChecks runs all checks stored in the check engine.
-func (e *CheckEngine) ExecuteChecks() {
+func (e *CheckEngine) ExecuteChecks() error {
 	log.Info("target image: ", e.Image)
+	// check if the image needs downloading
+	if !e.isDownloaded {
+		isRemote, err := e.ContainerIsRemote(e.Image)
+		if err != nil {
+			return fmt.Errorf("%w: %s", errors.ErrGetRemoteContainerFailed, err)
+		}
+
+		if isRemote {
+			log.Info("downloading image")
+
+			stdouterr, err := containerutil.GetContainerFromRegistry(podmanEngine, e.Image)
+			if err != nil {
+				return fmt.Errorf("%w: %s", err, stdouterr)
+			}
+			e.isDownloaded = true
+		}
+	}
+
 	for _, check := range e.Checks {
-		checkStartTime := time.Now()
 		e.results.TestedImage = e.Image
 		targetImage := e.Image
 
-		// check if the image needs downloading
-		if !e.isDownloaded {
-			isRemote, err := e.ContainerIsRemote(e.Image)
-			if err != nil {
-				log.Error("unable to determine if the image was remote: ", err)
-				e.results.Errors = append(e.results.Errors, runtime.Result{Check: check, ElapsedTime: time.Since(checkStartTime)})
-				continue
-			}
-
-			if isRemote {
-				log.Info("downloading image")
-
-				_, err := containerutil.GetContainerFromRegistry(podmanEngine, e.Image)
-				if err != nil {
-					log.Error("unable to pull the container from the registry: ", err)
-					e.results.Errors = append(e.results.Errors, runtime.Result{Check: check, ElapsedTime: time.Since(checkStartTime)})
-					continue
-				}
-				e.isDownloaded = true
-			}
-		}
-
-		// if we downloaded an image to disk, lets test against that.
-		// COMMENTED: tests aren't currently written to support this
-		// remove if we decide we do not care to have a tarball.
-		// if len(e.localImagePath) != 0 {
-		// 	targetImage = e.localImagePath
-		// }
-
 		log.Info("running check: ", check.Name())
 		// We want to know the time just for the check itself, so reset checkStartTime
-		checkStartTime = time.Now()
+		checkStartTime := time.Now()
 
 		// run the validation
 		passed, err := check.Validate(targetImage)
@@ -78,6 +69,8 @@ func (e *CheckEngine) ExecuteChecks() {
 		log.WithFields(log.Fields{"result": "PASSED"}).Info("check completed: ", check.Name())
 		e.results.Passed = append(e.results.Passed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 	}
+
+	return nil
 }
 
 // Results will return the results of check execution.
