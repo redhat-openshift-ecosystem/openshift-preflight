@@ -97,6 +97,7 @@ var hasNoProhibitedCheck certification.Check = &shell.HasNoProhibitedPackagesChe
 var validateOperatorBundle certification.Check = &shell.ValidateOperatorBundlePolicy{}
 var scorecardBasicSpecCheck certification.Check = &shell.ScorecardBasicSpecCheck{}
 var scorecardOlmSuiteCheck certification.Check = &shell.ScorecardOlmSuiteCheck{}
+var imageSourceRegistryCheck certification.Check = &shell.ImageSourceRegistryCheck{}
 
 var containerPolicy = map[string]certification.Check{
 	runAsNonRootCheck.Name():              runAsNonRootCheck,
@@ -113,6 +114,7 @@ var operatorPolicy = map[string]certification.Check{
 	validateOperatorBundle.Name():  validateOperatorBundle,
 	scorecardBasicSpecCheck.Name(): scorecardBasicSpecCheck,
 	scorecardOlmSuiteCheck.Name():  scorecardOlmSuiteCheck,
+	imageSourceRegistryCheck.Name(): imageSourceRegistryCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {
