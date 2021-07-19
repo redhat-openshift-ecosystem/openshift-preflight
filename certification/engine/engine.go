@@ -94,7 +94,7 @@ var hasLicenseCheck certification.Check = &shell.HasLicenseCheck{}
 var hasMinimalVulnerabilitiesCheck certification.Check = &shell.HasMinimalVulnerabilitiesCheck{}
 var hasUniqueTagCheck certification.Check = &shell.HasUniqueTagCheck{}
 var hasNoProhibitedCheck certification.Check = &shell.HasNoProhibitedPackagesCheck{}
-var validateOperatorBundle certification.Check = &shell.ValidateOperatorBundlePolicy{}
+var validateOperatorBundle certification.Check = &shell.ValidateOperatorBundleCheck{}
 var scorecardBasicSpecCheck certification.Check = &shell.ScorecardBasicSpecCheck{}
 var scorecardOlmSuiteCheck certification.Check = &shell.ScorecardOlmSuiteCheck{}
 
