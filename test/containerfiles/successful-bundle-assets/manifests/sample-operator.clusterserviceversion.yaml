@@ -29,11 +29,27 @@ spec:
       kind: MyKind
       name: mykinds.operators.my.domain
       version: v1alpha1
+      resources:
+       - kind: Pod
+         name: ''
+         version: v1
+      specDescriptors:
+        - description: Foo
+          displayName: Foo
+          path: foo
+          x-descriptors:
+            - 'urn:alm:descriptor'
+      statusDescriptors:
+        - description: Accepted names
+          displayName: Accepted Names
+          path: acceptedNames
+          x-descriptors:
+            - 'urn:alm:descriptor'
   description: Test operator that should pass operator validation
   displayName: Preflight Sample Operator
   icon:
-  - base64data: ""
-    mediatype: ""
+  - base64data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    mediatype: "image/png"
   install:
     spec:
       clusterPermissions:
