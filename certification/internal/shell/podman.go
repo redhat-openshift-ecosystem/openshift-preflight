@@ -27,7 +27,7 @@ type PodmanCLIEngine struct{}
 func (pe PodmanCLIEngine) Pull(rawImage string, opts cli.ImagePullOptions) (*cli.ImagePullReport, error) {
 	stdouterr, err := exec.Command("podman", "pull", rawImage).CombinedOutput()
 	if err != nil {
-		return nil, err
+		return &cli.ImagePullReport{StdoutErr: string(stdouterr)}, err
 	}
 
 	return &cli.ImagePullReport{StdoutErr: string(stdouterr)}, nil

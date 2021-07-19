@@ -29,8 +29,15 @@ type ContainerFileManager interface {
 	GetContainerFromRegistry(podmanEngine cli.PodmanEngine, containerLoc string) (containerDownloadPath string, containerDownloadErro error)
 }
 
+// CheckRunner defines the functonality necessary to run all checks for a policy,
+// and return the results of that check execution.
 type CheckRunner interface {
-	ExecuteChecks()
+	// ExecuteChecks should execute all checks in a policy and internally
+	// store the results. Errors returned by ExecuteChecks should reflect
+	// errors in pre-validation tasks, and not errors in individual check
+	// execution itself.
+	ExecuteChecks() error
+	// Results returns the outcome of executing all checks.
 	Results() runtime.Results
 }
 

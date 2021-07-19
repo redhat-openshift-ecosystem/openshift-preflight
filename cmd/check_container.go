@@ -60,7 +60,9 @@ var checkContainerCmd = &cobra.Command{
 		resultsOutputTarget := io.MultiWriter(os.Stdout, resultsFile)
 
 		// execute the checks
-		engine.ExecuteChecks()
+		if err := engine.ExecuteChecks(); err != nil {
+			return err
+		}
 		results := engine.Results()
 
 		// return results to the user and then close output files
