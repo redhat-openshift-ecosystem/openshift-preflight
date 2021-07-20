@@ -79,12 +79,20 @@ var checkOperatorCmd = &cobra.Command{
 }
 
 func init() {
-	checkOperatorCmd.SetUsageTemplate(
-		`Usage:
+	checks := engine.OperatorPolicy()
+	checkString := "\n"
+	for _, value := range checks {
+		checkString = checkString + "     - " + value + "\n"
+	}
+
+	usage := `The checks that will be executed are the following:`+
+	checkString+"\n"+
+	`Usage:
   preflight check operator <url to Operator bundle image> [flags]
 	
 Flags:
   -h, --help   help for operator
-`)
+`
+	checkOperatorCmd.SetUsageTemplate(usage)
 	checkCmd.AddCommand(checkOperatorCmd)
 }

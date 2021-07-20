@@ -81,12 +81,22 @@ var checkContainerCmd = &cobra.Command{
 }
 
 func init() {
-	checkContainerCmd.SetUsageTemplate(
-		`Usage:
+	checks := engine.ContainerPolicy()
+	checkString := "\n"
+	for _, value := range checks {
+		checkString = checkString + "     - " + value + "\n"
+	}
+
+   usage := `The checks that will be executed are the following:`+
+	checkString+"\n"+
+	`Usage:
   preflight check container <url to container image> [flags]
 	
 Flags:
   -h, --help   help for container
-`)
+`
+
+	checkContainerCmd.SetUsageTemplate(usage)
+
 	checkCmd.AddCommand(checkContainerCmd)
 }
