@@ -11,6 +11,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	passed string = "PASSED"
+	failed string = "FAILED"
+	err    string = "ERROR"
+)
+
 // CheckEngine implements a CheckRunner.
 type CheckEngine struct {
 	Image  string
@@ -55,19 +61,28 @@ func (e *CheckEngine) ExecuteChecks() error {
 		checkElapsedTime := time.Since(checkStartTime)
 
 		if err != nil {
-			log.WithFields(log.Fields{"result": "ERROR", "error": err.Error()}).Info("check completed: ", check.Name())
+			log.WithFields(log.Fields{"result": err, "error": err.Error()}).Info("check completed: ", check.Name())
 			e.results.Errors = append(e.results.Errors, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
 		if !passed {
-			log.WithFields(log.Fields{"result": "FAILED"}).Info("check completed: ", check.Name())
+			log.WithFields(log.Fields{"result": failed}).Info("check completed: ", check.Name())
 			e.results.Failed = append(e.results.Failed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
-		log.WithFields(log.Fields{"result": "PASSED"}).Info("check completed: ", check.Name())
+		log.WithFields(log.Fields{"result": passed}).Info("check completed: ", check.Name())
 		e.results.Passed = append(e.results.Passed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
+	}
+
+	// 2 possible status codes
+	// 1. PASSED - all checks have passed successfully
+	// 2. FAILED - At least one check failed or an error occured in one of the checks
+	if len(e.results.Errors) > 0 || len(e.results.Failed) > 0 {
+		e.results.Status = failed
+	} else {
+		e.results.Status = passed
 	}
 
 	return nil
