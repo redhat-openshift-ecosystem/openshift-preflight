@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
@@ -79,15 +80,11 @@ var checkOperatorCmd = &cobra.Command{
 }
 
 func init() {
-	checks := engine.OperatorPolicy()
-	checkString := "\n"
-	for _, value := range checks {
-		checkString = checkString + "     - " + value + "\n"
-	}
+	checks := strings.Join(engine.OperatorPolicy(), "\n- ")
 
-	usage := `The checks that will be executed are the following:`+
-	checkString+"\n"+
-	`Usage:
+	usage := "\n" + `The checks that will be executed are the following:` + "\n- " +
+		checks + "\n\n" +
+		`Usage:
   preflight check operator <url to Operator bundle image> [flags]
 	
 Flags:
