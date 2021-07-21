@@ -2,14 +2,12 @@ package shell
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 
 	cmdchain "github.com/rainu/go-command-chain"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	log "github.com/sirupsen/logrus"
 )
-var userRegistry string
 
 type ImageSourceRegistryCheck struct {
 }
@@ -39,11 +37,11 @@ func (p *ImageSourceRegistryCheck) Validate(bundleImage string) (bool, error) {
 		return false, nil
 	}
 
-	userRegistry = strings.TrimRight(output.String(), "\n")
+	userRegistry := strings.TrimRight(output.String(), "\n")
 	log.Info("Check Image registry for : ", userRegistry)
 
 	if val, ok := approvedRegistries[userRegistry]; ok {
-		log.Debug(userRegistry, "Found "+val+" in approved registry")
+		log.Debugf("Found %s in the list of approved registry", val)
 		return true, nil
 	}
 
@@ -64,18 +62,18 @@ func (p *ImageSourceRegistryCheck) Metadata() certification.Metadata {
 	}
 }
 
-func createKeyValuePairs(m map[string]string) string {
-	b := new(bytes.Buffer)
+func printRegistry(m map[string]string) string {
+	output :=""
 	for _, value := range m {
-		fmt.Fprintf(b, "%s, ", value)
+		output +=(value+", ")
 	}
-	return b.String()
+	return output
 }
 
 func (p *ImageSourceRegistryCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message: "ImageSourceRegistry check failed! "+ userRegistry + " is not found in the approved image source registries.",
+		Message: "ImageSourceRegistry check failed. The image source's registry is not found in the approved registry list.",
 		Suggestion: "Approved registries - "+
-			createKeyValuePairs(approvedRegistries),
+			printRegistry(approvedRegistries),
 	}
 }
