@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
@@ -81,12 +82,17 @@ var checkContainerCmd = &cobra.Command{
 }
 
 func init() {
-	checkContainerCmd.SetUsageTemplate(
+	checks := strings.Join(engine.ContainerPolicy(), "\n- ")
+
+	usage := "\n" + `The checks that will be executed are the following:` + "\n- " +
+		checks + "\n\n" +
 		`Usage:
   preflight check container <url to container image> [flags]
 	
 Flags:
   -h, --help   help for container
-`)
+`
+	checkContainerCmd.SetUsageTemplate(usage)
+
 	checkCmd.AddCommand(checkContainerCmd)
 }
