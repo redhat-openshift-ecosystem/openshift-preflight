@@ -1,10 +1,8 @@
 package shell
 
 import (
-	"bytes"
 	"strings"
 
-	cmdchain "github.com/rainu/go-command-chain"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	log "github.com/sirupsen/logrus"
 )
@@ -12,36 +10,22 @@ import (
 type ImageSourceRegistryCheck struct {
 }
 
-var approvedRegistries = map[string]string{
-	"registry.connect.dev.redhat.com":   "registry.connect.dev.redhat.com",
-	"registry.connect.qa.redhat.com":    "registry.connect.qa.redhat.com",
-	"registry.connect.stage.redhat.com": "registry.connect.stage.redhat.com",
-	"registry.connect.redhat.com":       "registry.connect.redhat.com",
-	"registry.redhat.io":                "registry.redhat.io",
-	"registry.access.redhat.com":        "registry.access.redhat.com",
+var approvedRegistries = map[string]struct{}{
+	"registry.connect.dev.redhat.com":   {},
+	"registry.connect.qa.redhat.com":    {},
+	"registry.connect.stage.redhat.com": {},
+	"registry.connect.redhat.com":       {},
+	"registry.redhat.io":                {},
+	"registry.access.redhat.com":        {},
 }
 
 func (p *ImageSourceRegistryCheck) Validate(bundleImage string) (bool, error) {
+	userRegistry := strings.Split(bundleImage, "/")[0]
 
-	output := &bytes.Buffer{}
-	inputContent := strings.NewReader(bundleImage)
-
-	err := cmdchain.Builder().
-		WithInput(inputContent).
-		Join("cut", "-d", ",", "-f1").
-		Join("cut", "-d", "/", "-f1").
-		Finalize().WithOutput(output).Run()
-	if err != nil {
-		log.Error(" Failed to execute cmdchain builder")
-		log.Debug(" failed to execute cmdchain builder", err)
-		return false, nil
-	}
-
-	userRegistry := strings.TrimRight(output.String(), "\n")
 	log.Info("Check Image registry for : ", userRegistry)
 
-	if val, ok := approvedRegistries[userRegistry]; ok {
-		log.Debugf("Found %s in the list of approved registry", val)
+	if _, ok := approvedRegistries[userRegistry]; ok {
+		log.Debugf("Found %s in the list of approved registry", userRegistry)
 		return true, nil
 	}
 
@@ -62,18 +46,18 @@ func (p *ImageSourceRegistryCheck) Metadata() certification.Metadata {
 	}
 }
 
-func printRegistry(m map[string]string) string {
-	output :=""
-	for _, value := range m {
-		output +=(value+", ")
+func (p *ImageSourceRegistryCheck) makeRegistryList() string {
+	registry := ""
+	for key, _ := range approvedRegistries {
+		registry += (key + ", ")
 	}
-	return output
+	return registry
 }
 
 func (p *ImageSourceRegistryCheck) Help() certification.HelpText {
 	return certification.HelpText{
 		Message: "ImageSourceRegistry check failed. The image source's registry is not found in the approved registry list.",
-		Suggestion: "Approved registries - "+
-			printRegistry(approvedRegistries),
+		Suggestion: "Approved registries - " +
+			p.makeRegistryList(),
 	}
 }
