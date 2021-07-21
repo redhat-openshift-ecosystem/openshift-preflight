@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
@@ -84,7 +85,6 @@ func (pe PodmanCLIEngine) InspectImage(rawImage string, opts cli.ImageInspectOpt
 // ScanImage takes the `image` and runs `oscap-podman` against the image.
 // It also saves results to the vuln.html file in the current directory,
 // for the end users' reference.
-
 func (pe PodmanCLIEngine) ScanImage(image string) (*cli.ImageScanReport, error) {
 	ovalFileUrl := fmt.Sprintf("%s%s", ovalUrl, ovalFilename)
 	dir, err := ioutil.TempDir(".", "oval-")
@@ -135,4 +135,90 @@ func (pe PodmanCLIEngine) ScanImage(image string) (*cli.ImageScanReport, error) 
 	log.Debugf("The path to vulnerability report: %s/%s ", path, reportFile)
 
 	return &cli.ImageScanReport{Stdout: out.String(), Stderr: stderr.String()}, nil
+}
+
+// Create simply creates a stopped container from the image provided and returns the container ID.
+// It is the responsibility of the caller to clean up the image after use.
+func (pe PodmanCLIEngine) Create(rawImage string, opts *cli.PodmanCreateOptions) (*cli.PodmanCreateReport, error) {
+	cmdArgs := []string{"create"}
+
+	if opts.Entrypoint != "" {
+		cmdArgs = append(cmdArgs, "--entrypoint", opts.Entrypoint)
+	}
+
+	cmdArgs = append(cmdArgs, rawImage)
+
+	cmd := exec.Command("podman", cmdArgs...)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	log.Trace("Running podman with the following invocation", cmdArgs)
+	err := cmd.Run()
+	if err != nil {
+		return &cli.PodmanCreateReport{
+			Stdout: stdout.String(),
+			Stderr: stderr.String(),
+		}, nil
+	}
+
+	return &cli.PodmanCreateReport{
+		Stdout:      stdout.String(),
+		Stderr:      stderr.String(),
+		ContainerID: strings.TrimSpace(stdout.String()),
+	}, nil
+}
+
+// CopyFrom will copy the sourcePath from the container at the specified containerID to the destinationPath.
+func (pe PodmanCLIEngine) CopyFrom(containerID, sourcePath, destinationPath string) (*cli.PodmanCopyReport, error) {
+	cmdArgs := []string{"cp"}
+	sourceArg := strings.Join([]string{containerID, sourcePath}, ":")
+
+	cmdArgs = append(cmdArgs, sourceArg, destinationPath)
+	cmd := exec.Command("podman", cmdArgs...)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	log.Trace("Running podman with the following invocation", cmdArgs)
+	err := cmd.Run()
+	if err != nil {
+		return &cli.PodmanCopyReport{
+			Stdout: stdout.String(),
+			Stderr: stderr.String(),
+		}, err
+	}
+
+	return &cli.PodmanCopyReport{
+		Stdout: stdout.String(),
+		Stderr: stderr.String(),
+	}, nil
+}
+
+// Remove will attempt to remove a given container from the system.
+func (pe PodmanCLIEngine) Remove(containerID string) (*cli.PodmanRemoveReport, error) {
+	cmdArgs := []string{"rm"}
+	cmdArgs = append(cmdArgs, containerID)
+
+	cmd := exec.Command("podman", cmdArgs...)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	log.Trace("Running podman with the following invocation", cmdArgs)
+
+	err := cmd.Run()
+	if err != nil {
+		return &cli.PodmanRemoveReport{
+			Stdout: stdout.String(),
+			Stderr: stderr.String(),
+		}, err
+	}
+
+	return &cli.PodmanRemoveReport{
+		Stdout: stdout.String(),
+		Stderr: stderr.String(),
+	}, nil
 }
