@@ -24,10 +24,9 @@ var approvedRegistries = map[string]string{
 func (p *ImageSourceRegistryCheck) Validate(bundleImage string) (bool, error) {
 
 	output := &bytes.Buffer{}
-	inputContent := strings.NewReader(bundleImage)
 
 	err := cmdchain.Builder().
-		WithInput(inputContent).
+		WithInput(strings.NewReader(bundleImage)).
 		Join("cut", "-d", ",", "-f1").
 		Join("cut", "-d", "/", "-f1").
 		Finalize().WithOutput(output).Run()
@@ -62,18 +61,18 @@ func (p *ImageSourceRegistryCheck) Metadata() certification.Metadata {
 	}
 }
 
-func printRegistry(m map[string]string) string {
-	output :=""
-	for _, value := range m {
-		output +=(value+", ")
+func MakeRegistryList(registries map[string]string) string {
+	registry := ""
+	for _, value := range registries {
+		registry += (value + ", ")
 	}
-	return output
+	return registry
 }
 
 func (p *ImageSourceRegistryCheck) Help() certification.HelpText {
 	return certification.HelpText{
 		Message: "ImageSourceRegistry check failed. The image source's registry is not found in the approved registry list.",
-		Suggestion: "Approved registries - "+
-			printRegistry(approvedRegistries),
+		Suggestion: "Approved registries - " +
+			MakeRegistryList(approvedRegistries),
 	}
 }
