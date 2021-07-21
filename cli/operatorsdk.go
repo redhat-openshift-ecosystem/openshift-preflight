@@ -28,10 +28,11 @@ type OperatorSdkScorecardResult struct {
 }
 
 type OperatorSdkBundleValidateOptions struct {
-	LogLevel         string
-	ContainerEnginer string
-	Selector         []string
-	OutputFormat     string
+	LogLevel        string
+	ContainerEngine string
+	Selector        []string
+	OutputFormat    string
+	Verbose         bool
 }
 
 type OperatorSdkBundleValidateReport struct {

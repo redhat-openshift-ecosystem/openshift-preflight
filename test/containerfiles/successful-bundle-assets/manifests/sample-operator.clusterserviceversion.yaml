@@ -32,8 +32,8 @@ spec:
   description: Test operator that should pass operator validation
   displayName: Preflight Sample Operator
   icon:
-  - base64data: ""
-    mediatype: ""
+  - base64data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    mediatype: "image/png"
   install:
     spec:
       clusterPermissions:

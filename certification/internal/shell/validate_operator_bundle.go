@@ -1,42 +1,59 @@
 package shell
 
 import (
-	"os/exec"
-	"strings"
-
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
 
-type ValidateOperatorBundlePolicy struct {
+type ValidateOperatorBundleCheck struct {
 }
 
-func (p ValidateOperatorBundlePolicy) Validate(bundle string) (bool, error) {
-	stdouterr, err := exec.Command("operator-sdk", "bundle", "validate", "-b", "podman", "--verbose", bundle).CombinedOutput()
+func (p ValidateOperatorBundleCheck) Validate(bundle string) (bool, error) {
+	report, err := p.getDataToValidate(bundle)
 	if err != nil {
 		log.Error("Error will executing operator-sdk validate bundle: ", err)
 		return false, err
 	}
 
-	lines := strings.Split(string(stdouterr), "time=")
-
-	if strings.Contains(lines[len(lines)-1], "All validation tests have completed successfully") {
-		for _, line := range lines {
-			if strings.Contains(line, "level=warning") {
-				log.Warn("time= ", line)
-			}
-		}
-		return true, nil
-	}
-	log.Warn("The bundle image did not pass all of the validation tests")
-	return false, nil
+	return p.validate(report)
 }
 
-func (p ValidateOperatorBundlePolicy) Name() string {
+func (p ValidateOperatorBundleCheck) getDataToValidate(bundle string) (*cli.OperatorSdkBundleValidateReport, error) {
+	selector := []string{"community", "operatorhub"}
+	opts := cli.OperatorSdkBundleValidateOptions{
+		Selector:        selector,
+		Verbose:         true,
+		ContainerEngine: "podman",
+		OutputFormat:    "json-alpha1",
+	}
+
+	return operatorSdkEngine.BundleValidate(bundle, opts)
+}
+
+func (p ValidateOperatorBundleCheck) validate(report *cli.OperatorSdkBundleValidateReport) (bool, error) {
+	if !report.Passed || len(report.Outputs) > 0 {
+		for _, output := range report.Outputs {
+			var logFn func(...interface{})
+			switch output.Type {
+			case "warning":
+				logFn = log.Warn
+			case "error":
+				logFn = log.Error
+			default:
+				logFn = log.Debug
+			}
+			logFn(output.Message)
+		}
+	}
+	return report.Passed, nil
+}
+
+func (p ValidateOperatorBundleCheck) Name() string {
 	return "ValidateOperatorBundle"
 }
 
-func (p ValidateOperatorBundlePolicy) Metadata() certification.Metadata {
+func (p ValidateOperatorBundleCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Validating Bundle image that checks if it can validate the content and format of the operator bundle",
 		Level:            "best",
@@ -45,7 +62,7 @@ func (p ValidateOperatorBundlePolicy) Metadata() certification.Metadata {
 	}
 }
 
-func (p ValidateOperatorBundlePolicy) Help() certification.HelpText {
+func (p ValidateOperatorBundleCheck) Help() certification.HelpText {
 	return certification.HelpText{
 		Message:    "Check ValidateOperatorBundle encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Valid bundles are definied by bundle spec, so make sure that this bundle conforms to that spec. More Information: https://github.com/operator-framework/operator-registry/blob/master/docs/design/operator-bundle.md",
