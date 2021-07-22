@@ -3,6 +3,7 @@ package bindings
 import (
 	"context"
 
+	"github.com/containers/podman/v3/libpod/define"
 	"github.com/containers/podman/v3/pkg/domain/entities"
 	"github.com/containers/podman/v3/pkg/inspect"
 	"github.com/docker/docker/client"
@@ -89,6 +90,10 @@ type RunContainerReport struct {
 
 type ListContainerReport struct {
 	Containers []entities.ListContainer
+}
+
+type InspectContainerReport struct {
+	*define.InspectContainerData
 }
 
 type RunOptions struct {

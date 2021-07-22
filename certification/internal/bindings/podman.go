@@ -57,7 +57,9 @@ func (p *PodmanClient) InspectImage(nameOrID string) (*InspectImageReport, error
 		return nil, err
 	}
 
-	return buildInspectImageReport(report), nil
+	return &InspectImageReport{
+		ImageData: report.ImageData,
+	}, nil
 }
 
 func (p *PodmanClient) ListImages() (*ListImageReport, error) {
@@ -109,6 +111,17 @@ func (p *PodmanClient) RunContainer(nameOrID string, options RunOptions) (*RunCo
 
 	return &RunContainerReport{
 		ID: container.ID,
+	}, nil
+}
+
+func (p *PodmanClient) InspectContainer(nameOrID string) (*InspectContainerReport, error) {
+	response, err := containers.Inspect(p.Context, nameOrID, &containers.InspectOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &InspectContainerReport{
+		InspectContainerData: response,
 	}, nil
 }
 

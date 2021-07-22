@@ -60,7 +60,7 @@ func (d *DockerClient) InspectImage(nameOrID string) (*InspectImageReport, error
 		return nil, err
 	}
 
-	return buildInspectImageReport(report), nil
+	return dockerInspectImageReport(report), nil
 }
 
 func (d *DockerClient) ListImages() (*ListImageReport, error) {
@@ -121,6 +121,15 @@ func (d *DockerClient) RunContainer(nameOrID string, options RunOptions) (*RunCo
 	return &RunContainerReport{
 		ID: containerCreated.ID,
 	}, nil
+}
+
+func (d *DockerClient) InspectContainer(nameOrID string) (*InspectContainerReport, error) {
+	response, err := d.Client.ContainerInspect(d.Context, nameOrID)
+	if err != nil {
+		return nil, err
+	}
+
+	return dockerInspectContainerReport(response), nil
 }
 
 func (d *DockerClient) ListContainers() (*ListContainerReport, error) {
