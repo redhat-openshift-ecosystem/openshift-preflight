@@ -9,6 +9,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
+	log "github.com/sirupsen/logrus"
 )
 
 func ExtractContainerTar(tarball string) (string, error) {
@@ -65,4 +66,34 @@ func SaveContainerToFilesystem(podmanEngine cli.PodmanEngine, imageLog string) (
 		return "", fmt.Errorf("%w: %s", errors.ErrSaveContainerFailed, err)
 	}
 	return tarpath, nil
+}
+
+type ContainerFn func(string) (bool, error)
+
+func unmountAndRemove(podmanEngine cli.PodmanEngine, containerId string) {
+	podmanEngine.Unmount(containerId)
+	podmanEngine.Remove(containerId)
+}
+
+// RunInsideContainerFS executes a provided function by creating a container,
+// based on the passed image, and mounting the filsystem. This allows the passed
+// function to operate on the filesystem natively, without having to do further
+// "shell outs".
+func RunInsideContainerFS(podmanEngine cli.PodmanEngine, image string, containerFn ContainerFn) (bool, error) {
+	createResult, err := podmanEngine.Create(image, &cli.PodmanCreateOptions{})
+	if err != nil {
+		log.Error("could not retrieve containerId", err)
+		return false, err
+	}
+	containerId := createResult.ContainerID
+
+	report, err := podmanEngine.Mount(containerId)
+	if err != nil {
+		log.Error("could not mount filesystem", err)
+		return false, err
+	}
+
+	defer unmountAndRemove(podmanEngine, containerId)
+
+	return containerFn(report.MountDir)
 }

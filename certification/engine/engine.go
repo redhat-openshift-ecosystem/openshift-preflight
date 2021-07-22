@@ -40,11 +40,17 @@ func NewForConfig(config runtime.Config) (CheckEngine, error) {
 		checks[i] = check
 	}
 
-	engine := &shell.CheckEngine{
+	var engine CheckEngine
+	engine = &shell.CheckEngine{
 		Image:  config.Image,
 		Checks: checks,
 	}
-
+	if config.Mounted {
+		engine = &shell.MountedCheckEngine{
+			Image: config.Image,
+			Check: checks[0],
+		}
+	}
 	return engine, nil
 }
 
@@ -52,13 +58,15 @@ func NewForConfig(config runtime.Config) (CheckEngine, error) {
 // if found; nil otherwise
 func queryChecks(checkName string) certification.Check {
 	// query Operator checks
-	check, exists := operatorPolicy[checkName]
-	if exists {
+	if check, exists := operatorPolicy[checkName]; exists {
 		return check
 	}
 	// if not found in Operator Policy, query container policy
-	check, exists = containerPolicy[checkName]
-	if exists {
+	if check, exists := containerPolicy[checkName]; exists {
+		return check
+	}
+	// Lastly, look at the mounted checks
+	if check, exists := mountedChecks[checkName]; exists {
 		return check
 	}
 
@@ -77,6 +85,7 @@ var hasNoProhibitedCheck certification.Check = &shell.HasNoProhibitedPackagesChe
 var validateOperatorBundle certification.Check = &shell.ValidateOperatorBundleCheck{}
 var scorecardBasicSpecCheck certification.Check = &shell.ScorecardBasicSpecCheck{}
 var scorecardOlmSuiteCheck certification.Check = &shell.ScorecardOlmSuiteCheck{}
+var hasNoProhibitedMountedCheck certification.Check = &shell.HasNoProhibitedPackagesMountedCheck{}
 
 var containerPolicy = map[string]certification.Check{
 	runAsNonRootCheck.Name():              runAsNonRootCheck,
@@ -93,6 +102,10 @@ var operatorPolicy = map[string]certification.Check{
 	validateOperatorBundle.Name():  validateOperatorBundle,
 	scorecardBasicSpecCheck.Name(): scorecardBasicSpecCheck,
 	scorecardOlmSuiteCheck.Name():  scorecardOlmSuiteCheck,
+}
+
+var mountedChecks = map[string]certification.Check{
+	hasNoProhibitedMountedCheck.Name(): hasNoProhibitedMountedCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {

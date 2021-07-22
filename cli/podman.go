@@ -77,13 +77,38 @@ type PodmanRemoveReport struct {
 	Stderr string
 }
 
+type PodmanMountReport struct {
+	Stdout   string
+	Stderr   string
+	MountDir string
+}
+
+type PodmanUnmountReport struct {
+	Stdout string
+	Stderr string
+}
+
+type PodmanUnshareReport struct {
+	Stdout string
+	Stderr string
+}
+
+type PodmanUnshareCheckReport struct {
+	PodmanUnshareReport
+	PassedOverall bool `json:"passed"`
+}
+
 type PodmanEngine interface {
+	Create(rawImage string, opts *PodmanCreateOptions) (*PodmanCreateReport, error)
+	CopyFrom(containerID, sourcePath, destinationPath string) (*PodmanCopyReport, error)
 	InspectImage(rawImage string, opts ImageInspectOptions) (*ImageInspectReport, error)
+	Mount(containerId string) (*PodmanMountReport, error)
 	Pull(rawImage string, opts ImagePullOptions) (*ImagePullReport, error)
+	Remove(containerID string) (*PodmanRemoveReport, error)
 	Run(opts ImageRunOptions) (*ImageRunReport, error)
 	Save(nameOrID string, tags []string, opts ImageSaveOptions) error
 	ScanImage(image string) (*ImageScanReport, error)
-	Create(rawImage string, opts *PodmanCreateOptions) (*PodmanCreateReport, error)
-	CopyFrom(containerID, sourcePath, destinationPath string) (*PodmanCopyReport, error)
-	Remove(containerID string) (*PodmanRemoveReport, error)
+	Unmount(containerId string) (*PodmanUnmountReport, error)
+	Unshare(env map[string]string, command ...string) (*PodmanUnshareReport, error)
+	UnshareWithCheck(check, image string, command ...string) (*PodmanUnshareCheckReport, error)
 }

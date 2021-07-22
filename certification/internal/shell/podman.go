@@ -222,3 +222,85 @@ func (pe PodmanCLIEngine) Remove(containerID string) (*cli.PodmanRemoveReport, e
 		Stderr: stderr.String(),
 	}, nil
 }
+
+func (pe PodmanCLIEngine) Mount(containerId string) (*cli.PodmanMountReport, error) {
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command("podman", "mount", containerId)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Error("could not run mount")
+		return &cli.PodmanMountReport{Stdout: stdout.String(), Stderr: stderr.String()}, err
+	}
+	mountedDir := strings.TrimSpace(stdout.String())
+	return &cli.PodmanMountReport{MountDir: mountedDir, Stdout: stdout.String(), Stderr: stderr.String()}, nil
+}
+
+func (pe PodmanCLIEngine) Unmount(containerId string) (*cli.PodmanUnmountReport, error) {
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command("podman", "unmount", containerId)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	report := &cli.PodmanUnmountReport{Stdout: stdout.String(), Stderr: stderr.String()}
+	if err != nil {
+		log.Errorf("could not run unmount. Output: %s", stderr.String())
+		return report, err
+	}
+	return report, nil
+}
+
+func (pe PodmanCLIEngine) Unshare(env map[string]string, command ...string) (*cli.PodmanUnshareReport, error) {
+	var stdout, stderr bytes.Buffer
+	cmdLine := []string{"unshare"}
+	cmdLine = append(cmdLine, command...)
+	cmd := exec.Command("podman", cmdLine...)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if _, ok := os.LookupEnv("PREFLIGHT_EXEC_RUN"); ok {
+		// We've already been called. This should not already be set. Unwind.
+		return &cli.PodmanUnshareReport{Stdout: stdout.String(), Stderr: stderr.String()}, errors.ErrAlreadyInUnshare
+	}
+
+	environ := []string{
+		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
+		"PREFLIGHT_EXEC_RUN=1",
+		"PFLT_LOGFILE=preflight-unshare.log",
+	}
+	for k, v := range env {
+		environ = append(environ, fmt.Sprintf("%s=%s", k, v))
+	}
+	cmd.Env = environ
+
+	err := cmd.Run()
+	if err != nil {
+		log.Error("could not run command in unshare")
+		return &cli.PodmanUnshareReport{Stdout: stdout.String(), Stderr: stderr.String()}, err
+	}
+
+	return &cli.PodmanUnshareReport{Stdout: stdout.String(), Stderr: stderr.String()}, err
+}
+
+func (pe PodmanCLIEngine) UnshareWithCheck(check, image string, command ...string) (*cli.PodmanUnshareCheckReport, error) {
+	env := map[string]string{
+		"PATH":                 os.Getenv("PATH"),
+		"PREFLIGHT_EXEC_CHECK": check,
+		"PREFLIGHT_EXEC_IMAGE": image,
+	}
+
+	unshareReport, err := pe.Unshare(env, command...)
+	if err != nil {
+		return &cli.PodmanUnshareCheckReport{PodmanUnshareReport: *unshareReport, PassedOverall: false}, err
+	}
+
+	var results cli.PodmanUnshareCheckReport
+	err = json.Unmarshal([]byte(unshareReport.Stdout), &results)
+	if err != nil {
+		log.Error("could not read results from stdout")
+		return &cli.PodmanUnshareCheckReport{PodmanUnshareReport: *unshareReport, PassedOverall: false}, err
+	}
+	return &results, nil
+}

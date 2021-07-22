@@ -10,6 +10,7 @@ type Config struct {
 	Image          string
 	EnabledChecks  []string
 	ResponseFormat string
+	Mounted        bool
 }
 
 type Result struct {
