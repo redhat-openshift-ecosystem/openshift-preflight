@@ -24,8 +24,9 @@ type ImageRunOptions struct {
 }
 
 type ImageRunReport struct {
-	Stdout string
-	Stderr string
+	Stdout   string
+	Stderr   string
+	ExitCode int
 }
 
 type ImageSaveOptions struct {

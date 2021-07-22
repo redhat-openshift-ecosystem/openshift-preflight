@@ -42,9 +42,9 @@ func (pe PodmanCLIEngine) Run(opts cli.ImageRunOptions) (*cli.ImageRunReport, er
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		return &cli.ImageRunReport{Stdout: stdout.String(), Stderr: stderr.String()}, err
+		return &cli.ImageRunReport{Stdout: stdout.String(), Stderr: stderr.String(), ExitCode: cmd.ProcessState.ExitCode()}, err
 	}
-	return &cli.ImageRunReport{Stdout: stdout.String(), Stderr: stderr.String()}, nil
+	return &cli.ImageRunReport{Stdout: stdout.String(), Stderr: stderr.String(), ExitCode: cmd.ProcessState.ExitCode()}, nil
 }
 
 func (pe PodmanCLIEngine) Save(nameOrID string, tags []string, opts cli.ImageSaveOptions) error {

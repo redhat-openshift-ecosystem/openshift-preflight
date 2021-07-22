@@ -49,6 +49,7 @@ var _ = AfterSuite(func() {
 type FakePodmanEngine struct {
 	RunReportStdout     string
 	RunReportStderr     string
+	RunReportExitCode   int
 	PullReportStdouterr string
 	ImageInspectReport  cli.ImageInspectReport
 	ImageScanReport     cli.ImageScanReport
@@ -56,8 +57,9 @@ type FakePodmanEngine struct {
 
 func (fpe FakePodmanEngine) Run(opts cli.ImageRunOptions) (*cli.ImageRunReport, error) {
 	runReport := cli.ImageRunReport{
-		Stdout: fpe.RunReportStdout,
-		Stderr: fpe.RunReportStderr,
+		Stdout:   fpe.RunReportStdout,
+		Stderr:   fpe.RunReportStderr,
+		ExitCode: fpe.RunReportExitCode,
 	}
 	return &runReport, nil
 }
@@ -86,8 +88,9 @@ type BadPodmanEngine struct{}
 
 func (bpe BadPodmanEngine) Run(cli.ImageRunOptions) (*cli.ImageRunReport, error) {
 	runReport := cli.ImageRunReport{
-		Stdout: "Bad stadout",
-		Stderr: "Bad stderr",
+		Stdout:   "Bad stadout",
+		Stderr:   "Bad stderr",
+		ExitCode: -1,
 	}
 	return &runReport, errors.New("the Podman Run has failed")
 }
