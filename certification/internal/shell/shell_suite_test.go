@@ -53,6 +53,9 @@ type FakePodmanEngine struct {
 	PullReportStdouterr string
 	ImageInspectReport  cli.ImageInspectReport
 	ImageScanReport     cli.ImageScanReport
+	CreateReport        cli.PodmanCreateReport
+	CopyFromReport      cli.PodmanCopyReport
+	RemoveReport        cli.PodmanRemoveReport
 }
 
 func (fpe FakePodmanEngine) Run(opts cli.ImageRunOptions) (*cli.ImageRunReport, error) {
@@ -82,6 +85,18 @@ func (fpe FakePodmanEngine) InspectImage(rawImage string, opts cli.ImageInspectO
 
 func (fpe FakePodmanEngine) ScanImage(rawImage string) (*cli.ImageScanReport, error) {
 	return &fpe.ImageScanReport, nil
+}
+
+func (fpe FakePodmanEngine) Create(rawImage string, opts *cli.PodmanCreateOptions) (*cli.PodmanCreateReport, error) {
+	return &fpe.CreateReport, nil
+}
+
+func (fpe FakePodmanEngine) CopyFrom(containerID, sourcePath, destinationPath string) (*cli.PodmanCopyReport, error) {
+	return &fpe.CopyFromReport, nil
+}
+
+func (fpe FakePodmanEngine) Remove(containerID string) (*cli.PodmanRemoveReport, error) {
+	return &fpe.RemoveReport, nil
 }
 
 type BadPodmanEngine struct{}
@@ -114,6 +129,18 @@ func (bpe BadPodmanEngine) ScanImage(rawImage string) (*cli.ImageScanReport, err
 	return nil, errors.New("the Podman Scan Image has failed")
 }
 
+func (bpe BadPodmanEngine) Create(rawImage string, opts *cli.PodmanCreateOptions) (*cli.PodmanCreateReport, error) {
+	return nil, errors.New("The Podman Create operation has failed")
+}
+
+func (bpe BadPodmanEngine) CopyFrom(containerID, sourcePath, destinationPath string) (*cli.PodmanCopyReport, error) {
+	return nil, errors.New("The Podman Copy From operation has failed")
+}
+
+func (bpe BadPodmanEngine) Remove(containerID string) (*cli.PodmanRemoveReport, error) {
+	return nil, errors.New("The Podman Remove operator has failed")
+}
+
 /*
 ------------------- Skopeo Engine ---------------------
 */
@@ -122,6 +149,7 @@ type FakeSkopeoEngine struct {
 	SkopeoReportStdout string
 	SkopeoReportStderr string
 	Tags               []string
+	InspectReport      cli.SkopeoInspectReport
 }
 
 type SkopeoData struct {
@@ -138,6 +166,10 @@ func (fse FakeSkopeoEngine) ListTags(image string) (*cli.SkopeoListTagsReport, e
 	return &skopeoReport, nil
 }
 
+func (fse FakeSkopeoEngine) InspectImage(rawImage string, inspectOptions cli.SkopeoInspectOptions) (*cli.SkopeoInspectReport, error) {
+	return &fse.InspectReport, nil
+}
+
 type BadSkopeoEngine struct{}
 
 func (bse BadSkopeoEngine) ListTags(string) (*cli.SkopeoListTagsReport, error) {
@@ -147,6 +179,10 @@ func (bse BadSkopeoEngine) ListTags(string) (*cli.SkopeoListTagsReport, error) {
 		Tags:   []string{""},
 	}
 	return &skopeoReport, errors.New("the Skopeo ListTags has failed")
+}
+
+func (bse BadSkopeoEngine) InspectImage(rawImage string, inspectOptions cli.SkopeoInspectOptions) (*cli.SkopeoInspectReport, error) {
+	return &cli.SkopeoInspectReport{Stdout: "", Stderr: "some error output"}, errors.New("the skopeo image inspection has failed")
 }
 
 /*
