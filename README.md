@@ -98,3 +98,14 @@ preflight version 0.0.0 <commit: 2d3bb671bff8a95d385621382f31215234877d44>
 ```
 
 [releases_link]:https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
+
+## How to Contribute
+
+Check out the [contributor documentation][contribution_docs].
+
+## License
+
+Operator SDK is under Apache 2.0 license. See the [LICENSE][license_file] file for details.
+
+[contribution_docs]: ./CONTRIBUTING.md
+[license_file]:./LICENSE
