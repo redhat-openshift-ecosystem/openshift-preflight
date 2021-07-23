@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	passed string = "PASSED"
-	failed string = "FAILED"
-	err    string = "ERROR"
+	passed  string = "PASSED"
+	failed  string = "FAILED"
+	errored string = "ERROR"
 )
 
 // CheckEngine implements a CheckRunner.
@@ -61,7 +61,7 @@ func (e *CheckEngine) ExecuteChecks() error {
 		checkElapsedTime := time.Since(checkStartTime)
 
 		if err != nil {
-			log.WithFields(log.Fields{"result": err, "error": err.Error()}).Info("check completed: ", check.Name())
+			log.WithFields(log.Fields{"result": err, errored: err.Error()}).Info("check completed: ", check.Name())
 			e.results.Errors = append(e.results.Errors, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue
 		}
