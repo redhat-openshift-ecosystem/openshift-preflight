@@ -7,31 +7,11 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/shell"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 )
 
-type CheckEngine interface {
-	ContainerFileManager
-	CheckRunner
-}
-
-// ContainerFileManager describes the functionality necessary to interact
-// with a container image tarball on disk.
-type ContainerFileManager interface {
-	// IsRemote will check user-provided path and determine if that path is
-	// local or remote. Here local means that it's a location on the filesystem, and
-	// remote means that it's an image in a registry.
-	ContainerIsRemote(path string) (isRemote bool, remotecheckErr error)
-	// ExtractContainerTar will accept a path on the filesystem and extract it.
-	ExtractContainerTar(path string) (tarballPath string, extractionErr error)
-	// GetContainerFromRegistry will accept a container location and write it locally
-	// as a tarball as done by `podman save`
-	GetContainerFromRegistry(podmanEngine cli.PodmanEngine, containerLoc string) (containerDownloadPath string, containerDownloadErro error)
-}
-
-// CheckRunner defines the functonality necessary to run all checks for a policy,
+// CheckEngine defines the functonality necessary to run all checks for a policy,
 // and return the results of that check execution.
-type CheckRunner interface {
+type CheckEngine interface {
 	// ExecuteChecks should execute all checks in a policy and internally
 	// store the results. Errors returned by ExecuteChecks should reflect
 	// errors in pre-validation tasks, and not errors in individual check
@@ -41,7 +21,7 @@ type CheckRunner interface {
 	Results() runtime.Results
 }
 
-func NewForConfig(config runtime.Config) (CheckRunner, error) {
+func NewForConfig(config runtime.Config) (CheckEngine, error) {
 	if len(config.EnabledChecks) == 0 {
 		// refuse to run if the user has not specified any checks
 		return nil, errors.ErrNoChecksEnabled

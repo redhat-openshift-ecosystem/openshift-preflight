@@ -17,7 +17,7 @@ const (
 	errored string = "ERROR"
 )
 
-// CheckEngine implements a CheckRunner.
+// CheckEngine implements a CheckEngine.
 type CheckEngine struct {
 	Image  string
 	Checks []certification.Check
