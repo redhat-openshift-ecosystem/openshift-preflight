@@ -1,3 +1,4 @@
+// Package engine contains the interfaces necessary to implement policy execution.
 package engine
 
 import (

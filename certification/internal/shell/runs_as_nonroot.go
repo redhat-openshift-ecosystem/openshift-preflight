@@ -9,6 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// RunAsNonRootCheck evaluates the image to determine that the runtime UID is not 0,
+// which correlates to the root user.
 type RunAsNonRootCheck struct{}
 
 func (p *RunAsNonRootCheck) Validate(image string) (bool, error) {

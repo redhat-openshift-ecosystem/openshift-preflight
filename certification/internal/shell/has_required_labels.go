@@ -8,6 +8,8 @@ import (
 
 var requiredLabels = []string{"name", "vendor", "version", "release", "summary", "description"}
 
+// HasRequiredLabelsCheck evaluates the image manifest to ensure that the appropriate metadata
+// labels are present on the image asset as it exists in its current container registry.
 type HasRequiredLabelsCheck struct{}
 
 func (p *HasRequiredLabelsCheck) Validate(image string) (bool, error) {

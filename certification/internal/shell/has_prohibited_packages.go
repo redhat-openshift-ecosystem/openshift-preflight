@@ -9,6 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// HasProhibitedPackages evaluates that the image does not contain prohibited packages,
+// which refers to packages that are not redistributable without an appropriate license.
 type HasNoProhibitedPackagesCheck struct{}
 
 func (p *HasNoProhibitedPackagesCheck) Validate(image string) (bool, error) {
