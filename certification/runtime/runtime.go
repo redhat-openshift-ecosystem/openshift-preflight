@@ -18,9 +18,9 @@ type Result struct {
 }
 
 type Results struct {
-	TestedImage string
-	Status      string
-	Passed      []Result
-	Failed      []Result
-	Errors      []Result
+	TestedImage   string
+	PassedOverall bool
+	Passed        []Result
+	Failed        []Result
+	Errors        []Result
 }
