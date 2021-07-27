@@ -35,7 +35,6 @@ func (c *CatalogSourceV1Alpha1Client) CatalogSource(namespace string) CatalogSou
 }
 
 func (c catalogSourceClient) Create(obj *operatorv1alpha1.CatalogSource) (*operatorv1alpha1.CatalogSource, error) {
-	// TODO not to fail the creation if the resource already exists
 	result := &operatorv1alpha1.CatalogSource{}
 	err := c.client.Post().
 		Namespace(c.ns).

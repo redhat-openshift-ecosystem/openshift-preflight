@@ -47,6 +47,10 @@ func initConfig() {
 		}
 	}
 
+	if !configFileUsed {
+		log.Info("config file not found, proceeding without it")
+	}
+
 	// Set up logging config defaults
 	viper.SetDefault("logfile", DefaultLogFile)
 	viper.SetDefault("loglevel", DefaultLogLevel)
@@ -66,7 +70,5 @@ func initConfig() {
 	}
 
 	log.SetFormatter(&log.TextFormatter{})
-	if !configFileUsed {
-		log.Info("config file not found, proceeding without it")
-	}
+
 }

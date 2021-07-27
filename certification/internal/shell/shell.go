@@ -13,12 +13,10 @@ var (
 	podmanEngine      cli.PodmanEngine
 	skopeoEngine      cli.SkopeoEngine
 	operatorSdkEngine cli.OperatorSdkEngine
-	openshiftEngine   cli.OpenshiftEngine
 )
 
 func init() {
 	podmanEngine = PodmanCLIEngine{}
 	skopeoEngine = SkopeoCLIEngine{}
 	operatorSdkEngine = OperatorSdkCLIEngine{}
-	openshiftEngine = OpenshiftCLIEngine{}
 }

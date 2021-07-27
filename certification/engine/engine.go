@@ -6,9 +6,13 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+<<<<<<< HEAD
 	internal "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/engine"
 	containerpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/container"
 	operatorpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/operator"
+=======
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/k8s"
+>>>>>>> Leverage viper to set the kubeconfig flag
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/shell"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )

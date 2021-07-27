@@ -35,7 +35,6 @@ func (c *SubscriptionV1Alpha1Client) Subscription(namespace string) Subscription
 }
 
 func (c subscriptionClient) Create(obj *operatorv1alpha1.Subscription) (*operatorv1alpha1.Subscription, error) {
-	// TODO not to fail the creation if the resource already exists
 	result := &operatorv1alpha1.Subscription{}
 	err := c.client.Post().
 		Namespace(c.ns).

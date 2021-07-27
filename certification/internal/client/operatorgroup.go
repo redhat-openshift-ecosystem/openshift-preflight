@@ -35,7 +35,6 @@ func (c *OperatorGroupV1Client) OperatorGroup(namespace string) OperatorGroupInt
 }
 
 func (c operatorGroupClient) Create(obj *operatorv1.OperatorGroup) (*operatorv1.OperatorGroup, error) {
-	// TODO not to fail the creation if the resource already exists
 	result := &operatorv1.OperatorGroup{}
 	err := c.client.Post().
 		Namespace(c.ns).
