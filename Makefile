@@ -24,8 +24,12 @@ image-push:
 
 .PHONY: test
 test:
-	go test -v ./... 
+	go test -v $$(go list ./... | grep -v e2e)
 
 .PHONY: vet
 vet:
 	go vet ./...
+
+.PHONY: test-e2e
+test-e2e:
+	go test -v ./test/e2e/ 

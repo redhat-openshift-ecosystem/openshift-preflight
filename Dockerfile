@@ -6,8 +6,8 @@ COPY . /go/src/preflight
 WORKDIR /go/src/preflight
 RUN make build
 
-# ubi-minimal:latest image created 2021-06-01T12:12:46.922866Z
-FROM registry.access.redhat.com/ubi8/ubi-minimal@sha256:0ccb9988abbc72d383258d58a7f519a10b637d472f28fbca6eb5fab79ba82a6b
+# ubi-minimal:latest image created 2021-06-22T13:04:30.956781
+FROM registry.access.redhat.com/ubi8/ubi-minimal@sha256:48a4bec3d1dec90b5dd5420bf7c41a5756b7fbe8b862546134fbe2caa607679f
 
 # Define versions for dependencies
 ARG OPENSCAP_VERSION=1.3.5

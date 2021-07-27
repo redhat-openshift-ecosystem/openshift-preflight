@@ -1,9 +1,6 @@
 package shell
 
 import (
-	"encoding/json"
-	"fmt"
-	"os/exec"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -13,34 +10,31 @@ import (
 type HasUniqueTagCheck struct{}
 
 func (p *HasUniqueTagCheck) Validate(image string) (bool, error) {
-	imageName := strings.Split(image, ":")[0]
-	stdouterr, err := exec.Command("skopeo", "list-tags", "docker://"+imageName).CombinedOutput()
+	tags, err := p.getDataToValidate(image)
+	if err != nil {
+		return false, err
+	}
+	return p.validate(image, tags)
+}
+
+func (p *HasUniqueTagCheck) getDataToValidate(image string) ([]string, error) {
+
+	runReport, err := skopeoEngine.ListTags(image)
+
 	if err != nil {
 		log.Error("unable to execute skopeo on the image: ", err)
-		return false, err
+		return nil, err
 	}
 
-	// we must send gojq a []interface{}, so we have to convert our inspect output to that type
-	var skopeoData map[string]interface{}
-	err = json.Unmarshal(stdouterr, &skopeoData)
-	if err != nil {
-		log.Error("unable to parse skopeo list-tags data for image", err)
-		log.Debug("error marshaling skopeo list-tags data: ", err)
-		log.Trace("failure in attempt to convert the raw bytes from `skopeo list-tags` to a [map[string]interface{}")
-		return false, err
-	}
-	tags := skopeoData["Tags"].([]interface{})
+	return runReport.Tags, nil
+}
 
-	var tagsString string
-	for _, tag := range tags {
-		tagsString = tagsString + tag.(string) + " "
-	}
-	log.Debugf(fmt.Sprintf("detected these tags for %s image: %s", imageName, tagsString))
-
-	if len(tags) > 1 || len(tags) == 1 && strings.ToLower(tags[0].(string)) != "latest" {
-		return true, nil
-	}
-	return false, nil
+func (p *HasUniqueTagCheck) validate(image string, tags []string) (bool, error) {
+	// An image passes the check if:
+	// 1) it has more than one tag (`latest` is acceptable)
+	// OR
+	// 2) it has only one tag, and it is not `latest`
+	return len(tags) > 1 || len(tags) == 1 && strings.ToLower(tags[0]) != "latest", nil
 }
 
 func (p *HasUniqueTagCheck) Name() string {
@@ -49,7 +43,7 @@ func (p *HasUniqueTagCheck) Name() string {
 
 func (p *HasUniqueTagCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Checking if container has a tag other than 'latest'.",
+		Description:      "Checking if container has a tag other than 'latest', so that the image can be uniquely identfied.",
 		Level:            "best",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
@@ -58,7 +52,7 @@ func (p *HasUniqueTagCheck) Metadata() certification.Metadata {
 
 func (p *HasUniqueTagCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "Containers should have a tag other than latest, so that the image can be uniquely identfied.",
+		Message:    "Check HasUniqueTag encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Add a tag to your image. Consider using Semantic Versioning. https://semver.org/",
 	}
 }

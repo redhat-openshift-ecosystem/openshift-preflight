@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
+	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
@@ -30,7 +32,7 @@ var checkOperatorCmd = &cobra.Command{
 		cfg := runtime.Config{
 			Image:          operatorImage,
 			EnabledChecks:  engine.OperatorPolicy(),
-			ResponseFormat: defaultOutputFormat,
+			ResponseFormat: DefaultOutputFormat,
 		}
 
 		engine, err := engine.NewForConfig(cfg)
@@ -43,28 +45,53 @@ var checkOperatorCmd = &cobra.Command{
 			return err
 		}
 
-		engine.ExecuteChecks()
+		// create the results file early to catch cases where we are not
+		// able to write to the filesystem before we attempt to execute checks.
+		resultsFile, err := os.OpenFile(
+			resultsFilenameWithExtension(formatter.FileExtension()),
+			os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
+			0600,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		// also write to stdout
+		resultsOutputTarget := io.MultiWriter(os.Stdout, resultsFile)
+
+		// execute the checks
+		if err := engine.ExecuteChecks(); err != nil {
+			return err
+		}
 		results := engine.Results()
 
-		// return results to the user
+		// return results to the user and then close output files
 		formattedResults, err := formatter.Format(results)
 		if err != nil {
 			return err
 		}
 
-		fmt.Fprint(os.Stdout, string(formattedResults))
+		fmt.Fprint(resultsOutputTarget, string(formattedResults))
+		if err := resultsFile.Close(); err != nil {
+			return err
+		}
 
 		return nil
 	},
 }
 
 func init() {
-	checkOperatorCmd.SetUsageTemplate(
+	checks := strings.Join(engine.OperatorPolicy(), "\n- ")
+
+	usage := "\n" + `The checks that will be executed are the following:` + "\n- " +
+		checks + "\n\n" +
 		`Usage:
   preflight check operator <url to Operator bundle image> [flags]
 	
 Flags:
   -h, --help   help for operator
-`)
+`
+	checkOperatorCmd.SetUsageTemplate(usage)
 	checkCmd.AddCommand(checkOperatorCmd)
 }

@@ -82,9 +82,9 @@ defined in the environment, or alternatively all checks if no checks were specif
 Finally, the results of those validations will be passed to the formatter which
 will prepare them for final output to the user.
 
-## CheckRunner Implementation
+## CheckEngine Implementation
 
-The built-in checkrunner is referred to as `shell` (this name may change
+The built-in CheckEngine is referred to as `shell` (this name may change
 as we make calls to other tools as well). It issues calls out to `podman` and
 other shell tools directly in order to determine if the provided asset is in
 compliance.

@@ -1,12 +1,10 @@
 package shell
 
 import (
-	"encoding/json"
 	"fmt"
-	"os/exec"
 
-	"github.com/itchyny/gojq"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,55 +16,26 @@ type UnderLayerMaxCheck struct{}
 
 func (p *UnderLayerMaxCheck) Validate(image string) (bool, error) {
 	// TODO: if we're going have the image json on disk already, we should use it here instead of podman inspect-ing.
-	stdouterr, err := exec.Command("podman", "inspect", image).CombinedOutput()
+	layers, err := p.getDataToValidate(image)
 	if err != nil {
-		log.Error("unable to execute inspect on the image: ", err)
 		return false, err
 	}
 
-	// we must send gojq a []interface{}, so we have to convert our inspect output to that type
-	var inspectData []interface{}
-	err = json.Unmarshal(stdouterr, &inspectData)
+	return p.validate(layers)
+}
+
+func (p *UnderLayerMaxCheck) getDataToValidate(image string) ([]string, error) {
+	inspectData, err := podmanEngine.InspectImage(image, cli.ImageInspectOptions{})
 	if err != nil {
-		log.Error("unable to parse podman inspect data for image", err)
-		log.Debug("error marshaling podman inspect data: ", err)
-		log.Trace("failure in attempt to convert the raw bytes from `podman inspect` to a []interface{}")
-		return false, err
+		return nil, err
 	}
 
-	query, err := gojq.Parse(".[0].RootFS.Layers")
-	if err != nil {
-		log.Error("unable to parse podman inspect data for image", err)
-		log.Debug("unable to successfully parse the gojq query string:", err)
-		return false, err
-	}
+	return inspectData.Images[0].RootFS.Layers, nil
+}
 
-	// gojq expects us to iterate in the event that our query returned multiple matching values, but we only expect one.
-	iter := query.Run(inspectData)
-	val, nextOk := iter.Next()
-
-	if !nextOk {
-		log.Warn("did not receive any layer information when parsing container image")
-		// in this case, there was no data returned from jq, so we need to fail the check.
-		return false, nil
-	}
-
-	// gojq can return an error in iteration, so we need to check for that.
-	if err, ok := val.(error); ok {
-		log.Error("unable to parse podman inspect data for image", err)
-		log.Debug("unable to successfully parse the podman inspect output with the query string provided:", err)
-		// this is an error, as we didn't get the proper input from `podman inspect`
-		return false, err
-	}
-
-	layers := val.([]interface{})
-
+func (p *UnderLayerMaxCheck) validate(layers []string) (bool, error) {
 	log.Debugf("detected %d layers in image", len(layers))
-	if len(layers) < acceptableLayerMax {
-		return true, nil
-	}
-
-	return false, nil
+	return len(layers) <= acceptableLayerMax, nil
 }
 
 func (p *UnderLayerMaxCheck) Name() string {
@@ -75,7 +44,7 @@ func (p *UnderLayerMaxCheck) Name() string {
 
 func (p *UnderLayerMaxCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      fmt.Sprintf("Checking if container has less than %d layers", acceptableLayerMax),
+		Description:      fmt.Sprintf("Checking if container has less than %d layers.  Too many layers within the container images can degrade container performance.", acceptableLayerMax),
 		Level:            "better",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
@@ -84,7 +53,7 @@ func (p *UnderLayerMaxCheck) Metadata() certification.Metadata {
 
 func (p *UnderLayerMaxCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    fmt.Sprintf("Uncompressed container images should have less than %d layers. Too many layers within the container images can degrade container performance.", acceptableLayerMax),
+		Message:    "Check LayerCountAcceptable encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Optimize your Dockerfile to consolidate and minimize the number of layers. Each RUN command will produce a new layer. Try combining RUN commands using && where possible.",
 	}
 }

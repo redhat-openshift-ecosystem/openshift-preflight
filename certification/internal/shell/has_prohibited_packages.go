@@ -2,33 +2,59 @@ package shell
 
 import (
 	"bufio"
-	"bytes"
-	"os/exec"
+	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
 
 type HasNoProhibitedPackagesCheck struct{}
 
 func (p *HasNoProhibitedPackagesCheck) Validate(image string) (bool, error) {
-	stdouterr, err := exec.Command("podman", "run", "-it", "--rm", "--entrypoint", "rpm", image, "-qa", "--queryformat", "%{NAME}\n").CombinedOutput()
+	line, err := p.getDataToValidate(image)
 	if err != nil {
 		log.Error("unable to get a list of all packages in the image")
 		return false, err
 	}
 
-	scanner := bufio.NewScanner(bytes.NewReader(stdouterr))
+	return p.validate(line)
+
+}
+
+func (p *HasNoProhibitedPackagesCheck) getDataToValidate(image string) (string, error) {
+	runOpts := cli.ImageRunOptions{
+		EntryPoint:     "rpm",
+		EntryPointArgs: []string{"-qa", "--queryformat", "%{NAME}\n"},
+		LogLevel:       "debug",
+		Image:          image,
+	}
+	runReport, err := podmanEngine.Run(runOpts)
+	if err != nil {
+		log.Error("unable to get a list of all packages in the image, error: ", err)
+		log.Debugf("Stdout: %s", runReport.Stdout)
+		log.Debugf("Stderr: %s", runReport.Stderr)
+		return "", err
+	}
+	return runReport.Stdout, nil
+}
+
+func (p *HasNoProhibitedPackagesCheck) validate(line string) (bool, error) {
+	scanner := bufio.NewScanner(strings.NewReader(line))
+	var prohibitedPackages []string
 	for scanner.Scan() {
 		for _, pkg := range prohibitedPackageList {
 			if pkg == scanner.Text() {
-				log.Warn("found a prohibited package in the container image: ", pkg)
-				return false, nil
+				prohibitedPackages = append(prohibitedPackages, pkg)
 			}
 		}
 	}
+	log.Warn("The number of prohibited package found in the container image: ", len(prohibitedPackages))
+	if len(prohibitedPackages) > 0 {
+		log.Warn("found the following prohibited packages: ", prohibitedPackages)
+	}
 
-	return true, nil
+	return len(prohibitedPackages) == 0, nil
 }
 
 func (p *HasNoProhibitedPackagesCheck) Name() string {
@@ -36,7 +62,7 @@ func (p *HasNoProhibitedPackagesCheck) Name() string {
 }
 func (p *HasNoProhibitedPackagesCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Checks to ensure that the image in use does not contain prohibited packages.",
+		Description:      "Checks to ensure that the image in use does not include prohibited packages, such as Red Hat Enterprise Linux (RHEL) kernel packages.",
 		Level:            "best",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
@@ -45,7 +71,7 @@ func (p *HasNoProhibitedPackagesCheck) Metadata() certification.Metadata {
 
 func (p *HasNoProhibitedPackagesCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "The container image should not include Red Hat Enterprise Linux (RHEL) kernel packages.",
+		Message:    "Check HasNoProhibitedPackages encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Remove any RHEL packages that are not distributable outside of UBI",
 	}
 }

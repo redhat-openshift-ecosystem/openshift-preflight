@@ -1,71 +1,47 @@
 package shell
 
 import (
-	"encoding/json"
-	"os/exec"
-
-	"github.com/itchyny/gojq"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
+
+var requiredLabels = []string{"name", "vendor", "version", "release", "summary", "description"}
 
 type HasRequiredLabelsCheck struct{}
 
 func (p *HasRequiredLabelsCheck) Validate(image string) (bool, error) {
 	// TODO: if we're going have the image json on disk already, we should use it here instead of podman inspect-ing.
-	stdouterr, err := exec.Command("podman", "inspect", image).CombinedOutput()
+	labels, err := p.getDataForValidate(image)
+	if err != nil {
+		return false, err
+	}
+
+	return p.validate(labels)
+}
+
+func (p *HasRequiredLabelsCheck) getDataForValidate(image string) (map[string]string, error) {
+	inspectReport, err := podmanEngine.InspectImage(image, cli.ImageInspectOptions{})
 	if err != nil {
 		log.Error("unable to execute inspect on the image: ", err)
-		return false, err
+		return nil, err
 	}
+	return inspectReport.Images[0].Config.Labels, nil
+}
 
-	// we must send gojq a []interface{}, so we have to convert our inspect output to that type
-	var inspectData []interface{}
-	err = json.Unmarshal(stdouterr, &inspectData)
-	if err != nil {
-		log.Error("unable to parse podman inspect data for image")
-		log.Debug("error marshaling podman inspect data: ", err)
-		log.Trace("failure in attempt to convert the raw bytes from `podman inspect` to a []interface{}")
-		return false, err
-	}
-
-	jqQueryString := ".[0] | .Labels | {name: .name, vendor: .vendor, version: .version, release: .release, summary: .summary, description: .description}"
-
-	query, err := gojq.Parse(jqQueryString)
-	if err != nil {
-		log.Error("unable to parse podman inspect data for image")
-		log.Debug("unable to successfully parse the gojq query string:", err)
-		return false, err
-	}
-
-	// gojq expects us to iterate in the event that our query returned multiple matching values, but we only expect one.
-	iter := query.Run(inspectData)
-	val, nextOk := iter.Next()
-
-	if !nextOk {
-		log.Warn("did not receive any label information when parsing container image")
-		// in this case, there was no data returned from jq, so we need to fail the check.
-		return false, nil
-	}
-
-	// gojq can return an error in iteration, so we need to check for that.
-	if err, ok := val.(error); ok {
-		log.Error("unable to parse podman inspect data for image")
-		log.Debug("unable to successfully parse the podman inspect output with the query string provided:", err)
-		// this is an error, as we didn't get the proper input from `podman inspect`
-		return false, err
-	}
-
-	labels := val.(map[string]interface{})
-
-	for _, label := range labels {
-		if label == nil {
-			log.Warn("an expected label is missing:", label)
-			return false, nil
+func (p *HasRequiredLabelsCheck) validate(labels map[string]string) (bool, error) {
+	missingLabels := []string{}
+	for _, label := range requiredLabels {
+		if labels[label] == "" {
+			missingLabels = append(missingLabels, label)
 		}
 	}
 
-	return true, nil
+	if len(missingLabels) > 0 {
+		log.Warn("expected labels are missing:", missingLabels)
+	}
+
+	return len(missingLabels) == 0, nil
 }
 
 func (p *HasRequiredLabelsCheck) Name() string {
@@ -74,8 +50,8 @@ func (p *HasRequiredLabelsCheck) Name() string {
 
 func (p *HasRequiredLabelsCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Checking if the container's base image is based on UBI",
-		Level:            "best",
+		Description:      "Checking if the required labels (name, vendor, version, release, summary, description) are present in the container metadata.",
+		Level:            "good",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 	}
@@ -83,7 +59,7 @@ func (p *HasRequiredLabelsCheck) Metadata() certification.Metadata {
 
 func (p *HasRequiredLabelsCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "It is recommened that your image be based upon the Red Hat Universal Base Image (UBI)",
-		Suggestion: "Change the FROM directive in your Dockerfile or Containerfile to FROM registry.access.redhat.com/ubi8/ubi",
+		Message:    "Check Check HasRequiredLabel encountered an error. Please review the preflight.log file for more information.",
+		Suggestion: "Add the following labels to your Dockerfile or Containerfile: name, vendor, version, release, summary, description",
 	}
 }
