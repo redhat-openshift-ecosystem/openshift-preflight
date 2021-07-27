@@ -77,12 +77,12 @@ func (e *CheckEngine) ExecuteChecks() error {
 	}
 
 	// 2 possible status codes
-	// 1. PASSED - all checks have passed successfully
-	// 2. FAILED - At least one check failed or an error occured in one of the checks
+	// 1. PassedOverall=true - all checks have passed successfully
+	// 2. PassedOverall=false - At least one check failed or an error occured in one of the checks
 	if len(e.results.Errors) > 0 || len(e.results.Failed) > 0 {
-		e.results.Status = failed
+		e.results.PassedOverall = false
 	} else {
-		e.results.Status = passed
+		e.results.PassedOverall = true
 	}
 
 	return nil
