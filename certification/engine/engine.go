@@ -88,6 +88,7 @@ var scorecardBasicSpecCheck certification.Check = &shell.ScorecardBasicSpecCheck
 var scorecardOlmSuiteCheck certification.Check = &shell.ScorecardOlmSuiteCheck{}
 var hasNoProhibitedMountedCheck certification.Check = &shell.HasNoProhibitedPackagesMountedCheck{}
 var relatedImageManifestSchemaVersionCheck certification.Check = &shell.RelatedImagesAreSchemaVersion2Check{}
+var validateOperatorPkNameUniqCheck certification.Check = &shell.ValidateOperatorPkNameUniqCheck{}
 
 var containerPolicy = map[string]certification.Check{
 	runAsNonRootCheck.Name():              runAsNonRootCheck,
@@ -108,7 +109,11 @@ var operatorPolicy = map[string]certification.Check{
 }
 
 var mountedChecks = map[string]certification.Check{
-	hasNoProhibitedMountedCheck.Name(): hasNoProhibitedMountedCheck,
+	hasNoProhibitedMountedCheck.Name():     hasNoProhibitedMountedCheck,
+	validateOperatorBundle.Name():          validateOperatorBundle,
+	scorecardBasicSpecCheck.Name():         scorecardBasicSpecCheck,
+	scorecardOlmSuiteCheck.Name():          scorecardOlmSuiteCheck,
+	validateOperatorPkNameUniqCheck.Name(): validateOperatorPkNameUniqCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {
