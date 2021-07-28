@@ -48,9 +48,9 @@ func getResponse(r runtime.Results) UserResponse {
 	}
 
 	response := UserResponse{
-		Image:             r.TestedImage,
-		Passed:            r.PassedOverall,
-		ValidationVersion: version.Version,
+		Image:       r.TestedImage,
+		Passed:      r.PassedOverall,
+		LibraryInfo: version.Version,
 		Results: resultsText{
 			Passed: passedChecks,
 			Failed: failedChecks,
@@ -62,10 +62,10 @@ func getResponse(r runtime.Results) UserResponse {
 }
 
 type UserResponse struct {
-	Image             string                 `json:"image" xml:"image"`
-	Passed            bool                   `json:"passed" xml:"passed"`
-	ValidationVersion version.VersionContext `json:"validation_lib_version" xml:"validationLibVersion"`
-	Results           resultsText            `json:"results" xml:"results"`
+	Image       string                 `json:"image" xml:"image"`
+	Passed      bool                   `json:"passed" xml:"passed"`
+	LibraryInfo version.VersionContext `json:"test_library" xml:"test_library"`
+	Results     resultsText            `json:"results" xml:"results"`
 }
 
 type resultsText struct {
