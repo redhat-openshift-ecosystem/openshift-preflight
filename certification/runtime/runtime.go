@@ -1,3 +1,5 @@
+// Package runtime contains the structs and definitions consumed by Preflight at
+// runtime.
 package runtime
 
 import (

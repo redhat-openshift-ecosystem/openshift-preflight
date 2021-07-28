@@ -6,13 +6,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// ValidateOperatorBundleCheck evaluates the image and ensures that it passes bundle validation
+// as executed by `operator-sdk bundle validate`
 type ValidateOperatorBundleCheck struct {
 }
 
 func (p ValidateOperatorBundleCheck) Validate(bundle string) (bool, error) {
 	report, err := p.getDataToValidate(bundle)
 	if err != nil {
-		log.Error("Error will executing operator-sdk validate bundle: ", err)
+		log.Error("Error while executing operator-sdk bundle validate: ", err)
 		return false, err
 	}
 

@@ -61,6 +61,7 @@ func getResponse(r runtime.Results) UserResponse {
 	return response
 }
 
+// UserResponse is the standard user-facing response.
 type UserResponse struct {
 	Image       string                 `json:"image" xml:"image"`
 	Passed      bool                   `json:"passed" xml:"passed"`
@@ -68,12 +69,15 @@ type UserResponse struct {
 	Results     resultsText            `json:"results" xml:"results"`
 }
 
+// resultsText represents the results of check execution against the asset.
 type resultsText struct {
 	Passed []checkExecutionInfo `json:"passed" xml:"passed"`
 	Failed []checkExecutionInfo `json:"failed" xml:"failed"`
 	Errors []checkExecutionInfo `json:"errors" xml:"errors"`
 }
 
+// checkExecutionInfo contains all possible output fields that a user might see in their result.
+// Empty fields will be omitted.
 type checkExecutionInfo struct {
 	Name             string `json:"name,omitempty" xml:"name,omitempty"`
 	ElapsedTime      string `json:"elapsed_time,omitempty" xml:"elapsed_time,omitempty"`

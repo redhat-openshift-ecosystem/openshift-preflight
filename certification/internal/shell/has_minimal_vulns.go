@@ -10,6 +10,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// HasMinimalVulnerabilitiesCheck evaluates the image to confirm that only vulnerabilities
+// below the Critical or Important severities, using oscap-podman and a corresponding
+// OVAL definition.
 type HasMinimalVulnerabilitiesCheck struct{}
 
 func (p *HasMinimalVulnerabilitiesCheck) Validate(image string) (bool, error) {

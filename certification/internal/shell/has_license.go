@@ -15,6 +15,8 @@ const (
 	minLicenseFileCount = 1
 )
 
+// HasLicenseCheck evaluates that the image contains a license definition available at
+// /licenses.
 type HasLicenseCheck struct{}
 
 func (p *HasLicenseCheck) Validate(image string) (bool, error) {
