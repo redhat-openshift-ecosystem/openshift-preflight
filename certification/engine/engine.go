@@ -87,6 +87,7 @@ var validateOperatorBundle certification.Check = &shell.ValidateOperatorBundleCh
 var scorecardBasicSpecCheck certification.Check = &shell.ScorecardBasicSpecCheck{}
 var scorecardOlmSuiteCheck certification.Check = &shell.ScorecardOlmSuiteCheck{}
 var hasNoProhibitedMountedCheck certification.Check = &shell.HasNoProhibitedPackagesMountedCheck{}
+var relatedImageManifestSchemaVersionCheck certification.Check = &shell.RelatedImagesAreSchemaVersion2Check{}
 
 var containerPolicy = map[string]certification.Check{
 	runAsNonRootCheck.Name():              runAsNonRootCheck,
@@ -100,9 +101,10 @@ var containerPolicy = map[string]certification.Check{
 }
 
 var operatorPolicy = map[string]certification.Check{
-	validateOperatorBundle.Name():  validateOperatorBundle,
-	scorecardBasicSpecCheck.Name(): scorecardBasicSpecCheck,
-	scorecardOlmSuiteCheck.Name():  scorecardOlmSuiteCheck,
+	validateOperatorBundle.Name():                 validateOperatorBundle,
+	scorecardBasicSpecCheck.Name():                scorecardBasicSpecCheck,
+	scorecardOlmSuiteCheck.Name():                 scorecardOlmSuiteCheck,
+	relatedImageManifestSchemaVersionCheck.Name(): relatedImageManifestSchemaVersionCheck,
 }
 
 var mountedChecks = map[string]certification.Check{

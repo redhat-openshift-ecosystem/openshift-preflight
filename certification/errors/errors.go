@@ -23,3 +23,4 @@ var ErrOperatorSdkBundleValidateFailed = errors.New("failed to run operator-sdk 
 var ErrInvalidImageName = errors.New("failed to validate the image name")
 var ErrNoSocketFound = errors.New("neither podman or docker socket found")
 var ErrAlreadyInUnshare = errors.New("unshare is already active")
+var ErrDeterminingRelatedImageSchemaVers = errors.New("failed to determine related image schema version")
