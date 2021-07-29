@@ -16,7 +16,7 @@ var _ = Describe("LessThanMaxLayers", func() {
 
 	BeforeEach(func() {
 		layers := make([]string, 5)
-		for i, _ := range layers {
+		for i := range layers {
 			layers[i] = fmt.Sprintf("layer%d", i)
 		}
 		fakeEngine = FakePodmanEngine{
@@ -47,7 +47,7 @@ var _ = Describe("LessThanMaxLayers", func() {
 			BeforeEach(func() {
 				engine := fakeEngine.(FakePodmanEngine)
 				layers := make([]string, 50)
-				for i, _ := range layers {
+				for i := range layers {
 					layers[i] = fmt.Sprintf("layer%d", i)
 				}
 				engine.ImageInspectReport.Images[0].RootFS.Layers = layers

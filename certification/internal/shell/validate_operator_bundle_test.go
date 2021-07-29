@@ -42,8 +42,8 @@ var _ = Describe("BundleValidateCheck", func() {
 				engine := fakeEngine.(FakeOperatorSdkEngine)
 				engine.OperatorSdkBVReport.Passed = false
 				engine.OperatorSdkBVReport.Outputs = []cli.OperatorSdkBundleValidateOutput{
-					cli.OperatorSdkBundleValidateOutput{Type: "warning", Message: "This is a warning"},
-					cli.OperatorSdkBundleValidateOutput{Type: "error", Message: "This is an error"},
+					{Type: "warning", Message: "This is a warning"},
+					{Type: "error", Message: "This is an error"},
 				}
 				operatorSdkEngine = engine
 			})
