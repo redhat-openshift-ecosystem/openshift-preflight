@@ -56,6 +56,10 @@ type FakePodmanEngine struct {
 	CreateReport        cli.PodmanCreateReport
 	CopyFromReport      cli.PodmanCopyReport
 	RemoveReport        cli.PodmanRemoveReport
+	UnshareReport       cli.PodmanUnshareReport
+	MountReport         cli.PodmanMountReport
+	UnmountReport       cli.PodmanUnmountReport
+	UnshareCheckReport  cli.PodmanUnshareCheckReport
 }
 
 func (fpe FakePodmanEngine) Run(opts cli.ImageRunOptions) (*cli.ImageRunReport, error) {
@@ -99,6 +103,22 @@ func (fpe FakePodmanEngine) Remove(containerID string) (*cli.PodmanRemoveReport,
 	return &fpe.RemoveReport, nil
 }
 
+func (fpe FakePodmanEngine) Mount(containerId string) (*cli.PodmanMountReport, error) {
+	return &fpe.MountReport, nil
+}
+
+func (fpe FakePodmanEngine) Unmount(containerId string) (*cli.PodmanUnmountReport, error) {
+	return &fpe.UnmountReport, nil
+}
+
+func (fpe FakePodmanEngine) Unshare(env map[string]string, command ...string) (*cli.PodmanUnshareReport, error) {
+	return &fpe.UnshareReport, nil
+}
+
+func (fpe FakePodmanEngine) UnshareWithCheck(check, image string, command ...string) (*cli.PodmanUnshareCheckReport, error) {
+	return &fpe.UnshareCheckReport, nil
+}
+
 type BadPodmanEngine struct{}
 
 func (bpe BadPodmanEngine) Run(cli.ImageRunOptions) (*cli.ImageRunReport, error) {
@@ -139,6 +159,22 @@ func (bpe BadPodmanEngine) CopyFrom(containerID, sourcePath, destinationPath str
 
 func (bpe BadPodmanEngine) Remove(containerID string) (*cli.PodmanRemoveReport, error) {
 	return nil, errors.New("The Podman Remove operator has failed")
+}
+
+func (bpe BadPodmanEngine) Mount(containerId string) (*cli.PodmanMountReport, error) {
+	return nil, errors.New("The Podman Mount failed")
+}
+
+func (bpe BadPodmanEngine) Unmount(containerId string) (*cli.PodmanUnmountReport, error) {
+	return nil, errors.New("The Podman Unmount failed")
+}
+
+func (bpe BadPodmanEngine) Unshare(env map[string]string, command ...string) (*cli.PodmanUnshareReport, error) {
+	return nil, errors.New("The Podman Unshare operation has failed")
+}
+
+func (bpe BadPodmanEngine) UnshareWithCheck(check, image string, command ...string) (*cli.PodmanUnshareCheckReport, error) {
+	return nil, errors.New("The Podman Unshare With Check operation has failed")
 }
 
 /*
