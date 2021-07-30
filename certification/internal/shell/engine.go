@@ -56,7 +56,7 @@ func (e *CheckEngine) ExecuteChecks() error {
 		checkStartTime := time.Now()
 
 		// run the validation
-		passed, err := check.Validate(targetImage)
+		checkPassed, err := check.Validate(targetImage)
 
 		checkElapsedTime := time.Since(checkStartTime)
 
@@ -66,7 +66,7 @@ func (e *CheckEngine) ExecuteChecks() error {
 			continue
 		}
 
-		if !passed {
+		if !checkPassed {
 			log.WithFields(log.Fields{"result": failed}).Info("check completed: ", check.Name())
 			e.results.Failed = append(e.results.Failed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue

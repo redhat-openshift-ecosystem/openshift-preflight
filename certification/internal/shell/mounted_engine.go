@@ -26,17 +26,14 @@ func (e *MountedCheckEngine) ExecuteChecks() error {
 	log.Info("running check: ", e.Check.Name())
 	// We want to know the time just for the check itself, so reset checkStartTime
 	checkStartTime := time.Now()
-
-	// run the validation
-	pass, err := containerutil.RunInsideContainerFS(podmanEngine, targetImage, e.Check.Validate)
-
+	checkPassed, err := containerutil.RunInsideImageFS(podmanEngine, targetImage, e.Check.Validate)
 	checkElapsedTime := time.Since(checkStartTime)
 
 	switch {
 	case err != nil:
 		log.WithFields(log.Fields{"result": "ERROR", "error": err.Error()}).Info("check completed: ", e.Check.Name())
 		e.results.Errors = append(e.results.Errors, runtime.Result{Check: e.Check, ElapsedTime: checkElapsedTime})
-	case !pass:
+	case !checkPassed:
 		log.WithFields(log.Fields{"result": "FAILED"}).Info("check completed: ", e.Check.Name())
 		e.results.Failed = append(e.results.Failed, runtime.Result{Check: e.Check, ElapsedTime: checkElapsedTime})
 	default:
