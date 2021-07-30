@@ -1,7 +1,9 @@
 package cli
 
 import (
+	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 )
 
@@ -37,12 +39,19 @@ type OperatorGroupData struct {
 type OpenshiftEngine interface {
 	CreateNamespace(name string, opts OpenShiftCliOptions, config *rest.Config) (*OpenshiftCreateReport, error)
 	DeleteNamespace(name string, opts OpenShiftCliOptions, config *rest.Config) error
+	GetNamespace(name string, config *rest.Config) (*corev1.Namespace, error)
+
 	CreateOperatorGroup(data OperatorGroupData, opts OpenShiftCliOptions, config *rest.Config) (*OpenshiftCreateReport, error)
 	DeleteOperatorGroup(name string, opts OpenShiftCliOptions, config *rest.Config) error
+	GetOperatorGroup(name string, opts OpenShiftCliOptions, config *rest.Config) (*operatorv1.OperatorGroup, error)
+
 	CreateCatalogSource(data CatalogSourceData, opts OpenShiftCliOptions, config *rest.Config) (*OpenshiftCreateReport, error)
 	DeleteCatalogSource(name string, opts OpenShiftCliOptions, config *rest.Config) error
+	GetCatalogSource(name string, opts OpenShiftCliOptions, config *rest.Config) (*operatorv1alpha1.CatalogSource, error)
+
 	CreateSubscription(data SubscriptionData, opts OpenShiftCliOptions, config *rest.Config) (*OpenshiftCreateReport, error)
 	DeleteSubscription(name string, opts OpenShiftCliOptions, config *rest.Config) error
 	GetSubscription(name string, opts OpenShiftCliOptions, config *rest.Config) (*operatorv1alpha1.Subscription, error)
+
 	GetCSV(name string, opts OpenShiftCliOptions, config *rest.Config) (*operatorv1alpha1.ClusterServiceVersion, error)
 }

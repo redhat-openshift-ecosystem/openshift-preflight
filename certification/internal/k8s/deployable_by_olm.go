@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"time"
 
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -11,51 +12,44 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	yaml "gopkg.in/yaml.v2"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
-	ooNamespace   = "argocd"
-	operatorGroup = "argocd-operator"
-	catalogSource = "argocd-catalog"
-	catalogImage  = "quay.io/jmckind/argocd-operator-registry@sha256:82d6ebd5bbfc9c2b1a5058d29dd01b7fee5e3557f4936c3ed47b633900513b11"
-
-	catalogSourceNs  = "openshift-marketplace"
-	subscriptionName = "argocd-operator"
-	packageName      = "argocd-operator"
-	channel          = "alpha"
+	catalogSourceNs = "openshift-marketplace"
 )
 
-var targetNamespaces []string = []string{"argocd"}
+var (
+	k8sconfig                     *rest.Config
+	err                           error
+	subscriptionName, packageName string
+	channel, ooNamespace          string
+	operatorGroup, catalogSource  string
+	catalogImage                  string
+	targetNamespaces              []string = []string{ooNamespace}
+)
 
 type DeployableByOlmCheck struct{}
 
 func (p *DeployableByOlmCheck) Validate(image string) (bool, error) {
 
-	var k8sconfig *rest.Config
-	var err error
-
-	kubeconfig := viper.GetString("kubeconfig")
-
-	if len(kubeconfig) > 0 {
-		k8sconfig, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-
-		if err != nil {
-			return false, err
-		}
-	}
-
 	// create k8s custom resources for the operator deployment
-	p.setUp(k8sconfig)
+	err = p.setUp()
+	defer p.cleanUp()
+	if err != nil {
+		return false, err
+	}
 
 	var csv *operatorv1alpha1.ClusterServiceVersion
 	var installedCSV string
 	var subs *operatorv1alpha1.Subscription
 
 	// query API server for the installed CSV field of the created subscription
-	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	for {
 		subs, _ = openshiftEngine.GetSubscription(subscriptionName, cli.OpenShiftCliOptions{Namespace: ooNamespace}, k8sconfig)
@@ -67,7 +61,7 @@ func (p *DeployableByOlmCheck) Validate(image string) (bool, error) {
 		}
 		// if the context deadline exceeds, fail the check
 		if ctx.Err() != nil {
-			log.Error("failed to fetch .status.installedCSV from Subscription", ctx.Err())
+			log.Error("failed to fetch .status.installedCSV from Subscription: ", ctx.Err())
 			return false, errors.ErrK8sApiCallFailed
 		}
 		log.Debug("InstalledCSV is not ready yet, retrying...")
@@ -77,7 +71,7 @@ func (p *DeployableByOlmCheck) Validate(image string) (bool, error) {
 	log.Trace(fmt.Sprintf("Looking for csv %s in namespace %s", installedCSV, ooNamespace))
 
 	// query API server for CSV by name
-	ctx, cancel = context.WithTimeout(context.Background(), 150*time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
 	for {
@@ -97,15 +91,43 @@ func (p *DeployableByOlmCheck) Validate(image string) (bool, error) {
 		time.Sleep(2 * time.Second)
 	}
 
-	defer p.cleanUp(k8sconfig)
-
 	return true, nil
 }
 
-func (p *DeployableByOlmCheck) setUp(k8sconfig *rest.Config) {
-	openshiftEngine.CreateNamespace(ooNamespace, cli.OpenShiftCliOptions{}, k8sconfig)
-	openshiftEngine.CreateCatalogSource(cli.CatalogSourceData{Name: catalogSource, Image: catalogImage}, cli.OpenShiftCliOptions{Namespace: "openshift-marketplace"}, k8sconfig)
-	openshiftEngine.CreateOperatorGroup(cli.OperatorGroupData{Name: operatorGroup, TargetNamespaces: targetNamespaces}, cli.OpenShiftCliOptions{Namespace: ooNamespace}, k8sconfig)
+func (p *DeployableByOlmCheck) setUp() error {
+	kubeconfig := viper.GetString("kubeconfig")
+
+	if len(kubeconfig) > 0 {
+		k8sconfig, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	catalogImage = viper.GetString("catalogImage")
+	channel = viper.GetString("channel")
+	packageName = viper.GetString("package")
+	operatorGroup = viper.GetString("appName") + "-og"
+	ooNamespace = viper.GetString("installNamespace")
+	subscriptionName = viper.GetString("appName") + "-sub"
+	catalogSource = viper.GetString("appName") + "-cs"
+
+	_, err = openshiftEngine.CreateNamespace(ooNamespace, cli.OpenShiftCliOptions{}, k8sconfig)
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return err
+	}
+
+	_, err = openshiftEngine.CreateCatalogSource(cli.CatalogSourceData{Name: catalogSource, Image: catalogImage}, cli.OpenShiftCliOptions{Namespace: catalogSourceNs}, k8sconfig)
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return err
+	}
+
+	_, err = openshiftEngine.CreateOperatorGroup(cli.OperatorGroupData{Name: operatorGroup, TargetNamespaces: targetNamespaces}, cli.OpenShiftCliOptions{Namespace: ooNamespace}, k8sconfig)
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return err
+	}
+
 	subscriptionData := cli.SubscriptionData{
 		Name:                   subscriptionName,
 		Channel:                channel,
@@ -113,35 +135,75 @@ func (p *DeployableByOlmCheck) setUp(k8sconfig *rest.Config) {
 		CatalogSourceNamespace: catalogSourceNs,
 		Package:                packageName,
 	}
-	openshiftEngine.CreateSubscription(subscriptionData, cli.OpenShiftCliOptions{Namespace: ooNamespace}, k8sconfig)
+	_, err = openshiftEngine.CreateSubscription(subscriptionData, cli.OpenShiftCliOptions{Namespace: ooNamespace}, k8sconfig)
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return err
+	}
+
+	return nil
 }
 
-func (p *DeployableByOlmCheck) cleanUp(k8sconfig *rest.Config) {
+func (p *DeployableByOlmCheck) cleanUp() {
+	log.Debug("Dumping data in artifacts/ directory")
+
+	subs, err := openshiftEngine.GetSubscription(subscriptionName, cli.OpenShiftCliOptions{Namespace: ooNamespace}, k8sconfig)
+	if err != nil {
+		log.Error("unable to retrieve the subscription")
+	}
+	p.writeToFile(subs, subscriptionName, "subscription")
+
+	cs, err := openshiftEngine.GetCatalogSource(catalogSource, cli.OpenShiftCliOptions{Namespace: catalogSourceNs}, k8sconfig)
+	if err != nil {
+		log.Error("unable to retrieve the catalogsource")
+	}
+	p.writeToFile(cs, catalogSource, "catalogsource")
+
+	og, err := openshiftEngine.GetOperatorGroup(operatorGroup, cli.OpenShiftCliOptions{Namespace: ooNamespace}, k8sconfig)
+	if err != nil {
+		log.Error("unable to retrieve the operatorgroup")
+	}
+	p.writeToFile(og, operatorGroup, "operatorgroup")
+
+	ns, err := openshiftEngine.GetNamespace(ooNamespace, k8sconfig)
+	if err != nil {
+		log.Error("unable to retrieve the namespace")
+	}
+	p.writeToFile(ns, ooNamespace, "namespace")
+
 	log.Trace("Deleting the resources created by Check")
 	openshiftEngine.DeleteSubscription(subscriptionName, cli.OpenShiftCliOptions{}, k8sconfig)
-	openshiftEngine.DeleteCatalogSource(catalogSource, cli.OpenShiftCliOptions{Namespace: "openshift-marketplace"}, k8sconfig)
+	openshiftEngine.DeleteCatalogSource(catalogSource, cli.OpenShiftCliOptions{Namespace: catalogSourceNs}, k8sconfig)
 	openshiftEngine.DeleteOperatorGroup(operatorGroup, cli.OpenShiftCliOptions{}, k8sconfig)
 	openshiftEngine.DeleteNamespace(ooNamespace, cli.OpenShiftCliOptions{}, k8sconfig)
+}
+
+func (p *DeployableByOlmCheck) writeToFile(data interface{}, resource string, resourceType string) {
+	yamlData, err := yaml.Marshal(data)
+	if err != nil {
+		log.Error("unable to serialize the subscription")
+	}
+	err = ioutil.WriteFile(fmt.Sprintf("artifacts/%s-%s.yaml", resource, resourceType), yamlData, 0644)
+	if err != nil {
+		log.Error("failed to write the subscription object to the file")
+	}
 }
 
 func (p *DeployableByOlmCheck) Name() string {
 	return "DeployableByOLM"
 }
 
-// TODO
 func (p *DeployableByOlmCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Checking if the operator bundle image could be deployed by OLM",
+		Description:      "Checking if the operator could be deployed by OLM",
 		Level:            "best",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide", // Placeholder
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
 	}
 }
 
-// TODO
 func (p *DeployableByOlmCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "It is recommened that your image be based upon the Red Hat Universal Base Image (UBI)",
-		Suggestion: "Change the FROM directive in your Dockerfile or Containerfile to FROM registry.access.redhat.com/ubi8/ubi",
+		Message:    "It is recommened that your operator could be deployed by OLM",
+		Suggestion: "Follow the guidelines on the operatorsdk website to learn how to package your operator https://sdk.operatorframework.io/docs/olm-integration/cli-overview/",
 	}
 }

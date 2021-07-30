@@ -43,7 +43,6 @@ func (pe OpenshiftCLIEngine) CreateNamespace(name string, opts cli.OpenShiftCliO
 		[]string{},
 		"",
 	}
-	log.Debug("Namespace created: ", name)
 
 	resp, err := k8sClientset.CoreV1().
 		Namespaces().
@@ -77,6 +76,19 @@ func (pe OpenshiftCLIEngine) DeleteNamespace(name string, opts cli.OpenShiftCliO
 	return k8sClientset.CoreV1().
 		Namespaces().
 		Delete(context.Background(), name, metav1.DeleteOptions{})
+}
+
+func (pe OpenshiftCLIEngine) GetNamespace(name string, config *rest.Config) (*corev1.Namespace, error) {
+	k8sClientset, err := kubernetes.NewForConfig(config)
+
+	if err != nil {
+		log.Error("unable to obtain k8s client: ", err)
+		return nil, err
+	}
+	log.Debug("fetching namespace: " + name)
+	return k8sClientset.CoreV1().
+		Namespaces().
+		Get(context.Background(), name, metav1.GetOptions{})
 }
 
 func (pe OpenshiftCLIEngine) CreateOperatorGroup(data cli.OperatorGroupData, opts cli.OpenShiftCliOptions, config *rest.Config) (*cli.OpenshiftCreateReport, error) {
@@ -130,6 +142,17 @@ func (pe OpenshiftCLIEngine) DeleteOperatorGroup(name string, opts cli.OpenShift
 	return crdClient.OperatorGroup(opts.Namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
+func (pe OpenshiftCLIEngine) GetOperatorGroup(name string, opts cli.OpenShiftCliOptions, config *rest.Config) (*operatorv1.OperatorGroup, error) {
+	crdClient, err := client.OperatorGroupClient(config)
+
+	if err != nil {
+		log.Error("unable to obtain k8s client: ", err)
+		return nil, err
+	}
+	log.Debug("fetching operatorgroup: " + name)
+	return crdClient.OperatorGroup(opts.Namespace).Get(name)
+}
+
 func (pe OpenshiftCLIEngine) CreateCatalogSource(data cli.CatalogSourceData, opts cli.OpenShiftCliOptions, config *rest.Config) (*cli.OpenshiftCreateReport, error) {
 
 	crdClient, err := client.CatalogSourceClient(config)
@@ -160,7 +183,7 @@ func (pe OpenshiftCLIEngine) CreateCatalogSource(data cli.CatalogSourceData, opt
 			Stderr: err.Error(),
 		}, err
 	}
-	log.Debug(fmt.Sprintf("CatalogSource %s is created succeesully in namespace %s", data.Name, opts.Namespace))
+	log.Debug(fmt.Sprintf("CatalogSource %s is created succeessfully in namespace %s", data.Name, opts.Namespace))
 
 	return &cli.OpenshiftCreateReport{
 		Stdout: fmt.Sprintf("%#v", resp),
@@ -174,10 +197,19 @@ func (pe OpenshiftCLIEngine) DeleteCatalogSource(name string, opts cli.OpenShift
 		log.Error("unable to create a client for CatalogSource: ", err)
 		return err
 	}
-
 	log.Debug(fmt.Sprintf("Deleting CatalogSource %s in namespace %s", name, opts.Namespace))
-
 	return crdClient.CatalogSource(opts.Namespace).Delete(name, &metav1.DeleteOptions{})
+}
+
+func (pe OpenshiftCLIEngine) GetCatalogSource(name string, opts cli.OpenShiftCliOptions, config *rest.Config) (*operatorv1alpha1.CatalogSource, error) {
+	crdClient, err := client.CatalogSourceClient(config)
+
+	if err != nil {
+		log.Error("unable to obtain k8s client: ", err)
+		return nil, err
+	}
+	log.Debug("fetching catalogsource: " + name)
+	return crdClient.CatalogSource(opts.Namespace).Get(name)
 }
 
 func (pe OpenshiftCLIEngine) CreateSubscription(data cli.SubscriptionData, opts cli.OpenShiftCliOptions, config *rest.Config) (*cli.OpenshiftCreateReport, error) {
@@ -227,9 +259,7 @@ func (pe OpenshiftCLIEngine) GetSubscription(name string, opts cli.OpenShiftCliO
 		log.Error("unable to create a client for subscription: ", err)
 		return nil, err
 	}
-
 	return crdClient.Subscription(opts.Namespace).Get(name)
-
 }
 
 func (pe OpenshiftCLIEngine) DeleteSubscription(name string, opts cli.OpenShiftCliOptions, config *rest.Config) error {
