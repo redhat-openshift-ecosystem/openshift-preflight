@@ -68,7 +68,7 @@ func queryChecks(checkName string) certification.Check {
 		return check
 	}
 	// Lastly, look at the mounted checks
-	if check, exists := mountedChecks[checkName]; exists {
+	if check, exists := unshareChecks[checkName]; exists {
 		return check
 	}
 
@@ -91,6 +91,7 @@ var hasNoProhibitedMountedCheck certification.Check = &shell.HasNoProhibitedPack
 var relatedImageManifestSchemaVersionCheck certification.Check = &shell.RelatedImagesAreSchemaVersion2Check{}
 var operatorPkgNameIsUniqueMountedCheck certification.Check = &shell.OperatorPkgNameIsUniqueMountedCheck{}
 var operatorPkgNameIsUniqueCheck certification.Check = &shell.OperatorPkgNameIsUniqueCheck{}
+var hasMinimalVulnerabilitiesUnshareCheck certification.Check = &shell.HasMinimalVulnerabilitiesUnshareCheck{}
 
 var containerPolicy = map[string]certification.Check{
 	runAsNonRootCheck.Name():              runAsNonRootCheck,
@@ -114,9 +115,10 @@ var operatorPolicy = map[string]certification.Check{
 	operatorPkgNameIsUniqueCheck.Name():           operatorPkgNameIsUniqueCheck,
 }
 
-var mountedChecks = map[string]certification.Check{
-	hasNoProhibitedMountedCheck.Name():         hasNoProhibitedMountedCheck,
-	operatorPkgNameIsUniqueMountedCheck.Name(): operatorPkgNameIsUniqueMountedCheck,
+var unshareChecks = map[string]certification.Check{
+	hasNoProhibitedMountedCheck.Name():           hasNoProhibitedMountedCheck,
+	operatorPkgNameIsUniqueMountedCheck.Name():   operatorPkgNameIsUniqueMountedCheck,
+	hasMinimalVulnerabilitiesUnshareCheck.Name(): hasMinimalVulnerabilitiesUnshareCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {

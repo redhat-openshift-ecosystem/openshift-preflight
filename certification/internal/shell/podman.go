@@ -320,14 +320,18 @@ func (pe PodmanCLIEngine) Unshare(env map[string]string, command ...string) (*cl
 	return &cli.PodmanUnshareReport{Stdout: stdout.String(), Stderr: stderr.String()}, err
 }
 
-func (pe PodmanCLIEngine) UnshareWithCheck(check, image string, command ...string) (*cli.PodmanUnshareCheckReport, error) {
+func (pe PodmanCLIEngine) UnshareWithCheck(check, image string, mounted bool) (*cli.PodmanUnshareCheckReport, error) {
 	env := map[string]string{
 		"PATH":                 os.Getenv("PATH"),
 		"PREFLIGHT_EXEC_CHECK": check,
 		"PREFLIGHT_EXEC_IMAGE": image,
 	}
 
-	unshareReport, err := pe.Unshare(env, command...)
+	if mounted {
+		env["PREFLIGHT_EXEC_MOUNTED"] = fmt.Sprintf("%t", mounted)
+	}
+
+	unshareReport, err := pe.Unshare(env, os.Args[0], "check", "run")
 	if err != nil {
 		return &cli.PodmanUnshareCheckReport{PodmanUnshareReport: *unshareReport, PassedOverall: false}, err
 	}

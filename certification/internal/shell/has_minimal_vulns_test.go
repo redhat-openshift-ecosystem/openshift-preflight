@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("HasMinimalVulns", func() {
 	var (
-		hasMinimalVulnCheck HasMinimalVulnerabilitiesCheck
+		hasMinimalVulnCheck HasMinimalVulnerabilitiesUnshareCheck
 		fakeEngine          cli.PodmanEngine
 	)
 

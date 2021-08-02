@@ -112,5 +112,5 @@ type PodmanEngine interface {
 	Unmount(containerId string) (*PodmanUnmountReport, error)
 	UnmountImage(imageID string) (*PodmanUnmountReport, error)
 	Unshare(env map[string]string, command ...string) (*PodmanUnshareReport, error)
-	UnshareWithCheck(check, image string, command ...string) (*PodmanUnshareCheckReport, error)
+	UnshareWithCheck(check, image string, mounted bool) (*PodmanUnshareCheckReport, error)
 }
