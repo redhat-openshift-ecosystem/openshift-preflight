@@ -51,6 +51,7 @@ func getResponse(r runtime.Results) UserResponse {
 		Image:       r.TestedImage,
 		Passed:      r.PassedOverall,
 		LibraryInfo: version.Version,
+		BundleHash:  r.BundleHash,
 		Results: resultsText{
 			Passed: passedChecks,
 			Failed: failedChecks,
@@ -65,6 +66,7 @@ func getResponse(r runtime.Results) UserResponse {
 type UserResponse struct {
 	Image       string                 `json:"image" xml:"image"`
 	Passed      bool                   `json:"passed" xml:"passed"`
+	BundleHash  string                 `json:"bundle_hash,omitempty" xml:"bundle_hash,omitempty"`
 	LibraryInfo version.VersionContext `json:"test_library" xml:"test_library"`
 	Results     resultsText            `json:"results" xml:"results"`
 }

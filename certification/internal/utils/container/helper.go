@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"crypto/md5"
 	"fmt"
 	"os"
 	"os/exec"
@@ -96,4 +97,25 @@ func RunInsideContainerFS(podmanEngine cli.PodmanEngine, image string, container
 	defer unmountAndRemove(podmanEngine, containerId)
 
 	return containerFn(report.MountDir)
+}
+
+func GenerateBundleHash(podmanEngine cli.PodmanEngine, image string) (string, error) {
+	hashCmd := `find . -not -name "Dockerfile" -type f -printf '%f\t%p\n' | sort -V -k1 | cut -d$'\t' -f2 | tr '\n' '\0' | xargs -r0 -I {} md5sum "{}"` // >> $HOME/hashes.txt`
+	bundleCmd := fmt.Sprintf("pushd $(podman image mount %[1]s) &> /dev/null && %[2]s && popd &> /dev/null && podman image unmount %[1]s &> /dev/null", image, hashCmd)
+	report, err := podmanEngine.Unshare(map[string]string{}, "/bin/bash", "-c", bundleCmd)
+	if err != nil {
+		log.Errorf("could not generate bundle hash")
+		log.Debugf(fmt.Sprintf("Stdout: %s", report.Stdout))
+		log.Debugf(fmt.Sprintf("Stderr: %s", report.Stderr))
+		return "", err
+	}
+	log.Tracef(fmt.Sprintf("Hash is: %s", report.Stdout))
+	err = os.WriteFile(filepath.Join("artifacts", "hashes.txt"), []byte(report.Stdout), 0644)
+	if err != nil {
+		log.Errorf("could not write bundle hash file")
+		return "", err
+	}
+	sum := md5.Sum([]byte(report.Stdout))
+
+	return fmt.Sprintf("%x", sum), nil
 }

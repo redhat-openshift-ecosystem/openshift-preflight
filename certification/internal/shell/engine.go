@@ -21,6 +21,7 @@ const (
 type CheckEngine struct {
 	Image  string
 	Checks []certification.Check
+	Bundle bool
 
 	results      runtime.Results
 	isDownloaded bool
@@ -83,6 +84,14 @@ func (e *CheckEngine) ExecuteChecks() error {
 		e.results.PassedOverall = false
 	} else {
 		e.results.PassedOverall = true
+	}
+
+	if e.Bundle {
+		md5sum, err := containerutil.GenerateBundleHash(podmanEngine, e.Image)
+		if err != nil {
+			log.Debugf("could not generate bundle hash")
+		}
+		e.results.BundleHash = md5sum
 	}
 
 	return nil
