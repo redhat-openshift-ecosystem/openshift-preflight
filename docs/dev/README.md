@@ -11,7 +11,7 @@ image or operator bundle complies with a series of validations.
 ## Checks
 
 The term "check" refers to a single validation executed against the given asset.
-See our docs on [check implementation](../IMPLEMENT_A_CHECK.md) to find out more
+See our docs on [check implementation](IMPLEMENT_A_CHECK.md) to find out more
 about how checks are implemented.
 
 ## Policies
