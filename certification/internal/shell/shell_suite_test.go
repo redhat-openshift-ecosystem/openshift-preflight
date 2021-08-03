@@ -111,6 +111,14 @@ func (fpe FakePodmanEngine) Unmount(containerId string) (*cli.PodmanUnmountRepor
 	return &fpe.UnmountReport, nil
 }
 
+func (fpe FakePodmanEngine) MountImage(imageID string) (*cli.PodmanMountReport, error) {
+	return &fpe.MountReport, nil
+}
+
+func (fpe FakePodmanEngine) UnmountImage(imageID string) (*cli.PodmanUnmountReport, error) {
+	return &fpe.UnmountReport, nil
+}
+
 func (fpe FakePodmanEngine) Unshare(env map[string]string, command ...string) (*cli.PodmanUnshareReport, error) {
 	return &fpe.UnshareReport, nil
 }
@@ -167,6 +175,14 @@ func (bpe BadPodmanEngine) Mount(containerId string) (*cli.PodmanMountReport, er
 
 func (bpe BadPodmanEngine) Unmount(containerId string) (*cli.PodmanUnmountReport, error) {
 	return nil, errors.New("The Podman Unmount failed")
+}
+
+func (bpe BadPodmanEngine) MountImage(imageID string) (*cli.PodmanMountReport, error) {
+	return nil, errors.New("The Podman Image Mount failed")
+}
+
+func (bpe BadPodmanEngine) UnmountImage(imageID string) (*cli.PodmanUnmountReport, error) {
+	return nil, errors.New("The Podman Image Unmount failed")
 }
 
 func (bpe BadPodmanEngine) Unshare(env map[string]string, command ...string) (*cli.PodmanUnshareReport, error) {

@@ -70,30 +70,25 @@ func SaveContainerToFilesystem(podmanEngine cli.PodmanEngine, imageLog string) (
 
 type ContainerFn func(string) (bool, error)
 
-func unmountAndRemove(podmanEngine cli.PodmanEngine, containerId string) {
-	podmanEngine.Unmount(containerId)
-	podmanEngine.Remove(containerId)
-}
-
-// RunInsideContainerFS executes a provided function by creating a container,
-// based on the passed image, and mounting the filsystem. This allows the passed
-// function to operate on the filesystem natively, without having to do further
-// "shell outs".
-func RunInsideContainerFS(podmanEngine cli.PodmanEngine, image string, containerFn ContainerFn) (bool, error) {
-	createResult, err := podmanEngine.Create(image, &cli.PodmanCreateOptions{})
+// RunInsideImageFS executes a provided function by mounting the image filesystem
+// to the host. Note that any ContainerFn that is expected to run using this function
+// should know that the input is a filesystem path.
+func RunInsideImageFS(podmanEngine cli.PodmanEngine, image string, containerFn ContainerFn) (bool, error) {
+	report, err := podmanEngine.MountImage(image)
 	if err != nil {
-		log.Error("could not retrieve containerId", err)
-		return false, err
-	}
-	containerId := createResult.ContainerID
-
-	report, err := podmanEngine.Mount(containerId)
-	if err != nil {
+		log.Error("stdout: ", report.Stdout)
+		log.Error("stderr: ", report.Stderr)
 		log.Error("could not mount filesystem", err)
 		return false, err
 	}
 
-	defer unmountAndRemove(podmanEngine, containerId)
+	defer func() {
+		report, err := podmanEngine.UnmountImage(image)
+		if err != nil {
+			log.Warn("stdout: ", report.Stdout)
+			log.Warn("stderr: ", report.Stderr)
+		}
+	}()
 
 	return containerFn(report.MountDir)
 }

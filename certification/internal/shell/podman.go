@@ -223,6 +223,7 @@ func (pe PodmanCLIEngine) Remove(containerID string) (*cli.PodmanRemoveReport, e
 	}, nil
 }
 
+// Mount will attempt to mount the filesystem of the container at containerID, and returns the mounted path.
 func (pe PodmanCLIEngine) Mount(containerId string) (*cli.PodmanMountReport, error) {
 	var stdout, stderr bytes.Buffer
 	cmd := exec.Command("podman", "mount", containerId)
@@ -247,6 +248,37 @@ func (pe PodmanCLIEngine) Unmount(containerId string) (*cli.PodmanUnmountReport,
 	report := &cli.PodmanUnmountReport{Stdout: stdout.String(), Stderr: stderr.String()}
 	if err != nil {
 		log.Errorf("could not run unmount. Output: %s", stderr.String())
+		return report, err
+	}
+	return report, nil
+}
+
+// MountImage will attempt to mount a filesystem of the image at imageID, and returns the mounted path.
+func (pe PodmanCLIEngine) MountImage(imageID string) (*cli.PodmanMountReport, error) {
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command("podman", "image", "mount", imageID)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Error("could not run image mount")
+		return &cli.PodmanMountReport{Stdout: stdout.String(), Stderr: stderr.String()}, err
+	}
+	mountedDir := strings.TrimSpace(stdout.String())
+	return &cli.PodmanMountReport{MountDir: mountedDir, Stdout: stdout.String(), Stderr: stderr.String()}, nil
+}
+
+// UnmountImage will attempt to unmount a filesystem of the image at imageID.
+func (pe PodmanCLIEngine) UnmountImage(imageID string) (*cli.PodmanUnmountReport, error) {
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command("podman", "image", "unmount", imageID)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	report := &cli.PodmanUnmountReport{Stdout: stdout.String(), Stderr: stderr.String()}
+	if err != nil {
+		log.Errorf("could not run image unmount. Output: %s", stderr.String())
 		return report, err
 	}
 	return report, nil
