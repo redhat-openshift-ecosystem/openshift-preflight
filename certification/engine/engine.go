@@ -88,7 +88,8 @@ var scorecardBasicSpecCheck certification.Check = &shell.ScorecardBasicSpecCheck
 var scorecardOlmSuiteCheck certification.Check = &shell.ScorecardOlmSuiteCheck{}
 var hasNoProhibitedMountedCheck certification.Check = &shell.HasNoProhibitedPackagesMountedCheck{}
 var relatedImageManifestSchemaVersionCheck certification.Check = &shell.RelatedImagesAreSchemaVersion2Check{}
-var validateOperatorPkNameUniqCheck certification.Check = &shell.ValidateOperatorPkNameUniqCheck{}
+var operatorPkgNameIsUniqueMountedCheck certification.Check = &shell.OperatorPkgNameIsUniqueMountedCheck{}
+var operatorPkgNameIsUniqueCheck certification.Check = &shell.OperatorPkgNameIsUniqueCheck{}
 
 var containerPolicy = map[string]certification.Check{
 	runAsNonRootCheck.Name():              runAsNonRootCheck,
@@ -106,14 +107,15 @@ var operatorPolicy = map[string]certification.Check{
 	scorecardBasicSpecCheck.Name():                scorecardBasicSpecCheck,
 	scorecardOlmSuiteCheck.Name():                 scorecardOlmSuiteCheck,
 	relatedImageManifestSchemaVersionCheck.Name(): relatedImageManifestSchemaVersionCheck,
+	validateOperatorBundle.Name():                 validateOperatorBundle,
+	scorecardBasicSpecCheck.Name():                scorecardBasicSpecCheck,
+	scorecardOlmSuiteCheck.Name():                 scorecardOlmSuiteCheck,
+	operatorPkgNameIsUniqueCheck.Name():           operatorPkgNameIsUniqueCheck,
 }
 
 var mountedChecks = map[string]certification.Check{
-	hasNoProhibitedMountedCheck.Name():     hasNoProhibitedMountedCheck,
-	validateOperatorBundle.Name():          validateOperatorBundle,
-	scorecardBasicSpecCheck.Name():         scorecardBasicSpecCheck,
-	scorecardOlmSuiteCheck.Name():          scorecardOlmSuiteCheck,
-	validateOperatorPkNameUniqCheck.Name(): validateOperatorPkNameUniqCheck,
+	hasNoProhibitedMountedCheck.Name():         hasNoProhibitedMountedCheck,
+	operatorPkgNameIsUniqueMountedCheck.Name(): operatorPkgNameIsUniqueMountedCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {
