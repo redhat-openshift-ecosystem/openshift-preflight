@@ -29,6 +29,10 @@ var checkOperatorCmd = &cobra.Command{
 
 		operatorImage := args[0]
 
+		if _, ok := os.LookupEnv("KUBECONFIG"); !ok {
+			return errors.ErrNoKubeconfig
+		}
+
 		cfg := runtime.Config{
 			Image:          operatorImage,
 			EnabledChecks:  engine.OperatorPolicy(),
