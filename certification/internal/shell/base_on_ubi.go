@@ -10,6 +10,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// BasedOnUBICheck evaluates if the provided image is based on the Red Hat Univeral Base Image
+// by inspecting the contents of the `/etc/os-release` and identifying if the ID is `rhel` and the
+// Name value is `Red Hat Enterprise Linux`
 type BaseOnUBICheck struct{}
 
 func (p *BaseOnUBICheck) Validate(image string) (bool, error) {

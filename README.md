@@ -25,10 +25,10 @@ cluster. which is not provided by the Vagrantfile
 
 ## Usage
 
-The `preflight` allows you to confirm that your container and Operator projects
+The `preflight` utility allows one to confirm that container and Operator projects
 comply with container and Operator certification policies.
 
-A brief summary of the available subcommands is as follows:
+A brief summary of the available sub-commands is as follows:
 
 ```text
 A utility that allows you to pre-test your bundles, operators, and container before submitting for Red Hat Certification.
@@ -41,18 +41,71 @@ Available Commands:
   check       Run checks for an operator or container
   help        Help about any command
   support     Submits a support request
+
+Flags:
+  -h, --help      help for preflight
+  -v, --version   version for preflight
+
+Use "preflight [command] --help" for more information about a command.
 ```
 
-(note that `certify` and `support` subcommands are pending implementation)
-
-To check a container, utilize the `check container` subcommand:
+To check a container, utilize the `check container` sub-command:
 
 ```text
 preflight check container quay.io/example-namespace/example-container:0.0.1
 ```
 
-The check an Operator bundle, utilize the `check Operator` subcommand:
+The check an Operator bundle, utilize the `check Operator` sub-command:
 
 ```text
 preflight check operator quay.io/example-namespace/example-operator:0.0.1
 ```
+
+## Installation
+
+Before installing `preflight`, ensure that the [required dependencies](#requirements) have been installed on the local machine.
+
+### Install Prebuilt Release
+
+One of the prebuilt [release binaries][releases_link] for the supported
+architectures can be downloaded and installed to the local machine.
+
+### Install From Source
+
+Once the repository has been cloned locally, the `preflight` binary can be built
+from source by using the provided target from within the root of the project directory.
+
+```bash
+make build
+```
+
+The `preflight` binary will be created in the root of the project directory. The binary can then be copied manually to a location in the local `$PATH`.
+
+```bash
+sudo mv preflight /usr/local/bin/
+```
+
+Verify that the `preflight` binary can run successfully.
+
+```bash
+preflight --version
+```
+
+The version information should be displayed.
+
+```bash
+preflight version 0.0.0 <commit: 2d3bb671bff8a95d385621382f31215234877d44>
+```
+
+[releases_link]:https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
+
+## How to Contribute
+
+Check out the [contributor documentation][contribution_docs].
+
+## License
+
+Operator SDK is under Apache 2.0 license. See the [LICENSE][license_file] file for details.
+
+[contribution_docs]: ./CONTRIBUTING.md
+[license_file]:./LICENSE

@@ -1,3 +1,5 @@
+// Package formatters defines the abstractions used to properly format a preflight
+// Result.
 package formatters
 
 import (
@@ -70,10 +72,13 @@ func (f *genericFormatter) PrettyName() string {
 	return f.name
 }
 
+// Format returns the formatted results as a byte slice.
 func (f *genericFormatter) Format(r runtime.Results) ([]byte, error) {
 	return f.formatterFunc(r)
 }
 
+// FileExtension returns the extension a user might use when formatting
+// results with this formatter and writing that to disk.
 func (f *genericFormatter) FileExtension() string {
 	return f.fileExtension
 }

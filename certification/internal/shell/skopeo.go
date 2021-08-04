@@ -71,3 +71,33 @@ func (e SkopeoCLIEngine) imageName(image string) (string, error) {
 
 	return "", errors.ErrInvalidImageName
 }
+
+// InspectImage will use skopeo to inspect the input image given input options.
+func (e SkopeoCLIEngine) InspectImage(image string, opts cli.SkopeoInspectOptions) (*cli.SkopeoInspectReport, error) {
+	cmdArgs := []string{"inspect"}
+
+	// add options to the command string
+	if opts.Raw {
+		cmdArgs = append(cmdArgs, "--raw")
+	}
+
+	cmdArgs = append(cmdArgs, "docker://"+image)
+
+	log.Trace("running skopeo with the following invocation", cmdArgs)
+	cmd := exec.Command("skopeo", cmdArgs...)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+
+	if err != nil {
+		return &cli.SkopeoInspectReport{Stdout: stdout.String(), Stderr: stderr.String()}, err
+	}
+
+	return &cli.SkopeoInspectReport{
+		Stdout: stdout.String(),
+		Stderr: stderr.String(),
+		Blob:   stdout.Bytes(),
+	}, nil
+}

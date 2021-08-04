@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
@@ -28,10 +29,15 @@ var checkOperatorCmd = &cobra.Command{
 
 		operatorImage := args[0]
 
+		if _, ok := os.LookupEnv("KUBECONFIG"); !ok {
+			return errors.ErrNoKubeconfig
+		}
+
 		cfg := runtime.Config{
 			Image:          operatorImage,
 			EnabledChecks:  engine.OperatorPolicy(),
 			ResponseFormat: DefaultOutputFormat,
+			Bundle:         true,
 		}
 
 		engine, err := engine.NewForConfig(cfg)
@@ -60,7 +66,9 @@ var checkOperatorCmd = &cobra.Command{
 		resultsOutputTarget := io.MultiWriter(os.Stdout, resultsFile)
 
 		// execute the checks
-		engine.ExecuteChecks()
+		if err := engine.ExecuteChecks(); err != nil {
+			return err
+		}
 		results := engine.Results()
 
 		// return results to the user and then close output files
@@ -79,12 +87,16 @@ var checkOperatorCmd = &cobra.Command{
 }
 
 func init() {
-	checkOperatorCmd.SetUsageTemplate(
+	checks := strings.Join(engine.OperatorPolicy(), "\n- ")
+
+	usage := "\n" + `The checks that will be executed are the following:` + "\n- " +
+		checks + "\n\n" +
 		`Usage:
   preflight check operator <url to Operator bundle image> [flags]
 	
 Flags:
   -h, --help   help for operator
-`)
+`
+	checkOperatorCmd.SetUsageTemplate(usage)
 	checkCmd.AddCommand(checkOperatorCmd)
 }

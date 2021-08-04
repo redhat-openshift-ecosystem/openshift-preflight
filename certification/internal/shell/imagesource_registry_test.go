@@ -22,6 +22,5 @@ var _ = Describe("imageSourceRegistry", func() {
 		Entry("registry.redhat.io","registry.redhat.io", true),
 		Entry("registry.access.redhat.com", "registry.access.redhat.com/ubi8/ubi", true),
 		Entry("quay.io", "quay.io/rocrisp/preflight-operator-bundle:v1", false),
-		Entry("badcode","badcode/morebadcode/and,,,&&&:v1", false),
 	)
 })

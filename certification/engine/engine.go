@@ -1,3 +1,4 @@
+// Package engine contains the interfaces necessary to implement policy execution.
 package engine
 
 import (
@@ -7,31 +8,11 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/shell"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 )
 
-type CheckEngine interface {
-	ContainerFileManager
-	CheckRunner
-}
-
-// ContainerFileManager describes the functionality necessary to interact
-// with a container image tarball on disk.
-type ContainerFileManager interface {
-	// IsRemote will check user-provided path and determine if that path is
-	// local or remote. Here local means that it's a location on the filesystem, and
-	// remote means that it's an image in a registry.
-	ContainerIsRemote(path string) (isRemote bool, remotecheckErr error)
-	// ExtractContainerTar will accept a path on the filesystem and extract it.
-	ExtractContainerTar(path string) (tarballPath string, extractionErr error)
-	// GetContainerFromRegistry will accept a container location and write it locally
-	// as a tarball as done by `podman save`
-	GetContainerFromRegistry(podmanEngine cli.PodmanEngine, containerLoc string) (containerDownloadPath string, containerDownloadErro error)
-}
-
-// CheckRunner defines the functonality necessary to run all checks for a policy,
+// CheckEngine defines the functonality necessary to run all checks for a policy,
 // and return the results of that check execution.
-type CheckRunner interface {
+type CheckEngine interface {
 	// ExecuteChecks should execute all checks in a policy and internally
 	// store the results. Errors returned by ExecuteChecks should reflect
 	// errors in pre-validation tasks, and not errors in individual check
@@ -41,7 +22,7 @@ type CheckRunner interface {
 	Results() runtime.Results
 }
 
-func NewForConfig(config runtime.Config) (CheckRunner, error) {
+func NewForConfig(config runtime.Config) (CheckEngine, error) {
 	if len(config.EnabledChecks) == 0 {
 		// refuse to run if the user has not specified any checks
 		return nil, errors.ErrNoChecksEnabled
@@ -60,11 +41,18 @@ func NewForConfig(config runtime.Config) (CheckRunner, error) {
 		checks[i] = check
 	}
 
-	engine := &shell.CheckEngine{
+	var engine CheckEngine
+	engine = &shell.CheckEngine{
 		Image:  config.Image,
 		Checks: checks,
+		Bundle: config.Bundle,
 	}
-
+	if config.Mounted {
+		engine = &shell.MountedCheckEngine{
+			Image: config.Image,
+			Check: checks[0],
+		}
+	}
 	return engine, nil
 }
 
@@ -72,13 +60,15 @@ func NewForConfig(config runtime.Config) (CheckRunner, error) {
 // if found; nil otherwise
 func queryChecks(checkName string) certification.Check {
 	// query Operator checks
-	check, exists := operatorPolicy[checkName]
-	if exists {
+	if check, exists := operatorPolicy[checkName]; exists {
 		return check
 	}
 	// if not found in Operator Policy, query container policy
-	check, exists = containerPolicy[checkName]
-	if exists {
+	if check, exists := containerPolicy[checkName]; exists {
+		return check
+	}
+	// Lastly, look at the mounted checks
+	if check, exists := unshareChecks[checkName]; exists {
 		return check
 	}
 
@@ -94,10 +84,15 @@ var hasLicenseCheck certification.Check = &shell.HasLicenseCheck{}
 var hasMinimalVulnerabilitiesCheck certification.Check = &shell.HasMinimalVulnerabilitiesCheck{}
 var hasUniqueTagCheck certification.Check = &shell.HasUniqueTagCheck{}
 var hasNoProhibitedCheck certification.Check = &shell.HasNoProhibitedPackagesCheck{}
-var validateOperatorBundle certification.Check = &shell.ValidateOperatorBundlePolicy{}
+var validateOperatorBundle certification.Check = &shell.ValidateOperatorBundleCheck{}
 var scorecardBasicSpecCheck certification.Check = &shell.ScorecardBasicSpecCheck{}
 var scorecardOlmSuiteCheck certification.Check = &shell.ScorecardOlmSuiteCheck{}
 var imageSourceRegistryCheck certification.Check = &shell.ImageSourceRegistryCheck{}
+var hasNoProhibitedMountedCheck certification.Check = &shell.HasNoProhibitedPackagesMountedCheck{}
+var relatedImageManifestSchemaVersionCheck certification.Check = &shell.RelatedImagesAreSchemaVersion2Check{}
+var operatorPkgNameIsUniqueMountedCheck certification.Check = &shell.OperatorPkgNameIsUniqueMountedCheck{}
+var operatorPkgNameIsUniqueCheck certification.Check = &shell.OperatorPkgNameIsUniqueCheck{}
+var hasMinimalVulnerabilitiesUnshareCheck certification.Check = &shell.HasMinimalVulnerabilitiesUnshareCheck{}
 
 var containerPolicy = map[string]certification.Check{
 	runAsNonRootCheck.Name():              runAsNonRootCheck,
@@ -111,10 +106,21 @@ var containerPolicy = map[string]certification.Check{
 }
 
 var operatorPolicy = map[string]certification.Check{
-	validateOperatorBundle.Name():  validateOperatorBundle,
-	scorecardBasicSpecCheck.Name(): scorecardBasicSpecCheck,
-	scorecardOlmSuiteCheck.Name():  scorecardOlmSuiteCheck,
-	imageSourceRegistryCheck.Name(): imageSourceRegistryCheck,
+	validateOperatorBundle.Name():                 validateOperatorBundle,
+	scorecardBasicSpecCheck.Name():                scorecardBasicSpecCheck,
+	scorecardOlmSuiteCheck.Name():                 scorecardOlmSuiteCheck,
+	relatedImageManifestSchemaVersionCheck.Name(): relatedImageManifestSchemaVersionCheck,
+	validateOperatorBundle.Name():                 validateOperatorBundle,
+	scorecardBasicSpecCheck.Name():                scorecardBasicSpecCheck,
+	scorecardOlmSuiteCheck.Name():                 scorecardOlmSuiteCheck,
+	operatorPkgNameIsUniqueCheck.Name():           operatorPkgNameIsUniqueCheck,
+	imageSourceRegistryCheck.Name():               imageSourceRegistryCheck,
+}
+
+var unshareChecks = map[string]certification.Check{
+	hasNoProhibitedMountedCheck.Name():           hasNoProhibitedMountedCheck,
+	operatorPkgNameIsUniqueMountedCheck.Name():   operatorPkgNameIsUniqueMountedCheck,
+	hasMinimalVulnerabilitiesUnshareCheck.Name(): hasMinimalVulnerabilitiesUnshareCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {

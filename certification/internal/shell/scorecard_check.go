@@ -18,6 +18,7 @@ func (p *scorecardCheck) validate(items []cli.OperatorSdkScorecardItem) (bool, e
 	for _, item := range items {
 		for _, result := range item.Status.Results {
 			if strings.Contains(result.State, "fail") {
+				log.Error(result.Log)
 				foundTestFailed = true
 			}
 		}

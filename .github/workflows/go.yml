@@ -10,10 +10,19 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Install system deps
+      run: 'sudo apt update && sudo apt install -y libgpgme-dev libbtrfs-dev libdevmapper-dev'
+
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
         go-version: 1.16
+
+    - name: Vet
+      run: make vet
+
+    - name: Format
+      run: make fmt
 
     - name: Build
       run: make build

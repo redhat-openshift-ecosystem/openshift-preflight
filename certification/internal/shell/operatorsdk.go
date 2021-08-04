@@ -74,6 +74,10 @@ func (o OperatorSdkCLIEngine) Scorecard(image string, opts cli.OperatorSdkScorec
 
 func (o OperatorSdkCLIEngine) BundleValidate(image string, opts cli.OperatorSdkBundleValidateOptions) (*cli.OperatorSdkBundleValidateReport, error) {
 	cmdArgs := []string{"bundle", "validate"}
+	if opts.ContainerEngine == "" {
+		opts.ContainerEngine = "podman"
+	}
+	cmdArgs = append(cmdArgs, "-b", opts.ContainerEngine)
 	if opts.OutputFormat == "" {
 		opts.OutputFormat = "json-alpha1"
 	}
@@ -83,15 +87,20 @@ func (o OperatorSdkCLIEngine) BundleValidate(image string, opts cli.OperatorSdkB
 			cmdArgs = append(cmdArgs, "--select-optional", fmt.Sprintf("name=%s", selector))
 		}
 	}
+	if opts.Verbose {
+		cmdArgs = append(cmdArgs, "--verbose")
+	}
 	cmdArgs = append(cmdArgs, image)
 
 	cmd := exec.Command("operator-sdk", cmdArgs...)
+	log.Debugf("Command being run: %s", cmd.Args)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkBundleValidateFailed, err)
+		log.Debugf("Stderr: %s", stderr.String())
+		return &cli.OperatorSdkBundleValidateReport{Stderr: stderr.String()}, fmt.Errorf("%w: %s", errors.ErrOperatorSdkBundleValidateFailed, err)
 	}
 
 	var bundleValidateData cli.OperatorSdkBundleValidateReport

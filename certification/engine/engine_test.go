@@ -11,7 +11,7 @@ import (
 var _ = Describe("TestPolicyEngine", func() {
 	var (
 		hasNoProhibitedCheck   certification.Check = &shell.HasNoProhibitedPackagesCheck{}
-		validateOperatorBundle certification.Check = &shell.ValidateOperatorBundlePolicy{}
+		validateOperatorBundle certification.Check = &shell.ValidateOperatorBundleCheck{}
 	)
 
 	Describe("Querying all policies", func() {
