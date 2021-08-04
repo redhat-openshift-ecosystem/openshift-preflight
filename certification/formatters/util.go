@@ -16,7 +16,7 @@ func getResponse(r runtime.Results) UserResponse {
 		for i, check := range r.Passed {
 			passedChecks[i] = checkExecutionInfo{
 				Name:        check.Name(),
-				ElapsedTime: check.ElapsedTime.String(),
+				ElapsedTime: float64(check.ElapsedTime.Milliseconds()),
 				Description: check.Metadata().Description,
 			}
 		}
@@ -26,7 +26,7 @@ func getResponse(r runtime.Results) UserResponse {
 		for i, check := range r.Failed {
 			failedChecks[i] = checkExecutionInfo{
 				Name:             check.Name(),
-				ElapsedTime:      check.ElapsedTime.String(),
+				ElapsedTime:      float64(check.ElapsedTime.Milliseconds()),
 				Description:      check.Metadata().Description,
 				Help:             check.Help().Message,
 				Suggestion:       check.Help().Suggestion,
@@ -40,7 +40,7 @@ func getResponse(r runtime.Results) UserResponse {
 		for i, check := range r.Errors {
 			erroredChecks[i] = checkExecutionInfo{
 				Name:        check.Name(),
-				ElapsedTime: check.ElapsedTime.String(),
+				ElapsedTime: float64(check.ElapsedTime.Milliseconds()),
 				Description: check.Metadata().Description,
 				Help:        check.Help().Message,
 			}
@@ -81,11 +81,11 @@ type resultsText struct {
 // checkExecutionInfo contains all possible output fields that a user might see in their result.
 // Empty fields will be omitted.
 type checkExecutionInfo struct {
-	Name             string `json:"name,omitempty" xml:"name,omitempty"`
-	ElapsedTime      string `json:"elapsed_time,omitempty" xml:"elapsed_time,omitempty"`
-	Description      string `json:"description,omitempty" xml:"description,omitempty"`
-	Help             string `json:"help,omitempty" xml:"help,omitempty"`
-	Suggestion       string `json:"suggestion,omitempty" xml:"suggestion,omitempty"`
-	KnowledgeBaseURL string `json:"knowledgebase_url,omitempty" xml:"knowledgebase_url,omitempty"`
-	CheckURL         string `json:"check_url,omitempty" xml:"check_url,omitempty"`
+	Name             string  `json:"name,omitempty" xml:"name,omitempty"`
+	ElapsedTime      float64 `json:"elapsed_time,omitempty" xml:"elapsed_time,omitempty"`
+	Description      string  `json:"description,omitempty" xml:"description,omitempty"`
+	Help             string  `json:"help,omitempty" xml:"help,omitempty"`
+	Suggestion       string  `json:"suggestion,omitempty" xml:"suggestion,omitempty"`
+	KnowledgeBaseURL string  `json:"knowledgebase_url,omitempty" xml:"knowledgebase_url,omitempty"`
+	CheckURL         string  `json:"check_url,omitempty" xml:"check_url,omitempty"`
 }
