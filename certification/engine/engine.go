@@ -45,6 +45,7 @@ func NewForConfig(config runtime.Config) (CheckEngine, error) {
 	engine = &shell.CheckEngine{
 		Image:  config.Image,
 		Checks: checks,
+		Bundle: config.Bundle,
 	}
 	if config.Mounted {
 		engine = &shell.MountedCheckEngine{

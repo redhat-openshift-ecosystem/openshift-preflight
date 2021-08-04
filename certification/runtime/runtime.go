@@ -13,6 +13,7 @@ type Config struct {
 	EnabledChecks  []string
 	ResponseFormat string
 	Mounted        bool
+	Bundle         bool
 }
 
 type Result struct {
@@ -23,6 +24,7 @@ type Result struct {
 type Results struct {
 	TestedImage   string
 	PassedOverall bool
+	BundleHash    string
 	Passed        []Result
 	Failed        []Result
 	Errors        []Result

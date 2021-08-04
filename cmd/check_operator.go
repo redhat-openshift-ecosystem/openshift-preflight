@@ -37,6 +37,7 @@ var checkOperatorCmd = &cobra.Command{
 			Image:          operatorImage,
 			EnabledChecks:  engine.OperatorPolicy(),
 			ResponseFormat: DefaultOutputFormat,
+			Bundle:         true,
 		}
 
 		engine, err := engine.NewForConfig(cfg)
