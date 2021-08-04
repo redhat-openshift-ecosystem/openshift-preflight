@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("BaseOnUBI", func() {
 	var (
-		baseOnUbiCheck BaseOnUBICheck
+		baseOnUbiCheck BasedOnUBICheck
 		fakeEngine     cli.PodmanEngine
 	)
 
@@ -25,12 +25,10 @@ NAME="Red Hat Enterprise Linux"
 `,
 			RunReportStderr: "",
 		}
+		baseOnUbiCheck = *NewBasedOnUBICheck(&fakeEngine)
 	})
 	Describe("Checking for UBI as a base", func() {
 		Context("When it is based on UBI", func() {
-			BeforeEach(func() {
-				podmanEngine = fakeEngine
-			})
 			It("should pass Validate", func() {
 				ok, err := baseOnUbiCheck.Validate("dummy/image")
 				Expect(err).ToNot(HaveOccurred())
@@ -41,7 +39,7 @@ NAME="Red Hat Enterprise Linux"
 			BeforeEach(func() {
 				engine := fakeEngine.(FakePodmanEngine)
 				engine.RunReportStdout = `ID="notrhel"`
-				podmanEngine = engine
+				baseOnUbiCheck.PodmanEngine = engine
 			})
 			It("should not pass Validate", func() {
 				log.Errorf("Run Report: %s", podmanEngine)
@@ -49,12 +47,15 @@ NAME="Red Hat Enterprise Linux"
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
+			AfterEach(func() {
+				baseOnUbiCheck.PodmanEngine = fakeEngine
+			})
 		})
 	})
 	Describe("Checking that PodMan errors are handled correctly", func() {
 		BeforeEach(func() {
-			fakeEngine = BadPodmanEngine{}
-			podmanEngine = fakeEngine
+			badEngine := BadPodmanEngine{}
+			baseOnUbiCheck.PodmanEngine = badEngine
 		})
 		Context("When PodMan throws an error", func() {
 			It("should fail Validate and return an error", func() {
@@ -62,6 +63,9 @@ NAME="Red Hat Enterprise Linux"
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
+		})
+		AfterEach(func() {
+			baseOnUbiCheck.PodmanEngine = fakeEngine
 		})
 	})
 })

@@ -13,9 +13,17 @@ import (
 // BasedOnUBICheck evaluates if the provided image is based on the Red Hat Univeral Base Image
 // by inspecting the contents of the `/etc/os-release` and identifying if the ID is `rhel` and the
 // Name value is `Red Hat Enterprise Linux`
-type BaseOnUBICheck struct{}
+type BasedOnUBICheck struct {
+	PodmanEngine cli.PodmanEngine
+}
 
-func (p *BaseOnUBICheck) Validate(image string) (bool, error) {
+func NewBasedOnUBICheck(podmanEngine *cli.PodmanEngine) *BasedOnUBICheck {
+	return &BasedOnUBICheck{
+		PodmanEngine: *podmanEngine,
+	}
+}
+
+func (p *BasedOnUBICheck) Validate(image string) (bool, error) {
 	lines, err := p.getDataToValidate(image)
 	if err != nil {
 		log.Debugf("Stdout: %s", lines)
@@ -25,14 +33,14 @@ func (p *BaseOnUBICheck) Validate(image string) (bool, error) {
 	return p.validate(lines)
 }
 
-func (p *BaseOnUBICheck) getDataToValidate(image string) ([]string, error) {
+func (p *BasedOnUBICheck) getDataToValidate(image string) ([]string, error) {
 	runOpts := cli.ImageRunOptions{
 		EntryPoint:     "cat",
 		EntryPointArgs: []string{"/etc/os-release"},
 		LogLevel:       "debug",
 		Image:          image,
 	}
-	runReport, err := podmanEngine.Run(runOpts)
+	runReport, err := p.PodmanEngine.Run(runOpts)
 	if err != nil {
 		log.Error("unable to inspect the os-release file in the target container: ", err)
 		log.Debugf("Stdout: %s", runReport.Stdout)
@@ -43,7 +51,7 @@ func (p *BaseOnUBICheck) getDataToValidate(image string) ([]string, error) {
 	return strings.Split(runReport.Stdout, "\n"), nil
 }
 
-func (p *BaseOnUBICheck) validate(lines []string) (bool, error) {
+func (p *BasedOnUBICheck) validate(lines []string) (bool, error) {
 	var hasRHELID, hasRHELName bool
 	for _, value := range lines {
 		if strings.HasPrefix(value, `ID="rhel"`) {
@@ -59,11 +67,11 @@ func (p *BaseOnUBICheck) validate(lines []string) (bool, error) {
 	return false, nil
 }
 
-func (p *BaseOnUBICheck) Name() string {
+func (p *BasedOnUBICheck) Name() string {
 	return "BasedOnUbi"
 }
 
-func (p *BaseOnUBICheck) Metadata() certification.Metadata {
+func (p *BasedOnUBICheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checking if the container's base image is based upon the Red Hat Universal Base Image (UBI)",
 		Level:            "best",
@@ -72,7 +80,7 @@ func (p *BaseOnUBICheck) Metadata() certification.Metadata {
 	}
 }
 
-func (p *BaseOnUBICheck) Help() certification.HelpText {
+func (p *BasedOnUBICheck) Help() certification.HelpText {
 	return certification.HelpText{
 		Message:    "Check BasedOnUbi encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Change the FROM directive in your Dockerfile or Containerfile to FROM registry.access.redhat.com/ubi8/ubi",

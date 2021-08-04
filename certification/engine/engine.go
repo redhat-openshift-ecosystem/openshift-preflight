@@ -79,7 +79,7 @@ func queryChecks(checkName string) certification.Check {
 var runAsNonRootCheck certification.Check = &shell.RunAsNonRootCheck{}
 var underLayerMaxCheck certification.Check = &shell.UnderLayerMaxCheck{}
 var hasRequiredLabelCheck certification.Check = &shell.HasRequiredLabelsCheck{}
-var basedOnUbiCheck certification.Check = &shell.BaseOnUBICheck{}
+var basedOnUbiCheck certification.Check = shell.NewBasedOnUBICheck(NewPodmanEngine())
 var hasLicenseCheck certification.Check = &shell.HasLicenseCheck{}
 var hasMinimalVulnerabilitiesCheck certification.Check = &shell.HasMinimalVulnerabilitiesCheck{}
 var hasUniqueTagCheck certification.Check = &shell.HasUniqueTagCheck{}
@@ -140,3 +140,73 @@ func OperatorPolicy() []string {
 func ContainerPolicy() []string {
 	return makeCheckList(containerPolicy)
 }
+
+// var runAsNonRootCheck certification.Check
+// var underLayerMaxCheck certification.Check
+// var hasRequiredLabelCheck certification.Check
+// var basedOnUbiCheck certification.Check
+// var hasLicenseCheck certification.Check
+// var hasMinimalVulnerabilitiesCheck certification.Check
+// var hasUniqueTagCheck certification.Check
+// var hasNoProhibitedCheck certification.Check
+// var validateOperatorBundle certification.Check
+// var scorecardBasicSpecCheck certification.Check
+// var scorecardOlmSuiteCheck certification.Check
+// var hasNoProhibitedMountedCheck certification.Check
+// var relatedImageManifestSchemaVersionCheck certification.Check
+// var operatorPkgNameIsUniqueMountedCheck certification.Check
+// var operatorPkgNameIsUniqueCheck certification.Check
+
+// var containerPolicy map[string]certification.Check
+
+// var operatorPolicy map[string]certification.Check
+
+// var mountedChecks map[string]certification.Check
+
+// func registerChecks() {
+// 	var podmanEngine cli.PodmanEngine = &PodmanEngine{}
+
+// 	// Register all checks
+// 	runAsNonRootCheck = &shell.RunAsNonRootCheck{}
+// 	underLayerMaxCheck = &shell.UnderLayerMaxCheck{}
+// 	hasRequiredLabelCheck = &shell.HasRequiredLabelsCheck{}
+// 	basedOnUbiCheck = shell.NewBasedOnUBICheck(&podmanEngine)
+// 	hasLicenseCheck = &shell.HasLicenseCheck{}
+// 	hasMinimalVulnerabilitiesCheck = &shell.HasMinimalVulnerabilitiesCheck{}
+// 	hasUniqueTagCheck = &shell.HasUniqueTagCheck{}
+// 	hasNoProhibitedCheck = &shell.HasNoProhibitedPackagesCheck{}
+// 	validateOperatorBundle = &shell.ValidateOperatorBundleCheck{}
+// 	scorecardBasicSpecCheck = &shell.ScorecardBasicSpecCheck{}
+// 	scorecardOlmSuiteCheck = &shell.ScorecardOlmSuiteCheck{}
+// 	hasNoProhibitedMountedCheck = &shell.HasNoProhibitedPackagesMountedCheck{}
+// 	relatedImageManifestSchemaVersionCheck = &shell.RelatedImagesAreSchemaVersion2Check{}
+// 	operatorPkgNameIsUniqueMountedCheck = &shell.OperatorPkgNameIsUniqueMountedCheck{}
+// 	operatorPkgNameIsUniqueCheck = &shell.OperatorPkgNameIsUniqueCheck{}
+
+// 	containerPolicy = map[string]certification.Check{
+// 		runAsNonRootCheck.Name():              runAsNonRootCheck,
+// 		underLayerMaxCheck.Name():             underLayerMaxCheck,
+// 		hasRequiredLabelCheck.Name():          hasRequiredLabelCheck,
+// 		basedOnUbiCheck.Name():                basedOnUbiCheck,
+// 		hasLicenseCheck.Name():                hasLicenseCheck,
+// 		hasMinimalVulnerabilitiesCheck.Name(): hasMinimalVulnerabilitiesCheck,
+// 		hasUniqueTagCheck.Name():              hasUniqueTagCheck,
+// 		hasNoProhibitedCheck.Name():           hasNoProhibitedCheck,
+// 	}
+
+// 	operatorPolicy = map[string]certification.Check{
+// 		validateOperatorBundle.Name():                 validateOperatorBundle,
+// 		scorecardBasicSpecCheck.Name():                scorecardBasicSpecCheck,
+// 		scorecardOlmSuiteCheck.Name():                 scorecardOlmSuiteCheck,
+// 		relatedImageManifestSchemaVersionCheck.Name(): relatedImageManifestSchemaVersionCheck,
+// 		validateOperatorBundle.Name():                 validateOperatorBundle,
+// 		scorecardBasicSpecCheck.Name():                scorecardBasicSpecCheck,
+// 		scorecardOlmSuiteCheck.Name():                 scorecardOlmSuiteCheck,
+// 		operatorPkgNameIsUniqueCheck.Name():           operatorPkgNameIsUniqueCheck,
+// 	}
+
+// 	mountedChecks = map[string]certification.Check{
+// 		hasNoProhibitedMountedCheck.Name():         hasNoProhibitedMountedCheck,
+// 		operatorPkgNameIsUniqueMountedCheck.Name(): operatorPkgNameIsUniqueMountedCheck,
+// 	}
+// }
