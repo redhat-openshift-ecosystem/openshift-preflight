@@ -17,9 +17,9 @@ var _ = Describe("imageSourceRegistry", func() {
 		},
 		Entry("registry.connect.dev.redhat.com", "registry.connect.dev.redhat.com/", true),
 		Entry("registry.connect.qa.redhat.com", "registry.connect.qa.redhat.com/", true),
-		Entry("registry.connect.stage.redhat.com","registry.connect.stage.redhat.com/", true),
-		Entry("registry.connect.redhat.com","registry.connect.redhat.com", true),
-		Entry("registry.redhat.io","registry.redhat.io", true),
+		Entry("registry.connect.stage.redhat.com", "registry.connect.stage.redhat.com/", true),
+		Entry("registry.connect.redhat.com", "registry.connect.redhat.com", true),
+		Entry("registry.redhat.io", "registry.redhat.io", true),
 		Entry("registry.access.redhat.com", "registry.access.redhat.com/ubi8/ubi", true),
 		Entry("quay.io", "quay.io/rocrisp/preflight-operator-bundle:v1", false),
 	)
