@@ -33,12 +33,16 @@ It takes its input from environment variables only.`,
 			log.Error("Operator image envvar not specified")
 			return errors.New("required environment variable PREFLIGHT_EXEC_IMAGE not specified")
 		}
+		mounted, ok := os.LookupEnv("PREFLIGHT_EXEC_MOUNTED")
+		if !ok {
+			mounted = "false"
+		}
 
 		cfg := runtime.Config{
 			Image:          image,
 			EnabledChecks:  []string{enabledCheck},
 			ResponseFormat: DefaultOutputFormat,
-			Mounted:        true,
+			Mounted:        mounted == "true",
 		}
 
 		engine, err := engine.NewForConfig(cfg)

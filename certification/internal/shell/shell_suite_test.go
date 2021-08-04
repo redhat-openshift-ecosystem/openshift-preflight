@@ -123,7 +123,7 @@ func (fpe FakePodmanEngine) Unshare(env map[string]string, command ...string) (*
 	return &fpe.UnshareReport, nil
 }
 
-func (fpe FakePodmanEngine) UnshareWithCheck(check, image string, command ...string) (*cli.PodmanUnshareCheckReport, error) {
+func (fpe FakePodmanEngine) UnshareWithCheck(check, image string, mounted bool) (*cli.PodmanUnshareCheckReport, error) {
 	return &fpe.UnshareCheckReport, nil
 }
 
@@ -189,7 +189,7 @@ func (bpe BadPodmanEngine) Unshare(env map[string]string, command ...string) (*c
 	return nil, errors.New("The Podman Unshare operation has failed")
 }
 
-func (bpe BadPodmanEngine) UnshareWithCheck(check, image string, command ...string) (*cli.PodmanUnshareCheckReport, error) {
+func (bpe BadPodmanEngine) UnshareWithCheck(check, image string, mounted bool) (*cli.PodmanUnshareCheckReport, error) {
 	return nil, errors.New("The Podman Unshare With Check operation has failed")
 }
 

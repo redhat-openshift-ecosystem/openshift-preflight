@@ -1,8 +1,6 @@
 package shell
 
 import (
-	"os"
-
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	log "github.com/sirupsen/logrus"
 )
@@ -12,7 +10,8 @@ import (
 type HasNoProhibitedPackagesCheck struct{}
 
 func (p *HasNoProhibitedPackagesCheck) Validate(image string) (bool, error) {
-	result, err := podmanEngine.UnshareWithCheck("HasNoProhibitedPackagesMounted", image, os.Args[0], "check", "run")
+	mounted := true
+	result, err := podmanEngine.UnshareWithCheck("HasNoProhibitedPackagesMounted", image, mounted)
 	if err != nil {
 		log.Trace("unable to execute preflight in the unshare env")
 		log.Debugf("Stdout: %s", result.Stdout)
