@@ -297,11 +297,15 @@ func (pe PodmanCLIEngine) Unshare(env map[string]string, command ...string) (*cl
 		return &cli.PodmanUnshareReport{Stdout: stdout.String(), Stderr: stderr.String()}, errors.ErrAlreadyInUnshare
 	}
 
+	loglevel := os.Getenv("PFLT_LOGLEVEL")
+
 	environ := []string{
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
 		"PREFLIGHT_EXEC_RUN=1",
 		"PFLT_LOGFILE=preflight-unshare.log",
+		fmt.Sprintf("PFLT_LOGLEVEL=%s", loglevel),
 	}
+
 	for k, v := range env {
 		environ = append(environ, fmt.Sprintf("%s=%s", k, v))
 	}

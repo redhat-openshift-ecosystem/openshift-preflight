@@ -90,5 +90,5 @@ func RunInsideImageFS(podmanEngine cli.PodmanEngine, image string, containerFn C
 		}
 	}()
 
-	return containerFn(report.MountDir)
+	return containerFn(strings.TrimSpace(report.MountDir))
 }
