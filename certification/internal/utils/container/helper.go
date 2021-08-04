@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"crypto/md5"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
+	log "github.com/sirupsen/logrus"
 )
 
 func ExtractContainerTar(tarball string) (string, error) {
@@ -65,4 +67,50 @@ func SaveContainerToFilesystem(podmanEngine cli.PodmanEngine, imageLog string) (
 		return "", fmt.Errorf("%w: %s", errors.ErrSaveContainerFailed, err)
 	}
 	return tarpath, nil
+}
+
+type ContainerFn func(string) (bool, error)
+
+// RunInsideImageFS executes a provided function by mounting the image filesystem
+// to the host. Note that any ContainerFn that is expected to run using this function
+// should know that the input is a filesystem path.
+func RunInsideImageFS(podmanEngine cli.PodmanEngine, image string, containerFn ContainerFn) (bool, error) {
+	report, err := podmanEngine.MountImage(image)
+	if err != nil {
+		log.Error("stdout: ", report.Stdout)
+		log.Error("stderr: ", report.Stderr)
+		log.Error("could not mount filesystem", err)
+		return false, err
+	}
+
+	defer func() {
+		report, err := podmanEngine.UnmountImage(image)
+		if err != nil {
+			log.Warn("stdout: ", report.Stdout)
+			log.Warn("stderr: ", report.Stderr)
+		}
+	}()
+
+	return containerFn(strings.TrimSpace(report.MountDir))
+}
+
+func GenerateBundleHash(podmanEngine cli.PodmanEngine, image string) (string, error) {
+	hashCmd := `find . -not -name "Dockerfile" -type f -printf '%f\t%p\n' | sort -V -k1 | cut -d$'\t' -f2 | tr '\n' '\0' | xargs -r0 -I {} md5sum "{}"` // >> $HOME/hashes.txt`
+	bundleCmd := fmt.Sprintf("pushd $(podman image mount %[1]s) &> /dev/null && %[2]s && popd &> /dev/null && podman image unmount %[1]s &> /dev/null", image, hashCmd)
+	report, err := podmanEngine.Unshare(map[string]string{}, "/bin/bash", "-c", bundleCmd)
+	if err != nil {
+		log.Errorf("could not generate bundle hash")
+		log.Debugf(fmt.Sprintf("Stdout: %s", report.Stdout))
+		log.Debugf(fmt.Sprintf("Stderr: %s", report.Stderr))
+		return "", err
+	}
+	log.Tracef(fmt.Sprintf("Hash is: %s", report.Stdout))
+	err = os.WriteFile(filepath.Join("artifacts", "hashes.txt"), []byte(report.Stdout), 0644)
+	if err != nil {
+		log.Errorf("could not write bundle hash file")
+		return "", err
+	}
+	sum := md5.Sum([]byte(report.Stdout))
+
+	return fmt.Sprintf("%x", sum), nil
 }

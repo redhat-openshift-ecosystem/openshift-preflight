@@ -11,10 +11,17 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// CheckEngine implements a CheckRunner.
+const (
+	passed  string = "PASSED"
+	failed  string = "FAILED"
+	errored string = "ERROR"
+)
+
+// CheckEngine implements a CheckEngine.
 type CheckEngine struct {
 	Image  string
 	Checks []certification.Check
+	Bundle bool
 
 	results      runtime.Results
 	isDownloaded bool
@@ -50,24 +57,41 @@ func (e *CheckEngine) ExecuteChecks() error {
 		checkStartTime := time.Now()
 
 		// run the validation
-		passed, err := check.Validate(targetImage)
+		checkPassed, err := check.Validate(targetImage)
 
 		checkElapsedTime := time.Since(checkStartTime)
 
 		if err != nil {
-			log.WithFields(log.Fields{"result": "ERROR", "error": err.Error()}).Info("check completed: ", check.Name())
+			log.WithFields(log.Fields{"result": err, errored: err.Error()}).Info("check completed: ", check.Name())
 			e.results.Errors = append(e.results.Errors, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
-		if !passed {
-			log.WithFields(log.Fields{"result": "FAILED"}).Info("check completed: ", check.Name())
+		if !checkPassed {
+			log.WithFields(log.Fields{"result": failed}).Info("check completed: ", check.Name())
 			e.results.Failed = append(e.results.Failed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
-		log.WithFields(log.Fields{"result": "PASSED"}).Info("check completed: ", check.Name())
+		log.WithFields(log.Fields{"result": passed}).Info("check completed: ", check.Name())
 		e.results.Passed = append(e.results.Passed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
+	}
+
+	// 2 possible status codes
+	// 1. PassedOverall=true - all checks have passed successfully
+	// 2. PassedOverall=false - At least one check failed or an error occured in one of the checks
+	if len(e.results.Errors) > 0 || len(e.results.Failed) > 0 {
+		e.results.PassedOverall = false
+	} else {
+		e.results.PassedOverall = true
+	}
+
+	if e.Bundle {
+		md5sum, err := containerutil.GenerateBundleHash(podmanEngine, e.Image)
+		if err != nil {
+			log.Debugf("could not generate bundle hash")
+		}
+		e.results.BundleHash = md5sum
 	}
 
 	return nil

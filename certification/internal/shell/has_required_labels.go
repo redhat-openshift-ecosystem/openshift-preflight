@@ -6,6 +6,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var requiredLabels = []string{"name", "vendor", "version", "release", "summary", "description"}
+
+// HasRequiredLabelsCheck evaluates the image manifest to ensure that the appropriate metadata
+// labels are present on the image asset as it exists in its current container registry.
 type HasRequiredLabelsCheck struct{}
 
 func (p *HasRequiredLabelsCheck) Validate(image string) (bool, error) {
@@ -28,7 +32,6 @@ func (p *HasRequiredLabelsCheck) getDataForValidate(image string) (map[string]st
 }
 
 func (p *HasRequiredLabelsCheck) validate(labels map[string]string) (bool, error) {
-	requiredLabels := []string{"name", "vendor", "version", "release", "summary", "description"}
 	missingLabels := []string{}
 	for _, label := range requiredLabels {
 		if labels[label] == "" {
@@ -38,10 +41,9 @@ func (p *HasRequiredLabelsCheck) validate(labels map[string]string) (bool, error
 
 	if len(missingLabels) > 0 {
 		log.Warn("expected labels are missing:", missingLabels)
-		return false, nil
 	}
 
-	return true, nil
+	return len(missingLabels) == 0, nil
 }
 
 func (p *HasRequiredLabelsCheck) Name() string {

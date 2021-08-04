@@ -7,6 +7,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// HasUniqueTagCheck evaluates the image to ensure that it has a tag other than
+// the latest tag, which is considered to be a "floating" tag and may not accurately
+// represent the same image over time.
 type HasUniqueTagCheck struct{}
 
 func (p *HasUniqueTagCheck) Validate(image string) (bool, error) {

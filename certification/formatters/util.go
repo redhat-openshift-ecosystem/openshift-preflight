@@ -48,8 +48,10 @@ func getResponse(r runtime.Results) UserResponse {
 	}
 
 	response := UserResponse{
-		Image:             r.TestedImage,
-		ValidationVersion: version.Version,
+		Image:       r.TestedImage,
+		Passed:      r.PassedOverall,
+		LibraryInfo: version.Version,
+		BundleHash:  r.BundleHash,
 		Results: resultsText{
 			Passed: passedChecks,
 			Failed: failedChecks,
@@ -60,18 +62,24 @@ func getResponse(r runtime.Results) UserResponse {
 	return response
 }
 
+// UserResponse is the standard user-facing response.
 type UserResponse struct {
-	Image             string                 `json:"image" xml:"image"`
-	ValidationVersion version.VersionContext `json:"validation_lib_version" xml:"validationLibVersion"`
-	Results           resultsText            `json:"results" xml:"results"`
+	Image       string                 `json:"image" xml:"image"`
+	Passed      bool                   `json:"passed" xml:"passed"`
+	BundleHash  string                 `json:"bundle_hash,omitempty" xml:"bundle_hash,omitempty"`
+	LibraryInfo version.VersionContext `json:"test_library" xml:"test_library"`
+	Results     resultsText            `json:"results" xml:"results"`
 }
 
+// resultsText represents the results of check execution against the asset.
 type resultsText struct {
 	Passed []checkExecutionInfo `json:"passed" xml:"passed"`
 	Failed []checkExecutionInfo `json:"failed" xml:"failed"`
 	Errors []checkExecutionInfo `json:"errors" xml:"errors"`
 }
 
+// checkExecutionInfo contains all possible output fields that a user might see in their result.
+// Empty fields will be omitted.
 type checkExecutionInfo struct {
 	Name             string `json:"name,omitempty" xml:"name,omitempty"`
 	ElapsedTime      string `json:"elapsed_time,omitempty" xml:"elapsed_time,omitempty"`

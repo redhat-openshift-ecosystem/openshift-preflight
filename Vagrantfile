@@ -22,7 +22,7 @@ Vagrant.configure("2") do |config|
     go-md2man \
     runc \
     containers-common \
-    openscap-utils
+    openscap-containers
   
     curl -L https://golang.org/dl/go1.16.3.linux-amd64.tar.gz --output go1.16.3.linux-amd64.tar.gz
     rm -rf /usr/local/go && tar -C /usr/local -xzf go1.16.3.linux-amd64.tar.gz

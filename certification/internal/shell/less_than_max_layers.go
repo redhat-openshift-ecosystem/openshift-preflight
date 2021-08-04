@@ -12,6 +12,7 @@ const (
 	acceptableLayerMax = 40
 )
 
+// UnderLayerMaxCheck ensures that the image has less layers in its assembly than a predefined maximum.
 type UnderLayerMaxCheck struct{}
 
 func (p *UnderLayerMaxCheck) Validate(image string) (bool, error) {

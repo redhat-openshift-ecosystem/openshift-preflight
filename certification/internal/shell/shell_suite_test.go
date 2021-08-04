@@ -49,15 +49,24 @@ var _ = AfterSuite(func() {
 type FakePodmanEngine struct {
 	RunReportStdout     string
 	RunReportStderr     string
+	RunReportExitCode   int
 	PullReportStdouterr string
 	ImageInspectReport  cli.ImageInspectReport
 	ImageScanReport     cli.ImageScanReport
+	CreateReport        cli.PodmanCreateReport
+	CopyFromReport      cli.PodmanCopyReport
+	RemoveReport        cli.PodmanRemoveReport
+	UnshareReport       cli.PodmanUnshareReport
+	MountReport         cli.PodmanMountReport
+	UnmountReport       cli.PodmanUnmountReport
+	UnshareCheckReport  cli.PodmanUnshareCheckReport
 }
 
 func (fpe FakePodmanEngine) Run(opts cli.ImageRunOptions) (*cli.ImageRunReport, error) {
 	runReport := cli.ImageRunReport{
-		Stdout: fpe.RunReportStdout,
-		Stderr: fpe.RunReportStderr,
+		Stdout:   fpe.RunReportStdout,
+		Stderr:   fpe.RunReportStderr,
+		ExitCode: fpe.RunReportExitCode,
 	}
 	return &runReport, nil
 }
@@ -82,12 +91,49 @@ func (fpe FakePodmanEngine) ScanImage(rawImage string) (*cli.ImageScanReport, er
 	return &fpe.ImageScanReport, nil
 }
 
+func (fpe FakePodmanEngine) Create(rawImage string, opts *cli.PodmanCreateOptions) (*cli.PodmanCreateReport, error) {
+	return &fpe.CreateReport, nil
+}
+
+func (fpe FakePodmanEngine) CopyFrom(containerID, sourcePath, destinationPath string) (*cli.PodmanCopyReport, error) {
+	return &fpe.CopyFromReport, nil
+}
+
+func (fpe FakePodmanEngine) Remove(containerID string) (*cli.PodmanRemoveReport, error) {
+	return &fpe.RemoveReport, nil
+}
+
+func (fpe FakePodmanEngine) Mount(containerId string) (*cli.PodmanMountReport, error) {
+	return &fpe.MountReport, nil
+}
+
+func (fpe FakePodmanEngine) Unmount(containerId string) (*cli.PodmanUnmountReport, error) {
+	return &fpe.UnmountReport, nil
+}
+
+func (fpe FakePodmanEngine) MountImage(imageID string) (*cli.PodmanMountReport, error) {
+	return &fpe.MountReport, nil
+}
+
+func (fpe FakePodmanEngine) UnmountImage(imageID string) (*cli.PodmanUnmountReport, error) {
+	return &fpe.UnmountReport, nil
+}
+
+func (fpe FakePodmanEngine) Unshare(env map[string]string, command ...string) (*cli.PodmanUnshareReport, error) {
+	return &fpe.UnshareReport, nil
+}
+
+func (fpe FakePodmanEngine) UnshareWithCheck(check, image string, mounted bool) (*cli.PodmanUnshareCheckReport, error) {
+	return &fpe.UnshareCheckReport, nil
+}
+
 type BadPodmanEngine struct{}
 
 func (bpe BadPodmanEngine) Run(cli.ImageRunOptions) (*cli.ImageRunReport, error) {
 	runReport := cli.ImageRunReport{
-		Stdout: "Bad stadout",
-		Stderr: "Bad stderr",
+		Stdout:   "Bad stadout",
+		Stderr:   "Bad stderr",
+		ExitCode: -1,
 	}
 	return &runReport, errors.New("the Podman Run has failed")
 }
@@ -111,6 +157,42 @@ func (bpe BadPodmanEngine) ScanImage(rawImage string) (*cli.ImageScanReport, err
 	return nil, errors.New("the Podman Scan Image has failed")
 }
 
+func (bpe BadPodmanEngine) Create(rawImage string, opts *cli.PodmanCreateOptions) (*cli.PodmanCreateReport, error) {
+	return nil, errors.New("The Podman Create operation has failed")
+}
+
+func (bpe BadPodmanEngine) CopyFrom(containerID, sourcePath, destinationPath string) (*cli.PodmanCopyReport, error) {
+	return nil, errors.New("The Podman Copy From operation has failed")
+}
+
+func (bpe BadPodmanEngine) Remove(containerID string) (*cli.PodmanRemoveReport, error) {
+	return nil, errors.New("The Podman Remove operator has failed")
+}
+
+func (bpe BadPodmanEngine) Mount(containerId string) (*cli.PodmanMountReport, error) {
+	return nil, errors.New("The Podman Mount failed")
+}
+
+func (bpe BadPodmanEngine) Unmount(containerId string) (*cli.PodmanUnmountReport, error) {
+	return nil, errors.New("The Podman Unmount failed")
+}
+
+func (bpe BadPodmanEngine) MountImage(imageID string) (*cli.PodmanMountReport, error) {
+	return nil, errors.New("The Podman Image Mount failed")
+}
+
+func (bpe BadPodmanEngine) UnmountImage(imageID string) (*cli.PodmanUnmountReport, error) {
+	return nil, errors.New("The Podman Image Unmount failed")
+}
+
+func (bpe BadPodmanEngine) Unshare(env map[string]string, command ...string) (*cli.PodmanUnshareReport, error) {
+	return nil, errors.New("The Podman Unshare operation has failed")
+}
+
+func (bpe BadPodmanEngine) UnshareWithCheck(check, image string, mounted bool) (*cli.PodmanUnshareCheckReport, error) {
+	return nil, errors.New("The Podman Unshare With Check operation has failed")
+}
+
 /*
 ------------------- Skopeo Engine ---------------------
 */
@@ -119,6 +201,7 @@ type FakeSkopeoEngine struct {
 	SkopeoReportStdout string
 	SkopeoReportStderr string
 	Tags               []string
+	InspectReport      cli.SkopeoInspectReport
 }
 
 type SkopeoData struct {
@@ -135,6 +218,10 @@ func (fse FakeSkopeoEngine) ListTags(image string) (*cli.SkopeoListTagsReport, e
 	return &skopeoReport, nil
 }
 
+func (fse FakeSkopeoEngine) InspectImage(rawImage string, inspectOptions cli.SkopeoInspectOptions) (*cli.SkopeoInspectReport, error) {
+	return &fse.InspectReport, nil
+}
+
 type BadSkopeoEngine struct{}
 
 func (bse BadSkopeoEngine) ListTags(string) (*cli.SkopeoListTagsReport, error) {
@@ -144,6 +231,10 @@ func (bse BadSkopeoEngine) ListTags(string) (*cli.SkopeoListTagsReport, error) {
 		Tags:   []string{""},
 	}
 	return &skopeoReport, errors.New("the Skopeo ListTags has failed")
+}
+
+func (bse BadSkopeoEngine) InspectImage(rawImage string, inspectOptions cli.SkopeoInspectOptions) (*cli.SkopeoInspectReport, error) {
+	return &cli.SkopeoInspectReport{Stdout: "", Stderr: "some error output"}, errors.New("the skopeo image inspection has failed")
 }
 
 /*

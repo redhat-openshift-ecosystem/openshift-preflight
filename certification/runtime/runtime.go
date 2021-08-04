@@ -1,3 +1,5 @@
+// Package runtime contains the structs and definitions consumed by Preflight at
+// runtime.
 package runtime
 
 import (
@@ -10,6 +12,8 @@ type Config struct {
 	Image          string
 	EnabledChecks  []string
 	ResponseFormat string
+	Mounted        bool
+	Bundle         bool
 }
 
 type Result struct {
@@ -18,8 +22,10 @@ type Result struct {
 }
 
 type Results struct {
-	TestedImage string
-	Passed      []Result
-	Failed      []Result
-	Errors      []Result
+	TestedImage   string
+	PassedOverall bool
+	BundleHash    string
+	Passed        []Result
+	Failed        []Result
+	Errors        []Result
 }
