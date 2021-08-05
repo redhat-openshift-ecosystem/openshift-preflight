@@ -1,7 +1,7 @@
 .DEFAULT_GOAL:=help
 
-IMAGE_BUILDER=podman
-IMAGE_REPO=quay.io/opdev
+IMAGE_BUILDER?=podman
+IMAGE_REPO?=quay.io/opdev
 VERSION=$(shell git rev-parse HEAD)
 RELEASE_TAG ?= "0.0.0"
 

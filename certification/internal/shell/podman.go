@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -289,6 +290,16 @@ func (pe PodmanCLIEngine) Unshare(env map[string]string, command ...string) (*cl
 	cmdLine := []string{"unshare"}
 	cmdLine = append(cmdLine, command...)
 	cmd := exec.Command("podman", cmdLine...)
+	user, err := user.Current()
+	if err != nil {
+		log.Debug("Could not retrieve user")
+		return nil, errors.ErrUnableToRetrieveUser
+	}
+
+	// If the user is already UID 0, unshare will not work. So just call the command
+	if user.Uid == "0" {
+		cmd = exec.Command(command[0], (command[1:])...)
+	}
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
@@ -311,7 +322,7 @@ func (pe PodmanCLIEngine) Unshare(env map[string]string, command ...string) (*cl
 	}
 	cmd.Env = environ
 
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		log.Error("could not run command in unshare")
 		return &cli.PodmanUnshareReport{Stdout: stdout.String(), Stderr: stderr.String()}, err

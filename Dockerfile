@@ -6,8 +6,7 @@ COPY . /go/src/preflight
 WORKDIR /go/src/preflight
 RUN make build
 
-# ubi-minimal:latest image created 2021-06-22T13:04:30.956781
-FROM registry.access.redhat.com/ubi8/ubi-minimal@sha256:48a4bec3d1dec90b5dd5420bf7c41a5756b7fbe8b862546134fbe2caa607679f
+FROM quay.io/podman/stable@sha256:cd0e15cb8c19132a5dc008beae59ceedd79399d746c64d45775fccf9aa3785ac
 
 # Define versions for dependencies
 ARG OPENSCAP_VERSION=1.3.5
@@ -18,12 +17,13 @@ ARG OPERATOR_SDK_VERSION=1.9.0
 COPY --from=builder /go/src/preflight/preflight /usr/local/bin/preflight
 
 # Install dependencies
-RUN microdnf install \
-    buildah \
+RUN dnf install -y \
     bzip2 \
     gzip \
     iptables \
+    findutils \
     podman \
+    buildah \
     skopeo
 
 # Install oscap-podman binary
