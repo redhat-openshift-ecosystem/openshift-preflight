@@ -1,5 +1,5 @@
 Vagrant.configure("2") do |config|
-  config.vm.box = "generic/fedora33"
+  config.vm.box = "generic/fedora34"
   config.vm.synced_folder ".", "/home/vagrant/preflight"
   config.vm.provision "shell", inline: <<-SHELL
     dnf -y update
