@@ -29,3 +29,18 @@ and a [Container
 policy](https://github.com/redhat-openshift-ecosystem/openshift-preflight/blob/main/certification/engine/engine.go#L101),
 corresponding with the validations `preflight check` implements. Each
 implemented policy has its own checks.
+
+## Running with Podman
+
+Preflight can be run with Podman. However, it requires use of '--privileged'
+
+Steps to build and run the container:
+
+1. `IMAGE_REPO=quay.io/myuser IMAGE_BUILDER=podman make image-build`
+2. Run the image
+
+`podman run --privileged -v /path/to/local/artifacts:/artifacts quay.io/myuser/preflight:<sha of commit> check container <container to be checked>`
+
+or
+
+`podman run --privileged -v ${KUBECONFIG}:/kubeconfig -e KUBECONFIG=/kubeconfig -v /path/to/local/artifacts:/artifacts quay.io/myuser/preflight:<sha of commit> check operator <bundle to be checked>`
