@@ -6,7 +6,7 @@ COPY . /go/src/preflight
 WORKDIR /go/src/preflight
 RUN make build
 
-FROM quay.io/podman/stable@sha256:cd0e15cb8c19132a5dc008beae59ceedd79399d746c64d45775fccf9aa3785ac
+FROM quay.io/podman/stable@sha256:b3c1235e1a917a89653d15712321ce460f68337314383c8fa82ba3ecdf4c5fce
 
 # Define versions for dependencies
 ARG OPENSCAP_VERSION=1.3.5
