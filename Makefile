@@ -20,7 +20,7 @@ image-build:
 
 .PHONY: image-push
 image-push:
-	$(IMAGE_BUILDER) push $(IMAGE_REPO)/preflight:$(VERSION) .
+	$(IMAGE_BUILDER) push $(IMAGE_REPO)/preflight:$(VERSION)
 
 .PHONY: test
 test:
