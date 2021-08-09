@@ -7,12 +7,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type OpenShiftCliOptions struct {
+type OpenshiftOptions struct {
 	Namespace string
 	Labels    map[string]string
 }
 
-type OpenshiftCreateReport struct {
+type OpenshiftReport struct {
 	Stdout string
 	Stderr string
 	Items  []OperatorSdkScorecardItem `json:"items"`
@@ -37,21 +37,21 @@ type OperatorGroupData struct {
 }
 
 type OpenshiftEngine interface {
-	CreateNamespace(name string, opts OpenShiftCliOptions, config *rest.Config) (*OpenshiftCreateReport, error)
-	DeleteNamespace(name string, opts OpenShiftCliOptions, config *rest.Config) error
+	CreateNamespace(name string, opts OpenshiftOptions, config *rest.Config) (*OpenshiftReport, error)
+	DeleteNamespace(name string, opts OpenshiftOptions, config *rest.Config) error
 	GetNamespace(name string, config *rest.Config) (*corev1.Namespace, error)
 
-	CreateOperatorGroup(data OperatorGroupData, opts OpenShiftCliOptions, config *rest.Config) (*OpenshiftCreateReport, error)
-	DeleteOperatorGroup(name string, opts OpenShiftCliOptions, config *rest.Config) error
-	GetOperatorGroup(name string, opts OpenShiftCliOptions, config *rest.Config) (*operatorv1.OperatorGroup, error)
+	CreateOperatorGroup(data OperatorGroupData, opts OpenshiftOptions, config *rest.Config) (*OpenshiftReport, error)
+	DeleteOperatorGroup(name string, opts OpenshiftOptions, config *rest.Config) (*OpenshiftReport, error)
+	GetOperatorGroup(name string, opts OpenshiftOptions, config *rest.Config) (*operatorv1.OperatorGroup, error)
 
-	CreateCatalogSource(data CatalogSourceData, opts OpenShiftCliOptions, config *rest.Config) (*OpenshiftCreateReport, error)
-	DeleteCatalogSource(name string, opts OpenShiftCliOptions, config *rest.Config) error
-	GetCatalogSource(name string, opts OpenShiftCliOptions, config *rest.Config) (*operatorv1alpha1.CatalogSource, error)
+	CreateCatalogSource(data CatalogSourceData, opts OpenshiftOptions, config *rest.Config) (*OpenshiftReport, error)
+	DeleteCatalogSource(name string, opts OpenshiftOptions, config *rest.Config) (*OpenshiftReport, error)
+	GetCatalogSource(name string, opts OpenshiftOptions, config *rest.Config) (*operatorv1alpha1.CatalogSource, error)
 
-	CreateSubscription(data SubscriptionData, opts OpenShiftCliOptions, config *rest.Config) (*OpenshiftCreateReport, error)
-	DeleteSubscription(name string, opts OpenShiftCliOptions, config *rest.Config) error
-	GetSubscription(name string, opts OpenShiftCliOptions, config *rest.Config) (*operatorv1alpha1.Subscription, error)
+	CreateSubscription(data SubscriptionData, opts OpenshiftOptions, config *rest.Config) (*OpenshiftReport, error)
+	DeleteSubscription(name string, opts OpenshiftOptions, config *rest.Config) (*OpenshiftReport, error)
+	GetSubscription(name string, opts OpenshiftOptions, config *rest.Config) (*operatorv1alpha1.Subscription, error)
 
-	GetCSV(name string, opts OpenShiftCliOptions, config *rest.Config) (*operatorv1alpha1.ClusterServiceVersion, error)
+	GetCSV(name string, opts OpenshiftOptions, config *rest.Config) (*operatorv1alpha1.ClusterServiceVersion, error)
 }

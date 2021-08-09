@@ -2,99 +2,114 @@ package client
 
 import (
 	"context"
+	"log"
 
 	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
+	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-type OperatorGroupV1Client struct {
-	restClient rest.Interface
+var operatorGroupKind schema.GroupVersionKind = schema.GroupVersionKind{
+	Group:   "operators.coreos.com",
+	Kind:    "OperatorGroup",
+	Version: "v1",
 }
 
 type OperatorGroupInterface interface {
-	Create(obj *operatorv1.OperatorGroup) (*operatorv1.OperatorGroup, error)
-	Update(obj *operatorv1.OperatorGroup) (*operatorv1.OperatorGroup, error)
+	Create(data cli.OperatorGroupData, opts cli.OpenshiftOptions) (operatorv1.OperatorGroup, error)
 	Delete(name string, options *metav1.DeleteOptions) error
-	Get(name string) (*operatorv1.OperatorGroup, error)
+	Get(name string, namespace string) operatorv1.OperatorGroup
+	convert(u *unstructured.Unstructured) (*operatorv1.OperatorGroup, error)
 }
 
 type operatorGroupClient struct {
-	client rest.Interface
+	client client.Client
 	ns     string
 }
 
-func (c *OperatorGroupV1Client) OperatorGroup(namespace string) OperatorGroupInterface {
-	return operatorGroupClient{
-		client: c.restClient,
-		ns:     namespace,
+func (c operatorGroupClient) Create(data cli.OperatorGroupData, opts cli.OpenshiftOptions) (*operatorv1.OperatorGroup, error) {
+
+	u := &unstructured.Unstructured{}
+	u.Object = map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"name":      data.Name,
+			"namespace": opts.Namespace,
+			"labels":    opts.Labels,
+		},
+		"spec": map[string]interface{}{
+			"targetNamespaces": data.TargetNamespaces,
+		},
 	}
-}
+	u.SetGroupVersionKind(operatorGroupKind)
 
-func (c operatorGroupClient) Create(obj *operatorv1.OperatorGroup) (*operatorv1.OperatorGroup, error) {
-	result := &operatorv1.OperatorGroup{}
-	err := c.client.Post().
-		Namespace(c.ns).
-		Resource("operatorgroups").
-		Body(obj).
-		Do(context.Background()).
-		Into(result)
+	err := c.client.Create(context.Background(), u)
 
-	return result, err
-}
-
-func (c operatorGroupClient) Update(obj *operatorv1.OperatorGroup) (*operatorv1.OperatorGroup, error) {
-	result := &operatorv1.OperatorGroup{}
-
-	err := c.client.Put().
-		Namespace(c.ns).
-		Resource("operatorgroups").
-		Body(obj).
-		Do(context.Background()).
-		Into(result)
-
-	return result, err
-}
-
-func (c operatorGroupClient) Delete(name string, options *metav1.DeleteOptions) error {
-	return c.client.
-		Delete().
-		Namespace(c.ns).
-		Resource("operatorgroups").
-		Name(name).
-		Body(options).
-		Do(context.Background()).
-		Error()
-}
-
-func (c operatorGroupClient) Get(name string) (*operatorv1.OperatorGroup, error) {
-	result := &operatorv1.OperatorGroup{}
-	err := c.client.Get().
-		Namespace(c.ns).
-		Resource("operatorgroups").
-		Name(name).
-		Do(context.Background()).
-		Into(result)
-	return result, err
-}
-
-func OperatorGroupClient(cfg *rest.Config) (*OperatorGroupV1Client, error) {
-	scheme := runtime.NewScheme()
-	SchemeBuilder := runtime.NewSchemeBuilder(addKnownTypes)
-	if err := SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	config := *cfg
-	config.GroupVersion = &operatorV1SchemeGV
-	config.APIPath = "/apis"
-	config.ContentType = runtime.ContentTypeJSON
-	config.NegotiatedSerializer = serializer.NewCodecFactory(scheme)
-	client, err := rest.RESTClientFor(&config)
 	if err != nil {
 		return nil, err
 	}
-	return &OperatorGroupV1Client{restClient: client}, nil
+
+	return c.convert(u)
+}
+
+func (c operatorGroupClient) Delete(name string, opts cli.OpenshiftOptions) error {
+
+	u := &unstructured.Unstructured{}
+
+	u.SetName(name)
+	u.SetNamespace(opts.Namespace)
+	u.SetGroupVersionKind(operatorGroupKind)
+
+	return c.client.Delete(context.Background(), u)
+}
+
+func (c operatorGroupClient) Get(name string, namespace string) (*operatorv1.OperatorGroup, error) {
+
+	u := &unstructured.Unstructured{}
+	u.SetGroupVersionKind(operatorGroupKind)
+
+	err := c.client.Get(context.Background(), client.ObjectKey{
+		Namespace: namespace,
+		Name:      name,
+	}, u)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.convert(u)
+}
+
+func (c operatorGroupClient) convert(u *unstructured.Unstructured) (*operatorv1.OperatorGroup, error) {
+	var obj operatorv1.OperatorGroup
+	err := runtime.DefaultUnstructuredConverter.
+		FromUnstructured(u.UnstructuredContent(), &obj)
+	if err != nil {
+		return nil, err
+	}
+
+	return &obj, nil
+}
+
+func OperatorGroupClient(cfg *rest.Config, namespace string) (*operatorGroupClient, error) {
+	scheme := runtime.NewScheme()
+	operatorv1alpha1.AddToScheme(scheme)
+	kubeconfig := ctrl.GetConfigOrDie()
+	controllerClient, err := client.New(kubeconfig, client.Options{Scheme: scheme})
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
+	return &operatorGroupClient{
+		client: controllerClient,
+		ns:     namespace,
+	}, nil
+
 }

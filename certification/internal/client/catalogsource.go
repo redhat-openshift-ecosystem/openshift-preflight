@@ -2,101 +2,116 @@ package client
 
 import (
 	"context"
+	"log"
 
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type CatalogSourceV1Alpha1Client struct {
-	restClient rest.Interface
+var catalogSourceKind schema.GroupVersionKind = schema.GroupVersionKind{
+	Group:   "operators.coreos.com",
+	Kind:    "CatalogSource",
+	Version: "v1alpha1",
 }
 
 type CatalogSourceInterface interface {
-	Create(obj *operatorv1alpha1.CatalogSource) (*operatorv1alpha1.CatalogSource, error)
-	Update(obj *operatorv1alpha1.CatalogSource) (*operatorv1alpha1.CatalogSource, error)
+	Create(data cli.CatalogSourceData, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error)
 	Delete(name string, options *metav1.DeleteOptions) error
-	Get(name string) (*operatorv1alpha1.CatalogSource, error)
+	Get(name string, namespace string) operatorv1alpha1.CatalogSource
+	convert(u *unstructured.Unstructured) (*operatorv1alpha1.CatalogSource, error)
 }
 
 type catalogSourceClient struct {
-	client rest.Interface
+	client client.Client
 	ns     string
 }
 
-func (c *CatalogSourceV1Alpha1Client) CatalogSource(namespace string) CatalogSourceInterface {
-	return catalogSourceClient{
-		client: c.restClient,
-		ns:     namespace,
+func (c catalogSourceClient) Create(data cli.CatalogSourceData, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error) {
+
+	u := &unstructured.Unstructured{}
+	u.Object = map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"name":      data.Name,
+			"namespace": opts.Namespace,
+			"labels":    opts.Labels,
+		},
+		"spec": map[string]interface{}{
+			"sourceType":  operatorv1alpha1.SourceTypeGrpc,
+			"image":       data.Image,
+			"displayName": data.Name,
+		},
 	}
-}
+	u.SetGroupVersionKind(catalogSourceKind)
 
-func (c catalogSourceClient) Create(obj *operatorv1alpha1.CatalogSource) (*operatorv1alpha1.CatalogSource, error) {
-	result := &operatorv1alpha1.CatalogSource{}
-	err := c.client.Post().
-		Namespace(c.ns).
-		Resource("catalogsources").
-		Body(obj).
-		Do(context.Background()).
-		Into(result)
+	err := c.client.Create(context.Background(), u)
 
-	return result, err
-}
-
-func (c catalogSourceClient) Update(obj *operatorv1alpha1.CatalogSource) (*operatorv1alpha1.CatalogSource, error) {
-	result := &operatorv1alpha1.CatalogSource{}
-
-	err := c.client.Put().
-		Namespace(c.ns).
-		Resource("catalogsources").
-		Body(obj).
-		Do(context.Background()).
-		Into(result)
-
-	return result, err
-}
-
-func (c catalogSourceClient) Delete(name string, options *metav1.DeleteOptions) error {
-	return c.client.
-		Delete().
-		Namespace(c.ns).
-		Resource("catalogsources").
-		Name(name).
-		Body(options).
-		Do(context.Background()).
-		Error()
-}
-
-func (c catalogSourceClient) Get(name string) (*operatorv1alpha1.CatalogSource, error) {
-	result := &operatorv1alpha1.CatalogSource{}
-
-	err := c.client.Get().
-		Namespace(c.ns).
-		Resource("catalogsources").
-		Name(name).
-		Do(context.Background()).
-		Into(result)
-
-	return result, err
-}
-
-func CatalogSourceClient(cfg *rest.Config) (*CatalogSourceV1Alpha1Client, error) {
-	scheme := runtime.NewScheme()
-	SchemeBuilder := runtime.NewSchemeBuilder(addKnownTypes)
-	if err := SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	config := *cfg
-	config.GroupVersion = &OperatorV1Alpha1SchemeGV
-	config.APIPath = "/apis"
-	config.ContentType = runtime.ContentTypeJSON
-	config.NegotiatedSerializer = serializer.NewCodecFactory(scheme)
-	client, err := rest.RESTClientFor(&config)
 	if err != nil {
 		return nil, err
 	}
-	return &CatalogSourceV1Alpha1Client{restClient: client}, nil
+
+	return c.convert(u)
+}
+
+func (c catalogSourceClient) Delete(name string, opts cli.OpenshiftOptions) error {
+
+	u := &unstructured.Unstructured{}
+
+	u.SetName(name)
+	u.SetNamespace(opts.Namespace)
+	u.SetGroupVersionKind(catalogSourceKind)
+
+	return c.client.Delete(context.Background(), u)
+}
+
+func (c catalogSourceClient) Get(name string, namespace string) (*operatorv1alpha1.CatalogSource, error) {
+
+	u := &unstructured.Unstructured{}
+	u.SetGroupVersionKind(catalogSourceKind)
+
+	err := c.client.Get(context.Background(), client.ObjectKey{
+		Namespace: namespace,
+		Name:      name,
+	}, u)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.convert(u)
+}
+
+func (c catalogSourceClient) convert(u *unstructured.Unstructured) (*operatorv1alpha1.CatalogSource, error) {
+	var obj operatorv1alpha1.CatalogSource
+	err := runtime.DefaultUnstructuredConverter.
+		FromUnstructured(u.UnstructuredContent(), &obj)
+	if err != nil {
+		return nil, err
+	}
+
+	return &obj, nil
+}
+
+func CatalogSourceClient(cfg *rest.Config, namespace string) (*catalogSourceClient, error) {
+	scheme := runtime.NewScheme()
+	operatorv1alpha1.AddToScheme(scheme)
+	kubeconfig := ctrl.GetConfigOrDie()
+	controllerClient, err := client.New(kubeconfig, client.Options{Scheme: scheme})
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
+	return &catalogSourceClient{
+		client: controllerClient,
+		ns:     namespace,
+	}, nil
+
 }

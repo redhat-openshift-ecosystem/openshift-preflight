@@ -2,99 +2,117 @@ package client
 
 import (
 	"context"
+	"log"
 
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-type SubscriptionV1Alpha1Client struct {
-	restClient rest.Interface
+var subscriptionKind schema.GroupVersionKind = schema.GroupVersionKind{
+	Group:   "operators.coreos.com",
+	Kind:    "Subscription",
+	Version: "v1alpha1",
 }
 
 type SubscriptionInterface interface {
-	Create(obj *operatorv1alpha1.Subscription) (*operatorv1alpha1.Subscription, error)
-	Update(obj *operatorv1alpha1.Subscription) (*operatorv1alpha1.Subscription, error)
+	Create(data cli.SubscriptionData, opts cli.OpenshiftOptions) (*operatorv1alpha1.Subscription, error)
 	Delete(name string, options *metav1.DeleteOptions) error
-	Get(name string) (*operatorv1alpha1.Subscription, error)
+	Get(name string, namespace string) operatorv1alpha1.Subscription
+	convert(u *unstructured.Unstructured) (*operatorv1alpha1.Subscription, error)
 }
 
 type subscriptionClient struct {
-	client rest.Interface
+	client client.Client
 	ns     string
 }
 
-func (c *SubscriptionV1Alpha1Client) Subscription(namespace string) SubscriptionInterface {
-	return subscriptionClient{
-		client: c.restClient,
-		ns:     namespace,
+func (c subscriptionClient) Create(data cli.SubscriptionData, opts cli.OpenshiftOptions) (*operatorv1alpha1.Subscription, error) {
+
+	u := &unstructured.Unstructured{}
+	u.Object = map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"name":      data.Name,
+			"namespace": opts.Namespace,
+			"labels":    opts.Labels,
+		},
+		"spec": map[string]interface{}{
+			"name":            data.Package,
+			"source":          data.CatalogSource,
+			"channel":         data.Channel,
+			"sourceNamespace": data.CatalogSourceNamespace,
+		},
 	}
-}
 
-func (c subscriptionClient) Create(obj *operatorv1alpha1.Subscription) (*operatorv1alpha1.Subscription, error) {
-	result := &operatorv1alpha1.Subscription{}
-	err := c.client.Post().
-		Namespace(c.ns).
-		Resource("subscriptions").
-		Body(obj).
-		Do(context.Background()).
-		Into(result)
+	u.SetGroupVersionKind(subscriptionKind)
 
-	return result, err
-}
+	err := c.client.Create(context.Background(), u)
 
-func (c subscriptionClient) Update(obj *operatorv1alpha1.Subscription) (*operatorv1alpha1.Subscription, error) {
-	result := &operatorv1alpha1.Subscription{}
-
-	err := c.client.Put().
-		Namespace(c.ns).
-		Resource("subscriptions").
-		Body(obj).
-		Do(context.Background()).
-		Into(result)
-
-	return result, err
-}
-
-func (c subscriptionClient) Delete(name string, options *metav1.DeleteOptions) error {
-	return c.client.
-		Delete().
-		Namespace(c.ns).
-		Resource("subscriptions").
-		Name(name).
-		Body(options).
-		Do(context.Background()).
-		Error()
-}
-
-func (c subscriptionClient) Get(name string) (*operatorv1alpha1.Subscription, error) {
-	result := &operatorv1alpha1.Subscription{}
-	err := c.client.Get().
-		Namespace(c.ns).
-		Resource("subscriptions").
-		Name(name).
-		Do(context.Background()).
-		Into(result)
-	return result, err
-}
-
-func SubscriptionClient(cfg *rest.Config) (*SubscriptionV1Alpha1Client, error) {
-	scheme := runtime.NewScheme()
-	SchemeBuilder := runtime.NewSchemeBuilder(addKnownTypes)
-	if err := SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	config := *cfg
-	config.GroupVersion = &OperatorV1Alpha1SchemeGV
-	config.APIPath = "/apis"
-	config.ContentType = runtime.ContentTypeJSON
-	config.NegotiatedSerializer = serializer.NewCodecFactory(scheme)
-	client, err := rest.RESTClientFor(&config)
 	if err != nil {
 		return nil, err
 	}
-	return &SubscriptionV1Alpha1Client{restClient: client}, nil
+
+	return c.convert(u)
+}
+
+func (c subscriptionClient) Delete(name string, opts cli.OpenshiftOptions) error {
+
+	u := &unstructured.Unstructured{}
+
+	u.SetName(name)
+	u.SetNamespace(opts.Namespace)
+	u.SetGroupVersionKind(subscriptionKind)
+
+	return c.client.Delete(context.Background(), u)
+}
+
+func (c subscriptionClient) Get(name string, namespace string) (*operatorv1alpha1.Subscription, error) {
+
+	u := &unstructured.Unstructured{}
+	u.SetGroupVersionKind(subscriptionKind)
+
+	err := c.client.Get(context.Background(), client.ObjectKey{
+		Namespace: namespace,
+		Name:      name,
+	}, u)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.convert(u)
+}
+
+func (c subscriptionClient) convert(u *unstructured.Unstructured) (*operatorv1alpha1.Subscription, error) {
+	var obj operatorv1alpha1.Subscription
+	err := runtime.DefaultUnstructuredConverter.
+		FromUnstructured(u.UnstructuredContent(), &obj)
+	if err != nil {
+		return nil, err
+	}
+
+	return &obj, nil
+}
+
+func SubscriptionClient(cfg *rest.Config, namespace string) (*subscriptionClient, error) {
+	scheme := runtime.NewScheme()
+	operatorv1alpha1.AddToScheme(scheme)
+	kubeconfig := ctrl.GetConfigOrDie()
+	controllerClient, err := client.New(kubeconfig, client.Options{Scheme: scheme})
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
+	return &subscriptionClient{
+		client: controllerClient,
+		ns:     namespace,
+	}, nil
+
 }
