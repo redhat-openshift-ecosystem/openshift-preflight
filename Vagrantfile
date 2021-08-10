@@ -21,6 +21,7 @@ Vagrant.configure("2") do |config|
     bzip2 \
     go-md2man \
     runc \
+    crun \
     containers-common \
     openscap-containers
   
