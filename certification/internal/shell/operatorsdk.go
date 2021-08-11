@@ -5,12 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	fileutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
@@ -30,17 +29,12 @@ func (o OperatorSdkCLIEngine) Scorecard(image string, opts cli.OperatorSdkScorec
 	}
 	cmdArgs = append(cmdArgs, image)
 
-	artifactsDir, err := o.createArtifactsDir()
-	if err != nil {
-		return nil, err
-	}
-
 	cmd := exec.Command("operator-sdk", cmdArgs...)
 	log.Trace("running scorecard with the following invocation", cmd.Args)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		// This is a workaround due to operator-sdk scorecard always returning a 1 exit code
 		// whether a test failed or the tool encountered a fatal error.
@@ -56,9 +50,9 @@ func (o OperatorSdkCLIEngine) Scorecard(image string, opts cli.OperatorSdkScorec
 		}
 	}
 
-	err = o.writeScorecardFile(artifactsDir, opts.ResultFile, stdout.String())
+	err = o.writeScorecardFile(opts.ResultFile, stdout.String())
 	if err != nil {
-		log.Error("unable to copy result to /artifacts subdir: ", err)
+		log.Error("unable to copy result to artifacts directory: ", err)
 		return nil, err
 	}
 
@@ -120,29 +114,12 @@ func (o OperatorSdkCLIEngine) BundleValidate(image string, opts cli.OperatorSdkB
 	return &bundleValidateData, nil
 }
 
-func (o OperatorSdkCLIEngine) writeScorecardFile(artifactsDir, resultFile, stdout string) error {
-	scorecardFile := filepath.Join(artifactsDir, "/", resultFile)
+func (o OperatorSdkCLIEngine) writeScorecardFile(resultFile, stdout string) error {
+	scorecardFile := fileutils.ArtifactPath(resultFile)
 
 	err := ioutil.WriteFile(scorecardFile, []byte(stdout), 0644)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func (o OperatorSdkCLIEngine) createArtifactsDir() (string, error) {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		log.Error("unable to get current directory: ", err)
-		return "", err
-	}
-
-	artifactsDir := filepath.Join(currentDir, "/artifacts")
-
-	err = os.MkdirAll(artifactsDir, 0777)
-	if err != nil {
-		log.Error("unable to create artifactsDir: ", err)
-		return "", err
-	}
-	return artifactsDir, nil
 }

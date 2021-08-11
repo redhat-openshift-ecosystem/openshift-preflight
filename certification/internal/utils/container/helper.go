@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	fileutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
@@ -105,7 +106,7 @@ func GenerateBundleHash(podmanEngine cli.PodmanEngine, image string) (string, er
 		return "", err
 	}
 	log.Tracef(fmt.Sprintf("Hash is: %s", report.Stdout))
-	err = os.WriteFile(filepath.Join("artifacts", "hashes.txt"), []byte(report.Stdout), 0644)
+	err = os.WriteFile(fileutils.ArtifactPath("hashes.txt"), []byte(report.Stdout), 0644)
 	if err != nil {
 		log.Errorf("could not write bundle hash file")
 		return "", err

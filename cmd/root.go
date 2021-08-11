@@ -50,6 +50,7 @@ func initConfig() {
 	// Set up logging config defaults
 	viper.SetDefault("logfile", DefaultLogFile)
 	viper.SetDefault("loglevel", DefaultLogLevel)
+	viper.SetDefault("artifacts", DefaultArtifactsDir)
 
 	// set up logging
 	logname := viper.GetString("logfile")
