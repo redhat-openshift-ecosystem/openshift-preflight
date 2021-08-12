@@ -19,23 +19,26 @@ COPY --from=builder /go/src/preflight/preflight /usr/local/bin/preflight
 
 # Install dependencies
 RUN dnf install -y \
-    bzip2 \
-    gzip \
-    iptables \
-    findutils \
-    podman \
-    buildah \
-    skopeo
+      bzip2 \
+      gzip \
+      iptables \
+      findutils \
+      openscap-scanner \
+      podman \
+      buildah \
+      skopeo \
+    && dnf clean all
 
 # Install oscap-podman binary
-RUN curl -L https://github.com/OpenSCAP/openscap/releases/download/${OPENSCAP_VERSION}/openscap-${OPENSCAP_VERSION}.tar.gz | tar -xzv -C /usr/local/bin openscap-${OPENSCAP_VERSION}/utils/oscap-podman
+RUN curl -L https://github.com/OpenSCAP/openscap/releases/download/${OPENSCAP_VERSION}/openscap-${OPENSCAP_VERSION}.tar.gz | tar -xzv -C /usr/local/bin openscap-${OPENSCAP_VERSION}/utils/oscap-podman \
+    && mv /usr/local/bin/openscap-${OPENSCAP_VERSION}/utils/oscap-podman /usr/local/bin/oscap-podman
 
 # Install OpenShift client binary
 RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OPENSHIFT_CLIENT_VERSION}/openshift-client-linux-${OPENSHIFT_CLIENT_VERSION}.tar.gz | tar -xzv -C /usr/local/bin oc
 
 # Install Operator SDK binray
-RUN curl -Lo /usr/local/bin/operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk_linux_amd64
-RUN chmod 755 /usr/local/bin/operator-sdk
+RUN curl -Lo /usr/local/bin/operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk_linux_amd64 \
+    && chmod 755 /usr/local/bin/operator-sdk
 
 ENTRYPOINT ["/usr/local/bin/preflight"]
 CMD ["--help"]
