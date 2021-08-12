@@ -13,6 +13,8 @@ const (
 	licensePath         = "/licenses"
 	newLine             = "\n"
 	minLicenseFileCount = 1
+	//size format string for find command, c denotes bytes
+	minLicenseSize = "+1c"
 )
 
 // HasLicenseCheck evaluates that the image contains a license definition available at
@@ -41,8 +43,8 @@ func (p *HasLicenseCheck) getDataToValidate(image string) (string, error) {
 		log.Debugf("Stderr: %s", runReport.Stderr)
 		return "", err
 	}
-	runOpts.EntryPoint = "ls"
-	runOpts.EntryPointArgs = []string{"-1", licensePath}
+	runOpts.EntryPoint = "find"
+	runOpts.EntryPointArgs = []string{licensePath, "-type", "f", "-size", minLicenseSize}
 	runReport, err = podmanEngine.Run(runOpts)
 	if err != nil {
 		log.Error(fmt.Sprintf("Error when listing %s : ", licensePath), err)
