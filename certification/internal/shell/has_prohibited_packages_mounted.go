@@ -86,7 +86,7 @@ func (p *HasNoProhibitedPackagesMountedCheck) Help() certification.HelpText {
 	}
 }
 
-// prohibitedPackageList is a list of packages commonly present in the RHEL contianer images that are not redistributable
+// prohibitedPackageList is a list of packages commonly present in the RHEL container images that are not redistributable
 // without proper licensing (i.e. packages that are not under the same availability as those found in UBI).
 // Implementation detail: Use a map[string]struct{} so that lookups can be done, and determine their existence
 // in the map without having to do nested iteration.

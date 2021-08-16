@@ -1,63 +1,82 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
+	"net/url"
+
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-	"strconv"
 )
 
-//todo-adam add the query params and static values here
-var (
-	name = false
+const (
+	baseURL              = "https://connect.dev.redhat.com/support/technology-partner/#/case/new?"
+	typeParam            = "type"
+	typeValue            = "CERT"
+	sourceParam          = "source"
+	sourceValue          = "preflight"
+	certProjectTypeParam = "cert_project_type"
+	certProjectIDParam   = "cert_project_id"
+	pullRequestURLParam  = "pull_request_url"
 )
 
 var supportCmd = &cobra.Command{
 	Use:   "support",
 	Short: "Submits a support request",
-	Long: `This command will submit a support request to Red Hat along with the logs from the latest Preflight checck.
+	Long: `This command will submit a support request to Red Hat along with the logs from the latest Preflight check.
 	This command can be used when you'd like assistance from Red Hat Support when attempting to pass your certification checks. `,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 
-		//todo-adam update the selector for the command type
-		prompt1 := promptui.Select{
-			Label: "Select Day",
-			Items: []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
-				"Saturday", "Sunday"},
+		certProjectTypeLabel := promptui.Select{
+			Label: "Select a Certification Project Type",
+			Items: []string{"Container Image", "Operator Bundle Image"},
 		}
 
-		_, result, err := prompt1.Run()
+		_, certProjectTypeValue, err := certProjectTypeLabel.Run()
 
 		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return
+			fmt.Println("Prompt Failed, Please Try re-running support command.")
+			return err
 		}
 
-		fmt.Printf("You choose %q\n", result)
+		fmt.Printf("You Selected:  %q\n", certProjectTypeValue)
 
-		//todo-adam this would be for text input
-		validate := func(input string) error {
-			_, err := strconv.ParseFloat(input, 64)
-			if err != nil {
-				return errors.New("Invalid number")
-			}
-			return nil
+		certProjectIDLabel := promptui.Prompt{
+			Label: "Please Enter Connect Certification Project ID",
 		}
 
-		prompt := promptui.Prompt{
-			Label:    "Number",
-			Validate: validate,
-		}
-
-		result, err = prompt.Run()
+		certProjectIDValue, err := certProjectIDLabel.Run()
 
 		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return
+			fmt.Println("Prompt Failed, Please Try re-running support command.")
+			return err
 		}
 
-		fmt.Printf("You choose %q\n", result)
+		fmt.Printf("You Entered: %q\n", certProjectIDValue)
+
+		pullRequestURLLabel := promptui.Prompt{
+			Label: "Please Enter Your Pull Request URL",
+		}
+
+		pullRequestURLValue, err := pullRequestURLLabel.Run()
+
+		if err != nil {
+			fmt.Println("Prompt Failed, Please Try re-running support command.")
+			return err
+		}
+
+		fmt.Printf("You Entered: %q\n", pullRequestURLValue)
+
+		// building and encoding query params
+		queryParams := url.Values{}
+		queryParams.Add(typeParam, typeValue)
+		queryParams.Add(sourceParam, sourceValue)
+		queryParams.Add(certProjectTypeParam, certProjectTypeValue)
+		queryParams.Add(certProjectIDParam, certProjectIDValue)
+		queryParams.Add(pullRequestURLParam, pullRequestURLValue)
+
+		fmt.Printf("URL to Create Support Desk Ticket: %q\n", baseURL+queryParams.Encode())
+
+		return nil
 	},
 }
 

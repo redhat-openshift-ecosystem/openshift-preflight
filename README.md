@@ -2,7 +2,7 @@
 
 **Preflight** is a commandline interface for validating if
 [OpenShift](https://www.openshift.com/) operator bundles and containers meet minimum
-reqiurements for [Red Hat OpenShift
+requirements for [Red Hat OpenShift
 Certification](https://connect.redhat.com/en/partner-with-us/red-hat-openshift-certification).
 
 This project is in active and rapid development! Many facets of this project are

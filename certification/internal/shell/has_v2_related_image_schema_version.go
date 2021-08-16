@@ -121,7 +121,7 @@ func (p *RelatedImagesAreSchemaVersion2Check) getRelatedImagesForCSV(csv *operat
 }
 
 // inspectSchemaVersionForImages will inspect each input image using skopeo and returns a map of each image
-// with its corresponding schemaVersion. It is expeted that len(images) > 0.
+// with its corresponding schemaVersion. It is expected that len(images) > 0.
 func (p *RelatedImagesAreSchemaVersion2Check) inspectSchemaVersionForImage(images []string) (map[string]int, error) {
 	inspectOpts := cli.SkopeoInspectOptions{Raw: true}
 
@@ -165,7 +165,7 @@ func (p *RelatedImagesAreSchemaVersion2Check) getSchemaVersionFromRawManifest(ma
 		return 0, fmt.Errorf("rawManifest is an unexpected format")
 	}
 
-	// when unmarshaled by json, number will be a float64
+	// when unmarshalled by json, number will be a float64
 	schemaVersionf64, ok := schemaVersionIface.(float64)
 	if !ok {
 		return 0, fmt.Errorf("schemaVersion value is an unexpected type")

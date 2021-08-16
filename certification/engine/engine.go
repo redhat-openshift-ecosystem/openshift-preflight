@@ -10,7 +10,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
-// CheckEngine defines the functonality necessary to run all checks for a policy,
+// CheckEngine defines the functionality necessary to run all checks for a policy,
 // and return the results of that check execution.
 type CheckEngine interface {
 	// ExecuteChecks should execute all checks in a policy and internally
