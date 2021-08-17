@@ -32,7 +32,7 @@ var (
 	packageName, app     string
 	channel, ooNamespace string
 	catalogImage         string
-	targetNamespaces     []string = []string{ooNamespace}
+	targetNamespaces     []string
 )
 
 type DeployableByOlmCheck struct{}
@@ -101,7 +101,7 @@ func (p *DeployableByOlmCheck) setUp() error {
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		return err
 	}
-
+	targetNamespaces = []string{ooNamespace}
 	_, err = openshiftEngine.CreateOperatorGroup(cli.OperatorGroupData{Name: app, TargetNamespaces: targetNamespaces}, cli.OpenshiftOptions{Namespace: ooNamespace}, k8sconfig)
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		return err
@@ -122,58 +122,70 @@ func (p *DeployableByOlmCheck) setUp() error {
 }
 
 func (p *DeployableByOlmCheck) isCSVReady(installedCSV string) (bool, error) {
-
-	var csv *operatorv1alpha1.ClusterServiceVersion
-
 	log.Trace(fmt.Sprintf("Looking for csv %s in namespace %s", installedCSV, ooNamespace))
 
 	// query API server for CSV by name
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
-	for {
-		log.Debug("Waiting for ClusterServiceVersion to become ready...")
-		csv, _ = openshiftEngine.GetCSV(installedCSV, cli.OpenshiftOptions{Namespace: ooNamespace}, k8sconfig)
-		// if the CSV phase is succeeded or the context deadline exceeds, stop the querying
-		if csv.Status.Phase == operatorv1alpha1.CSVPhaseSucceeded {
-			log.Debug("CSV is created successfully: ", installedCSV)
-			return true, nil
+	csvReadyDone := make(chan string, 1)
+
+	go func() {
+		defer close(csvReadyDone)
+		for {
+			log.Debug("Waiting for ClusterServiceVersion to become ready...")
+			csv, _ := openshiftEngine.GetCSV(installedCSV, cli.OpenshiftOptions{Namespace: ooNamespace}, k8sconfig)
+			// if the CSV phase is succeeded, stop the querying
+			if csv.Status.Phase == operatorv1alpha1.CSVPhaseSucceeded {
+				log.Debug("CSV is created successfully: ", installedCSV)
+				csvReadyDone <- fmt.Sprintf("%#v", csv)
+			}
+			log.Debug("CSV is not ready yet, retrying...")
+			time.Sleep(2 * time.Second)
 		}
-		// if the context deadline exceeds, fail the check
-		if ctx.Err() != nil {
-			log.Error(fmt.Sprintf("failed to fetch the csv %s: ", installedCSV), ctx.Err())
-			break
-		}
-		log.Debug("CSV is not ready yet, retrying...")
-		time.Sleep(2 * time.Second)
+	}()
+
+	select {
+	case csv := <-csvReadyDone:
+		return len(csv) > 0, nil
+	case <-ctx.Done():
+		log.Error(fmt.Sprintf("failed to fetch the csv %s: ", installedCSV), ctx.Err())
+		return false, nil
 	}
-	return false, nil
 
 }
 
 func (p *DeployableByOlmCheck) installedCSV() (string, error) {
-	var installedCSV string
-	var subs *operatorv1alpha1.Subscription
 
-	// query API server for the installed CSV field of the created subscription
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	for {
-		subs, _ = openshiftEngine.GetSubscription(app, cli.OpenshiftOptions{Namespace: ooNamespace}, k8sconfig)
-		installedCSV = subs.Status.InstalledCSV
-		// if the installedCSV field is present, stop the querying
-		if len(installedCSV) > 0 {
-			log.Debug(fmt.Sprintf("Subscription.status.installedCSV is %s", installedCSV))
-			return installedCSV, nil
+
+	installedCSVDone := make(chan string, 1)
+
+	// query API server for the installed CSV field of the created subscription
+	go func() {
+		defer close(installedCSVDone)
+		for {
+			time.Sleep(2 * time.Second)
+			log.Debug("Waiting for Subscription.status.installedCSV to become ready...")
+			subs, _ := openshiftEngine.GetSubscription(app, cli.OpenshiftOptions{Namespace: ooNamespace}, k8sconfig)
+			installedCSV := subs.Status.InstalledCSV
+			// if the installedCSV field is present, stop the querying
+			if len(installedCSV) > 0 {
+				log.Debug(fmt.Sprintf("Subscription.status.installedCSV is %s", installedCSV))
+				installedCSVDone <- installedCSV
+			}
+			log.Debug("Subscription.status.installedCSV is not set yet, retrying...")
 		}
-		// if the context deadline exceeds, fail the check
-		if ctx.Err() != nil {
-			log.Error("failed to fetch .status.installedCSV from Subscription: ", ctx.Err())
-			break
-		}
-		log.Debug("InstalledCSV is not ready yet, retrying...")
+	}()
+
+	select {
+	case installedCSV := <-installedCSVDone:
+		return installedCSV, nil
+	case <-ctx.Done():
+		log.Error("failed to fetch Subscription.status.installedCSV: ", ctx.Err())
+		return "", errors.ErrK8sAPICallFailed
 	}
-	return "", errors.ErrK8sAPICallFailed
 }
 
 func (p *DeployableByOlmCheck) cleanUp() {
