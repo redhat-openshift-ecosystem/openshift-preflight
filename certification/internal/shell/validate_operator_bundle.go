@@ -67,6 +67,6 @@ func (p ValidateOperatorBundleCheck) Metadata() certification.Metadata {
 func (p ValidateOperatorBundleCheck) Help() certification.HelpText {
 	return certification.HelpText{
 		Message:    "Check ValidateOperatorBundle encountered an error. Please review the preflight.log file for more information.",
-		Suggestion: "Valid bundles are definied by bundle spec, so make sure that this bundle conforms to that spec. More Information: https://github.com/operator-framework/operator-registry/blob/master/docs/design/operator-bundle.md",
+		Suggestion: "Valid bundles are defined by bundle spec, so make sure that this bundle conforms to that spec. More Information: https://github.com/operator-framework/operator-registry/blob/master/docs/design/operator-bundle.md",
 	}
 }

@@ -43,7 +43,7 @@ func (e *MountedCheckEngine) ExecuteChecks() error {
 
 	// 2 possible status codes
 	// 1. PASSED - all checks have passed successfully
-	// 2. FAILED - At least one check failed or an error occured in one of the checks
+	// 2. FAILED - At least one check failed or an error occurred in one of the checks
 	if len(e.results.Errors) > 0 || len(e.results.Failed) > 0 {
 		e.results.PassedOverall = false
 	} else {
