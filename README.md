@@ -13,11 +13,13 @@ subject to change, and some features are not fully implemented.
 The preflight binary currently requires that you have the following tools installed,
 functional, and in your path.
 
-- OperatorSDK `operator-sdk`
-- OpenShift Client `oc`
-- Podman `podman`
-- OpenSCAP `openscap-podman`
-- Skopeo `skopeo`
+| Name             | Tool cli          | Minimum version |
+|----------------- |:-----------------:| ---------------:|
+| OperatorSDK      | `operator-sdk`    | v1.9.0          |
+| OpenShift Client | `oc`              | v4.7.19         |
+| Podman           | `podman`          | v3.0            |
+| OpenSCAP         | `openscap-podman` | v1.3.5          |
+| Skopeo           | `skopeo`          | v1.2.2          |
 
 See our [Vagrantfile](Vagrantfile) for more information on setting up a
 development environment. Some checks may also requires access to an OpenShift
