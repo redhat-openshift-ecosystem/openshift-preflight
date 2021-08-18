@@ -2,9 +2,12 @@ package container
 
 import (
 	"fmt"
-	"strings"
+	"io/fs"
+	"os"
+	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -12,7 +15,6 @@ const (
 	licensePath         = "/licenses"
 	newLine             = "\n"
 	minLicenseFileCount = 1
-	//size format string for find command, c denotes bytes
 )
 
 // HasLicenseCheck evaluates that the image contains a license definition available at
@@ -20,14 +22,47 @@ const (
 type HasLicenseCheck struct{}
 
 func (p *HasLicenseCheck) Validate(imgRef certification.ImageReference) (bool, error) {
-	// TODO Implement
-	return false, fmt.Errorf("unimplemented in migration path to crane engine")
+	licenseFileList, err := p.getDataToValidate(imgRef.ImageFSPath)
+	if err != nil {
+		return false, err
+	}
+	return p.validate(licenseFileList)
 }
 
-func (p *HasLicenseCheck) validate(licenseFileList string) (bool, error) {
-	licenseFileCount := strings.Count(licenseFileList, newLine)
-	log.Infof("%d Licenses found", licenseFileCount)
-	return licenseFileCount >= minLicenseFileCount, nil
+func (p *HasLicenseCheck) getDataToValidate(mountedPath string) ([]fs.DirEntry, error) {
+	fullPath := filepath.Join(mountedPath, licensePath)
+	fileinfo, err := os.Stat(fullPath)
+	if err != nil {
+		log.Error(fmt.Sprintf("Error when checking for %s : ", licensePath), err)
+		return nil, err
+	}
+	if !fileinfo.IsDir() {
+		log.Error(fmt.Sprintf("%s is not a directory", licensePath))
+		return nil, errors.ErrLicensesNotADir
+	}
+
+	files, err := os.ReadDir(fullPath)
+	if err != nil {
+		log.Error(fmt.Sprintf("Error when reading directory %s", licensePath), err)
+		return nil, err
+	}
+	return files, nil
+}
+
+func (p *HasLicenseCheck) validate(licenseFileList []fs.DirEntry) (bool, error) {
+	nonZeroLength := false
+	for _, f := range licenseFileList {
+		info, err := f.Info()
+		if err != nil {
+			continue
+		}
+		if info.Size() > 0 {
+			nonZeroLength = true
+			break
+		}
+	}
+	log.Infof("%d Licenses found", len(licenseFileList))
+	return len(licenseFileList) >= minLicenseFileCount && nonZeroLength, nil
 }
 
 func (p *HasLicenseCheck) Name() string {
