@@ -7,6 +7,7 @@ require (
 	github.com/docker/docker v20.10.7+incompatible
 	github.com/google/go-containerregistry v0.6.0
 	github.com/knqyf263/go-rpmdb v0.0.0-20201215100354-a9e3110d8ee1
+	github.com/manifoldco/promptui v0.8.0
 	github.com/mattn/go-isatty v0.0.13 // indirect
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.13.0
