@@ -32,7 +32,7 @@ type CraneEngine struct {
 	// IsBundle is an indicator that the asset is a bundle.
 	IsBundle bool
 
-	imageRef ImageReference
+	imageRef certification.ImageReference
 	results  runtime.Results
 }
 
@@ -99,7 +99,7 @@ func (c *CraneEngine) ExecuteChecks() error {
 
 	// store the image internals in the engine image reference to pass to validations.
 	// TODO: pass this to validations when the new check interface includes it.
-	c.imageRef = ImageReference{
+	c.imageRef = certification.ImageReference{
 		ImageURI:    c.Image,
 		ImageFSPath: containerFSPath,
 		ImageInfo:   &img,
@@ -109,13 +109,12 @@ func (c *CraneEngine) ExecuteChecks() error {
 	log.Info("executing checks")
 	for _, check := range c.Checks {
 		c.results.TestedImage = c.Image
-		targetImage := c.Image
 
 		log.Info("running check: ", check.Name())
 
 		// run the validation
 		checkStartTime := time.Now()
-		checkPassed, err := check.Validate(targetImage)
+		checkPassed, err := check.Validate(c.imageRef)
 		checkElapsedTime := time.Since(checkStartTime)
 
 		if err != nil {

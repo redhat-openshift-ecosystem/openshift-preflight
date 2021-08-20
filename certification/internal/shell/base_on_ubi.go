@@ -15,8 +15,8 @@ import (
 // Name value is `Red Hat Enterprise Linux`
 type BaseOnUBICheck struct{}
 
-func (p *BaseOnUBICheck) Validate(image string) (bool, error) {
-	lines, err := p.getDataToValidate(image)
+func (p *BaseOnUBICheck) Validate(imgRef certification.ImageReference) (bool, error) {
+	lines, err := p.getDataToValidate(imgRef.ImageURI)
 	if err != nil {
 		log.Debugf("Stdout: %s", lines)
 		return false, fmt.Errorf("%w: %s", errors.ErrRunContainerFailed, err)

@@ -15,8 +15,8 @@ import (
 // OVAL definition.
 type HasMinimalVulnerabilitiesUnshareCheck struct{}
 
-func (p *HasMinimalVulnerabilitiesUnshareCheck) Validate(image string) (bool, error) {
-	lines, err := p.scanImage(image)
+func (p *HasMinimalVulnerabilitiesUnshareCheck) Validate(imgRef certification.ImageReference) (bool, error) {
+	lines, err := p.scanImage(imgRef.ImageURI)
 	if err != nil {
 		log.Debugf("Stdout: %s", lines)
 		return false, fmt.Errorf("%w: %s", errors.ErrImageScanFailed, err)

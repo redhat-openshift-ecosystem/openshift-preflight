@@ -87,7 +87,7 @@ var checkOperatorCmd = &cobra.Command{
 }
 
 func init() {
-	checks := strings.Join(engine.OperatorPolicy(), "\n- ")
+	checks := strings.Join(engine.OldOperatorPolicy(), "\n- ")
 
 	usage := "\n" + `The checks that will be executed are the following:` + "\n- " +
 		checks + "\n\n" +

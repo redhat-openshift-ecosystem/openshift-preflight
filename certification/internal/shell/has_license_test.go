@@ -3,6 +3,7 @@ package shell
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/migration"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 )
 
@@ -24,7 +25,7 @@ var _ = Describe("HasLicense", func() {
 				podmanEngine = fakeEngine
 			})
 			It("Should pass Validate", func() {
-				ok, err := HasLicense.Validate("dummy/image")
+				ok, err := HasLicense.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -36,7 +37,7 @@ var _ = Describe("HasLicense", func() {
 				podmanEngine = engine
 			})
 			It("Should not pass Validate", func() {
-				ok, err := HasLicense.Validate("dummy/image")
+				ok, err := HasLicense.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -48,7 +49,7 @@ var _ = Describe("HasLicense", func() {
 				podmanEngine = engine
 			})
 			It("Should not pass Validate", func() {
-				ok, err := HasLicense.Validate("dummy/image")
+				ok, err := HasLicense.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -61,7 +62,7 @@ var _ = Describe("HasLicense", func() {
 		})
 		Context("When PodMan throws an error", func() {
 			It("should fail Validate and return an error", func() {
-				ok, err := HasLicense.Validate("dummy/image")
+				ok, err := HasLicense.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

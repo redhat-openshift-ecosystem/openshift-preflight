@@ -3,6 +3,7 @@ package shell
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/migration"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 )
 
@@ -32,7 +33,7 @@ var _ = Describe("BundleValidateCheck", func() {
 	Describe("Operator Bundle Validate", func() {
 		Context("When Operator Bundle Validate passes", func() {
 			It("Should pass Validate", func() {
-				ok, err := bundleValidateCheck.Validate("dummy/image")
+				ok, err := bundleValidateCheck.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -48,7 +49,7 @@ var _ = Describe("BundleValidateCheck", func() {
 				operatorSdkEngine = engine
 			})
 			It("Should not pass Validate", func() {
-				ok, err := bundleValidateCheck.Validate("dummy/image")
+				ok, err := bundleValidateCheck.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -61,7 +62,7 @@ var _ = Describe("BundleValidateCheck", func() {
 		})
 		Context("When OperatorSdk throws an error", func() {
 			It("should fail Validate and return an error", func() {
-				ok, err := bundleValidateCheck.Validate("dummy/image")
+				ok, err := bundleValidateCheck.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/migration"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 )
 
@@ -38,7 +39,7 @@ var _ = Describe("LessThanMaxLayers", func() {
 	Describe("Checking for less than max layers", func() {
 		Context("When it has fewer layers than max", func() {
 			It("should pass Validate", func() {
-				ok, err := lessThanMaxLayers.Validate("dummy/image")
+				ok, err := lessThanMaxLayers.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -53,7 +54,7 @@ var _ = Describe("LessThanMaxLayers", func() {
 				engine.ImageInspectReport.Images[0].RootFS.Layers = layers
 			})
 			It("should not succeed the check", func() {
-				ok, err := lessThanMaxLayers.Validate("dummy/image")
+				ok, err := lessThanMaxLayers.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -66,7 +67,7 @@ var _ = Describe("LessThanMaxLayers", func() {
 		})
 		Context("When PodMan throws an error", func() {
 			It("should fail Validate and return an error", func() {
-				ok, err := lessThanMaxLayers.Validate("dummy/image")
+				ok, err := lessThanMaxLayers.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

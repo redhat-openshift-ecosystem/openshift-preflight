@@ -7,9 +7,9 @@ import (
 
 type OperatorPkgNameIsUniqueCheck struct{}
 
-func (p *OperatorPkgNameIsUniqueCheck) Validate(image string) (bool, error) {
+func (p *OperatorPkgNameIsUniqueCheck) Validate(imgRef certification.ImageReference) (bool, error) {
 	mounted := true
-	result, err := podmanEngine.UnshareWithCheck("OperatorPackageNameIsUniqueMounted", image, mounted)
+	result, err := podmanEngine.UnshareWithCheck("OperatorPackageNameIsUniqueMounted", imgRef.ImageURI, mounted)
 	if err != nil {
 		log.Trace("unable to execute preflight in the unshare env")
 		log.Debugf("Stdout: %s", result.Stdout)

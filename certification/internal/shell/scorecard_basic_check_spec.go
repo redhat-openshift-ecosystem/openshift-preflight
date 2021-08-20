@@ -13,11 +13,11 @@ type ScorecardBasicSpecCheck struct {
 
 const scorecardBasicCheckResult string = "operator_bundle_scorecard_BasicSpecCheck.json"
 
-func (p *ScorecardBasicSpecCheck) Validate(bundleImage string) (bool, error) {
-	log.Debug("Running operator-sdk scorecard check for ", bundleImage)
+func (p *ScorecardBasicSpecCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
+	log.Debug("Running operator-sdk scorecard check for ", bundleRef.ImageURI)
 	selector := []string{"test=basic-check-spec-test"}
 	log.Debugf("--selector=%s", selector)
-	scorecardReport, err := p.getDataToValidate(bundleImage, selector, scorecardBasicCheckResult)
+	scorecardReport, err := p.getDataToValidate(bundleRef.ImageURI, selector, scorecardBasicCheckResult)
 	if err != nil {
 		return false, err
 	}

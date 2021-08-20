@@ -9,9 +9,9 @@ import (
 // which refers to packages that are not redistributable without an appropriate license.
 type HasNoProhibitedPackagesCheck struct{}
 
-func (p *HasNoProhibitedPackagesCheck) Validate(image string) (bool, error) {
+func (p *HasNoProhibitedPackagesCheck) Validate(imgRef certification.ImageReference) (bool, error) {
 	mounted := true
-	result, err := podmanEngine.UnshareWithCheck("HasNoProhibitedPackagesMounted", image, mounted)
+	result, err := podmanEngine.UnshareWithCheck("HasNoProhibitedPackagesMounted", imgRef.ImageURI, mounted)
 	if err != nil {
 		log.Trace("unable to execute preflight in the unshare env")
 		log.Debugf("Stdout: %s", result.Stdout)

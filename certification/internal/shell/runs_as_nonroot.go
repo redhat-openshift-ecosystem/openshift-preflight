@@ -13,9 +13,9 @@ import (
 // which correlates to the root user.
 type RunAsNonRootCheck struct{}
 
-func (p *RunAsNonRootCheck) Validate(image string) (bool, error) {
+func (p *RunAsNonRootCheck) Validate(imgRef certification.ImageReference) (bool, error) {
 
-	line, err := p.getDataToValidate(image)
+	line, err := p.getDataToValidate(imgRef.ImageURI)
 	if err != nil {
 		return false, err
 	}

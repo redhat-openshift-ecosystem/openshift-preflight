@@ -1,11 +1,10 @@
-package shell
+package container
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -14,7 +13,6 @@ const (
 	newLine             = "\n"
 	minLicenseFileCount = 1
 	//size format string for find command, c denotes bytes
-	minLicenseSize = "+1c"
 )
 
 // HasLicenseCheck evaluates that the image contains a license definition available at
@@ -22,37 +20,8 @@ const (
 type HasLicenseCheck struct{}
 
 func (p *HasLicenseCheck) Validate(imgRef certification.ImageReference) (bool, error) {
-	licenseFileList, err := p.getDataToValidate(imgRef.ImageURI)
-	if err != nil {
-		return false, err
-	}
-	return p.validate(licenseFileList)
-}
-
-func (p *HasLicenseCheck) getDataToValidate(image string) (string, error) {
-	runOpts := cli.ImageRunOptions{
-		EntryPoint:     "stat",
-		EntryPointArgs: []string{licensePath},
-		LogLevel:       "debug",
-		Image:          image,
-	}
-	runReport, err := podmanEngine.Run(runOpts)
-	if err != nil {
-		log.Error(fmt.Sprintf("Error when checking for %s : ", licensePath), err)
-		log.Errorf("Stdout: %s", runReport.Stdout)
-		log.Debugf("Stderr: %s", runReport.Stderr)
-		return "", err
-	}
-	runOpts.EntryPoint = "find"
-	runOpts.EntryPointArgs = []string{licensePath, "-type", "f", "-size", minLicenseSize}
-	runReport, err = podmanEngine.Run(runOpts)
-	if err != nil {
-		log.Error(fmt.Sprintf("Error when listing %s : ", licensePath), err)
-		log.Errorf("Stdout: %s", runReport.Stdout)
-		log.Debugf("Stderr: %s", runReport.Stderr)
-		return "", err
-	}
-	return runReport.Stdout, nil
+	// TODO Implement
+	return false, fmt.Errorf("unimplemented in migration path to crane engine")
 }
 
 func (p *HasLicenseCheck) validate(licenseFileList string) (bool, error) {

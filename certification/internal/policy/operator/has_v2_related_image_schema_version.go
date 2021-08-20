@@ -1,14 +1,15 @@
-package shell
+package operator
 
 import (
 	"encoding/json"
 	"fmt"
+	"path"
 
-	"github.com/operator-framework/api/pkg/manifests"
+	"github.com/google/go-containerregistry/pkg/crane"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
+	containerutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/container"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,7 +20,7 @@ type RelatedImagesAreSchemaVersion2Check struct{}
 // Validate checks the image manifest for each related image referenced in a
 // ClusterServiceVersion and ensures that the schema version used is version 2.
 func (p *RelatedImagesAreSchemaVersion2Check) Validate(imgRef certification.ImageReference) (bool, error) {
-	imageToSchemaVersion, err := p.getDataToValidate(imgRef.ImageURI)
+	imageToSchemaVersion, err := p.getDataToValidate(imgRef)
 	if err != nil {
 		return false, fmt.Errorf("%w: %s", errors.ErrRunContainerFailed, err)
 	}
@@ -30,13 +31,9 @@ func (p *RelatedImagesAreSchemaVersion2Check) Validate(imgRef certification.Imag
 // getDataToValidate pulls a ClusterServiceVersion from the input operator bundle,
 // checks the ClusterServiceVersion's related images declaration, and assembles a list of
 // images and their image manifest schema version values.
-func (p *RelatedImagesAreSchemaVersion2Check) getDataToValidate(image string) (map[string]int, error) {
-	bundlePath, err := p.extractBundleFromImage(image)
-	if err != nil {
-		log.Error(err)
-		return nil, fmt.Errorf("%w: %s", errors.ErrDeterminingRelatedImageSchemaVers, err)
-	}
-	csv, err := p.readBundle(bundlePath)
+func (p *RelatedImagesAreSchemaVersion2Check) getDataToValidate(imgRef certification.ImageReference) (map[string]int, error) {
+	manifestsDir := path.Join(imgRef.ImageFSPath, "manifests")
+	csv, err := p.readBundle(manifestsDir)
 	if err != nil {
 		log.Error(err)
 		return nil, fmt.Errorf("%w: %s", errors.ErrDeterminingRelatedImageSchemaVers, err)
@@ -57,49 +54,10 @@ func (p *RelatedImagesAreSchemaVersion2Check) getDataToValidate(image string) (m
 	return imageSchemaVersionMap, nil
 }
 
-// extractBundleFromImage will extract the bundle contents from the specified image, and return the
-// path to the bundle on the filesystem. This is done by creating the container, copying the contents
-// out of the container, and then cleaning up the container.
-func (p *RelatedImagesAreSchemaVersion2Check) extractBundleFromImage(image string) (string, error) {
-	localBundlePath := "extracted-bundle"
-
-	// create the container. Bundle containers are non-runnable, so we need to
-	// add a dummy entrypoint so that we can create the container.
-	createReport, err := podmanEngine.Create(image, &cli.PodmanCreateOptions{Entrypoint: "false"})
-	if err != nil {
-		log.Error("stdout: ", createReport.Stdout)
-		log.Error("stderr: ", createReport.Stderr)
-		return "", err
-	}
-
-	defer func() {
-		deleteReport, err := podmanEngine.Remove(createReport.ContainerID)
-		if err != nil {
-			log.Warn("a non-fatal error occurred while trying to remove container: ", err)
-			log.Warn("stdout: ", deleteReport.Stdout)
-			log.Warn("stderr: ", deleteReport.Stderr)
-		}
-	}()
-
-	copyReport, err := podmanEngine.CopyFrom(createReport.ContainerID, "/", localBundlePath)
-	if err != nil {
-		log.Error("stdout: ", copyReport.Stdout)
-		log.Error("stderr: ", copyReport.Stderr)
-		return "", err
-	}
-
-	return localBundlePath, nil
-}
-
 // readBundle will accept the manifests directory where a bundle is expected to live,
 // and walks the directory to find all bundle assets.
 func (p *RelatedImagesAreSchemaVersion2Check) readBundle(manifestsDir string) (*operatorsv1alpha1.ClusterServiceVersion, error) {
-	bundle, err := manifests.GetBundleFromDir(manifestsDir)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", errors.ErrDeterminingRelatedImageSchemaVers, err)
-	}
-
-	return bundle.CSV, nil
+	return containerutils.ReadBundle(manifestsDir)
 }
 
 // getRelatedImagesForCSV will return a slice of strings containing the images found in the relatedImages field of
@@ -109,7 +67,7 @@ func (p *RelatedImagesAreSchemaVersion2Check) getRelatedImagesForCSV(csv *operat
 
 	// no related images == nothing to check
 	if len(relatedImages) == 0 {
-		return nil, nil
+		return []string{}, nil
 	}
 
 	imageStrings := make([]string, len(relatedImages))
@@ -120,23 +78,16 @@ func (p *RelatedImagesAreSchemaVersion2Check) getRelatedImagesForCSV(csv *operat
 	return imageStrings, nil
 }
 
-// inspectSchemaVersionForImages will inspect each input image using skopeo and returns a map of each image
-// with its corresponding schemaVersion. It is expected that len(images) > 0.
 func (p *RelatedImagesAreSchemaVersion2Check) inspectSchemaVersionForImage(images []string) (map[string]int, error) {
-	inspectOpts := cli.SkopeoInspectOptions{Raw: true}
-
+	// TODO: handle cases where the related images are behind authentication.
 	imageToSchemaVersion := map[string]int{}
 	for _, image := range images {
-		log.Debug("inspecting image ", image)
-		report, err := skopeoEngine.InspectImage(image, inspectOpts)
+		manifestB, err := crane.Manifest(image)
 		if err != nil {
-			log.Error("encountered an error while inspecting")
-			log.Error("stdout: ", report.Stdout)
-			log.Error("stderr: ", report.Stderr)
 			return nil, err
 		}
 
-		schemaVersion, err := p.getSchemaVersionFromRawManifest(report.Blob)
+		schemaVersion, err := p.getSchemaVersionFromRawManifest(manifestB)
 		if err != nil {
 			return nil, err
 		}
@@ -149,10 +100,6 @@ func (p *RelatedImagesAreSchemaVersion2Check) inspectSchemaVersionForImage(image
 
 // getSchemaVersionFromRawManifest accepts the raw manifest blob, asserts that it is the expected format,
 // and returns the value of the top-level schemaVersion key.
-//
-// TODO: If a struct representation of the raw manifest can be found, this should be used instead. We only
-// unmarshal to a map[string]interface here because schemaVersion is a top-level key, implying that we
-// only need a single assertion to reach our desired value.
 func (p *RelatedImagesAreSchemaVersion2Check) getSchemaVersionFromRawManifest(manifest []byte) (int, error) {
 	var rawManifest map[string]interface{}
 	if err := json.Unmarshal(manifest, &rawManifest); err != nil {

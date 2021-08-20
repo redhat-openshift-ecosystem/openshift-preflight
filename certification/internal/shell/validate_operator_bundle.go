@@ -11,8 +11,8 @@ import (
 type ValidateOperatorBundleCheck struct {
 }
 
-func (p ValidateOperatorBundleCheck) Validate(bundle string) (bool, error) {
-	report, err := p.getDataToValidate(bundle)
+func (p ValidateOperatorBundleCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
+	report, err := p.getDataToValidate(bundleRef.ImageURI)
 	if err != nil {
 		log.Error("Error while executing operator-sdk bundle validate: ", err)
 		return false, err

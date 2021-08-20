@@ -13,8 +13,8 @@ import (
 // which refers to packages that are not redistributable without an appropriate license.
 type HasNoProhibitedPackagesMountedCheck struct{}
 
-func (p *HasNoProhibitedPackagesMountedCheck) Validate(image string) (bool, error) {
-	pkgList, err := p.getDataToValidate(image)
+func (p *HasNoProhibitedPackagesMountedCheck) Validate(imgRef certification.ImageReference) (bool, error) {
+	pkgList, err := p.getDataToValidate(imgRef.ImageURI)
 	if err != nil {
 		log.Error("unable to get a list of all packages in the image")
 		return false, err

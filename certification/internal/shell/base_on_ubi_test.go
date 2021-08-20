@@ -3,6 +3,7 @@ package shell
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/migration"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
@@ -32,7 +33,7 @@ NAME="Red Hat Enterprise Linux"
 				podmanEngine = fakeEngine
 			})
 			It("should pass Validate", func() {
-				ok, err := baseOnUbiCheck.Validate("dummy/image")
+				ok, err := baseOnUbiCheck.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -45,7 +46,7 @@ NAME="Red Hat Enterprise Linux"
 			})
 			It("should not pass Validate", func() {
 				log.Errorf("Run Report: %s", podmanEngine)
-				ok, err := baseOnUbiCheck.Validate("dummy/image")
+				ok, err := baseOnUbiCheck.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -58,7 +59,7 @@ NAME="Red Hat Enterprise Linux"
 		})
 		Context("When PodMan throws an error", func() {
 			It("should fail Validate and return an error", func() {
-				ok, err := baseOnUbiCheck.Validate("dummy/image")
+				ok, err := baseOnUbiCheck.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

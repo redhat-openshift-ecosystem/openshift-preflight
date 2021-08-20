@@ -13,11 +13,11 @@ type ScorecardOlmSuiteCheck struct {
 
 const scorecardOlmSuiteResult string = "operator_bundle_scorecard_OlmSuiteCheck.json"
 
-func (p *ScorecardOlmSuiteCheck) Validate(bundleImage string) (bool, error) {
-	log.Debug("Running operator-sdk scorecard Check for ", bundleImage)
+func (p *ScorecardOlmSuiteCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
+	log.Debug("Running operator-sdk scorecard Check for ", bundleRef.ImageURI)
 	selector := []string{"suite=olm"}
 	log.Debugf("--selector=%s", selector)
-	scorecardReport, err := p.getDataToValidate(bundleImage, selector, scorecardOlmSuiteResult)
+	scorecardReport, err := p.getDataToValidate(bundleRef.ImageURI, selector, scorecardOlmSuiteResult)
 	if err != nil {
 		return false, err
 	}

@@ -48,7 +48,7 @@ type ValidateThingCheck struct{
     // your struct fields here
 }
 
-func (p *ValidateThingCheck) Validate(image string) (bool, error) {
+func (p *ValidateThingCheck) Validate(image certification.ImageReference) (bool, error) {
     // your logic here ...
 }
 

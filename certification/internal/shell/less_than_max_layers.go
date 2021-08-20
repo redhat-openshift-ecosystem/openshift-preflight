@@ -15,9 +15,9 @@ const (
 // UnderLayerMaxCheck ensures that the image has less layers in its assembly than a predefined maximum.
 type UnderLayerMaxCheck struct{}
 
-func (p *UnderLayerMaxCheck) Validate(image string) (bool, error) {
+func (p *UnderLayerMaxCheck) Validate(imageRef certification.ImageReference) (bool, error) {
 	// TODO: if we're going have the image json on disk already, we should use it here instead of podman inspect-ing.
-	layers, err := p.getDataToValidate(image)
+	layers, err := p.getDataToValidate(imageRef.ImageURI)
 	if err != nil {
 		return false, err
 	}

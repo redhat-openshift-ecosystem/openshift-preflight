@@ -45,8 +45,8 @@ type packageData struct {
 // check.
 type OperatorPkgNameIsUniqueMountedCheck struct{}
 
-func (p *OperatorPkgNameIsUniqueMountedCheck) Validate(bundle string) (bool, error) {
-	annotations, err := p.getAnnotationsFromBundle(bundle)
+func (p *OperatorPkgNameIsUniqueMountedCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
+	annotations, err := p.getAnnotationsFromBundle(bundleRef.ImageURI)
 	if err != nil {
 		log.Errorf("unable to get annotations.yaml from the bundle")
 		return false, err

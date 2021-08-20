@@ -13,9 +13,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var checkContainerCmd = &cobra.Command{
-	Use:   "container",
-	Short: "Run checks for a container",
+var oldCheckContainerCmd = &cobra.Command{
+	Use:   "container-old",
+	Short: "Run checks for a container using the previous engine",
 	Long:  `This command will run the Certification checks for a container image. `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
@@ -31,11 +31,11 @@ var checkContainerCmd = &cobra.Command{
 
 		cfg := runtime.Config{
 			Image:          containerImage,
-			EnabledChecks:  engine.ContainerPolicy(),
+			EnabledChecks:  engine.OldContainerPolicy(),
 			ResponseFormat: DefaultOutputFormat,
 		}
 
-		engine, err := engine.NewForConfig(cfg)
+		engine, err := engine.NewShellEngineForConfig(cfg)
 		if err != nil {
 			return err
 		}
@@ -94,5 +94,5 @@ Flags:
 `
 	checkContainerCmd.SetUsageTemplate(usage)
 
-	checkCmd.AddCommand(checkContainerCmd)
+	checkCmd.AddCommand(oldCheckContainerCmd)
 }

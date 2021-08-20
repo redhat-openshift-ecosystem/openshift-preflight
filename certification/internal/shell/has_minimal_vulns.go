@@ -9,9 +9,9 @@ import (
 // In an Unshare environment. It does not require a mounted image.
 type HasMinimalVulnerabilitiesCheck struct{}
 
-func (p *HasMinimalVulnerabilitiesCheck) Validate(image string) (bool, error) {
+func (p *HasMinimalVulnerabilitiesCheck) Validate(imgRef certification.ImageReference) (bool, error) {
 	mounted := false
-	result, err := podmanEngine.UnshareWithCheck("HasMinimalVulnerabilitiesUnshare", image, mounted)
+	result, err := podmanEngine.UnshareWithCheck("HasMinimalVulnerabilitiesUnshare", imgRef.ImageURI, mounted)
 	if err != nil {
 		log.Trace("unable to execute preflight in the unshare env")
 		log.Debugf("Stdout: %s", result.Stdout)

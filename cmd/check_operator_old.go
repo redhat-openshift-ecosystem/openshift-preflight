@@ -13,13 +13,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var checkContainerCmd = &cobra.Command{
-	Use:   "container",
-	Short: "Run checks for a container",
-	Long:  `This command will run the Certification checks for a container image. `,
+var oldCheckOperatorCmd = &cobra.Command{
+	Use:   "operator-old",
+	Short: "Run checks for an Operator using the previous engine",
+	Long:  `This command will run the Certification checks for an Operator bundle image. `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return fmt.Errorf("%w: A container image positional argument is required", errors.ErrInsufficientPosArguments)
+			return fmt.Errorf("%w: An operator image positional argument is required", errors.ErrInsufficientPosArguments)
 		}
 		return nil
 	},
@@ -27,15 +27,20 @@ var checkContainerCmd = &cobra.Command{
 		// Expect exactly one positional arg. Check here instead of using builtin Args key
 		// so that we can get a more user-friendly error message
 
-		containerImage := args[0]
+		operatorImage := args[0]
 
-		cfg := runtime.Config{
-			Image:          containerImage,
-			EnabledChecks:  engine.ContainerPolicy(),
-			ResponseFormat: DefaultOutputFormat,
+		if _, ok := os.LookupEnv("KUBECONFIG"); !ok {
+			return errors.ErrNoKubeconfig
 		}
 
-		engine, err := engine.NewForConfig(cfg)
+		cfg := runtime.Config{
+			Image:          operatorImage,
+			EnabledChecks:  engine.OldOperatorPolicy(),
+			ResponseFormat: DefaultOutputFormat,
+			Bundle:         true,
+		}
+
+		engine, err := engine.NewShellEngineForConfig(cfg)
 		if err != nil {
 			return err
 		}
@@ -82,17 +87,16 @@ var checkContainerCmd = &cobra.Command{
 }
 
 func init() {
-	checks := strings.Join(engine.OldContainerPolicy(), "\n- ")
+	checks := strings.Join(engine.OldOperatorPolicy(), "\n- ")
 
 	usage := "\n" + `The checks that will be executed are the following:` + "\n- " +
 		checks + "\n\n" +
 		`Usage:
-  preflight check container <url to container image> [flags]
+  preflight check operator <url to Operator bundle image> [flags]
 	
 Flags:
-  -h, --help   help for container
+  -h, --help   help for operator
 `
-	checkContainerCmd.SetUsageTemplate(usage)
-
-	checkCmd.AddCommand(checkContainerCmd)
+	checkOperatorCmd.SetUsageTemplate(usage)
+	checkCmd.AddCommand(oldCheckOperatorCmd)
 }
