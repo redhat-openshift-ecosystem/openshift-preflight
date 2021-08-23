@@ -1,18 +1,15 @@
-name: Build
+name: Build Main
 
 on:
   push:
     branches: [ main ]
-  release:
-    types: [ published, created, edited ]
 
 jobs:
-  build:
-    name: Build and push image
+  build-main:
+    name: Build and push a main snapshot image
     runs-on: ubuntu-latest
     env:
       IMAGE_REGISTRY: quay.io/opdev
-      RELEASE_TAG: "0.0.0"
     steps:
     - uses: actions/checkout@v2
 
@@ -21,7 +18,7 @@ jobs:
       uses: redhat-actions/buildah-build@v2
       with:
         image: ${{ env.IMAGE_REGISTRY }}/preflight
-        tags: ${{ github.sha }} ${{ env.RELEASE_TAG }}
+        tags: ${{ github.sha }}
         dockerfiles: |
           ./Dockerfile
 
