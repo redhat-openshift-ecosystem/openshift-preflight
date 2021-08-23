@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	containerutil "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/container"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/migration"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	log "github.com/sirupsen/logrus"
 )
@@ -57,7 +58,7 @@ func (e *CheckEngine) ExecuteChecks() error {
 		checkStartTime := time.Now()
 
 		// run the validation
-		checkPassed, err := check.Validate(targetImage)
+		checkPassed, err := check.Validate(migration.ImageToImageReference(targetImage))
 
 		checkElapsedTime := time.Since(checkStartTime)
 

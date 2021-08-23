@@ -8,8 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/operator-framework/api/pkg/manifests"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	fileutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/migration"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
@@ -70,7 +74,7 @@ func SaveContainerToFilesystem(podmanEngine cli.PodmanEngine, imageLog string) (
 	return tarpath, nil
 }
 
-type ContainerFn func(string) (bool, error)
+type ContainerFn func(certification.ImageReference) (bool, error)
 
 // RunInsideImageFS executes a provided function by mounting the image filesystem
 // to the host. Note that any ContainerFn that is expected to run using this function
@@ -92,7 +96,7 @@ func RunInsideImageFS(podmanEngine cli.PodmanEngine, image string, containerFn C
 		}
 	}()
 
-	return containerFn(strings.TrimSpace(report.MountDir))
+	return containerFn(migration.ImageToImageReference(strings.TrimSpace(report.MountDir)))
 }
 
 func GenerateBundleHash(podmanEngine cli.PodmanEngine, image string) (string, error) {
@@ -114,4 +118,15 @@ func GenerateBundleHash(podmanEngine cli.PodmanEngine, image string) (string, er
 	sum := md5.Sum([]byte(report.Stdout))
 
 	return fmt.Sprintf("%x", sum), nil
+}
+
+// ReadBundle will accept the manifests directory where a bundle is expected to live,
+// and walks the directory to find all bundle assets.
+func ReadBundle(manifestsDir string) (*operatorsv1alpha1.ClusterServiceVersion, error) {
+	bundle, err := manifests.GetBundleFromDir(manifestsDir)
+	if err != nil {
+		return nil, err
+	}
+
+	return bundle.CSV, nil
 }

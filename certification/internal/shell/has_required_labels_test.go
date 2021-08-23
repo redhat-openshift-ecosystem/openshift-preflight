@@ -3,6 +3,7 @@ package shell
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/migration"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 )
 
@@ -39,7 +40,7 @@ var _ = Describe("HasRequiredLabels", func() {
 	Describe("Checking for required labels", func() {
 		Context("When it has required labels", func() {
 			It("should pass Validate", func() {
-				ok, err := hasRequiredLabelsCheck.Validate("dummy/image")
+				ok, err := hasRequiredLabelsCheck.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -50,7 +51,7 @@ var _ = Describe("HasRequiredLabels", func() {
 				delete(engine.ImageInspectReport.Images[0].Config.Labels, "description")
 			})
 			It("should not succeed the check", func() {
-				ok, err := hasRequiredLabelsCheck.Validate("dummy/image")
+				ok, err := hasRequiredLabelsCheck.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -63,7 +64,7 @@ var _ = Describe("HasRequiredLabels", func() {
 		})
 		Context("When PodMan throws an error", func() {
 			It("should fail Validate and return an error", func() {
-				ok, err := hasRequiredLabelsCheck.Validate("dummy/image")
+				ok, err := hasRequiredLabelsCheck.Validate(migration.ImageToImageReference("dummy/image"))
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

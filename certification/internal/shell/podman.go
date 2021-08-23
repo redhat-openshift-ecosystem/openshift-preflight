@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
 	fileutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
@@ -102,7 +101,7 @@ func (pe PodmanCLIEngine) ScanImage(image string) (*cli.ImageScanReport, error) 
 	ovalFilePath := filepath.Join(dir, ovalFilename)
 	log.Debugf("Oval file path: %s", ovalFilePath)
 
-	err = file.DownloadFile(ovalFilePath, ovalFileUrl)
+	err = fileutils.DownloadFile(ovalFilePath, ovalFileUrl)
 	if err != nil {
 		log.Error("Unable to download Oval file", err)
 		return nil, err
@@ -111,7 +110,7 @@ func (pe PodmanCLIEngine) ScanImage(image string) (*cli.ImageScanReport, error) 
 	r := regexp.MustCompile(`(?P<filename>.*).bz2`)
 	ovalFilePathDecompressed := filepath.Join(dir, r.FindStringSubmatch(ovalFilename)[1])
 
-	err = file.Unzip(ovalFilePath, ovalFilePathDecompressed)
+	err = fileutils.Unzip(ovalFilePath, ovalFilePathDecompressed)
 	if err != nil {
 		log.Error("Unable to unzip Oval file: ", err)
 		return nil, err

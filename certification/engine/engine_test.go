@@ -46,7 +46,7 @@ var _ = Describe("Engine Creation", func() {
 			}
 
 			It("should return an engine and no error", func() {
-				engine, err := NewForConfig(cfg)
+				engine, err := NewShellEngineForConfig(cfg)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(engine).ToNot(BeNil())
 			})
@@ -60,7 +60,7 @@ var _ = Describe("Engine Creation", func() {
 			}
 
 			It("should return an error indicating no checks were provided", func() {
-				engine, err := NewForConfig(cfg)
+				engine, err := NewShellEngineForConfig(cfg)
 				Expect(err).To(HaveOccurred())
 				Expect(engine).To(BeNil())
 			})
@@ -74,7 +74,7 @@ var _ = Describe("Engine Creation", func() {
 			}
 
 			It("should return an error indicating no checks were provided", func() {
-				engine, err := NewForConfig(cfg)
+				engine, err := NewShellEngineForConfig(cfg)
 				Expect(err).To(HaveOccurred())
 				Expect(engine).To(BeNil())
 			})

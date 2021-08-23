@@ -12,12 +12,12 @@ import (
 // represent the same image over time.
 type HasUniqueTagCheck struct{}
 
-func (p *HasUniqueTagCheck) Validate(image string) (bool, error) {
-	tags, err := p.getDataToValidate(image)
+func (p *HasUniqueTagCheck) Validate(imgRef certification.ImageReference) (bool, error) {
+	tags, err := p.getDataToValidate(imgRef.ImageURI)
 	if err != nil {
 		return false, err
 	}
-	return p.validate(image, tags)
+	return p.validate(imgRef.ImageURI, tags)
 }
 
 func (p *HasUniqueTagCheck) getDataToValidate(image string) ([]string, error) {

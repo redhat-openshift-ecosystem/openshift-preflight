@@ -45,7 +45,7 @@ It takes its input from environment variables only.`,
 			Mounted:        mounted == "true",
 		}
 
-		engine, err := engine.NewForConfig(cfg)
+		engine, err := engine.NewShellEngineForConfig(cfg)
 		if err != nil {
 			return err
 		}

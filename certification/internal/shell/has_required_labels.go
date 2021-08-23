@@ -12,9 +12,9 @@ var requiredLabels = []string{"name", "vendor", "version", "release", "summary",
 // labels are present on the image asset as it exists in its current container registry.
 type HasRequiredLabelsCheck struct{}
 
-func (p *HasRequiredLabelsCheck) Validate(image string) (bool, error) {
+func (p *HasRequiredLabelsCheck) Validate(imgRef certification.ImageReference) (bool, error) {
 	// TODO: if we're going have the image json on disk already, we should use it here instead of podman inspect-ing.
-	labels, err := p.getDataForValidate(image)
+	labels, err := p.getDataForValidate(imgRef.ImageURI)
 	if err != nil {
 		return false, err
 	}
