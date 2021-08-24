@@ -6,13 +6,10 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
-<<<<<<< HEAD
 	internal "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/engine"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/k8s"
 	containerpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/container"
 	operatorpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/operator"
-=======
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/k8s"
->>>>>>> Leverage viper to set the kubeconfig flag
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/shell"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
@@ -143,6 +140,8 @@ var deprecatedRelatedImageManifestSchemaVersionCheck certification.Check = &shel
 var operatorPkgNameIsUniqueMountedCheck certification.Check = &shell.OperatorPkgNameIsUniqueMountedCheck{}
 var operatorPkgNameIsUniqueCheck certification.Check = &shell.OperatorPkgNameIsUniqueCheck{}
 var hasMinimalVulnerabilitiesUnshareCheck certification.Check = &shell.HasMinimalVulnerabilitiesUnshareCheck{}
+var deployableByOlmCheck certification.Check = &k8s.DeployableByOlmCheck{}
+var deployableByOlmMountedCheck certification.Check = &k8s.DeployableByOlmMountedCheck{}
 
 // new checks for CraneEngine
 var hasLicenseCheck certification.Check = &containerpol.HasLicenseCheck{}
@@ -176,12 +175,14 @@ var oldOperatorPolicy = map[string]certification.Check{
 	scorecardBasicSpecCheck.Name():                          scorecardBasicSpecCheck,
 	scorecardOlmSuiteCheck.Name():                           scorecardOlmSuiteCheck,
 	operatorPkgNameIsUniqueCheck.Name():                     operatorPkgNameIsUniqueCheck,
+	deployableByOlmCheck.Name():                             deployableByOlmCheck,
 }
 
 var unshareChecks = map[string]certification.Check{
 	hasNoProhibitedMountedCheck.Name():           hasNoProhibitedMountedCheck,
 	operatorPkgNameIsUniqueMountedCheck.Name():   operatorPkgNameIsUniqueMountedCheck,
 	hasMinimalVulnerabilitiesUnshareCheck.Name(): hasMinimalVulnerabilitiesUnshareCheck,
+	deployableByOlmMountedCheck.Name():           deployableByOlmMountedCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {

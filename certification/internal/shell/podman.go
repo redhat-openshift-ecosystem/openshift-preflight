@@ -344,6 +344,14 @@ func (pe PodmanCLIEngine) UnshareWithCheck(check, image string, mounted bool) (*
 		env["PREFLIGHT_EXEC_MOUNTED"] = fmt.Sprintf("%t", mounted)
 	}
 
+	if len(os.Getenv("PFLT_INDEXIMAGE")) > 0 {
+		env["PFLT_INDEXIMAGE"] = os.Getenv("PFLT_INDEXIMAGE")
+	}
+
+	if len(os.Getenv("KUBECONFIG")) > 0 {
+		env["KUBECONFIG"] = os.Getenv("KUBECONFIG")
+	}
+
 	unshareReport, err := pe.Unshare(env, os.Args[0], "check", "run")
 	if err != nil {
 		return &cli.PodmanUnshareCheckReport{PodmanUnshareReport: *unshareReport, PassedOverall: false}, err

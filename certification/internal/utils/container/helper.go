@@ -1,10 +1,11 @@
-package shell
+package container
 
 import (
 	"crypto/md5"
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/migration"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 )
 
 func ExtractContainerTar(tarball string) (string, error) {
@@ -129,4 +131,45 @@ func ReadBundle(manifestsDir string) (*operatorsv1alpha1.ClusterServiceVersion, 
 	}
 
 	return bundle.CSV, nil
+}
+
+func GetAnnotationsFromBundle(mountedDir string) (map[string]string, error) {
+	log.Trace("reading annotations file from the bundle")
+	log.Debug("mounted directory is ", mountedDir)
+	annotationsFilePath := path.Join(mountedDir, "metadata", "annotations.yaml")
+
+	fileContents, err := os.ReadFile(annotationsFilePath)
+	if err != nil {
+		log.Error("fail to read metadata/annotation.yaml file in bundle")
+		return nil, err
+	}
+
+	annotations, err := extractAnnotationsBytes(fileContents)
+	if err != nil {
+		log.Error("metadata/annotations.yaml found but is malformed")
+		return nil, err
+	}
+
+	return annotations, nil
+}
+
+// extractAnnotationsBytes reads the annotation data read from a file and returns the expected format for that yaml
+// represented as a map[string]string.
+func extractAnnotationsBytes(annotationBytes []byte) (map[string]string, error) {
+
+	if len(annotationBytes) == 0 {
+		return nil, errors.ErrEmptyAnnotationFile
+	}
+
+	var bundleMeta metadata
+	if err := yaml.Unmarshal(annotationBytes, &bundleMeta); err != nil {
+		log.Error("metadata/annotations.yaml found but is malformed")
+		return nil, err
+	}
+
+	return bundleMeta.Annotations, nil
+}
+
+type metadata struct {
+	Annotations map[string]string
 }

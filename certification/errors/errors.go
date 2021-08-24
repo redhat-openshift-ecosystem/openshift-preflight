@@ -28,3 +28,4 @@ var ErrNoKubeconfig = errors.New("no environment variable KUBECONFIG could be fo
 var ErrUnableToRetrieveUser = errors.New("could not retrieve user info")
 var ErrK8sAPICallFailed = errors.New("unable to fetch the requested resource from k8s API server")
 var ErrNoValueFoundInViper = errors.New("unable to fetch the requested key from viper")
+var ErrEmptyAnnotationFile = errors.New(("the annotations file was empty"))
