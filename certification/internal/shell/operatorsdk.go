@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -36,6 +37,15 @@ func (o OperatorSdkCLIEngine) Scorecard(image string, opts cli.OperatorSdkScorec
 	if opts.ServiceAccount != "" {
 		cmdArgs = append(cmdArgs, "--service-account", opts.ServiceAccount)
 	}
+
+	configFile, err := createScorecardConfigFile()
+	if err != nil {
+		log.Error("could not create scorecard config file", err)
+		return nil, err
+	}
+	defer os.Remove(configFile)
+	cmdArgs = append(cmdArgs, "--config", configFile)
+
 	cmdArgs = append(cmdArgs, image)
 
 	cmd := exec.Command("operator-sdk", cmdArgs...)
@@ -43,7 +53,7 @@ func (o OperatorSdkCLIEngine) Scorecard(image string, opts cli.OperatorSdkScorec
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		// This is a workaround due to operator-sdk scorecard always returning a 1 exit code
 		// whether a test failed or the tool encountered a fatal error.
@@ -131,4 +141,37 @@ func (o OperatorSdkCLIEngine) writeScorecardFile(resultFile, stdout string) erro
 		return err
 	}
 	return nil
+}
+
+func createScorecardConfigFile() (string, error) {
+	configTemplate := `kind: Configuration
+	apiversion: scorecard.operatorframework.io/v1alpha3
+	metadata:
+	  name: config
+	stages:
+	  - parallel: true
+		tests:
+		  - image: quay.io/operator-framework/scorecard-test:v1.9.0
+			entrypoint:
+			  - scorecard-test
+			  - basic-check-spec
+			labels:
+			  suite: basic
+			  test: basic-check-spec-test
+		  - image: quay.io/operator-framework/scorecard-test:v1.9.0
+			entrypoint:
+			  - scorecard-test
+			  - olm-bundle-validation
+			labels:
+			  suite: olm
+			  test: olm-bundle-validation-test
+`
+
+	tempConfigFile, err := os.CreateTemp("", "scorecard-test-config-*.yaml")
+	if err != nil {
+		log.Error("could not create temp config file", err)
+		return "", err
+	}
+	_, err = tempConfigFile.WriteString(configTemplate)
+	return tempConfigFile.Name(), err
 }
