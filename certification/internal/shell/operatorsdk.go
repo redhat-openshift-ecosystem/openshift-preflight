@@ -27,6 +27,15 @@ func (o OperatorSdkCLIEngine) Scorecard(image string, opts cli.OperatorSdkScorec
 			cmdArgs = append(cmdArgs, fmt.Sprintf("--selector=%s", selector))
 		}
 	}
+	if opts.Kubeconfig != "" {
+		cmdArgs = append(cmdArgs, "--kubeconfig", opts.Kubeconfig)
+	}
+	if opts.Namespace != "" {
+		cmdArgs = append(cmdArgs, "--namespace", opts.Namespace)
+	}
+	if opts.ServiceAccount != "" {
+		cmdArgs = append(cmdArgs, "--service-account", opts.ServiceAccount)
+	}
 	cmdArgs = append(cmdArgs, image)
 
 	cmd := exec.Command("operator-sdk", cmdArgs...)

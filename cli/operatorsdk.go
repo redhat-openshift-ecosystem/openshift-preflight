@@ -1,10 +1,13 @@
 package cli
 
 type OperatorSdkScorecardOptions struct {
-	LogLevel     string
-	OutputFormat string
-	Selector     []string
-	ResultFile   string
+	LogLevel       string
+	OutputFormat   string
+	Selector       []string
+	ResultFile     string
+	Kubeconfig     string
+	Namespace      string
+	ServiceAccount string
 }
 
 type OperatorSdkScorecardReport struct {

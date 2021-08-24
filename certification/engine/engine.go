@@ -146,6 +146,8 @@ var relatedImageManifestSchemaVersionCheck certification.Check = &operatorpol.Re
 
 var operatorPolicy = map[string]certification.Check{
 	relatedImageManifestSchemaVersionCheck.Name(): relatedImageManifestSchemaVersionCheck,
+	scorecardBasicSpecCheck.Name():                scorecardBasicSpecCheck,
+	scorecardOlmSuiteCheck.Name():                 scorecardOlmSuiteCheck,
 }
 
 var containerPolicy = map[string]certification.Check{
@@ -169,8 +171,6 @@ var oldOperatorPolicy = map[string]certification.Check{
 	scorecardOlmSuiteCheck.Name():                           scorecardOlmSuiteCheck,
 	deprecatedRelatedImageManifestSchemaVersionCheck.Name(): deprecatedRelatedImageManifestSchemaVersionCheck,
 	validateOperatorBundle.Name():                           validateOperatorBundle,
-	scorecardBasicSpecCheck.Name():                          scorecardBasicSpecCheck,
-	scorecardOlmSuiteCheck.Name():                           scorecardOlmSuiteCheck,
 	operatorPkgNameIsUniqueCheck.Name():                     operatorPkgNameIsUniqueCheck,
 }
 
