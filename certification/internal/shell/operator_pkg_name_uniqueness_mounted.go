@@ -2,16 +2,14 @@ package shell
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path"
+
+	containerutil "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/container"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -46,7 +44,7 @@ type packageData struct {
 type OperatorPkgNameIsUniqueMountedCheck struct{}
 
 func (p *OperatorPkgNameIsUniqueMountedCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
-	annotations, err := p.getAnnotationsFromBundle(bundleRef.ImageURI)
+	annotations, err := containerutil.GetAnnotationsFromBundle(bundleRef.ImageURI)
 	if err != nil {
 		log.Errorf("unable to get annotations.yaml from the bundle")
 		return false, err
@@ -79,45 +77,6 @@ func (p *OperatorPkgNameIsUniqueMountedCheck) Validate(bundleRef certification.I
 	}
 
 	return p.validate(data)
-}
-
-// getAnnotationsFromBundle will search a bundle's metadata directory for a file called annotations.yaml, which is
-// expected to exist in every bundle. This file's contents are read and marshaled to a simple map, which is then
-// returned.
-func (p *OperatorPkgNameIsUniqueMountedCheck) getAnnotationsFromBundle(mountedDir string) (map[string]string, error) {
-	log.Trace("reading annotations file from the bundle")
-	log.Debug("mounted directory is ", mountedDir)
-	annotationsFilePath := path.Join(mountedDir, "metadata", "annotations.yaml")
-
-	fileContents, err := os.ReadFile(annotationsFilePath)
-	if err != nil {
-		log.Error("fail to read metadata/annotation.yaml file in bundle")
-		return nil, err
-	}
-
-	annotations, err := p.extractAnnotationsBytes(fileContents)
-	if err != nil {
-		log.Error("metadata/annotations.yaml found but is malformed")
-		return nil, err
-	}
-
-	return annotations, nil
-}
-
-// extractAnnotationsBytes reads the annotation data read from a file and returns the expected format for that yaml
-// represented as a map[string]string.
-func (p *OperatorPkgNameIsUniqueMountedCheck) extractAnnotationsBytes(annotationBytes []byte) (map[string]string, error) {
-	if len(annotationBytes) == 0 {
-		return nil, errors.New("the annotations file was empty")
-	}
-
-	var bundleMeta metadata
-	if err := yaml.Unmarshal(annotationBytes, &bundleMeta); err != nil {
-		log.Error("metadata/annotations.yaml found but is malformed")
-		return nil, err
-	}
-
-	return bundleMeta.Annotations, nil
 }
 
 // getPackageName accepts the annotations map and searches for the specified annotation corresponding
@@ -230,8 +189,4 @@ func (p *OperatorPkgNameIsUniqueMountedCheck) Help() certification.HelpText {
 // enable mock implementations for testing purposes.
 type apiClient interface {
 	Do(req *http.Request) (*http.Response, error)
-}
-
-type metadata struct {
-	Annotations map[string]string
 }
