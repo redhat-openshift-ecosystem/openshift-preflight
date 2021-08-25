@@ -153,14 +153,15 @@ var containerPolicy = map[string]certification.Check{
 }
 
 var oldContainerPolicy = map[string]certification.Check{
-	runAsNonRootCheck.Name():              runAsNonRootCheck,
-	underLayerMaxCheck.Name():             underLayerMaxCheck,
-	hasRequiredLabelCheck.Name():          hasRequiredLabelCheck,
-	basedOnUbiCheck.Name():                basedOnUbiCheck,
-	deprecatedHasLicenseCheck.Name():      deprecatedHasLicenseCheck,
-	hasMinimalVulnerabilitiesCheck.Name(): hasMinimalVulnerabilitiesCheck,
-	hasUniqueTagCheck.Name():              hasUniqueTagCheck,
-	hasNoProhibitedCheck.Name():           hasNoProhibitedCheck,
+	runAsNonRootCheck.Name():         runAsNonRootCheck,
+	underLayerMaxCheck.Name():        underLayerMaxCheck,
+	hasRequiredLabelCheck.Name():     hasRequiredLabelCheck,
+	basedOnUbiCheck.Name():           basedOnUbiCheck,
+	deprecatedHasLicenseCheck.Name(): deprecatedHasLicenseCheck,
+	hasUniqueTagCheck.Name():         hasUniqueTagCheck,
+	hasNoProhibitedCheck.Name():      hasNoProhibitedCheck,
+	// Disabled due to issue #99 and discussions in community meeting
+	// hasMinimalVulnerabilitiesCheck.Name(): hasMinimalVulnerabilitiesCheck,
 }
 
 var oldOperatorPolicy = map[string]certification.Check{
