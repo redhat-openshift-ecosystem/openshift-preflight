@@ -1,10 +1,12 @@
 package shell
 
 import (
+	"os"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 type scorecardCheck struct{}
@@ -27,11 +29,17 @@ func (p *scorecardCheck) validate(items []cli.OperatorSdkScorecardItem) (bool, e
 }
 
 func (p *scorecardCheck) getDataToValidate(bundleImage string, selector []string, resultFile string) (*cli.OperatorSdkScorecardReport, error) {
+	namespace := viper.GetString("namespace")
+	serviceAccount := viper.GetString("serviceaccount")
+	kubeconfig := os.Getenv("KUBECONFIG")
 	opts := cli.OperatorSdkScorecardOptions{
-		LogLevel:     "warning",
-		OutputFormat: "json",
-		Selector:     selector,
-		ResultFile:   resultFile,
+		LogLevel:       "warning",
+		OutputFormat:   "json",
+		Selector:       selector,
+		ResultFile:     resultFile,
+		Kubeconfig:     kubeconfig,
+		Namespace:      namespace,
+		ServiceAccount: serviceAccount,
 	}
 	return operatorSdkEngine.Scorecard(bundleImage, opts)
 }

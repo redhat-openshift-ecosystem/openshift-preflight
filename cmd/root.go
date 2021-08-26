@@ -52,6 +52,10 @@ func initConfig() {
 	viper.SetDefault("loglevel", DefaultLogLevel)
 	viper.SetDefault("artifacts", DefaultArtifactsDir)
 
+	// Set up cluster defaults
+	viper.SetDefault("namespace", DefaultNamespace)
+	viper.SetDefault("serviceaccount", DefaultServiceAccount)
+
 	// set up logging
 	logname := viper.GetString("logfile")
 	logFile, err := os.OpenFile(logname, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
