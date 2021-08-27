@@ -125,7 +125,7 @@ func queryNewChecks(checkName string) certification.Check {
 
 // Register all checks
 var runAsNonRootCheck certification.Check = &shell.RunAsNonRootCheck{}
-var underLayerMaxCheck certification.Check = &shell.UnderLayerMaxCheck{}
+var deprecatedUnderLayerMaxCheck certification.Check = &shell.UnderLayerMaxCheck{}
 var hasRequiredLabelCheck certification.Check = &shell.HasRequiredLabelsCheck{}
 var basedOnUbiCheck certification.Check = &shell.BaseOnUBICheck{}
 var deprecatedHasLicenseCheck certification.Check = &shell.HasLicenseCheck{}
@@ -151,6 +151,7 @@ var operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgN
 var validateOperatorBundle certification.Check = operatorpol.NewValidateOperatorBundleCheck(internal.NewOperatorSdkEngine())
 var scorecardBasicSpecCheck certification.Check = operatorpol.NewScorecardBasicSpecCheck(internal.NewOperatorSdkEngine())
 var scorecardOlmSuiteCheck certification.Check = operatorpol.NewScorecardOlmSuiteCheck(internal.NewOperatorSdkEngine())
+var maxLayersCheck certification.Check = &containerpol.MaxLayersCheck{}
 
 var operatorPolicy = map[string]certification.Check{
 	operatorPkgNameIsUniqueCheck.Name(): operatorPkgNameIsUniqueCheck,
@@ -162,16 +163,17 @@ var operatorPolicy = map[string]certification.Check{
 
 var containerPolicy = map[string]certification.Check{
 	hasLicenseCheck.Name(): hasLicenseCheck,
+	maxLayersCheck.Name():  maxLayersCheck,
 }
 
 var oldContainerPolicy = map[string]certification.Check{
-	runAsNonRootCheck.Name():         runAsNonRootCheck,
-	underLayerMaxCheck.Name():        underLayerMaxCheck,
-	hasRequiredLabelCheck.Name():     hasRequiredLabelCheck,
-	basedOnUbiCheck.Name():           basedOnUbiCheck,
-	deprecatedHasLicenseCheck.Name(): deprecatedHasLicenseCheck,
-	hasUniqueTagCheck.Name():         hasUniqueTagCheck,
-	hasNoProhibitedCheck.Name():      hasNoProhibitedCheck,
+	runAsNonRootCheck.Name():            runAsNonRootCheck,
+	deprecatedUnderLayerMaxCheck.Name(): deprecatedUnderLayerMaxCheck,
+	hasRequiredLabelCheck.Name():        hasRequiredLabelCheck,
+	basedOnUbiCheck.Name():              basedOnUbiCheck,
+	deprecatedHasLicenseCheck.Name():    deprecatedHasLicenseCheck,
+	hasUniqueTagCheck.Name():            hasUniqueTagCheck,
+	hasNoProhibitedCheck.Name():         hasNoProhibitedCheck,
 	// Disabled due to issue #99 and discussions in community meeting
 	// hasMinimalVulnerabilitiesCheck.Name(): hasMinimalVulnerabilitiesCheck,
 }

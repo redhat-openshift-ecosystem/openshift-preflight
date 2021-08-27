@@ -103,7 +103,7 @@ func (c *CraneEngine) ExecuteChecks() error {
 	c.imageRef = certification.ImageReference{
 		ImageURI:    c.Image,
 		ImageFSPath: containerFSPath,
-		ImageInfo:   &img,
+		ImageInfo:   img,
 	}
 
 	// execute checks
