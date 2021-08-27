@@ -130,11 +130,11 @@ var hasRequiredLabelCheck certification.Check = &shell.HasRequiredLabelsCheck{}
 var basedOnUbiCheck certification.Check = &shell.BaseOnUBICheck{}
 var deprecatedHasLicenseCheck certification.Check = &shell.HasLicenseCheck{}
 var hasUniqueTagCheck certification.Check = &shell.HasUniqueTagCheck{}
-var hasNoProhibitedCheck certification.Check = &shell.HasNoProhibitedPackagesCheck{}
 var deprecatedValidateOperatorBundle certification.Check = &shell.ValidateOperatorBundleCheck{}
 var deprecatedScorecardBasicSpecCheck certification.Check = &shell.ScorecardBasicSpecCheck{}
 var deprecatedScorecardOlmSuiteCheck certification.Check = &shell.ScorecardOlmSuiteCheck{}
-var hasNoProhibitedMountedCheck certification.Check = &shell.HasNoProhibitedPackagesMountedCheck{}
+var deprecatedHasNoProhibitedCheck certification.Check = &shell.HasNoProhibitedPackagesCheck{}
+var deprecatedHasNoProhibitedMountedCheck certification.Check = &shell.HasNoProhibitedPackagesMountedCheck{}
 var deprecatedOperatorPkgNameIsUniqueMountedCheck certification.Check = &shell.OperatorPkgNameIsUniqueMountedCheck{}
 var deprecatedOperatorPkgNameIsUniqueCheck certification.Check = &shell.OperatorPkgNameIsUniqueCheck{}
 var hasMinimalVulnerabilitiesUnshareCheck certification.Check = &shell.HasMinimalVulnerabilitiesUnshareCheck{}
@@ -152,6 +152,7 @@ var validateOperatorBundle certification.Check = operatorpol.NewValidateOperator
 var scorecardBasicSpecCheck certification.Check = operatorpol.NewScorecardBasicSpecCheck(internal.NewOperatorSdkEngine())
 var scorecardOlmSuiteCheck certification.Check = operatorpol.NewScorecardOlmSuiteCheck(internal.NewOperatorSdkEngine())
 var maxLayersCheck certification.Check = &containerpol.MaxLayersCheck{}
+var hasNoProhibitedCheck certification.Check = &containerpol.HasNoProhibitedPackagesCheck{}
 
 var operatorPolicy = map[string]certification.Check{
 	operatorPkgNameIsUniqueCheck.Name(): operatorPkgNameIsUniqueCheck,
@@ -162,18 +163,20 @@ var operatorPolicy = map[string]certification.Check{
 }
 
 var containerPolicy = map[string]certification.Check{
-	hasLicenseCheck.Name(): hasLicenseCheck,
-	maxLayersCheck.Name():  maxLayersCheck,
+	hasLicenseCheck.Name():      hasLicenseCheck,
+	maxLayersCheck.Name():       maxLayersCheck,
+	hasLicenseCheck.Name():      hasLicenseCheck,
+	hasNoProhibitedCheck.Name(): hasNoProhibitedCheck,
 }
 
 var oldContainerPolicy = map[string]certification.Check{
-	runAsNonRootCheck.Name():            runAsNonRootCheck,
-	deprecatedUnderLayerMaxCheck.Name(): deprecatedUnderLayerMaxCheck,
-	hasRequiredLabelCheck.Name():        hasRequiredLabelCheck,
-	basedOnUbiCheck.Name():              basedOnUbiCheck,
-	deprecatedHasLicenseCheck.Name():    deprecatedHasLicenseCheck,
-	hasUniqueTagCheck.Name():            hasUniqueTagCheck,
-	hasNoProhibitedCheck.Name():         hasNoProhibitedCheck,
+	runAsNonRootCheck.Name():              runAsNonRootCheck,
+	deprecatedUnderLayerMaxCheck.Name():   deprecatedUnderLayerMaxCheck,
+	hasRequiredLabelCheck.Name():          hasRequiredLabelCheck,
+	basedOnUbiCheck.Name():                basedOnUbiCheck,
+	deprecatedHasLicenseCheck.Name():      deprecatedHasLicenseCheck,
+	hasUniqueTagCheck.Name():              hasUniqueTagCheck,
+	deprecatedHasNoProhibitedCheck.Name(): deprecatedHasNoProhibitedCheck,
 	// Disabled due to issue #99 and discussions in community meeting
 	// hasMinimalVulnerabilitiesCheck.Name(): hasMinimalVulnerabilitiesCheck,
 }
@@ -187,10 +190,10 @@ var oldOperatorPolicy = map[string]certification.Check{
 }
 
 var unshareChecks = map[string]certification.Check{
-	hasNoProhibitedMountedCheck.Name():                   hasNoProhibitedMountedCheck,
 	deprecatedOperatorPkgNameIsUniqueMountedCheck.Name(): deprecatedOperatorPkgNameIsUniqueMountedCheck,
-	hasMinimalVulnerabilitiesUnshareCheck.Name():         hasMinimalVulnerabilitiesUnshareCheck,
 	deprecatedDeployableByOlmCheck.Name():                deprecatedDeployableByOlmCheck,
+	deprecatedHasNoProhibitedMountedCheck.Name():         deprecatedHasNoProhibitedMountedCheck,
+	hasMinimalVulnerabilitiesUnshareCheck.Name():         hasMinimalVulnerabilitiesUnshareCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {
