@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
 
 	"github.com/manifoldco/promptui"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +20,6 @@ const (
 	certProjectTypeParam = "cert_project_type"
 	certProjectIDParam   = "cert_project_id"
 	pullRequestURLParam  = "pull_request_url"
-	promptErrorMessage   = "Prompt Failed, Please Try re-running support command."
 )
 
 var supportCmd = &cobra.Command{
@@ -38,23 +37,35 @@ var supportCmd = &cobra.Command{
 		_, certProjectTypeValue, err := certProjectTypeLabel.Run()
 
 		if err != nil {
-			fmt.Println(promptErrorMessage)
-			return err
+			return errors.ErrSupportCmdPromptFailed
 		}
 
 		log.Debugf("certification project type: %s", certProjectTypeValue)
 
 		certProjectIDLabel := promptui.Prompt{
 			Label: "Please Enter Connect Certification Project ID",
+
+			// validate makes sure that the project id is not blank, does not contain special characters,
+			// and is in the proper format
 			Validate: func(s string) error {
+
+				if s == "" {
+					return errors.ErrEmptyProjectID
+				}
+
 				isLegacy, _ := regexp.MatchString(`^p.*`, s)
 				if isLegacy {
-					return errors.New("please remove leading character p from project id")
+					return errors.ErrRemovePFromProjectID
 				}
 
 				isOSPID, _ := regexp.MatchString(`^ospid-.*`, s)
 				if isOSPID {
-					return errors.New("please remove leading character ospid- from project id")
+					return errors.ErrRemoveOSPIDFromProjectID
+				}
+
+				isAlphaNumeric := regexp.MustCompile(`^[a-zA-Z0-9]*$`).MatchString(s)
+				if !isAlphaNumeric {
+					return errors.ErrRemoveSpecialCharFromProjectID
 				}
 
 				return nil
@@ -64,21 +75,34 @@ var supportCmd = &cobra.Command{
 		certProjectIDValue, err := certProjectIDLabel.Run()
 
 		if err != nil {
-			fmt.Println(promptErrorMessage)
-			return err
+			return errors.ErrSupportCmdPromptFailed
 		}
 
 		log.Debugf("certification project id: %s", certProjectIDValue)
 
 		pullRequestURLLabel := promptui.Prompt{
 			Label: "Please Enter Your Pull Request URL",
+
+			// validate makes sure that the url entered has a valid scheme, host and path to the pull request
+			Validate: func(s string) error {
+				_, err := url.ParseRequestURI(s)
+				if err != nil {
+					return errors.ErrPullRequestURL
+				}
+
+				url, err := url.Parse(s)
+				if err != nil || url.Scheme == "" || url.Host == "" || url.Path == "" {
+					return errors.ErrPullRequestURL
+				}
+
+				return nil
+			},
 		}
 
 		pullRequestURLValue, err := pullRequestURLLabel.Run()
 
 		if err != nil {
-			fmt.Println(promptErrorMessage)
-			return err
+			return errors.ErrSupportCmdPromptFailed
 		}
 
 		log.Debugf("pull request url: %s", pullRequestURLValue)

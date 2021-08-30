@@ -1,3 +1,4 @@
+// Package errors defines all the single use as well as reusable errors within preflight
 package errors
 
 import "errors"
@@ -28,5 +29,11 @@ var ErrNoKubeconfig = errors.New("no environment variable KUBECONFIG could be fo
 var ErrUnableToRetrieveUser = errors.New("could not retrieve user info")
 var ErrK8sAPICallFailed = errors.New("unable to fetch the requested resource from k8s API server")
 var ErrNoValueFoundInViper = errors.New("unable to fetch the requested key from viper")
-var ErrEmptyAnnotationFile = errors.New(("the annotations file was empty"))
+var ErrEmptyAnnotationFile = errors.New("the annotations file was empty")
 var ErrLicensesNotADir = errors.New("licenses is not a directory")
+var ErrSupportCmdPromptFailed = errors.New("prompt failed, please try re-running support command")
+var ErrEmptyProjectID = errors.New("please enter a non empty project id")
+var ErrRemovePFromProjectID = errors.New("please remove leading character p from project id")
+var ErrRemoveOSPIDFromProjectID = errors.New("please remove leading character ospid- from project id")
+var ErrRemoveSpecialCharFromProjectID = errors.New("please remove all special characters from project id")
+var ErrPullRequestURL = errors.New("please enter a valid url: including scheme, host, and path to pull request")
