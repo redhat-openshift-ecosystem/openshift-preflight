@@ -129,10 +129,9 @@ var underLayerMaxCheck certification.Check = &shell.UnderLayerMaxCheck{}
 var hasRequiredLabelCheck certification.Check = &shell.HasRequiredLabelsCheck{}
 var basedOnUbiCheck certification.Check = &shell.BaseOnUBICheck{}
 var deprecatedHasLicenseCheck certification.Check = &shell.HasLicenseCheck{}
-var hasMinimalVulnerabilitiesCheck certification.Check = &shell.HasMinimalVulnerabilitiesCheck{}
 var hasUniqueTagCheck certification.Check = &shell.HasUniqueTagCheck{}
 var hasNoProhibitedCheck certification.Check = &shell.HasNoProhibitedPackagesCheck{}
-var validateOperatorBundle certification.Check = &shell.ValidateOperatorBundleCheck{}
+var deprecatedValidateOperatorBundle certification.Check = &shell.ValidateOperatorBundleCheck{}
 var scorecardBasicSpecCheck certification.Check = &shell.ScorecardBasicSpecCheck{}
 var scorecardOlmSuiteCheck certification.Check = &shell.ScorecardOlmSuiteCheck{}
 var hasNoProhibitedMountedCheck certification.Check = &shell.HasNoProhibitedPackagesMountedCheck{}
@@ -143,11 +142,15 @@ var hasMinimalVulnerabilitiesUnshareCheck certification.Check = &shell.HasMinima
 var deprecatedDeployableByOlmCheck certification.Check = &k8s.DeployableByOlmCheck{}
 var deprecatedDeployableByOlmMountedCheck certification.Check = &k8s.DeployableByOlmMountedCheck{}
 
+// Disabled due to issue #99 and discussions in community meeting
+// var hasMinimalVulnerabilitiesCheck certification.Check = &shell.HasMinimalVulnerabilitiesCheck{}
+
 // new checks for CraneEngine
 var hasLicenseCheck certification.Check = &containerpol.HasLicenseCheck{}
 var relatedImageManifestSchemaVersionCheck certification.Check = &operatorpol.RelatedImagesAreSchemaVersion2Check{}
 var deployableByOlmCheck certification.Check = &operatorpol.DeployableByOlmCheck{}
 var operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgNameIsUniqueCheck{}
+var validateOperatorBundle certification.Check = operatorpol.NewValidateOperatorBundleCheck(NewOperatorSdkEngine())
 
 var operatorPolicy = map[string]certification.Check{
 	operatorPkgNameIsUniqueCheck.Name():           operatorPkgNameIsUniqueCheck,
@@ -155,6 +158,7 @@ var operatorPolicy = map[string]certification.Check{
 	scorecardBasicSpecCheck.Name():                scorecardBasicSpecCheck,
 	scorecardOlmSuiteCheck.Name():                 scorecardOlmSuiteCheck,
 	deployableByOlmCheck.Name():                   deployableByOlmCheck,
+	validateOperatorBundle.Name():                 validateOperatorBundle,
 }
 
 var containerPolicy = map[string]certification.Check{
@@ -174,7 +178,7 @@ var oldContainerPolicy = map[string]certification.Check{
 }
 
 var oldOperatorPolicy = map[string]certification.Check{
-	validateOperatorBundle.Name():                           validateOperatorBundle,
+	deprecatedValidateOperatorBundle.Name():                 deprecatedValidateOperatorBundle,
 	scorecardBasicSpecCheck.Name():                          scorecardBasicSpecCheck,
 	scorecardOlmSuiteCheck.Name():                           scorecardOlmSuiteCheck,
 	deprecatedRelatedImageManifestSchemaVersionCheck.Name(): deprecatedRelatedImageManifestSchemaVersionCheck,

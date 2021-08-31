@@ -5,6 +5,7 @@ import (
 	"compress/bzip2"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -84,6 +85,16 @@ func ArtifactPath(artifact string) string {
 		// Fatal does an os.Exit
 	}
 	return filepath.Join(artifactDir, artifact)
+}
+
+func WriteFileToArtifactsPath(filename, contents string) (string, error) {
+	fullFilePath := ArtifactPath(filename)
+
+	err := ioutil.WriteFile(fullFilePath, []byte(contents), 0644)
+	if err != nil {
+		return fullFilePath, err
+	}
+	return fullFilePath, nil
 }
 
 // Untar takes a destination path and a reader; a tar reader loops over the tarfile
