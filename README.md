@@ -57,7 +57,7 @@ To check a container, utilize the `check container` sub-command:
 preflight check container quay.io/example-namespace/example-container:0.0.1
 ```
 
-The check an Operator bundle, utilize the `check Operator` sub-command:
+To check an Operator bundle, utilize the `check Operator` sub-command:
 
 ```text
 preflight check operator quay.io/example-namespace/example-operator:0.0.1
@@ -100,6 +100,19 @@ preflight version 0.0.0 <commit: 2d3bb671bff8a95d385621382f31215234877d44>
 ```
 
 [releases_link]:https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
+
+## Preflight Testing
+
+For e2e testing, run
+
+```bash
+go test -v `go list ./... | grep -v e2e`
+```
+
+or run
+```bash
+make test
+```
 
 ## How to Contribute
 
