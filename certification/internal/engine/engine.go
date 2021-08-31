@@ -63,7 +63,7 @@ func (c *CraneEngine) ExecuteChecks() error {
 	if err != nil {
 		return fmt.Errorf("%w: %s", errors.ErrCreateTempDir, err)
 	}
-	log.Debug("temporary directory is", tmpdir)
+	log.Debug("temporary directory is ", tmpdir)
 	defer func() {
 		if err := os.RemoveAll(tmpdir); err != nil {
 			log.Error("unable to clean up tmpdir", tmpdir, err)
@@ -91,7 +91,7 @@ func (c *CraneEngine) ExecuteChecks() error {
 		}
 	}()
 
-	log.Debug("extracting container filesystem to", containerFSPath)
+	log.Debug("extracting container filesystem to ", containerFSPath)
 	err = fileutils.Untar(containerFSPath, r)
 	if err != nil {
 		return fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)

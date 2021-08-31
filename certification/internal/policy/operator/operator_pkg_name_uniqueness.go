@@ -11,14 +11,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	// apiEndpoint is the endpoint used to query for package uniqueness.
-	apiEndpoint = "https://catalog.redhat.com/api/containers/v1/operators/packages"
-
-	// packageKey is the packageKey in annotations.yaml that contains the package name.
-	packageKey = "operators.operatorframework.io.bundle.package.v1"
-)
-
 // apiRespondData is the response received from the defined API
 type apiResponseData struct {
 	Data     []packageData `json:"data"`

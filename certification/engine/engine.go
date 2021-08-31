@@ -140,19 +140,21 @@ var deprecatedRelatedImageManifestSchemaVersionCheck certification.Check = &shel
 var deprecatedOperatorPkgNameIsUniqueMountedCheck certification.Check = &shell.OperatorPkgNameIsUniqueMountedCheck{}
 var deprecatedOperatorPkgNameIsUniqueCheck certification.Check = &shell.OperatorPkgNameIsUniqueCheck{}
 var hasMinimalVulnerabilitiesUnshareCheck certification.Check = &shell.HasMinimalVulnerabilitiesUnshareCheck{}
-var deployableByOlmCheck certification.Check = &k8s.DeployableByOlmCheck{}
-var deployableByOlmMountedCheck certification.Check = &k8s.DeployableByOlmMountedCheck{}
+var deprecatedDeployableByOlmCheck certification.Check = &k8s.DeployableByOlmCheck{}
+var deprecatedDeployableByOlmMountedCheck certification.Check = &k8s.DeployableByOlmMountedCheck{}
 
 // new checks for CraneEngine
 var hasLicenseCheck certification.Check = &containerpol.HasLicenseCheck{}
 var relatedImageManifestSchemaVersionCheck certification.Check = &operatorpol.RelatedImagesAreSchemaVersion2Check{}
 var operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgNameIsUniqueMountedCheck{}
+var deployableByOlmCheck certification.Check = &operatorpol.DeployableByOlmCheck{}
 
 var operatorPolicy = map[string]certification.Check{
 	operatorPkgNameIsUniqueCheck.Name():           operatorPkgNameIsUniqueCheck,
 	relatedImageManifestSchemaVersionCheck.Name(): relatedImageManifestSchemaVersionCheck,
 	scorecardBasicSpecCheck.Name():                scorecardBasicSpecCheck,
 	scorecardOlmSuiteCheck.Name():                 scorecardOlmSuiteCheck,
+	deployableByOlmCheck.Name():                   deployableByOlmCheck,
 }
 
 var containerPolicy = map[string]certification.Check{
@@ -185,7 +187,7 @@ var unshareChecks = map[string]certification.Check{
 	hasNoProhibitedMountedCheck.Name():                   hasNoProhibitedMountedCheck,
 	deprecatedOperatorPkgNameIsUniqueMountedCheck.Name(): deprecatedOperatorPkgNameIsUniqueMountedCheck,
 	hasMinimalVulnerabilitiesUnshareCheck.Name():         hasMinimalVulnerabilitiesUnshareCheck,
-	deployableByOlmMountedCheck.Name():                   deployableByOlmMountedCheck,
+	deprecatedDeployableByOlmCheck.Name():                deprecatedDeployableByOlmCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {
