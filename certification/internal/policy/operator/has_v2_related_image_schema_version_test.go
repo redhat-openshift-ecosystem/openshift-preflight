@@ -64,7 +64,7 @@ var _ = Describe("RelatedImagesAreSchemaVersion2", func() {
 			csvWithoutRelatedImages := operatorsv1alpha1.ClusterServiceVersion{}
 			images, err := check.getRelatedImagesForCSV(&csvWithoutRelatedImages)
 			It("should successfully return the related images", func() {
-				Expect(images).To(BeNil())
+				Expect(images).To(BeEmpty())
 				// not having related images does not constitute an error case
 				Expect(err).ToNot(HaveOccurred())
 			})
