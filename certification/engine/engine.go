@@ -137,8 +137,8 @@ var scorecardBasicSpecCheck certification.Check = &shell.ScorecardBasicSpecCheck
 var scorecardOlmSuiteCheck certification.Check = &shell.ScorecardOlmSuiteCheck{}
 var hasNoProhibitedMountedCheck certification.Check = &shell.HasNoProhibitedPackagesMountedCheck{}
 var deprecatedRelatedImageManifestSchemaVersionCheck certification.Check = &shell.RelatedImagesAreSchemaVersion2Check{}
-var operatorPkgNameIsUniqueMountedCheck certification.Check = &shell.OperatorPkgNameIsUniqueMountedCheck{}
-var operatorPkgNameIsUniqueCheck certification.Check = &shell.OperatorPkgNameIsUniqueCheck{}
+var deprecatedOperatorPkgNameIsUniqueMountedCheck certification.Check = &shell.OperatorPkgNameIsUniqueMountedCheck{}
+var deprecatedOperatorPkgNameIsUniqueCheck certification.Check = &shell.OperatorPkgNameIsUniqueCheck{}
 var hasMinimalVulnerabilitiesUnshareCheck certification.Check = &shell.HasMinimalVulnerabilitiesUnshareCheck{}
 var deployableByOlmCheck certification.Check = &k8s.DeployableByOlmCheck{}
 var deployableByOlmMountedCheck certification.Check = &k8s.DeployableByOlmMountedCheck{}
@@ -146,8 +146,10 @@ var deployableByOlmMountedCheck certification.Check = &k8s.DeployableByOlmMounte
 // new checks for CraneEngine
 var hasLicenseCheck certification.Check = &containerpol.HasLicenseCheck{}
 var relatedImageManifestSchemaVersionCheck certification.Check = &operatorpol.RelatedImagesAreSchemaVersion2Check{}
+var operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgNameIsUniqueMountedCheck{}
 
 var operatorPolicy = map[string]certification.Check{
+	operatorPkgNameIsUniqueCheck.Name():           operatorPkgNameIsUniqueCheck,
 	relatedImageManifestSchemaVersionCheck.Name(): relatedImageManifestSchemaVersionCheck,
 	scorecardBasicSpecCheck.Name():                scorecardBasicSpecCheck,
 	scorecardOlmSuiteCheck.Name():                 scorecardOlmSuiteCheck,
@@ -175,15 +177,15 @@ var oldOperatorPolicy = map[string]certification.Check{
 	scorecardOlmSuiteCheck.Name():                           scorecardOlmSuiteCheck,
 	deprecatedRelatedImageManifestSchemaVersionCheck.Name(): deprecatedRelatedImageManifestSchemaVersionCheck,
 	validateOperatorBundle.Name():                           validateOperatorBundle,
-	operatorPkgNameIsUniqueCheck.Name():                     operatorPkgNameIsUniqueCheck,
+	deprecatedOperatorPkgNameIsUniqueCheck.Name():           operatorPkgNameIsUniqueCheck,
 	deployableByOlmCheck.Name():                             deployableByOlmCheck,
 }
 
 var unshareChecks = map[string]certification.Check{
-	hasNoProhibitedMountedCheck.Name():           hasNoProhibitedMountedCheck,
-	operatorPkgNameIsUniqueMountedCheck.Name():   operatorPkgNameIsUniqueMountedCheck,
-	hasMinimalVulnerabilitiesUnshareCheck.Name(): hasMinimalVulnerabilitiesUnshareCheck,
-	deployableByOlmMountedCheck.Name():           deployableByOlmMountedCheck,
+	hasNoProhibitedMountedCheck.Name():                   hasNoProhibitedMountedCheck,
+	deprecatedOperatorPkgNameIsUniqueMountedCheck.Name(): deprecatedOperatorPkgNameIsUniqueMountedCheck,
+	hasMinimalVulnerabilitiesUnshareCheck.Name():         hasMinimalVulnerabilitiesUnshareCheck,
+	deployableByOlmMountedCheck.Name():                   deployableByOlmMountedCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {
