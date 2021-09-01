@@ -49,6 +49,9 @@ func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecard
 		return nil, err
 	}
 	cmdArgs = append(cmdArgs, "--config", configFile)
+	if opts.Verbose {
+		cmdArgs = append(cmdArgs, "--verbose")
+	}
 
 	cmdArgs = append(cmdArgs, image)
 
@@ -67,7 +70,8 @@ func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecard
 		// We also conclude/assume that anything being in stderr would indicate an error in the
 		// check execution itself.
 		if stderr.Len() != 0 {
-			log.Error("stderr: ", stdout.String())
+			log.Error("stdout: ", stdout.String())
+			log.Error("stderr: ", stderr.String())
 			return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkScorecardFailed, err)
 		}
 	}
@@ -139,26 +143,26 @@ func (o operatorSdkEngine) writeScorecardFile(resultFile, stdout string) error {
 
 func createScorecardConfigFile() (string, error) {
 	configTemplate := `kind: Configuration
-	apiversion: scorecard.operatorframework.io/v1alpha3
-	metadata:
-	  name: config
-	stages:
-	  - parallel: true
-		tests:
-		  - image: quay.io/operator-framework/scorecard-test:v1.9.0
-			entrypoint:
-			  - scorecard-test
-			  - basic-check-spec
-			labels:
-			  suite: basic
-			  test: basic-check-spec-test
-		  - image: quay.io/operator-framework/scorecard-test:v1.9.0
-			entrypoint:
-			  - scorecard-test
-			  - olm-bundle-validation
-			labels:
-			  suite: olm
-			  test: olm-bundle-validation-test
+apiversion: scorecard.operatorframework.io/v1alpha3
+metadata:
+  name: config
+stages:
+- parallel: true
+  tests:
+  - image: quay.io/operator-framework/scorecard-test:v1.9.0
+    entrypoint:
+      - scorecard-test
+      - basic-check-spec
+    labels:
+      suite: basic
+      test: basic-check-spec-test
+  - image: quay.io/operator-framework/scorecard-test:v1.9.0
+    entrypoint:
+      - scorecard-test
+      - olm-bundle-validation
+    labels:
+      suite: olm
+      test: olm-bundle-validation-test
 `
 
 	tempConfigFile, err := os.CreateTemp("", "scorecard-test-config-*.yaml")
