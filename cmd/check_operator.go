@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
@@ -11,6 +12,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var checkOperatorCmd = &cobra.Command{
@@ -53,7 +55,7 @@ var checkOperatorCmd = &cobra.Command{
 		// create the results file early to catch cases where we are not
 		// able to write to the filesystem before we attempt to execute checks.
 		resultsFile, err := os.OpenFile(
-			resultsFilenameWithExtension(formatter.FileExtension()),
+			filepath.Join(viper.GetString("artifacts"), resultsFilenameWithExtension(formatter.FileExtension())),
 			os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
 			0600,
 		)
