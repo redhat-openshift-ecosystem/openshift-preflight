@@ -121,7 +121,6 @@ go test -v `go list ./... | grep -v e2e`
 ```
 
 or run
-
 ```bash
 make test
 ```
