@@ -27,6 +27,7 @@ var supportCmd = &cobra.Command{
 	Short: "Submits a support request",
 	Long: `This interactive command will generate a URL; based on user input which can then be used to create a Red Hat Support Ticket.
 	This command can be used when you'd like assistance from Red Hat Support when attempting to pass your certification checks. `,
+	PreRun: preRunConfig,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		certProjectTypeLabel := promptui.Select{
