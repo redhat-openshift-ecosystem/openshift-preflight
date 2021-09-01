@@ -12,6 +12,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	containerutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/container"
 	fileutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
@@ -141,9 +142,11 @@ func (c *CraneEngine) ExecuteChecks() error {
 
 	// hash contents if bundle
 	if c.IsBundle {
-		// TODO: Implement! The current implementation of this requires a podman engine
-		// and leverages shell exec calls. Leaving this out for the moment knowing we must
-		// implement before we transition.
+		md5sum, err := containerutils.GenerateBundleHash(c.imageRef.ImageFSPath)
+		if err != nil {
+			log.Debugf("could not generate bundle hash")
+		}
+		c.results.BundleHash = md5sum
 	}
 
 	return nil

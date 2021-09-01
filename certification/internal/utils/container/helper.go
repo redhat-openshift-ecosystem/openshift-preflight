@@ -1,6 +1,7 @@
 package container
 
 import (
+	"bytes"
 	"crypto/md5"
 	"fmt"
 	"os"
@@ -101,7 +102,7 @@ func RunInsideImageFS(podmanEngine cli.PodmanEngine, image string, containerFn C
 	return containerFn(migration.ImageToImageReference(strings.TrimSpace(report.MountDir)))
 }
 
-func GenerateBundleHash(podmanEngine cli.PodmanEngine, image string) (string, error) {
+func DeprecatedGenerateBundleHash(podmanEngine cli.PodmanEngine, image string) (string, error) {
 	hashCmd := `find . -not -name "Dockerfile" -type f -printf '%f\t%p\n' | sort -V -k1 | cut -d$'\t' -f2 | tr '\n' '\0' | xargs -r0 -I {} md5sum "{}"` // >> $HOME/hashes.txt`
 	bundleCmd := fmt.Sprintf("pushd $(podman image mount %[1]s) &> /dev/null && %[2]s && popd &> /dev/null && podman image unmount %[1]s &> /dev/null", image, hashCmd)
 	report, err := podmanEngine.Unshare(map[string]string{}, "/bin/bash", "-c", bundleCmd)
@@ -118,6 +119,31 @@ func GenerateBundleHash(podmanEngine cli.PodmanEngine, image string) (string, er
 		return "", err
 	}
 	sum := md5.Sum([]byte(report.Stdout))
+
+	return fmt.Sprintf("%x", sum), nil
+}
+
+func GenerateBundleHash(image string) (string, error) {
+	// TODO: Convert this to regular Go commands
+	hashCmd := `find . -not -name "Dockerfile" -type f -printf '%f\t%p\n' | sort -V -k1 | cut -d$'\t' -f2 | tr '\n' '\0' | xargs -r0 -I {} md5sum "{}"` // >> $HOME/hashes.txt`
+	cmd := exec.Command("/bin/bash", "-c", hashCmd)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Errorf("could not generate bundle hash")
+		log.Debugf(fmt.Sprintf("Stdout: %s", stdout.String()))
+		log.Debugf(fmt.Sprintf("Stderr: %s", stderr.String()))
+		return "", err
+	}
+	log.Tracef(fmt.Sprintf("Hash is: %s", stdout.String()))
+	err = os.WriteFile(fileutils.ArtifactPath("hashes.txt"), stdout.Bytes(), 0644)
+	if err != nil {
+		log.Errorf("could not write bundle hash file")
+		return "", err
+	}
+	sum := md5.Sum(stdout.Bytes())
 
 	return fmt.Sprintf("%x", sum), nil
 }

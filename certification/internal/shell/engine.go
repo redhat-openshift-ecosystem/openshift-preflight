@@ -88,7 +88,7 @@ func (e *CheckEngine) ExecuteChecks() error {
 	}
 
 	if e.Bundle {
-		md5sum, err := containerutil.GenerateBundleHash(podmanEngine, e.Image)
+		md5sum, err := containerutil.DeprecatedGenerateBundleHash(podmanEngine, e.Image)
 		if err != nil {
 			log.Debugf("could not generate bundle hash")
 		}
