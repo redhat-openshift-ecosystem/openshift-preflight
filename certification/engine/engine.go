@@ -146,8 +146,8 @@ var deprecatedDeployableByOlmMountedCheck certification.Check = &k8s.DeployableB
 // new checks for CraneEngine
 var hasLicenseCheck certification.Check = &containerpol.HasLicenseCheck{}
 var relatedImageManifestSchemaVersionCheck certification.Check = &operatorpol.RelatedImagesAreSchemaVersion2Check{}
-var operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgNameIsUniqueMountedCheck{}
 var deployableByOlmCheck certification.Check = &operatorpol.DeployableByOlmCheck{}
+var operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgNameIsUniqueCheck{}
 
 var operatorPolicy = map[string]certification.Check{
 	operatorPkgNameIsUniqueCheck.Name():           operatorPkgNameIsUniqueCheck,

@@ -32,9 +32,9 @@ type packageData struct {
 // OperatorPkgNameIsUniqueMountedCheck finds the package name as defined in the operator bundle's annotations
 // and checks it against Red Hat APIs to confirm that the package name is unique at the time of the
 // check.
-type OperatorPkgNameIsUniqueMountedCheck struct{}
+type OperatorPkgNameIsUniqueCheck struct{}
 
-func (p *OperatorPkgNameIsUniqueMountedCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
+func (p *OperatorPkgNameIsUniqueCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
 	annotations, err := containerutils.GetAnnotationsFromBundle(bundleRef.ImageFSPath)
 	if err != nil {
 		log.Errorf("unable to get annotations.yaml from the bundle")
@@ -72,7 +72,7 @@ func (p *OperatorPkgNameIsUniqueMountedCheck) Validate(bundleRef certification.I
 
 // getPackageName accepts the annotations map and searches for the specified annotation corresponding
 // with the complete bundle name for an operator, which is then returned.
-func (p *OperatorPkgNameIsUniqueMountedCheck) getPackageName(annotations map[string]string) (string, error) {
+func (p *OperatorPkgNameIsUniqueCheck) getPackageName(annotations map[string]string) (string, error) {
 	log.Tracef("searching for package key (%s) in bundle", packageKey)
 	log.Trace("bundle data: ", annotations)
 	pkg, found := annotations[packageKey]
@@ -84,7 +84,7 @@ func (p *OperatorPkgNameIsUniqueMountedCheck) getPackageName(annotations map[str
 }
 
 // buildRequest builds the http.Request using the input parameters and returns a client.
-func (p *OperatorPkgNameIsUniqueMountedCheck) buildRequest(apiURL, packageName string) (*http.Request, error) {
+func (p *OperatorPkgNameIsUniqueCheck) buildRequest(apiURL, packageName string) (*http.Request, error) {
 	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func (p *OperatorPkgNameIsUniqueMountedCheck) buildRequest(apiURL, packageName s
 
 // queryAPI uses the provided client to query the remote API, and returns the response if it
 // response is successful, or an error if the response was unexpected in any way.
-func (p *OperatorPkgNameIsUniqueMountedCheck) queryAPI(client apiClient, request *http.Request) (*http.Response, error) {
+func (p *OperatorPkgNameIsUniqueCheck) queryAPI(client apiClient, request *http.Request) (*http.Response, error) {
 	log.Trace("making API request to ", request.URL.String())
 	resp, err := client.Do(request)
 	if err != nil {
@@ -121,7 +121,7 @@ func (p *OperatorPkgNameIsUniqueMountedCheck) queryAPI(client apiClient, request
 
 // parseAPIResponse reads the response and checks the body for the expected contents, and then
 // returns the body content as apiResponseData.
-func (p *OperatorPkgNameIsUniqueMountedCheck) parseAPIResponse(resp *http.Response) (*apiResponseData, error) {
+func (p *OperatorPkgNameIsUniqueCheck) parseAPIResponse(resp *http.Response) (*apiResponseData, error) {
 	var data apiResponseData
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
@@ -141,7 +141,7 @@ func (p *OperatorPkgNameIsUniqueMountedCheck) parseAPIResponse(resp *http.Respon
 
 // validate checks the apiResponseData and confirms that the package is unique by confirming that the
 // API returned no packages using the same name.
-func (p *OperatorPkgNameIsUniqueMountedCheck) validate(resp *apiResponseData) (bool, error) {
+func (p *OperatorPkgNameIsUniqueCheck) validate(resp *apiResponseData) (bool, error) {
 	// success case - the API returned no entries
 	if len(resp.Data) == 0 {
 		return true, nil
@@ -156,11 +156,11 @@ func (p *OperatorPkgNameIsUniqueMountedCheck) validate(resp *apiResponseData) (b
 	return false, nil
 }
 
-func (p *OperatorPkgNameIsUniqueMountedCheck) Name() string {
-	return "OperatorPackageNameIsUniqueMounted"
+func (p *OperatorPkgNameIsUniqueCheck) Name() string {
+	return "OperatorPackageNameIsUnique"
 }
 
-func (p *OperatorPkgNameIsUniqueMountedCheck) Metadata() certification.Metadata {
+func (p *OperatorPkgNameIsUniqueCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Validating Bundle image package name uniqueness",
 		Level:            "best",
@@ -169,7 +169,7 @@ func (p *OperatorPkgNameIsUniqueMountedCheck) Metadata() certification.Metadata 
 	}
 }
 
-func (p *OperatorPkgNameIsUniqueMountedCheck) Help() certification.HelpText {
+func (p *OperatorPkgNameIsUniqueCheck) Help() certification.HelpText {
 	return certification.HelpText{
 		Message:    "Check encountered an error. It is possible that the bundle package name already exist in the RedHat Catalog registry.",
 		Suggestion: "Bundle package name must be unique meaning that it doesn't already exist in the RedHat Catalog registry",
