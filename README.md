@@ -63,6 +63,8 @@ To check an Operator bundle, utilize the `check Operator` sub-command:
 preflight check operator quay.io/example-namespace/example-operator:0.0.1
 ```
 
+For more information on how to configure the execution of `preflight`, see [CONFIG](docs/CONFIG.md)
+
 ## Installation
 
 Before installing `preflight`, ensure that the [required dependencies](#requirements) have been installed on the local machine.
