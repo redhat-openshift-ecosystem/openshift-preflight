@@ -30,8 +30,9 @@ RUN dnf install -y \
     && dnf clean all
 
 # Install oscap-podman binary
-RUN curl -L https://github.com/OpenSCAP/openscap/releases/download/${OPENSCAP_VERSION}/openscap-${OPENSCAP_VERSION}.tar.gz | tar -xzv -C /usr/local/bin openscap-${OPENSCAP_VERSION}/utils/oscap-podman \
-    && mv /usr/local/bin/openscap-${OPENSCAP_VERSION}/utils/oscap-podman /usr/local/bin/oscap-podman
+# Disabled due to #99
+# RUN curl -L https://github.com/OpenSCAP/openscap/releases/download/${OPENSCAP_VERSION}/openscap-${OPENSCAP_VERSION}.tar.gz | tar -xzv -C /usr/local/bin openscap-${OPENSCAP_VERSION}/utils/oscap-podman \
+#     && mv /usr/local/bin/openscap-${OPENSCAP_VERSION}/utils/oscap-podman /usr/local/bin/oscap-podman
 
 # Install OpenShift client binary
 RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OPENSHIFT_CLIENT_VERSION}/openshift-client-linux-${OPENSHIFT_CLIENT_VERSION}.tar.gz | tar -xzv -C /usr/local/bin oc
