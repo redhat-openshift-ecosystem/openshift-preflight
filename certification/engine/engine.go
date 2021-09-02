@@ -126,7 +126,7 @@ func queryNewChecks(checkName string) certification.Check {
 // Register all checks
 var runAsNonRootCheck certification.Check = &shell.RunAsNonRootCheck{}
 var deprecatedUnderLayerMaxCheck certification.Check = &shell.UnderLayerMaxCheck{}
-var hasRequiredLabelCheck certification.Check = &shell.HasRequiredLabelsCheck{}
+var deprecatedHasRequiredLabelCheck certification.Check = &shell.HasRequiredLabelsCheck{}
 var basedOnUbiCheck certification.Check = &shell.BaseOnUBICheck{}
 var deprecatedHasLicenseCheck certification.Check = &shell.HasLicenseCheck{}
 var hasUniqueTagCheck certification.Check = &shell.HasUniqueTagCheck{}
@@ -153,6 +153,7 @@ var scorecardBasicSpecCheck certification.Check = operatorpol.NewScorecardBasicS
 var scorecardOlmSuiteCheck certification.Check = operatorpol.NewScorecardOlmSuiteCheck(internal.NewOperatorSdkEngine())
 var maxLayersCheck certification.Check = &containerpol.MaxLayersCheck{}
 var hasNoProhibitedCheck certification.Check = &containerpol.HasNoProhibitedPackagesCheck{}
+var hasRequiredLabelsCheck certification.Check = &containerpol.HasRequiredLabelsCheck{}
 
 var operatorPolicy = map[string]certification.Check{
 	operatorPkgNameIsUniqueCheck.Name(): operatorPkgNameIsUniqueCheck,
@@ -163,20 +164,21 @@ var operatorPolicy = map[string]certification.Check{
 }
 
 var containerPolicy = map[string]certification.Check{
-	hasLicenseCheck.Name():      hasLicenseCheck,
-	maxLayersCheck.Name():       maxLayersCheck,
-	hasLicenseCheck.Name():      hasLicenseCheck,
-	hasNoProhibitedCheck.Name(): hasNoProhibitedCheck,
+	hasLicenseCheck.Name():        hasLicenseCheck,
+	maxLayersCheck.Name():         maxLayersCheck,
+	hasLicenseCheck.Name():        hasLicenseCheck,
+	hasNoProhibitedCheck.Name():   hasNoProhibitedCheck,
+	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
 }
 
 var oldContainerPolicy = map[string]certification.Check{
-	runAsNonRootCheck.Name():              runAsNonRootCheck,
-	deprecatedUnderLayerMaxCheck.Name():   deprecatedUnderLayerMaxCheck,
-	hasRequiredLabelCheck.Name():          hasRequiredLabelCheck,
-	basedOnUbiCheck.Name():                basedOnUbiCheck,
-	deprecatedHasLicenseCheck.Name():      deprecatedHasLicenseCheck,
-	hasUniqueTagCheck.Name():              hasUniqueTagCheck,
-	deprecatedHasNoProhibitedCheck.Name(): deprecatedHasNoProhibitedCheck,
+	runAsNonRootCheck.Name():               runAsNonRootCheck,
+	deprecatedUnderLayerMaxCheck.Name():    deprecatedUnderLayerMaxCheck,
+	deprecatedHasRequiredLabelCheck.Name(): deprecatedHasRequiredLabelCheck,
+	basedOnUbiCheck.Name():                 basedOnUbiCheck,
+	deprecatedHasLicenseCheck.Name():       deprecatedHasLicenseCheck,
+	hasUniqueTagCheck.Name():               hasUniqueTagCheck,
+	deprecatedHasNoProhibitedCheck.Name():  deprecatedHasNoProhibitedCheck,
 	// Disabled due to issue #99 and discussions in community meeting
 	// hasMinimalVulnerabilitiesCheck.Name(): hasMinimalVulnerabilitiesCheck,
 }
