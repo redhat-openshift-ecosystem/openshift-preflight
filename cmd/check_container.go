@@ -25,6 +25,7 @@ var checkContainerCmd = &cobra.Command{
 		}
 		return nil
 	},
+	PreRun: preRunConfig,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Expect exactly one positional arg. Check here instead of using builtin Args key
 		// so that we can get a more user-friendly error message

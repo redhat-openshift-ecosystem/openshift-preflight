@@ -19,6 +19,7 @@ var checkRunCmd = &cobra.Command{
 It is an internal command, and is not meant to be called by the user.
 It takes its input from environment variables only.`,
 	Hidden: true,
+	PreRun: preRunConfig,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Expect an environment variable named PREFLIGHT_CHECK_EXEC
 		// It will specify the one check to execute inside of the podman unshare
