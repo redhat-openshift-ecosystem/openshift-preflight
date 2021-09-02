@@ -22,7 +22,7 @@ func (c *fakeAPIClient) Do(req *http.Request) (*http.Response, error) {
 }
 
 var _ = Describe("OperatorPkgNameIsUniqueCheck", func() {
-	check := OperatorPkgNameIsUniqueMountedCheck{}
+	check := OperatorPkgNameIsUniqueCheck{}
 
 	Describe("While ensuring that an operator's package is unique", func() {
 		// tests: getPackageNAme
