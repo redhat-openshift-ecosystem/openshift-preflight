@@ -196,6 +196,19 @@ func extractAnnotationsBytes(annotationBytes []byte) (map[string]string, error) 
 	return bundleMeta.Annotations, nil
 }
 
+// Annotation() accepts the annotations map and searches for the specified annotation corresponding
+// with the key, which is then returned.
+func Annotation(annotations map[string]string, key string) (string, error) {
+	log.Tracef("searching for key (%s) in bundle", key)
+	log.Trace("bundle data: ", annotations)
+	value, found := annotations[key]
+	if !found {
+		return "", fmt.Errorf("did not find value at the key %s in the annotations.yaml", key)
+	}
+
+	return value, nil
+}
+
 type metadata struct {
 	Annotations map[string]string
 }
