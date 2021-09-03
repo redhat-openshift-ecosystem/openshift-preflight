@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/user"
@@ -89,7 +88,7 @@ func (pe PodmanCLIEngine) InspectImage(rawImage string, opts cli.ImageInspectOpt
 // for the end users' reference.
 func (pe PodmanCLIEngine) ScanImage(image string) (*cli.ImageScanReport, error) {
 	ovalFileUrl := fmt.Sprintf("%s%s", ovalUrl, ovalFilename)
-	dir, err := ioutil.TempDir(".", "oval-")
+	dir, err := os.MkdirTemp(".", "oval-")
 
 	if err != nil {
 		log.Error("Unable to create temp dir", err)
