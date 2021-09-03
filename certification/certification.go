@@ -47,5 +47,5 @@ type HelpText struct {
 type ImageReference struct {
 	ImageURI    string
 	ImageFSPath string
-	ImageInfo   *v1.Image
+	ImageInfo   v1.Image
 }
