@@ -27,9 +27,7 @@ type CraneEngine struct {
 	// Checks is an array of all checks to be executed against
 	// the image provided.
 	Checks []certification.Check
-	// RegistryCreds are the credentials used to access to registry
-	// from which the image will be pulled.
-	RegistryCreds RegistryCredentials
+
 	// IsBundle is an indicator that the asset is a bundle.
 	IsBundle bool
 
@@ -40,17 +38,8 @@ type CraneEngine struct {
 func (c *CraneEngine) ExecuteChecks() error {
 	log.Info("target image: ", c.Image)
 
-	// prepare crane runtime options
+	// prepare crane runtime options, if necessary
 	options := make([]crane.Option, 0)
-
-	// derive authentication context
-	withAuth := AuthConfig(c.RegistryCreds)
-	if withAuth == nil {
-		log.Info("no authentication context derived from execution configuration")
-	} else {
-		log.Info("accessing registry with provided authentication context")
-		options = append(options, *withAuth)
-	}
 
 	// pull the image and save to fs
 	log.Info("pulling image from target registry")
