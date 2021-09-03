@@ -129,7 +129,7 @@ var underLayerMaxCheck certification.Check = &shell.UnderLayerMaxCheck{}
 var hasRequiredLabelCheck certification.Check = &shell.HasRequiredLabelsCheck{}
 var basedOnUbiCheck certification.Check = &shell.BaseOnUBICheck{}
 var deprecatedHasLicenseCheck certification.Check = &shell.HasLicenseCheck{}
-var hasUniqueTagCheck certification.Check = &shell.HasUniqueTagCheck{}
+var deprecatedHasUniqueTagCheck certification.Check = &shell.HasUniqueTagCheck{}
 var hasNoProhibitedCheck certification.Check = &shell.HasNoProhibitedPackagesCheck{}
 var deprecatedValidateOperatorBundle certification.Check = &shell.ValidateOperatorBundleCheck{}
 var deprecatedScorecardBasicSpecCheck certification.Check = &shell.ScorecardBasicSpecCheck{}
@@ -146,6 +146,7 @@ var deprecatedDeployableByOlmMountedCheck certification.Check = &k8s.DeployableB
 
 // new checks for CraneEngine
 var hasLicenseCheck certification.Check = &containerpol.HasLicenseCheck{}
+var hasUniqueTagCheck certification.Check = &containerpol.HasUniqueTagCheck{}
 var deployableByOlmCheck certification.Check = &operatorpol.DeployableByOlmCheck{}
 var operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgNameIsUniqueCheck{}
 var validateOperatorBundle certification.Check = operatorpol.NewValidateOperatorBundleCheck(internal.NewOperatorSdkEngine())
@@ -162,16 +163,17 @@ var operatorPolicy = map[string]certification.Check{
 
 var containerPolicy = map[string]certification.Check{
 	hasLicenseCheck.Name(): hasLicenseCheck,
+	hasUniqueTagCheck.Name(): hasUniqueTagCheck,
 }
 
 var oldContainerPolicy = map[string]certification.Check{
-	runAsNonRootCheck.Name():         runAsNonRootCheck,
-	underLayerMaxCheck.Name():        underLayerMaxCheck,
-	hasRequiredLabelCheck.Name():     hasRequiredLabelCheck,
-	basedOnUbiCheck.Name():           basedOnUbiCheck,
-	deprecatedHasLicenseCheck.Name(): deprecatedHasLicenseCheck,
-	hasUniqueTagCheck.Name():         hasUniqueTagCheck,
-	hasNoProhibitedCheck.Name():      hasNoProhibitedCheck,
+	runAsNonRootCheck.Name():         	runAsNonRootCheck,
+	underLayerMaxCheck.Name():        	underLayerMaxCheck,
+	hasRequiredLabelCheck.Name():     	hasRequiredLabelCheck,
+	basedOnUbiCheck.Name():           	basedOnUbiCheck,
+	deprecatedHasLicenseCheck.Name(): 	deprecatedHasLicenseCheck,
+	deprecatedHasUniqueTagCheck.Name():	deprecatedHasUniqueTagCheck,
+	hasNoProhibitedCheck.Name():      	hasNoProhibitedCheck,
 	// Disabled due to issue #99 and discussions in community meeting
 	// hasMinimalVulnerabilitiesCheck.Name(): hasMinimalVulnerabilitiesCheck,
 }
