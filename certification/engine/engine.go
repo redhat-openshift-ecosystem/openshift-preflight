@@ -129,7 +129,7 @@ var deprecatedUnderLayerMaxCheck certification.Check = &shell.UnderLayerMaxCheck
 var deprecatedHasRequiredLabelCheck certification.Check = &shell.HasRequiredLabelsCheck{}
 var basedOnUbiCheck certification.Check = &shell.BaseOnUBICheck{}
 var deprecatedHasLicenseCheck certification.Check = &shell.HasLicenseCheck{}
-var hasUniqueTagCheck certification.Check = &shell.HasUniqueTagCheck{}
+var deprecatedHasUniqueTagCheck certification.Check = &shell.HasUniqueTagCheck{}
 var deprecatedValidateOperatorBundle certification.Check = &shell.ValidateOperatorBundleCheck{}
 var deprecatedScorecardBasicSpecCheck certification.Check = &shell.ScorecardBasicSpecCheck{}
 var deprecatedScorecardOlmSuiteCheck certification.Check = &shell.ScorecardOlmSuiteCheck{}
@@ -146,6 +146,7 @@ var deprecatedDeployableByOlmMountedCheck certification.Check = &k8s.DeployableB
 
 // new checks for CraneEngine
 var hasLicenseCheck certification.Check = &containerpol.HasLicenseCheck{}
+var hasUniqueTagCheck certification.Check = containerpol.NewHasUniqueTagCheck(internal.NewSkopeoEngine())
 var deployableByOlmCheck certification.Check = &operatorpol.DeployableByOlmCheck{}
 var operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgNameIsUniqueCheck{}
 var validateOperatorBundle certification.Check = operatorpol.NewValidateOperatorBundleCheck(internal.NewOperatorSdkEngine())
@@ -165,6 +166,7 @@ var operatorPolicy = map[string]certification.Check{
 
 var containerPolicy = map[string]certification.Check{
 	hasLicenseCheck.Name():        hasLicenseCheck,
+	hasUniqueTagCheck.Name():      hasUniqueTagCheck,
 	maxLayersCheck.Name():         maxLayersCheck,
 	hasLicenseCheck.Name():        hasLicenseCheck,
 	hasNoProhibitedCheck.Name():   hasNoProhibitedCheck,
@@ -177,7 +179,7 @@ var oldContainerPolicy = map[string]certification.Check{
 	deprecatedHasRequiredLabelCheck.Name(): deprecatedHasRequiredLabelCheck,
 	basedOnUbiCheck.Name():                 basedOnUbiCheck,
 	deprecatedHasLicenseCheck.Name():       deprecatedHasLicenseCheck,
-	hasUniqueTagCheck.Name():               hasUniqueTagCheck,
+	deprecatedHasUniqueTagCheck.Name():     deprecatedHasUniqueTagCheck,
 	deprecatedHasNoProhibitedCheck.Name():  deprecatedHasNoProhibitedCheck,
 	// Disabled due to issue #99 and discussions in community meeting
 	// hasMinimalVulnerabilitiesCheck.Name(): hasMinimalVulnerabilitiesCheck,
