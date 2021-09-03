@@ -1,4 +1,4 @@
-package shell
+package operator
 
 import (
 	"os"
@@ -9,7 +9,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-type scorecardCheck struct{}
+type scorecardCheck struct {
+	OperatorSdkEngine cli.OperatorSdkEngine
+}
 
 func (p *scorecardCheck) validate(items []cli.OperatorSdkScorecardItem) (bool, error) {
 	foundTestFailed := false
@@ -40,5 +42,5 @@ func (p *scorecardCheck) getDataToValidate(bundleImage string, selector []string
 		Namespace:      namespace,
 		ServiceAccount: serviceAccount,
 	}
-	return operatorSdkEngine.Scorecard(bundleImage, opts)
+	return p.OperatorSdkEngine.Scorecard(bundleImage, opts)
 }
