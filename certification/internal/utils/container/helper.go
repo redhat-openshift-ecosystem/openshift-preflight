@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"sort"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
@@ -114,22 +113,6 @@ func Annotation(annotations map[string]string, key string) (string, error) {
 	}
 
 	return value, nil
-}
-
-func ImageName(image string) (string, error) {
-	re, err := regexp.Compile(`(?P<Image>[^@:]+)[@|:]+.*`)
-
-	if err != nil {
-		log.Error("unable to parse the image name: ", err)
-		log.Debug("error parsing the image name: ", err)
-		log.Trace("failure in attempt to parse the image name to strip tag/digest")
-		return "", err
-	}
-	if len(re.FindStringSubmatch(image)) != 0 {
-		return re.FindStringSubmatch(image)[1], nil
-	}
-
-	return "", errors.ErrInvalidImageName
 }
 
 type metadata struct {

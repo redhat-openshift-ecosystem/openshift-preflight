@@ -4,21 +4,18 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
-	log "github.com/sirupsen/logrus"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/service"
 )
+
+func NewHasUniqueTagCheck(tagLister service.TagLister) *HasUniqueTagCheck {
+	return &HasUniqueTagCheck{TagLister: tagLister}
+}
 
 // HasUniqueTagCheck evaluates the image to ensure that it has a tag other than
 // the latest tag, which is considered to be a "floating" tag and may not accurately
 // represent the same image over time.
 type HasUniqueTagCheck struct {
-	SkopeoEngine cli.SkopeoEngine
-}
-
-func NewHasUniqueTagCheck(skopeoEngine *cli.SkopeoEngine) *HasUniqueTagCheck {
-	return &HasUniqueTagCheck{
-		SkopeoEngine: *skopeoEngine,
-	}
+	TagLister service.TagLister
 }
 
 func (p *HasUniqueTagCheck) Validate(imgRef certification.ImageReference) (bool, error) {
@@ -30,15 +27,7 @@ func (p *HasUniqueTagCheck) Validate(imgRef certification.ImageReference) (bool,
 }
 
 func (p *HasUniqueTagCheck) getDataToValidate(image string) ([]string, error) {
-
-	runReport, err := p.SkopeoEngine.ListTags(image)
-
-	if err != nil {
-		log.Error("unable to execute skopeo on the image: ", err)
-		return nil, err
-	}
-
-	return runReport.Tags, nil
+	return p.TagLister.ListTags(image)
 }
 
 func (p *HasUniqueTagCheck) validate(tags []string) (bool, error) {
