@@ -3,7 +3,6 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -251,7 +250,7 @@ func (p *DeployableByOlmMountedCheck) writeToFile(data interface{}, resource str
 	if err != nil {
 		log.Error("unable to serialize the data")
 	}
-	err = ioutil.WriteFile(filepath.Join("artifacts", fmt.Sprintf("%s-%s.yaml", resource, resourceType)), yamlData, 0644)
+	err = os.WriteFile(filepath.Join("artifacts", fmt.Sprintf("%s-%s.yaml", resource, resourceType)), yamlData, 0644)
 	if err != nil {
 		log.Error("failed to write the k8s object to the file")
 	}

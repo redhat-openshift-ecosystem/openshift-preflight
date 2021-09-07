@@ -3,7 +3,6 @@ package operator
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -247,7 +246,7 @@ func (p *DeployableByOlmCheck) writeToFile(data interface{}, resource string, re
 		log.Error("unable to serialize the data")
 	}
 
-	if err = ioutil.WriteFile(filepath.Join("artifacts", fmt.Sprintf("%s-%s.yaml", resource, resourceType)), yamlData, 0644); err != nil {
+	if err = os.WriteFile(filepath.Join("artifacts", fmt.Sprintf("%s-%s.yaml", resource, resourceType)), yamlData, 0644); err != nil {
 		log.Error("failed to write the k8s object to the file")
 	}
 }

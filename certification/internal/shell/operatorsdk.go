@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -136,7 +135,7 @@ func (o OperatorSdkCLIEngine) BundleValidate(image string, opts cli.OperatorSdkB
 func (o OperatorSdkCLIEngine) writeScorecardFile(resultFile, stdout string) error {
 	scorecardFile := fileutils.ArtifactPath(resultFile)
 
-	err := ioutil.WriteFile(scorecardFile, []byte(stdout), 0644)
+	err := os.WriteFile(scorecardFile, []byte(stdout), 0644)
 	if err != nil {
 		return err
 	}
