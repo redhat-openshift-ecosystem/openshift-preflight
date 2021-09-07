@@ -2,7 +2,6 @@ package container
 
 import (
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -10,7 +9,7 @@ import (
 )
 
 func generateLayers(layerCount int) []cranev1.Layer {
-	layers := make([]v1.Layer, layerCount)
+	layers := make([]cranev1.Layer, layerCount)
 	for i := range layers {
 		layers[i] = FakeLayer{}
 	}

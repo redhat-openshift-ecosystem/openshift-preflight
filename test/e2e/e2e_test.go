@@ -23,10 +23,10 @@ var _ = Describe("policy validation", func() {
 
 			cfg := runtime.Config{
 				Image:         goodImage,
-				EnabledChecks: engine.OldOperatorPolicy(),
+				EnabledChecks: engine.OperatorPolicy(),
 			}
 
-			engine, err := engine.NewShellEngineForConfig(cfg)
+			engine, err := engine.NewForConfig(cfg)
 			Expect(err).ToNot(HaveOccurred())
 
 			engine.ExecuteChecks()
@@ -40,10 +40,10 @@ var _ = Describe("policy validation", func() {
 		Context("with a known-bad image", func() {
 			cfg := runtime.Config{
 				Image:         badImage,
-				EnabledChecks: engine.OldOperatorPolicy(),
+				EnabledChecks: engine.OperatorPolicy(),
 			}
 
-			engine, err := engine.NewShellEngineForConfig(cfg)
+			engine, err := engine.NewForConfig(cfg)
 			Expect(err).To(BeNil())
 
 			engine.ExecuteChecks()
@@ -68,10 +68,10 @@ var _ = Describe("policy validation", func() {
 
 			cfg := runtime.Config{
 				Image:         goodImage,
-				EnabledChecks: engine.OldContainerPolicy(),
+				EnabledChecks: engine.ContainerPolicy(),
 			}
 
-			engine, err := engine.NewShellEngineForConfig(cfg)
+			engine, err := engine.NewForConfig(cfg)
 			Expect(err).ToNot(HaveOccurred())
 
 			engine.ExecuteChecks()
@@ -90,10 +90,10 @@ var _ = Describe("policy validation", func() {
 		XContext("with a known-bad image", func() {
 			cfg := runtime.Config{
 				Image:         badImage,
-				EnabledChecks: engine.OldContainerPolicy(),
+				EnabledChecks: engine.ContainerPolicy(),
 			}
 
-			engine, err := engine.NewShellEngineForConfig(cfg)
+			engine, err := engine.NewForConfig(cfg)
 			Expect(err).ToNot(HaveOccurred())
 
 			engine.ExecuteChecks()

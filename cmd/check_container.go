@@ -85,7 +85,7 @@ var checkContainerCmd = &cobra.Command{
 }
 
 func init() {
-	checks := strings.Join(engine.OldContainerPolicy(), "\n- ")
+	checks := strings.Join(engine.ContainerPolicy(), "\n- ")
 
 	usage := "\n" + `The checks that will be executed are the following:` + "\n- " +
 		checks + "\n\n" +

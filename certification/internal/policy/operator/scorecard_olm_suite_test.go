@@ -3,7 +3,7 @@ package operator
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/migration"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 )
 
@@ -72,7 +72,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 	Describe("Operator Bundle Scorecard", func() {
 		Context("When Operator Bundle Scorecard OLM Suite Check has a pass", func() {
 			It("Should pass Validate", func() {
-				ok, err := scorecardOlmSuiteCheck.Validate(migration.ImageToImageReference("dummy/image"))
+				ok, err := scorecardOlmSuiteCheck.Validate(certification.ImageReference{ImageURI: "dummy/image"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -85,7 +85,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 				scorecardOlmSuiteCheck = *NewScorecardOlmSuiteCheck(&fakeEngine)
 			})
 			It("Should not pass Validate", func() {
-				ok, err := scorecardOlmSuiteCheck.Validate(migration.ImageToImageReference("dummy/image"))
+				ok, err := scorecardOlmSuiteCheck.Validate(certification.ImageReference{ImageURI: "dummy/image"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -98,7 +98,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 		})
 		Context("When OperatorSdk throws an error", func() {
 			It("should fail Validate and return an error", func() {
-				ok, err := scorecardOlmSuiteCheck.Validate(migration.ImageToImageReference("dummy/image"))
+				ok, err := scorecardOlmSuiteCheck.Validate(certification.ImageReference{ImageURI: "dummy/image"})
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
