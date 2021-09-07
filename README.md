@@ -63,7 +63,12 @@ To check an Operator bundle, utilize the `check Operator` sub-command:
 preflight check operator quay.io/example-namespace/example-operator:0.0.1
 ```
 
-For more information on how to configure the execution of `preflight`, see [CONFIG](docs/CONFIG.md)
+The `preflight` command will automatically utilize a credential file at
+`$DOCKER_CONFIG/config.json` (default: `~/.docker/config.json`) to access images
+in private registries.
+
+For more information on how to configure the execution of `preflight`, see
+[CONFIG](docs/CONFIG.md)
 
 ## Installation
 
@@ -83,7 +88,8 @@ from source by using the provided target from within the root of the project dir
 make build
 ```
 
-The `preflight` binary will be created in the root of the project directory. The binary can then be copied manually to a location in the local `$PATH`.
+The `preflight` binary will be created in the root of the project directory. The
+binary can then be copied manually to a location in the local `$PATH`.
 
 ```bash
 sudo mv preflight /usr/local/bin/
@@ -110,6 +116,7 @@ For e2e testing, run
 ```bash
 go test -v ./test/e2e/
 ```
+
 or run
 
 ```bash
@@ -123,6 +130,7 @@ go test -v `go list ./... | grep -v e2e`
 ```
 
 or run
+
 ```bash
 make test
 ```
@@ -133,7 +141,8 @@ Check out the [contributor documentation][contribution_docs].
 
 ## License
 
-Operator SDK is under Apache 2.0 license. See the [LICENSE][license_file] file for details.
+Operator SDK is under Apache 2.0 license. See the [LICENSE][license_file] file
+for details.
 
 [contribution_docs]: ./CONTRIBUTING.md
 [license_file]:./LICENSE
