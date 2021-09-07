@@ -124,7 +124,7 @@ func queryNewChecks(checkName string) certification.Check {
 }
 
 // Register all checks
-var runAsNonRootCheck certification.Check = &shell.RunAsNonRootCheck{}
+var deprecatedRunAsNonRootCheck certification.Check = &shell.RunAsNonRootCheck{}
 var deprecatedUnderLayerMaxCheck certification.Check = &shell.UnderLayerMaxCheck{}
 var deprecatedHasRequiredLabelCheck certification.Check = &shell.HasRequiredLabelsCheck{}
 var basedOnUbiCheck certification.Check = &shell.BaseOnUBICheck{}
@@ -155,6 +155,7 @@ var scorecardOlmSuiteCheck certification.Check = operatorpol.NewScorecardOlmSuit
 var maxLayersCheck certification.Check = &containerpol.MaxLayersCheck{}
 var hasNoProhibitedCheck certification.Check = &containerpol.HasNoProhibitedPackagesCheck{}
 var hasRequiredLabelsCheck certification.Check = &containerpol.HasRequiredLabelsCheck{}
+var runAsRootCheck certification.Check = &containerpol.RunAsNonRootCheck{}
 
 var operatorPolicy = map[string]certification.Check{
 	operatorPkgNameIsUniqueCheck.Name(): operatorPkgNameIsUniqueCheck,
@@ -171,10 +172,11 @@ var containerPolicy = map[string]certification.Check{
 	hasLicenseCheck.Name():        hasLicenseCheck,
 	hasNoProhibitedCheck.Name():   hasNoProhibitedCheck,
 	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
+	runAsRootCheck.Name():         runAsRootCheck,
 }
 
 var oldContainerPolicy = map[string]certification.Check{
-	runAsNonRootCheck.Name():               runAsNonRootCheck,
+	deprecatedRunAsNonRootCheck.Name():     deprecatedRunAsNonRootCheck,
 	deprecatedUnderLayerMaxCheck.Name():    deprecatedUnderLayerMaxCheck,
 	deprecatedHasRequiredLabelCheck.Name(): deprecatedHasRequiredLabelCheck,
 	basedOnUbiCheck.Name():                 basedOnUbiCheck,
