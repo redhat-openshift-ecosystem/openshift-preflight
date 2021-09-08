@@ -21,7 +21,7 @@ is called.
 |`KUBECONFIG`|env|The operator policy must interact with a Kubernetes cluster for checks such as `DeployableByOLM` and running [OperatorSDK Scorecard](https://sdk.operatorframework.io/docs/testing-operators/scorecard/).|required|-|
 |`PFLT_NAMESPACE`|env|The namespace to use when running [OperatorSDK Scorecard](https://sdk.operatorframework.io/docs/testing-operators/scorecard/)|optional|[default](https://github.com/redhat-openshift-ecosystem/openshift-preflight/blob/main/cmd/defaults.go#L8)|
 |`PFLT_SERVICEACCOUNT`|env|The service account to use when running [OperatorSDK Scorecard](https://sdk.operatorframework.io/docs/testing-operators/scorecard/)|optional|[default](https://github.com/redhat-openshift-ecosystem/openshift-preflight/blob/main/cmd/defaults.go#L9)|
-|`PFLT_INDEXIMAGE`|env|The index image to use when testing that an operator is `DeployableByOLM`|optional|-|
+|`PFLT_INDEXIMAGE`|env|The index image to use when testing that an operator is `DeployableByOLM`|required|-|
 
 ## Container Policy Configuration
 
