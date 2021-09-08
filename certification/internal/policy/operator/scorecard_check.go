@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	containerutil "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/container"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
 

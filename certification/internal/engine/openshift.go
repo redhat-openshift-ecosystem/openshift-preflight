@@ -13,8 +13,8 @@ import (
 	"k8s.io/client-go/rest"
 
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	client "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/client"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 )
 
 type OpenshiftEngine struct {
