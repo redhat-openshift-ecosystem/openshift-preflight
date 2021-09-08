@@ -15,6 +15,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	fileutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
+	certutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/utils"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
@@ -117,7 +118,7 @@ func (pe PodmanCLIEngine) ScanImage(image string) (*cli.ImageScanReport, error) 
 	}
 
 	// run oscap-podman command and save the report to vuln.html
-	reportFile := fileutils.ArtifactPath(reportFilename)
+	reportFile := filepath.Join(certutils.ArtifactPath(), reportFilename)
 	cmd := exec.Command("oscap-podman", image, "oval", "eval", "--report", reportFile, ovalFilePathDecompressed)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -315,7 +316,7 @@ func (pe PodmanCLIEngine) Unshare(env map[string]string, command ...string) (*cl
 	environ := []string{
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
 		"PREFLIGHT_EXEC_RUN=1",
-		fmt.Sprintf("PFLT_LOGFILE=%s", fileutils.ArtifactPath(fmt.Sprintf("preflight-unshare-%s.log", time.Now().Format("20060102150405")))),
+		fmt.Sprintf("PFLT_LOGFILE=%s", filepath.Join(certutils.ArtifactPath(), fmt.Sprintf("preflight-unshare-%s.log", time.Now().Format("20060102150405")))),
 		fmt.Sprintf("PFLT_LOGLEVEL=%s", loglevel),
 	}
 

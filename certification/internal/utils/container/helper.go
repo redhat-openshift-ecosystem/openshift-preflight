@@ -14,8 +14,8 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
-	fileutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/migration"
+	certutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/utils"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
@@ -113,7 +113,7 @@ func DeprecatedGenerateBundleHash(podmanEngine cli.PodmanEngine, image string) (
 		return "", err
 	}
 	log.Tracef(fmt.Sprintf("Hash is: %s", report.Stdout))
-	err = os.WriteFile(fileutils.ArtifactPath("hashes.txt"), []byte(report.Stdout), 0644)
+	err = os.WriteFile(filepath.Join(certutils.ArtifactPath(), "hashes.txt"), []byte(report.Stdout), 0644)
 	if err != nil {
 		log.Errorf("could not write bundle hash file")
 		return "", err
@@ -138,7 +138,7 @@ func GenerateBundleHash(image string) (string, error) {
 		return "", err
 	}
 	log.Tracef(fmt.Sprintf("Hash is: %s", stdout.String()))
-	err = os.WriteFile(fileutils.ArtifactPath("hashes.txt"), stdout.Bytes(), 0644)
+	err = os.WriteFile(filepath.Join(certutils.ArtifactPath(), "hashes.txt"), stdout.Bytes(), 0644)
 	if err != nil {
 		log.Errorf("could not write bundle hash file")
 		return "", err
