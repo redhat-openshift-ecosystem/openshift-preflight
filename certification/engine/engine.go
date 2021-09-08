@@ -127,7 +127,7 @@ func queryNewChecks(checkName string) certification.Check {
 var deprecatedRunAsNonRootCheck certification.Check = &shell.RunAsNonRootCheck{}
 var deprecatedUnderLayerMaxCheck certification.Check = &shell.UnderLayerMaxCheck{}
 var deprecatedHasRequiredLabelCheck certification.Check = &shell.HasRequiredLabelsCheck{}
-var basedOnUbiCheck certification.Check = &shell.BaseOnUBICheck{}
+var deprecatedBasedOnUbiCheck certification.Check = &shell.BaseOnUBICheck{}
 var deprecatedHasLicenseCheck certification.Check = &shell.HasLicenseCheck{}
 var deprecatedHasUniqueTagCheck certification.Check = &shell.HasUniqueTagCheck{}
 var deprecatedValidateOperatorBundle certification.Check = &shell.ValidateOperatorBundleCheck{}
@@ -156,6 +156,7 @@ var maxLayersCheck certification.Check = &containerpol.MaxLayersCheck{}
 var hasNoProhibitedCheck certification.Check = &containerpol.HasNoProhibitedPackagesCheck{}
 var hasRequiredLabelsCheck certification.Check = &containerpol.HasRequiredLabelsCheck{}
 var runAsRootCheck certification.Check = &containerpol.RunAsNonRootCheck{}
+var basedOnUbiCheck certification.Check = &containerpol.BasedOnUBICheck{}
 
 var operatorPolicy = map[string]certification.Check{
 	operatorPkgNameIsUniqueCheck.Name(): operatorPkgNameIsUniqueCheck,
@@ -173,13 +174,14 @@ var containerPolicy = map[string]certification.Check{
 	hasNoProhibitedCheck.Name():   hasNoProhibitedCheck,
 	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
 	runAsRootCheck.Name():         runAsRootCheck,
+	basedOnUbiCheck.Name():        basedOnUbiCheck,
 }
 
 var oldContainerPolicy = map[string]certification.Check{
 	deprecatedRunAsNonRootCheck.Name():     deprecatedRunAsNonRootCheck,
 	deprecatedUnderLayerMaxCheck.Name():    deprecatedUnderLayerMaxCheck,
 	deprecatedHasRequiredLabelCheck.Name(): deprecatedHasRequiredLabelCheck,
-	basedOnUbiCheck.Name():                 basedOnUbiCheck,
+	deprecatedBasedOnUbiCheck.Name():       deprecatedBasedOnUbiCheck,
 	deprecatedHasLicenseCheck.Name():       deprecatedHasLicenseCheck,
 	deprecatedHasUniqueTagCheck.Name():     deprecatedHasUniqueTagCheck,
 	deprecatedHasNoProhibitedCheck.Name():  deprecatedHasNoProhibitedCheck,
