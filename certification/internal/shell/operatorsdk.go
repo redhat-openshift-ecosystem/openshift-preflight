@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
-	fileutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
+	certutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/utils"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
@@ -133,7 +134,7 @@ func (o OperatorSdkCLIEngine) BundleValidate(image string, opts cli.OperatorSdkB
 }
 
 func (o OperatorSdkCLIEngine) writeScorecardFile(resultFile, stdout string) error {
-	scorecardFile := fileutils.ArtifactPath(resultFile)
+	scorecardFile := filepath.Join(certutils.ArtifactPath(), resultFile)
 
 	err := os.WriteFile(scorecardFile, []byte(stdout), 0644)
 	if err != nil {

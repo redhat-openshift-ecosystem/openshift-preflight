@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
+
+	certutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/utils"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 func DownloadFile(filename string, url string) error {
@@ -57,38 +57,8 @@ func Unzip(bzipfile string, destination string) error {
 	return nil
 }
 
-func createArtifactsDir(artifactsDir string) (string, error) {
-	if !strings.HasPrefix(artifactsDir, "/") {
-		currentDir, err := os.Getwd()
-		if err != nil {
-			log.Error("unable to get current directory: ", err)
-			return "", err
-		}
-
-		artifactsDir = filepath.Join(currentDir, artifactsDir)
-	}
-
-	err := os.MkdirAll(artifactsDir, 0777)
-	if err != nil {
-		log.Error("unable to create artifactsDir: ", err)
-		return "", err
-	}
-	return artifactsDir, nil
-}
-
-func ArtifactPath(artifact string) string {
-	artifactDir := viper.GetString("artifacts")
-
-	artifactDir, err := createArtifactsDir(artifactDir)
-	if err != nil {
-		log.Fatal("could not retrieve artifact path")
-		// Fatal does an os.Exit
-	}
-	return filepath.Join(artifactDir, artifact)
-}
-
 func WriteFileToArtifactsPath(filename, contents string) (string, error) {
-	fullFilePath := ArtifactPath(filename)
+	fullFilePath := filepath.Join(certutils.ArtifactPath(), filename)
 
 	err := ioutil.WriteFile(fullFilePath, []byte(contents), 0644)
 	if err != nil {
