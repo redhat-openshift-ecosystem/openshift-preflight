@@ -3,8 +3,8 @@ package container
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/migration"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -32,7 +32,7 @@ var _ = Describe("UniqueTag", func() {
 				hasUniqueTagCheck = *NewHasUniqueTagCheck(&fakeEngine)
 			})
 			It("should pass Validate", func() {
-				ok, err := hasUniqueTagCheck.Validate(migration.ImageToImageReference("dummy/image"))
+				ok, err := hasUniqueTagCheck.Validate(certification.ImageReference{ImageURI: "dummy/image"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -48,7 +48,7 @@ var _ = Describe("UniqueTag", func() {
 			})
 			It("should not pass Validate", func() {
 				log.Errorf("Run Report:")
-				ok, err := hasUniqueTagCheck.Validate(migration.ImageToImageReference("dummy/image"))
+				ok, err := hasUniqueTagCheck.Validate(certification.ImageReference{ImageURI: "dummy/image"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -61,7 +61,7 @@ var _ = Describe("UniqueTag", func() {
 		})
 		Context("When Skopeo throws an error", func() {
 			It("should fail Validate and return an error", func() {
-				ok, err := hasUniqueTagCheck.Validate(migration.ImageToImageReference("dummy/image"))
+				ok, err := hasUniqueTagCheck.Validate(certification.ImageReference{ImageURI: "dummy/image"})
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

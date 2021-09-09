@@ -6,7 +6,7 @@ import (
 
 	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"

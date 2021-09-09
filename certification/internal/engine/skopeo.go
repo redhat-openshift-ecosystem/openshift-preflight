@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	containerutil "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/container"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -58,34 +58,4 @@ func (e SkopeoEngine) ListTags(image string) (*cli.SkopeoListTagsReport, error) 
 	log.Debugf(fmt.Sprintf("detected these tags for %s: %s", imageName, report.Tags))
 
 	return &report, nil
-}
-
-// InspectImage will use skopeo to inspect the input image given input options.
-func (e SkopeoEngine) InspectImage(image string, opts cli.SkopeoInspectOptions) (*cli.SkopeoInspectReport, error) {
-	cmdArgs := []string{"inspect"}
-
-	// add options to the command string
-	if opts.Raw {
-		cmdArgs = append(cmdArgs, "--raw")
-	}
-
-	cmdArgs = append(cmdArgs, "docker://"+image)
-
-	log.Trace("running skopeo with the following invocation", cmdArgs)
-	cmd := exec.Command("skopeo", cmdArgs...)
-
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-
-	if err != nil {
-		return &cli.SkopeoInspectReport{Stdout: stdout.String(), Stderr: stderr.String()}, err
-	}
-
-	return &cli.SkopeoInspectReport{
-		Stdout: stdout.String(),
-		Stderr: stderr.String(),
-		Blob:   stdout.Bytes(),
-	}, nil
 }

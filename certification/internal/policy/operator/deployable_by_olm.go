@@ -12,10 +12,10 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	openshiftengine "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/engine"
 	containerutil "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/container"
 	viperutil "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/viper"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"

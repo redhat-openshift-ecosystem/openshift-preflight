@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	fileutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
 
