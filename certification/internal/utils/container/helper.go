@@ -10,8 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/operator-framework/api/pkg/manifests"
-	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	certutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/utils"
 	log "github.com/sirupsen/logrus"
@@ -46,17 +44,6 @@ func GenerateBundleHash(image string) (string, error) {
 	log.Debugf("md5 sum: %s", fmt.Sprintf("%x", sum))
 
 	return fmt.Sprintf("%x", sum), nil
-}
-
-// ReadBundle will accept the manifests directory where a bundle is expected to live,
-// and walks the directory to find all bundle assets.
-func ReadBundle(manifestsDir string) (*operatorsv1alpha1.ClusterServiceVersion, error) {
-	bundle, err := manifests.GetBundleFromDir(manifestsDir)
-	if err != nil {
-		return nil, err
-	}
-
-	return bundle.CSV, nil
 }
 
 func GetAnnotationsFromBundle(mountedDir string) (map[string]string, error) {
