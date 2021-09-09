@@ -126,8 +126,6 @@ func Untar(dst string, r io.Reader) error {
 
 			// if it's a link create it
 		case tar.TypeSymlink:
-			// head, _ := tar.FileInfoHeader(header.FileInfo(), "link")
-			log.Println(fmt.Sprintf("Old: %s, New: %s", header.Linkname, header.Name))
 			err := os.Symlink(header.Linkname, filepath.Join(dst, header.Name))
 			if err != nil {
 				log.Println(fmt.Sprintf("Error creating link: %s. Ignoring.", header.Name))
