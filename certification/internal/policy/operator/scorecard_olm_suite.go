@@ -2,7 +2,8 @@ package operator
 
 import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
+	certutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/utils"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -47,7 +48,8 @@ func (p *ScorecardOlmSuiteCheck) Metadata() certification.Metadata {
 
 func (p *ScorecardOlmSuiteCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "Check ScorecardOlmSuiteCheck encountered an error. Please review the artifacts/operator_bundle_scorecard_OlmSuiteCheck.json file for more information.",
+		Message: "Check ScorecardOlmSuiteCheck encountered an error. Please review the " +
+			certutils.ArtifactPath() + "/" + scorecardOlmSuiteResult + " file for more information.",
 		Suggestion: "See scorecard output for details, artifacts/operator_bundle_scorecard_OlmSuiteCheck.json",
 	}
 }

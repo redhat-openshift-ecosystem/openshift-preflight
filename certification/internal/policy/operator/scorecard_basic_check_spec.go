@@ -4,6 +4,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	log "github.com/sirupsen/logrus"
+	certutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/utils"
 )
 
 // ScorecardBasicSpecCheck evaluates the image to ensure it passes the operator-sdk
@@ -47,7 +48,8 @@ func (p *ScorecardBasicSpecCheck) Metadata() certification.Metadata {
 
 func (p *ScorecardBasicSpecCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "Check ScorecardBasicSpecCheck encountered an error. Please review the artifacts/operator_bundle_scorecard_BasicSpecCheck.json file for more information.",
+		Message:    "Check ScorecardBasicSpecCheck encountered an error. Please review the " +
+		certutils.ArtifactPath() + "/" + scorecardBasicCheckResult + " file for more information.",
 		Suggestion: "Make sure that all CRs have a spec block",
 	}
 }
