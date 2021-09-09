@@ -10,6 +10,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	fileutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
+	certutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/utils"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cli"
 	log "github.com/sirupsen/logrus"
 )
@@ -71,7 +72,14 @@ func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecard
 		// check execution itself.
 		if stderr.Len() != 0 {
 			log.Error("stdout: ", stdout.String())
-			log.Error("stderr: ", stderr.String())
+			log.Error("stderr: operator-sdk scorecard failed to run properly. " +
+			          "Please review the " + certutils.ArtifactPath() + "/" + opts.ResultFile + " file for more information. ")
+
+			if err := o.writeScorecardFile(opts.ResultFile, stderr.String()); err != nil {
+				log.Error("unable to copy result to artifacts directory: ", err)
+				return nil, err
+			}
+			
 			return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkScorecardFailed, err)
 		}
 	}
