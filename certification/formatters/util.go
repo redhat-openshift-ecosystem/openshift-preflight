@@ -48,10 +48,10 @@ func getResponse(r runtime.Results) UserResponse {
 	}
 
 	response := UserResponse{
-		Image:       r.TestedImage,
-		Passed:      r.PassedOverall,
-		LibraryInfo: version.Version,
-		BundleHash:  r.BundleHash,
+		Image:             r.TestedImage,
+		Passed:            r.PassedOverall,
+		LibraryInfo:       version.Version,
+		CertificationHash: r.CertificationHash,
 		Results: resultsText{
 			Passed: passedChecks,
 			Failed: failedChecks,
@@ -64,11 +64,11 @@ func getResponse(r runtime.Results) UserResponse {
 
 // UserResponse is the standard user-facing response.
 type UserResponse struct {
-	Image       string                 `json:"image" xml:"image"`
-	Passed      bool                   `json:"passed" xml:"passed"`
-	BundleHash  string                 `json:"bundle_hash,omitempty" xml:"bundle_hash,omitempty"`
-	LibraryInfo version.VersionContext `json:"test_library" xml:"test_library"`
-	Results     resultsText            `json:"results" xml:"results"`
+	Image             string                 `json:"image" xml:"image"`
+	Passed            bool                   `json:"passed" xml:"passed"`
+	CertificationHash string                 `json:"certification_hash,omitempty" xml:"certification_hash,omitempty"`
+	LibraryInfo       version.VersionContext `json:"test_library" xml:"test_library"`
+	Results           resultsText            `json:"results" xml:"results"`
 }
 
 // resultsText represents the results of check execution against the asset.
