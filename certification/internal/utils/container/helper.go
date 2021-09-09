@@ -20,25 +20,30 @@ import (
 
 func GenerateBundleHash(image string) (string, error) {
 	// TODO: Convert this to regular Go commands
-	hashCmd := `find . -not -name "Dockerfile" -type f -printf '%f\t%p\n' | sort -V -k1 | cut -d$'\t' -f2 | tr '\n' '\0' | xargs -r0 -I {} md5sum "{}"` // >> $HOME/hashes.txt`
+	hashCmd := fmt.Sprintf(`cd %s && find . -not -name "Dockerfile" -type f -printf '%%f\t%%p\n' | sort -V -k1 | cut -d$'\t' -f2 | tr '\n' '\0' | xargs -r0 -I {} md5sum "{}"`, image) // >> $HOME/hashes.txt`
+
 	cmd := exec.Command("/bin/bash", "-c", hashCmd)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		log.Errorf("could not generate bundle hash")
+		log.Error("could not generate bundle hash")
 		log.Debugf(fmt.Sprintf("Stdout: %s", stdout.String()))
 		log.Debugf(fmt.Sprintf("Stderr: %s", stderr.String()))
 		return "", err
 	}
+
 	log.Tracef(fmt.Sprintf("Hash is: %s", stdout.String()))
 	err = os.WriteFile(filepath.Join(certutils.ArtifactPath(), "hashes.txt"), stdout.Bytes(), 0644)
 	if err != nil {
-		log.Errorf("could not write bundle hash file")
+		log.Error("could not write bundle hash file")
 		return "", err
 	}
+
 	sum := md5.Sum(stdout.Bytes())
+
+	log.Debugf("md5 sum: %s", fmt.Sprintf("%x", sum))
 
 	return fmt.Sprintf("%x", sum), nil
 }
