@@ -2,6 +2,7 @@ package operator
 
 import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	log "github.com/sirupsen/logrus"
 )
@@ -47,7 +48,8 @@ func (p *ScorecardBasicSpecCheck) Metadata() certification.Metadata {
 
 func (p *ScorecardBasicSpecCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "Check ScorecardBasicSpecCheck encountered an error. Please review the artifacts/operator_bundle_scorecard_BasicSpecCheck.json file for more information.",
+		Message: "Check ScorecardBasicSpecCheck encountered an error. Please review the " +
+			artifacts.Path() + "/" + scorecardBasicCheckResult + " file for more information.",
 		Suggestion: "Make sure that all CRs have a spec block",
 	}
 }
