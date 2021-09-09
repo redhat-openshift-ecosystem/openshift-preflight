@@ -135,7 +135,7 @@ func (c *CraneEngine) ExecuteChecks() error {
 		if err != nil {
 			log.Debugf("could not generate bundle hash")
 		}
-		c.results.BundleHash = md5sum
+		c.results.CertificationHash = md5sum
 	}
 
 	return nil

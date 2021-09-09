@@ -22,10 +22,10 @@ type Result struct {
 }
 
 type Results struct {
-	TestedImage   string
-	PassedOverall bool
-	BundleHash    string
-	Passed        []Result
-	Failed        []Result
-	Errors        []Result
+	TestedImage       string
+	PassedOverall     bool
+	CertificationHash string
+	Passed            []Result
+	Failed            []Result
+	Errors            []Result
 }
