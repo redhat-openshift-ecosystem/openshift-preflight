@@ -49,7 +49,7 @@ var _ = Describe("HasLicense", func() {
 			})
 			It("Should not pass Validate", func() {
 				ok, err := HasLicense.Validate(imgRef)
-				Expect(err).To(HaveOccurred())
+				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
 		})

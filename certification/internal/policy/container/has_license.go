@@ -1,6 +1,7 @@
 package container
 
 import (
+	stdliberrors "errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -24,6 +25,9 @@ type HasLicenseCheck struct{}
 func (p *HasLicenseCheck) Validate(imgRef certification.ImageReference) (bool, error) {
 	licenseFileList, err := p.getDataToValidate(imgRef.ImageFSPath)
 	if err != nil {
+		if stdliberrors.Is(err, fs.ErrNotExist) || stdliberrors.Is(err, errors.ErrLicensesNotADir) {
+			return false, nil
+		}
 		return false, err
 	}
 	return p.validate(licenseFileList)
