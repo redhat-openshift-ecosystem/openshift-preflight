@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	openshiftengine "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/engine"
 	containerutil "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/container"
+	fileutil "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
 	viperutil "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/viper"
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
@@ -272,8 +272,9 @@ func (p *DeployableByOlmCheck) writeToFile(data interface{}, resource string, re
 		log.Error("unable to serialize the data")
 	}
 
-	if err = os.WriteFile(filepath.Join("artifacts", fmt.Sprintf("%s-%s.yaml", resource, resourceType)), yamlData, 0644); err != nil {
-		log.Error("failed to write the k8s object to the file")
+	filename := fmt.Sprintf("%s-%s.yaml", resource, resourceType)
+	if _, err := fileutil.WriteFileToArtifactsPath(filename, string(yamlData)); err != nil {
+		log.Error("failed to write the k8s object to the file", err)
 	}
 }
 
