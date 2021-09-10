@@ -23,9 +23,7 @@ RUN dnf install -y \
       gzip \
       iptables \
       findutils \
-      openscap-scanner \
       podman \
-      buildah \
       skopeo \
     && dnf clean all
 

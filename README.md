@@ -18,7 +18,6 @@ functional, and in your path.
 | OperatorSDK      | `operator-sdk`    | v1.9.0          |
 | OpenShift Client | `oc`              | v4.7.19         |
 | Podman           | `podman`          | v3.0            |
-| OpenSCAP         | `openscap-podman` | v1.3.5          |
 | Skopeo           | `skopeo`          | v1.2.2          |
 
 See our [Vagrantfile](Vagrantfile) for more information on setting up a
