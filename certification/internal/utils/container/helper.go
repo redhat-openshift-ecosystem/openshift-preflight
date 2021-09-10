@@ -4,46 +4,65 @@ import (
 	"bytes"
 	"crypto/md5"
 	"fmt"
+	"io/fs"
 	"os"
-	"os/exec"
 	"path"
-	"path/filepath"
 	"regexp"
+	"sort"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
-	certutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/utils"
+	fileutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
 
-func GenerateBundleHash(image string) (string, error) {
-	// TODO: Convert this to regular Go commands
-	hashCmd := fmt.Sprintf(`cd %s && find . -not -name "Dockerfile" -type f -printf '%%f\t%%p\n' | sort -V -k1 | cut -d$'\t' -f2 | tr '\n' '\0' | xargs -r0 -I {} md5sum "{}"`, image) // >> $HOME/hashes.txt`
+func GenerateBundleHash(bundlePath string) (string, error) {
+	files := make(map[string]string)
+	fileSystem := os.DirFS(bundlePath)
 
-	cmd := exec.Command("/bin/bash", "-c", hashCmd)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
+	hashBuffer := bytes.Buffer{}
+
+	fs.WalkDir(fileSystem, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			log.Errorf("could not read bundle directory: %s", path)
+			return err
+		}
+		if d.Name() == "Dockerfile" {
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		files[d.Name()] = path
+		return nil
+	})
+
+	keys := make([]string, 0, len(files))
+	for k := range files {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+	for _, k := range keys {
+		filebytes, err := fs.ReadFile(fileSystem, files[k])
+		if err != nil {
+			log.Errorf("could not read file: %s", files[k])
+			return "", err
+		}
+		md5sum := fmt.Sprintf("%x", md5.Sum(filebytes))
+		hashBuffer.WriteString(fmt.Sprintf("%s  %s\n", md5sum, fmt.Sprintf("./%s", files[k])))
+	}
+
+	_, err := fileutils.WriteFileToArtifactsPath("hashes.txt", hashBuffer.String())
 	if err != nil {
-		log.Error("could not generate bundle hash")
-		log.Debugf(fmt.Sprintf("Stdout: %s", stdout.String()))
-		log.Debugf(fmt.Sprintf("Stderr: %s", stderr.String()))
 		return "", err
 	}
 
-	log.Tracef(fmt.Sprintf("Hash is: %s", stdout.String()))
-	err = os.WriteFile(filepath.Join(certutils.ArtifactPath(), "hashes.txt"), stdout.Bytes(), 0644)
-	if err != nil {
-		log.Error("could not write bundle hash file")
-		return "", err
-	}
+	sum := fmt.Sprintf("%x", md5.Sum(hashBuffer.Bytes()))
 
-	sum := md5.Sum(stdout.Bytes())
+	log.Debugf("md5 sum: %s", sum)
 
-	log.Debugf("md5 sum: %s", fmt.Sprintf("%x", sum))
-
-	return fmt.Sprintf("%x", sum), nil
+	return sum, nil
 }
 
 func GetAnnotationsFromBundle(mountedDir string) (map[string]string, error) {
