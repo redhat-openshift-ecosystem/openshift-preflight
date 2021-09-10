@@ -63,9 +63,20 @@ To check an Operator bundle, utilize the `check Operator` sub-command:
 preflight check operator quay.io/example-namespace/example-operator:0.0.1
 ```
 
+### Authenticating to Registries
+
 The `preflight` command will automatically utilize a credential file at
 `$DOCKER_CONFIG/config.json` (default: `~/.docker/config.json`) to access images
 in private registries.
+
+[Podman](https://podman.io/) stores credentials at
+`${XDG_RUNTIME_DIR}/containers/auth.json`, which can also be used by executing
+the following:
+
+```shell
+ln -sf ${XDG_RUNTIME_DIR}/containers/auth.json ${XDG_RUNTIME_DIR}/containers/config.json
+DOCKER_CONFIG=${XDG_RUNTIME_DIR}/containers
+```
 
 For more information on how to configure the execution of `preflight`, see
 [CONFIG](docs/CONFIG.md)
