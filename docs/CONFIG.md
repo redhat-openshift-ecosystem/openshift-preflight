@@ -23,6 +23,8 @@ is called.
 |`PFLT_SERVICEACCOUNT`|env|The service account to use when running [OperatorSDK Scorecard](https://sdk.operatorframework.io/docs/testing-operators/scorecard/)|optional|[default](https://github.com/redhat-openshift-ecosystem/openshift-preflight/blob/main/cmd/defaults.go#L9)|
 |`PFLT_INDEXIMAGE`|env|The index image to use when testing that an operator is `DeployableByOLM`|required|-|
 
+For information on how to build an index image, see [BUILDING_AN_INDEX.md](BUILDING_AN_INDEX.md).
+
 ## Container Policy Configuration
 
 There are no configurables specific to the container policy (i.e. when running `preflight check container ...`).
