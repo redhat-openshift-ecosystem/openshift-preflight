@@ -9,11 +9,16 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
+var (
+	jsonMarshalIndent = json.MarshalIndent
+	xmlMarshalIndent  = xml.MarshalIndent
+)
+
 // genericJSONFormatter is a FormatterFunc that formats results as JSON
 func genericJSONFormatter(r runtime.Results) ([]byte, error) {
 	response := getResponse(r)
 
-	responseJSON, err := json.MarshalIndent(response, "", "    ")
+	responseJSON, err := jsonMarshalIndent(response, "", "    ")
 	if err != nil {
 		e := fmt.Errorf("%w with formatter %s: %s",
 			errors.ErrFormattingResults,
@@ -31,7 +36,7 @@ func genericJSONFormatter(r runtime.Results) ([]byte, error) {
 func genericXMLFormatter(r runtime.Results) ([]byte, error) {
 	response := getResponse(r)
 
-	responseJSON, err := xml.MarshalIndent(response, "", "    ")
+	responseJSON, err := xmlMarshalIndent(response, "", "    ")
 	if err != nil {
 		e := fmt.Errorf("%w with formatter %s: %s",
 			errors.ErrFormattingResults,
