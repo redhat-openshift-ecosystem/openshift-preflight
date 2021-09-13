@@ -13,7 +13,7 @@ FROM registry.access.redhat.com/ubi8/ubi:latest
 # Define versions for dependencies
 ARG OPENSCAP_VERSION=1.3.5
 ARG OPENSHIFT_CLIENT_VERSION=4.7.19
-ARG OPERATOR_SDK_VERSION=1.9.0
+ARG OPERATOR_SDK_VERSION=1.12.0
 
 # Add preflight binary
 COPY --from=builder /go/src/preflight/preflight /usr/local/bin/preflight

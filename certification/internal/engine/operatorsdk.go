@@ -149,14 +149,14 @@ metadata:
 stages:
 - parallel: true
   tests:
-  - image: quay.io/operator-framework/scorecard-test:v1.9.0
+  - image: quay.io/operator-framework/scorecard-test:v1.12.0
     entrypoint:
       - scorecard-test
       - basic-check-spec
     labels:
       suite: basic
       test: basic-check-spec-test
-  - image: quay.io/operator-framework/scorecard-test:v1.9.0
+  - image: quay.io/operator-framework/scorecard-test:v1.12.0
     entrypoint:
       - scorecard-test
       - olm-bundle-validation

@@ -15,7 +15,7 @@ functional, and in your path.
 
 | Name             | Tool cli          | Minimum version |
 |----------------- |:-----------------:| ---------------:|
-| OperatorSDK      | `operator-sdk`    | v1.9.0          |
+| OperatorSDK      | `operator-sdk`    | v1.12.0          |
 | OpenShift Client | `oc`              | v4.7.19         |
 | Podman           | `podman`          | v3.0            |
 | Skopeo           | `skopeo`          | v1.2.2          |
