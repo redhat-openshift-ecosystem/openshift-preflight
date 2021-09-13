@@ -1,4 +1,4 @@
-package container
+package operator
 
 import (
 	. "github.com/onsi/ginkgo"

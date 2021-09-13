@@ -8,14 +8,13 @@ import (
 	"time"
 
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/spf13/viper"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	openshiftengine "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/engine"
-	containerutil "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/container"
-	fileutil "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
-	viperutil "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/viper"
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
@@ -76,26 +75,26 @@ func (p *DeployableByOlmCheck) newOpenshiftEngine() (*openshiftengine.OpenshiftE
 
 func (p *DeployableByOlmCheck) operatorMetadata(bundleRef certification.ImageReference) (*OperatorData, error) {
 	// retrieve the operator metadata from bundle image
-	annotations, err := containerutil.GetAnnotationsFromBundle(bundleRef.ImageFSPath)
+	annotations, err := getAnnotationsFromBundle(bundleRef.ImageFSPath)
 
 	if err != nil {
 		log.Errorf("unable to get annotations.yaml from the bundle")
 		return nil, err
 	}
 
-	catalogImage, err := viperutil.GetString(indexImageKey)
-	if err != nil {
+	catalogImage := viper.GetString(indexImageKey)
+	if len(catalogImage) == 0 {
 		log.Error(fmt.Sprintf("To set the key, export PFLT_%s or add %s:<value> to config.yaml in the current working directory", strings.ToUpper(indexImageKey), indexImageKey))
 		return nil, err
 	}
 
-	channel, err := containerutil.Annotation(annotations, channelKey)
+	channel, err := annotation(annotations, channelKey)
 	if err != nil {
 		log.Error("unable to extract channel name from ClusterServicVersion", err)
 		return nil, err
 	}
 
-	packageName, err := containerutil.Annotation(annotations, packageKey)
+	packageName, err := annotation(annotations, packageKey)
 	if err != nil {
 		log.Error("unable to extract package name from ClusterServicVersion", err)
 		return nil, err
@@ -273,7 +272,7 @@ func (p *DeployableByOlmCheck) writeToFile(data interface{}, resource string, re
 	}
 
 	filename := fmt.Sprintf("%s-%s.yaml", resource, resourceType)
-	if _, err := fileutil.WriteFileToArtifactsPath(filename, string(yamlData)); err != nil {
+	if _, err := artifacts.WriteFile(filename, string(yamlData)); err != nil {
 		log.Error("failed to write the k8s object to the file", err)
 	}
 }

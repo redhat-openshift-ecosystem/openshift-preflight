@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
-	certutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/utils"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -55,7 +55,7 @@ var checkContainerCmd = &cobra.Command{
 		// create the results file early to catch cases where we are not
 		// able to write to the filesystem before we attempt to execute checks.
 		resultsFile, err := os.OpenFile(
-			filepath.Join(certutils.ArtifactPath(), resultsFilenameWithExtension(formatter.FileExtension())),
+			filepath.Join(artifacts.Path(), resultsFilenameWithExtension(formatter.FileExtension())),
 			os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
 			0600,
 		)

@@ -28,7 +28,10 @@ results.json
 *.test
 
 # Testing dirs
-artifacts
+/artifacts
+
+# But we don't want to ignore the artifacts package
+!/certification/artifacts
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
