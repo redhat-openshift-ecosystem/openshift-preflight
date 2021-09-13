@@ -7,7 +7,8 @@ WORKDIR /go/src/preflight
 RUN make build
 
 # podman:v3.2.2
-FROM quay.io/podman/stable@sha256:c281b604477e10e3e84f81af9b68db59ee616bf6a34391224e5e5c74db0428d0
+#FROM quay.io/podman/stable@sha256:c281b604477e10e3e84f81af9b68db59ee616bf6a34391224e5e5c74db0428d0
+FROM registry.access.redhat.com/ubi8/ubi:latest
 
 # Define versions for dependencies
 ARG OPENSCAP_VERSION=1.3.5
