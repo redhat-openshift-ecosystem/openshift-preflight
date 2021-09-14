@@ -117,7 +117,8 @@ func (o operatorSdkEngine) BundleValidate(image string, opts cli.OperatorSdkBund
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		log.Debugf("Stderr: %s", stderr.String())
-		return &cli.OperatorSdkBundleValidateReport{Stderr: stderr.String()}, fmt.Errorf("%w: %s", errors.ErrOperatorSdkBundleValidateFailed, err)
+		log.Debugf("Stdout: %s", stdout.String())
+		return &cli.OperatorSdkBundleValidateReport{Stderr: stderr.String(), Stdout: stdout.String()}, fmt.Errorf("%w: %s", errors.ErrOperatorSdkBundleValidateFailed, err)
 	}
 
 	var bundleValidateData cli.OperatorSdkBundleValidateReport
