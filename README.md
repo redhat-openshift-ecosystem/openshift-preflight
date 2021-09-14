@@ -62,6 +62,8 @@ To check an Operator bundle, utilize the `check Operator` sub-command:
 preflight check operator quay.io/example-namespace/example-operator:0.0.1
 ```
 
+For more detailed usage examples, see [Recipes](docs/RECIPES.md).
+
 ### Authenticating to Registries
 
 The `preflight` command will automatically utilize a credential file at
