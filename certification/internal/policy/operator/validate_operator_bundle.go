@@ -33,7 +33,7 @@ func (p ValidateOperatorBundleCheck) getDataToValidate(imagePath string) (*cli.O
 	opts := cli.OperatorSdkBundleValidateOptions{
 		Selector:        selector,
 		Verbose:         true,
-		ContainerEngine: "podman",
+		ContainerEngine: "none",
 		OutputFormat:    "json-alpha1",
 	}
 
