@@ -19,6 +19,8 @@ jobs:
       with:
         image: ${{ env.IMAGE_REGISTRY }}/preflight
         tags: ${{ github.sha }}
+        build.args:
+          - quay_expiration=1w
         dockerfiles: |
           ./Dockerfile
 

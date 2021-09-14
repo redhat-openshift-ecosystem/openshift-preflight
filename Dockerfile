@@ -1,3 +1,5 @@
+ARG quay_expiration=never
+
 # golang:1.16 image created 2021-06-24T00:31:06.02014601Z 
 FROM docker.io/library/golang@sha256:be99fa59acd78bb22a41bbc1e15ebfab2262498ee0c2e28c3d09bc44d51d1774 AS builder
 
@@ -9,6 +11,9 @@ RUN make build
 # podman:v3.2.2
 #FROM quay.io/podman/stable@sha256:c281b604477e10e3e84f81af9b68db59ee616bf6a34391224e5e5c74db0428d0
 FROM registry.access.redhat.com/ubi8/ubi:latest
+
+# Define that tags should expire after 1 week. This should not apply to versioned releases.
+LABEL quay.expires-after=${quay_expiration}
 
 # Define versions for dependencies
 ARG OPENSCAP_VERSION=1.3.5
