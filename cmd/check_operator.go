@@ -11,6 +11,8 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	certutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/utils"
@@ -30,6 +32,8 @@ var checkOperatorCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Expect exactly one positional arg. Check here instead of using builtin Args key
 		// so that we can get a more user-friendly error message
+
+		log.Info("certification library version ", version.Version.String())
 
 		operatorImage := args[0]
 
