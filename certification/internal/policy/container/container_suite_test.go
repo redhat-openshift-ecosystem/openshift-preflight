@@ -1,7 +1,6 @@
 package container
 
 import (
-	"errors"
 	"io"
 	"testing"
 
@@ -9,7 +8,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -58,24 +56,4 @@ type FakeSkopeoEngine struct {
 type SkopeoData struct {
 	Repository string
 	Tags       []string
-}
-
-func (fse FakeSkopeoEngine) ListTags(image string) (*cli.SkopeoListTagsReport, error) {
-	skopeoReport := cli.SkopeoListTagsReport{
-		Stdout: fse.SkopeoReportStdout,
-		Stderr: fse.SkopeoReportStderr,
-		Tags:   fse.Tags,
-	}
-	return &skopeoReport, nil
-}
-
-type BadSkopeoEngine struct{}
-
-func (bse BadSkopeoEngine) ListTags(string) (*cli.SkopeoListTagsReport, error) {
-	skopeoReport := cli.SkopeoListTagsReport{
-		Stdout: "Bad Stdout",
-		Stderr: "Bad stderr",
-		Tags:   []string{""},
-	}
-	return &skopeoReport, errors.New("the Skopeo ListTags has failed")
 }

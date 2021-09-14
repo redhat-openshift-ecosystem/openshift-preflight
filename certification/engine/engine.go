@@ -78,7 +78,7 @@ var validateOperatorBundle certification.Check = operatorpol.NewValidateOperator
 
 // Container checks
 var hasLicenseCheck certification.Check = &containerpol.HasLicenseCheck{}
-var hasUniqueTagCheck certification.Check = containerpol.NewHasUniqueTagCheck(internal.NewSkopeoEngine())
+var hasUniqueTagCheck certification.Check = containerpol.NewHasUniqueTagCheck(internal.NewCraneEngine())
 var maxLayersCheck certification.Check = &containerpol.MaxLayersCheck{}
 var hasNoProhibitedCheck certification.Check = &containerpol.HasNoProhibitedPackagesCheck{}
 var hasRequiredLabelsCheck certification.Check = &containerpol.HasRequiredLabelsCheck{}
