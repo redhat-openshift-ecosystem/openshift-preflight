@@ -93,7 +93,7 @@ func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecard
 func (o operatorSdkEngine) BundleValidate(image string, opts cli.OperatorSdkBundleValidateOptions) (*cli.OperatorSdkBundleValidateReport, error) {
 	cmdArgs := []string{"bundle", "validate"}
 	if opts.ContainerEngine == "" {
-		opts.ContainerEngine = "podman"
+		opts.ContainerEngine = "none"
 	}
 	cmdArgs = append(cmdArgs, "-b", opts.ContainerEngine)
 	if opts.OutputFormat == "" {
