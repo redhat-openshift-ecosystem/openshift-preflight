@@ -9,8 +9,7 @@ COPY . /go/src/preflight
 WORKDIR /go/src/preflight
 RUN make build
 
-# podman:v3.2.2
-#FROM quay.io/podman/stable@sha256:c281b604477e10e3e84f81af9b68db59ee616bf6a34391224e5e5c74db0428d0
+# ubi8:latest
 FROM registry.access.redhat.com/ubi8/ubi:latest
 ARG quay_expiration
 
@@ -18,7 +17,6 @@ ARG quay_expiration
 LABEL quay.expires-after=${quay_expiration}
 
 # Define versions for dependencies
-ARG OPENSCAP_VERSION=1.3.5
 ARG OPENSHIFT_CLIENT_VERSION=4.7.19
 ARG OPERATOR_SDK_VERSION=1.12.0
 
@@ -31,14 +29,7 @@ RUN dnf install -y \
       gzip \
       iptables \
       findutils \
-      podman \
-      skopeo \
     && dnf clean all
-
-# Install oscap-podman binary
-# Disabled due to #99
-# RUN curl -L https://github.com/OpenSCAP/openscap/releases/download/${OPENSCAP_VERSION}/openscap-${OPENSCAP_VERSION}.tar.gz | tar -xzv -C /usr/local/bin openscap-${OPENSCAP_VERSION}/utils/oscap-podman \
-#     && mv /usr/local/bin/openscap-${OPENSCAP_VERSION}/utils/oscap-podman /usr/local/bin/oscap-podman
 
 # Install OpenShift client binary
 RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OPENSHIFT_CLIENT_VERSION}/openshift-client-linux-${OPENSHIFT_CLIENT_VERSION}.tar.gz | tar -xzv -C /usr/local/bin oc
