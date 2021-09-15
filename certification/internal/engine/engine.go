@@ -1,19 +1,24 @@
 package engine
 
 import (
+	"archive/tar"
+	"bytes"
+	"crypto/md5"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
-	containerutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/container"
-	fileutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
@@ -82,7 +87,7 @@ func (c *CraneEngine) ExecuteChecks() error {
 	}()
 
 	log.Debug("extracting container filesystem to ", containerFSPath)
-	err = fileutils.Untar(containerFSPath, r)
+	err = untar(containerFSPath, r)
 	if err != nil {
 		return fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
 	}
@@ -131,7 +136,7 @@ func (c *CraneEngine) ExecuteChecks() error {
 
 	// hash contents if bundle
 	if c.IsBundle {
-		md5sum, err := containerutils.GenerateBundleHash(c.imageRef.ImageFSPath)
+		md5sum, err := generateBundleHash(c.imageRef.ImageFSPath)
 		if err != nil {
 			log.Debugf("could not generate bundle hash")
 		}
@@ -141,7 +146,124 @@ func (c *CraneEngine) ExecuteChecks() error {
 	return nil
 }
 
+func generateBundleHash(bundlePath string) (string, error) {
+	files := make(map[string]string)
+	fileSystem := os.DirFS(bundlePath)
+
+	hashBuffer := bytes.Buffer{}
+
+	fs.WalkDir(fileSystem, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			log.Errorf("could not read bundle directory: %s", path)
+			return err
+		}
+		if d.Name() == "Dockerfile" {
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		filebytes, err := fs.ReadFile(fileSystem, path)
+		if err != nil {
+			log.Errorf("could not read file: %s", path)
+			return err
+		}
+		md5sum := fmt.Sprintf("%x", md5.Sum(filebytes))
+		files[md5sum] = fmt.Sprintf("./%s", path)
+		return nil
+	})
+
+	keys := make([]string, 0, len(files))
+	for k := range files {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+	for _, k := range keys {
+		hashBuffer.WriteString(fmt.Sprintf("%s  %s\n", k, files[k]))
+	}
+
+	_, err := artifacts.WriteFile("hashes.txt", hashBuffer.String())
+	if err != nil {
+		return "", err
+	}
+
+	sum := fmt.Sprintf("%x", md5.Sum(hashBuffer.Bytes()))
+
+	log.Debugf("md5 sum: %s", sum)
+
+	return sum, nil
+}
+
 // Results will return the results of check execution.
 func (c *CraneEngine) Results() runtime.Results {
 	return c.results
+}
+
+// Untar takes a destination path and a reader; a tar reader loops over the tarfile
+// creating the file structure at 'dst' along the way, and writing any files
+func untar(dst string, r io.Reader) error {
+	tr := tar.NewReader(r)
+
+	for {
+		header, err := tr.Next()
+
+		switch {
+
+		// if no more files are found return
+		case err == io.EOF:
+			return nil
+
+		// return any other error
+		case err != nil:
+			return err
+
+		// if the header is nil, just skip it (not sure how this happens)
+		case header == nil:
+			continue
+		}
+
+		// the target location where the dir/file should be created
+		target := filepath.Join(dst, header.Name)
+
+		// the following switch could also be done using fi.Mode(), not sure if there
+		// a benefit of using one vs. the other.
+		// fi := header.FileInfo()
+
+		// check the file type
+		switch header.Typeflag {
+
+		// if its a dir and it doesn't exist create it
+		case tar.TypeDir:
+			if _, err := os.Stat(target); err != nil {
+				if err := os.MkdirAll(target, 0755); err != nil {
+					return err
+				}
+			}
+
+		// if it's a file create it
+		case tar.TypeReg:
+			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+
+			// copy over contents
+			if _, err := io.Copy(f, tr); err != nil {
+				return err
+			}
+
+			// manually close here after each file operation; defering would cause each file close
+			// to wait until all operations have completed.
+			f.Close()
+
+			// if it's a link create it
+		case tar.TypeSymlink:
+			err := os.Symlink(header.Linkname, filepath.Join(dst, header.Name))
+			if err != nil {
+				log.Println(fmt.Sprintf("Error creating link: %s. Ignoring.", header.Name))
+				continue
+			}
+		}
+	}
 }

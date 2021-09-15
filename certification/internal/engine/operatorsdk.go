@@ -8,9 +8,9 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
-	fileutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/file"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -138,7 +138,7 @@ func (o operatorSdkEngine) BundleValidate(image string, opts cli.OperatorSdkBund
 }
 
 func (o operatorSdkEngine) writeScorecardFile(resultFile, stdout string) error {
-	_, err := fileutils.WriteFileToArtifactsPath(resultFile, stdout)
+	_, err := artifacts.WriteFile(resultFile, stdout)
 	return err
 }
 

@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	containerutils "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/utils/container"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -35,7 +34,7 @@ type packageData struct {
 type OperatorPkgNameIsUniqueCheck struct{}
 
 func (p *OperatorPkgNameIsUniqueCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
-	annotations, err := containerutils.GetAnnotationsFromBundle(bundleRef.ImageFSPath)
+	annotations, err := getAnnotationsFromBundle(bundleRef.ImageFSPath)
 	if err != nil {
 		log.Errorf("unable to get annotations.yaml from the bundle")
 		return false, err
@@ -180,8 +179,4 @@ func (p *OperatorPkgNameIsUniqueCheck) Help() certification.HelpText {
 // enable mock implementations for testing purposes.
 type apiClient interface {
 	Do(req *http.Request) (*http.Response, error)
-}
-
-type metadata struct {
-	Annotations map[string]string
 }
