@@ -14,8 +14,8 @@ import (
 var _ = Describe("policy validation", func() {
 	Describe("When enforcing operator policy", func() {
 		var (
-			// TODO: replace this with a project-accessible namespace once identified.
-			goodImage = "quay.io/komish/preflight-test-bundle-passes:latest"
+			// TODO: replace the failure case with crafted examples.
+			goodImage = "quay.io/opdev/simple-demo-operator-bundle:v0.0.2"
 			badImage  = "quay.io/komish/preflight-test-bundle-fails:latest"
 		)
 
@@ -59,7 +59,8 @@ var _ = Describe("policy validation", func() {
 	Describe("When enforcing container policy", func() {
 
 		var (
-			// TODO: replace this with a project-accessible namespace once identified.
+			// TODO: replace the passing case with the container used by
+			// https://github.com/opdev/simple-demo-operator
 			goodImage = "quay.io/komish/preflight-test-container-passes:latest"
 			badImage  = "quay.io/komish/preflight-test-container-fails:latest"
 		)
