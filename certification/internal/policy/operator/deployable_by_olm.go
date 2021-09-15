@@ -3,7 +3,6 @@ package operator
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -14,11 +13,10 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
-	openshiftengine "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/engine"
+
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type OperatorData struct {
@@ -29,48 +27,47 @@ type OperatorData struct {
 	InstallNamespace string
 }
 
-type DeployableByOlmCheck struct{}
+type DeployableByOlmCheck struct {
+	OpenshiftEngine cli.OpenshiftEngine
+}
+
+var (
+	subscriptionTimeout time.Duration = 180
+	csvTimeout          time.Duration = 90
+)
+
+func NewDeployableByOlmCheck(openshiftEngine *cli.OpenshiftEngine) *DeployableByOlmCheck {
+	return &DeployableByOlmCheck{
+		OpenshiftEngine: *openshiftEngine,
+	}
+}
 
 func (p *DeployableByOlmCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
-
-	// create a new instance of openshift engine
-	openshiftEngine, err := p.newOpenshiftEngine()
-	if err != nil {
-		return false, err
-	}
-
 	// retrieve the required data
 	operatorData, err := p.operatorMetadata(bundleRef)
 	if err != nil {
 		return false, err
 	}
 
+	err = p.OpenshiftEngine.Setup()
+	if err != nil {
+		return false, err
+	}
+
 	// create k8s custom resources for the operator deployment
-	err = p.setUp(*operatorData, *openshiftEngine)
-	defer p.cleanUp(*operatorData, *openshiftEngine)
+	err = p.setUp(*operatorData)
+	defer p.cleanUp(*operatorData)
 
 	if err != nil {
 		return false, err
 	}
 
-	installedCSV, err := p.installedCSV(*operatorData, *openshiftEngine)
+	installedCSV, err := p.installedCSV(*operatorData)
 	if err != nil {
 		return false, err
 	}
 
-	return p.isCSVReady(installedCSV, *operatorData, *openshiftEngine)
-}
-
-func (p *DeployableByOlmCheck) newOpenshiftEngine() (*openshiftengine.OpenshiftEngine, error) {
-	k8sconfig, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
-	if err != nil {
-		log.Error("unable to create a kubernetes client: ", err)
-		return nil, err
-	}
-
-	return &openshiftengine.OpenshiftEngine{
-		KubeConfig: k8sconfig,
-	}, nil
+	return p.isCSVReady(installedCSV, *operatorData)
 }
 
 func (p *DeployableByOlmCheck) operatorMetadata(bundleRef certification.ImageReference) (*OperatorData, error) {
@@ -109,18 +106,18 @@ func (p *DeployableByOlmCheck) operatorMetadata(bundleRef certification.ImageRef
 	}, nil
 }
 
-func (p *DeployableByOlmCheck) setUp(operatorData OperatorData, openshiftengine openshiftengine.OpenshiftEngine) error {
+func (p *DeployableByOlmCheck) setUp(operatorData OperatorData) error {
 
-	if _, err := openshiftengine.CreateNamespace(operatorData.InstallNamespace, cli.OpenshiftOptions{}); err != nil && !kubeErr.IsAlreadyExists(err) {
+	if _, err := p.OpenshiftEngine.CreateNamespace(operatorData.InstallNamespace, cli.OpenshiftOptions{}); err != nil && !kubeErr.IsAlreadyExists(err) {
 		return err
 	}
 
-	if _, err := openshiftengine.CreateCatalogSource(cli.CatalogSourceData{Name: operatorData.App, Image: operatorData.CatalogImage}, cli.OpenshiftOptions{Namespace: catalogSourceNS}); err != nil && !kubeErr.IsAlreadyExists(err) {
+	if _, err := p.OpenshiftEngine.CreateCatalogSource(cli.CatalogSourceData{Name: operatorData.App, Image: operatorData.CatalogImage}, cli.OpenshiftOptions{Namespace: catalogSourceNS}); err != nil && !kubeErr.IsAlreadyExists(err) {
 		return err
 	}
 
 	targetNamespaces := []string{operatorData.InstallNamespace}
-	if _, err := openshiftengine.CreateOperatorGroup(cli.OperatorGroupData{Name: operatorData.App, TargetNamespaces: targetNamespaces}, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
+	if _, err := p.OpenshiftEngine.CreateOperatorGroup(cli.OperatorGroupData{Name: operatorData.App, TargetNamespaces: targetNamespaces}, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
 		return err
 	}
 
@@ -131,13 +128,13 @@ func (p *DeployableByOlmCheck) setUp(operatorData OperatorData, openshiftengine 
 		CatalogSourceNamespace: catalogSourceNS,
 		Package:                operatorData.PackageName,
 	}
-	if _, err := openshiftengine.CreateSubscription(subscriptionData, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
+	if _, err := p.OpenshiftEngine.CreateSubscription(subscriptionData, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
 		return err
 	}
 	return nil
 }
 
-func (p *DeployableByOlmCheck) isCSVReady(installedCSV string, operatorData OperatorData, openshiftengine openshiftengine.OpenshiftEngine) (bool, error) {
+func (p *DeployableByOlmCheck) isCSVReady(installedCSV string, operatorData OperatorData) (bool, error) {
 
 	log.Trace(fmt.Sprintf("Looking for csv %s in namespace %s", installedCSV, operatorData.InstallNamespace))
 
@@ -150,12 +147,12 @@ func (p *DeployableByOlmCheck) isCSVReady(installedCSV string, operatorData Oper
 	defer close(contextTimeOut)
 
 	go func(parent context.Context) {
-		ctx, cancel := context.WithTimeout(parent, 90*time.Second)
+		ctx, cancel := context.WithTimeout(parent, csvTimeout)
 		defer cancel()
 
 		for {
 			log.Debug("Waiting for ClusterServiceVersion to become ready...")
-			csv, _ := openshiftengine.GetCSV(installedCSV, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
+			csv, _ := p.OpenshiftEngine.GetCSV(installedCSV, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
 			// if the CSV phase is succeeded, stop the querying
 			if csv.Status.Phase == operatorv1alpha1.CSVPhaseSucceeded {
 				log.Debug("CSV is created successfully: ", installedCSV)
@@ -184,7 +181,7 @@ func (p *DeployableByOlmCheck) isCSVReady(installedCSV string, operatorData Oper
 
 }
 
-func (p *DeployableByOlmCheck) installedCSV(operatorData OperatorData, openshiftengine openshiftengine.OpenshiftEngine) (string, error) {
+func (p *DeployableByOlmCheck) installedCSV(operatorData OperatorData) (string, error) {
 
 	ctx := context.Background()
 
@@ -196,12 +193,11 @@ func (p *DeployableByOlmCheck) installedCSV(operatorData OperatorData, openshift
 
 	// query API server for the installed CSV field of the created subscription
 	go func(parent context.Context) {
-		ctx, cancel := context.WithTimeout(parent, 180*time.Second)
+		ctx, cancel := context.WithTimeout(parent, subscriptionTimeout)
 		defer cancel()
-
 		for {
 			log.Debug("Waiting for Subscription.status.installedCSV to become ready...")
-			subs, _ := openshiftengine.GetSubscription(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
+			subs, _ := p.OpenshiftEngine.GetSubscription(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
 			installedCSV := subs.Status.InstalledCSV
 			// if the installedCSV field is present, stop the querying
 			if len(installedCSV) > 0 {
@@ -230,51 +226,54 @@ func (p *DeployableByOlmCheck) installedCSV(operatorData OperatorData, openshift
 	}
 }
 
-func (p *DeployableByOlmCheck) cleanUp(operatorData OperatorData, openshiftengine openshiftengine.OpenshiftEngine) {
+func (p *DeployableByOlmCheck) cleanUp(operatorData OperatorData) {
 
 	log.Debug("Dumping data in artifacts/ directory")
 
-	subs, err := openshiftengine.GetSubscription(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
+	subs, err := p.OpenshiftEngine.GetSubscription(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
 	if err != nil {
 		log.Error("unable to retrieve the subscription")
 	}
 	p.writeToFile(subs, operatorData.App, "subscription")
 
-	cs, err := openshiftengine.GetCatalogSource(operatorData.App, cli.OpenshiftOptions{Namespace: catalogSourceNS})
+	cs, err := p.OpenshiftEngine.GetCatalogSource(operatorData.App, cli.OpenshiftOptions{Namespace: catalogSourceNS})
 	if err != nil {
 		log.Error("unable to retrieve the catalogsource")
 	}
 	p.writeToFile(cs, operatorData.App, "catalogsource")
 
-	og, err := openshiftengine.GetOperatorGroup(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
+	og, err := p.OpenshiftEngine.GetOperatorGroup(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
 	if err != nil {
 		log.Error("unable to retrieve the operatorgroup")
 	}
 	p.writeToFile(og, operatorData.App, "operatorgroup")
 
-	ns, err := openshiftengine.GetNamespace(operatorData.InstallNamespace)
+	ns, err := p.OpenshiftEngine.GetNamespace(operatorData.InstallNamespace)
 	if err != nil {
 		log.Error("unable to retrieve the namespace")
 	}
 	p.writeToFile(ns, operatorData.InstallNamespace, "namespace")
 
 	log.Trace("Deleting the resources created by Check")
-	openshiftengine.DeleteSubscription(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
-	openshiftengine.DeleteCatalogSource(operatorData.App, cli.OpenshiftOptions{Namespace: catalogSourceNS})
-	openshiftengine.DeleteOperatorGroup(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
-	openshiftengine.DeleteNamespace(operatorData.InstallNamespace, cli.OpenshiftOptions{})
+	p.OpenshiftEngine.DeleteSubscription(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
+	p.OpenshiftEngine.DeleteCatalogSource(operatorData.App, cli.OpenshiftOptions{Namespace: catalogSourceNS})
+	p.OpenshiftEngine.DeleteOperatorGroup(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
+	p.OpenshiftEngine.DeleteNamespace(operatorData.InstallNamespace, cli.OpenshiftOptions{})
 }
 
-func (p *DeployableByOlmCheck) writeToFile(data interface{}, resource string, resourceType string) {
+func (p *DeployableByOlmCheck) writeToFile(data interface{}, resource string, resourceType string) error {
 	yamlData, err := yaml.Marshal(data)
 	if err != nil {
 		log.Error("unable to serialize the data")
+		return err
 	}
 
 	filename := fmt.Sprintf("%s-%s.yaml", resource, resourceType)
 	if _, err := artifacts.WriteFile(filename, string(yamlData)); err != nil {
 		log.Error("failed to write the k8s object to the file", err)
+		return err
 	}
+	return nil
 }
 
 func (p *DeployableByOlmCheck) Name() string {
