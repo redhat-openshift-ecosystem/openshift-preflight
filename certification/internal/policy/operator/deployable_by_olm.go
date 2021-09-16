@@ -82,7 +82,7 @@ func (p *DeployableByOlmCheck) operatorMetadata(bundleRef certification.ImageRef
 	catalogImage := viper.GetString(indexImageKey)
 	if len(catalogImage) == 0 {
 		log.Error(fmt.Sprintf("To set the key, export PFLT_%s or add %s:<value> to config.yaml in the current working directory", strings.ToUpper(indexImageKey), indexImageKey))
-		return nil, err
+		return nil, errors.ErrIndexImageUndefined
 	}
 
 	channel, err := annotation(annotations, channelKey)
