@@ -37,3 +37,4 @@ var ErrRemovePFromProjectID = errors.New("please remove leading character p from
 var ErrRemoveOSPIDFromProjectID = errors.New("please remove leading character ospid- from project id")
 var ErrRemoveSpecialCharFromProjectID = errors.New("please remove all special characters from project id")
 var ErrPullRequestURL = errors.New("please enter a valid url: including scheme, host, and path to pull request")
+var ErrIndexImageUndefined = errors.New("index image environment variable not set")
