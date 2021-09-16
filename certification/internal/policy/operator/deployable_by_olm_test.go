@@ -3,6 +3,7 @@ package operator
 import (
 	"os"
 	"path/filepath"
+	"time"
 
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
 	. "github.com/onsi/ginkgo"
@@ -27,8 +28,8 @@ var _ = Describe("DeployableByOLMCheck", func() {
 	)
 	BeforeEach(func() {
 		// override default timeout
-		subscriptionTimeout = 1
-		csvTimeout = 1
+		subscriptionTimeout = 1 * time.Second
+		csvTimeout = 1 * time.Second
 
 		// mock bundle directory
 		tmpDir, err := os.MkdirTemp("", "bundle-metadata-*")

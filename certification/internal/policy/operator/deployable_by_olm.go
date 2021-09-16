@@ -32,8 +32,8 @@ type DeployableByOlmCheck struct {
 }
 
 var (
-	subscriptionTimeout time.Duration = 180
-	csvTimeout          time.Duration = 90
+	subscriptionTimeout time.Duration = 180 * time.Second
+	csvTimeout          time.Duration = 90 * time.Second
 )
 
 func NewDeployableByOlmCheck(openshiftEngine *cli.OpenshiftEngine) *DeployableByOlmCheck {
