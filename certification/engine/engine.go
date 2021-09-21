@@ -6,6 +6,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	internalclient "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/client"
 	internal "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/engine"
 	containerpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/container"
 	operatorpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/operator"
@@ -73,7 +74,7 @@ func queryChecks(checkName string) certification.Check {
 var operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgNameIsUniqueCheck{}
 var scorecardBasicSpecCheck certification.Check = operatorpol.NewScorecardBasicSpecCheck(internal.NewOperatorSdkEngine())
 var scorecardOlmSuiteCheck certification.Check = operatorpol.NewScorecardOlmSuiteCheck(internal.NewOperatorSdkEngine())
-var deployableByOlmCheck certification.Check = operatorpol.NewDeployableByOlmCheck(internal.NewOpenshiftEngine())
+var deployableByOlmCheck certification.Check = operatorpol.NewDeployableByOlmCheck(internalclient.New())
 var validateOperatorBundle certification.Check = operatorpol.NewValidateOperatorBundleCheck(internal.NewOperatorSdkEngine())
 
 // Container checks

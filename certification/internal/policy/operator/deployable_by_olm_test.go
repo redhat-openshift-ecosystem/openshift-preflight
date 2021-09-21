@@ -9,16 +9,25 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
+	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
+	"github.com/spf13/viper"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var _ = Describe("DeployableByOLMCheck", func() {
 	var (
 		deployableByOLMCheck DeployableByOlmCheck
-		engine               cli.OpenshiftEngine
+		k8sclient            client.Client
 		imageRef             certification.ImageReference
 		tmpDockerDir         string
+		scheme               *runtime.Scheme
 	)
 	const (
 		metadataDir            = "metadata"
@@ -52,31 +61,50 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		err = os.WriteFile(filepath.Join(tmpDir, metadataDir, annotationFilename), []byte(annotations), 0644)
 		Expect(err).ToNot(HaveOccurred())
 
-		// mock docker config file
-		tmpDockerDir, err = os.MkdirTemp("", "docker-config-*")
-		Expect(err).ToNot(HaveOccurred())
-
-		err = os.Mkdir(filepath.Join(tmpDockerDir, registryConfigDir), 0755)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = os.WriteFile(filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename), []byte(registryAuthToken), 0644)
-		Expect(err).ToNot(HaveOccurred())
-
 		fakeImage := fakecranev1.FakeImage{}
 		imageRef.ImageInfo = &fakeImage
 		imageRef.ImageFSPath = tmpDir
 
-		// set env var for index image
-		os.Setenv("PFLT_INDEXIMAGE", "test_indeximage")
-		os.Setenv("PFLT_ARTIFACTS", tmpDir)
-		os.Setenv("PFLT_DOCKERCONFIG", filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename))
+		scheme = runtime.NewScheme()
+		operatorv1alpha1.AddToScheme(scheme)
+		operatorv1.AddToScheme(scheme)
+		corev1.AddToScheme(scheme)
+		rbacv1.AddToScheme(scheme)
 
+		// set artifacts to tmpDir
+		viper.Set("artifacts", tmpDir)
 	})
 	Describe("When deploying an operator using OLM", func() {
 		Context("When CSV has been created successfully", func() {
 			BeforeEach(func() {
-				engine = FakeOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
+				csv := &operatorv1alpha1.ClusterServiceVersion{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "testPackage",
+						Name:      "testPackage",
+					},
+					Spec: operatorv1alpha1.ClusterServiceVersionSpec{},
+					Status: operatorv1alpha1.ClusterServiceVersionStatus{
+						Phase: operatorv1alpha1.CSVPhaseSucceeded,
+					},
+				}
+				sub := &operatorv1alpha1.Subscription{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "testPackage",
+						Name:      "testPackage",
+					},
+					Status: operatorv1alpha1.SubscriptionStatus{
+						InstalledCSV: "testPackage",
+					},
+				}
+				objects := []runtime.Object{
+					csv,
+					sub,
+				}
+				k8sclient = fakeclient.NewClientBuilder().
+					WithScheme(scheme).
+					WithRuntimeObjects(objects...).
+					Build()
+				deployableByOLMCheck = *NewDeployableByOlmCheck(&k8sclient)
 			})
 
 			It("Should pass Validate", func() {
@@ -84,11 +112,34 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
+			Context("When index image is in a custom namespace and CSV has been created successfully", func() {
+				BeforeEach(func() {
+					os.Setenv("PFLT_INDEXIMAGE", "image-registry.openshift-image-registry.svc/namespace/indeximage:v0.0.0")
+				})
+
+				It("Should pass Validate", func() {
+					ok, err := deployableByOLMCheck.Validate(imageRef)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(ok).To(BeTrue())
+				})
+			})
 		})
 		Context("When installedCSV field of Subscription is not set", func() {
 			BeforeEach(func() {
-				engine = BadOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
+				csv := &operatorv1alpha1.ClusterServiceVersion{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "testPackage",
+						Name:      "testPackage",
+					},
+				}
+				objects := []runtime.Object{
+					csv,
+				}
+				k8sclient = fakeclient.NewClientBuilder().
+					WithRuntimeObjects(objects...).
+					WithScheme(scheme).
+					Build()
+				deployableByOLMCheck = *NewDeployableByOlmCheck(&k8sclient)
 			})
 
 			It("Should fail Validate", func() {
@@ -98,22 +149,6 @@ var _ = Describe("DeployableByOLMCheck", func() {
 			})
 		})
 	})
-	Describe("When deploying an operator using OLM", func() {
-		Context("When index image is in a custom namespace and CSV has been created successfully", func() {
-			BeforeEach(func() {
-				os.Setenv("PFLT_INDEXIMAGE", "image-registry.openshift-image-registry.svc/namespace/indeximage:v0.0.0")
-				engine = FakeOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
-			})
-
-			It("Should pass Validate", func() {
-				ok, err := deployableByOLMCheck.Validate(imageRef)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(ok).To(BeTrue())
-			})
-		})
-	})
-
 	DescribeTable("Image Registry validation",
 		func(bundleImages []string, expected bool) {
 			ok := checkImageSource(bundleImages)

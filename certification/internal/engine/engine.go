@@ -3,6 +3,7 @@ package engine
 import (
 	"archive/tar"
 	"bytes"
+	"context"
 	"crypto/md5"
 	"fmt"
 	"io"
@@ -14,7 +15,10 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/crane"
+	configv1ClientSet "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
@@ -101,7 +105,7 @@ func (c *CraneEngine) ExecuteChecks() error {
 	}
 
 	// Record test cluster version
-	c.results.TestedOn, err = GetOpenshiftClusterVersion()
+	c.results.TestedOn, err = getOpenshiftClusterVersion()
 	if err != nil {
 		log.Error("Unable to determine test cluster version: ", err)
 	}
@@ -272,4 +276,31 @@ func untar(dst string, r io.Reader) error {
 			}
 		}
 	}
+}
+
+func getOpenshiftClusterVersion() (runtime.OpenshiftClusterVersion, error) {
+	if _, ok := os.LookupEnv("KUBECONFIG"); !ok {
+		return runtime.UnknownOpenshiftClusterVersion(), errors.ErrNoKubeconfig
+	}
+	kubeConfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("unable to load the config, check if KUBECONFIG is set correctly: ", err)
+		return runtime.UnknownOpenshiftClusterVersion(), err
+	}
+	configV1Client, err := configv1ClientSet.NewForConfig(kubeConfig)
+	if err != nil {
+		log.Error("unable to create a client with the provided kubeconfig: ", err)
+		return runtime.UnknownOpenshiftClusterVersion(), err
+	}
+	openshiftApiServer, err := configV1Client.ClusterOperators().Get(context.Background(), "openshift-apiserver", metav1.GetOptions{})
+	if err != nil {
+		log.Error("unable to get openshift-apiserver cluster operator: ", err)
+		return runtime.UnknownOpenshiftClusterVersion(), err
+	}
+
+	log.Debug(fmt.Sprintf("fetching operator version and openshift-apiserver version %s from %s", openshiftApiServer.Status.Versions, kubeConfig.Host))
+	return runtime.OpenshiftClusterVersion{
+		Name:    "OpenShift",
+		Version: openshiftApiServer.Status.Versions[1].Version,
+	}, nil
 }
