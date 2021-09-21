@@ -3,7 +3,6 @@ package engine
 import (
 	"context"
 	"fmt"
-	"os"
 
 	log "github.com/sirupsen/logrus"
 
@@ -11,36 +10,24 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	client "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/client"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
-type openshiftEngine struct {
-	KubeConfig *rest.Config
-}
+type openshiftEngine struct{}
 
 func NewOpenshiftEngine() *cli.OpenshiftEngine {
 	var engine cli.OpenshiftEngine = &openshiftEngine{}
 	return &engine
 }
 
-func (oe *openshiftEngine) Setup() error {
-	k8sconfig, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
-	if err != nil {
-		log.Error("unable to parse kubecofig: ", err)
-		return err
-	}
-	oe.KubeConfig = k8sconfig
-	return nil
-}
-
 func (oe *openshiftEngine) CreateNamespace(name string, opts cli.OpenshiftOptions) (*corev1.Namespace, error) {
 
-	k8sClientset, err := kubernetes.NewForConfig(oe.KubeConfig)
+	kubeconfig := ctrl.GetConfigOrDie()
+	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
 
 	if err != nil {
 		log.Error("unable to obtain k8s client: ", err)
@@ -70,7 +57,8 @@ func (oe *openshiftEngine) CreateNamespace(name string, opts cli.OpenshiftOption
 }
 
 func (oe *openshiftEngine) DeleteNamespace(name string, opts cli.OpenshiftOptions) error {
-	k8sClientset, err := kubernetes.NewForConfig(oe.KubeConfig)
+	kubeconfig := ctrl.GetConfigOrDie()
+	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
 
 	if err != nil {
 		log.Error("unable to obtain k8s client: ", err)
@@ -83,7 +71,9 @@ func (oe *openshiftEngine) DeleteNamespace(name string, opts cli.OpenshiftOption
 }
 
 func (oe *openshiftEngine) GetNamespace(name string) (*corev1.Namespace, error) {
-	k8sClientset, err := kubernetes.NewForConfig(oe.KubeConfig)
+
+	kubeconfig := ctrl.GetConfigOrDie()
+	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
 
 	if err != nil {
 		log.Error("unable to obtain k8s client: ", err)
@@ -97,7 +87,7 @@ func (oe *openshiftEngine) GetNamespace(name string) (*corev1.Namespace, error) 
 
 func (oe *openshiftEngine) CreateOperatorGroup(data cli.OperatorGroupData, opts cli.OpenshiftOptions) (*operatorv1.OperatorGroup, error) {
 
-	ogClient, err := client.OperatorGroupClient(oe.KubeConfig, opts.Namespace)
+	ogClient, err := client.OperatorGroupClient(opts.Namespace)
 	if err != nil {
 		log.Error("unable to create a client for OperatorGroup: ", err)
 		return nil, err
@@ -116,7 +106,7 @@ func (oe *openshiftEngine) CreateOperatorGroup(data cli.OperatorGroupData, opts 
 }
 
 func (oe *openshiftEngine) DeleteOperatorGroup(name string, opts cli.OpenshiftOptions) error {
-	ogClient, err := client.OperatorGroupClient(oe.KubeConfig, opts.Namespace)
+	ogClient, err := client.OperatorGroupClient(opts.Namespace)
 	if err != nil {
 		log.Error("unable to create a client for OperatorGroup: ", err)
 		return err
@@ -135,7 +125,7 @@ func (oe *openshiftEngine) DeleteOperatorGroup(name string, opts cli.OpenshiftOp
 }
 
 func (oe *openshiftEngine) GetOperatorGroup(name string, opts cli.OpenshiftOptions) (*operatorv1.OperatorGroup, error) {
-	ogClient, err := client.OperatorGroupClient(oe.KubeConfig, opts.Namespace)
+	ogClient, err := client.OperatorGroupClient(opts.Namespace)
 
 	if err != nil {
 		log.Error("unable to obtain k8s client: ", err)
@@ -147,7 +137,7 @@ func (oe *openshiftEngine) GetOperatorGroup(name string, opts cli.OpenshiftOptio
 
 func (oe openshiftEngine) CreateCatalogSource(data cli.CatalogSourceData, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error) {
 
-	csClient, err := client.CatalogSourceClient(oe.KubeConfig, opts.Namespace)
+	csClient, err := client.CatalogSourceClient(opts.Namespace)
 	if err != nil {
 		log.Error("unable to create a client for CatalogSource: ", err)
 		return nil, err
@@ -166,7 +156,7 @@ func (oe openshiftEngine) CreateCatalogSource(data cli.CatalogSourceData, opts c
 }
 
 func (oe *openshiftEngine) DeleteCatalogSource(name string, opts cli.OpenshiftOptions) error {
-	csClient, err := client.CatalogSourceClient(oe.KubeConfig, opts.Namespace)
+	csClient, err := client.CatalogSourceClient(opts.Namespace)
 	if err != nil {
 		log.Error("unable to create a client for CatalogSource: ", err)
 		return err
@@ -185,7 +175,7 @@ func (oe *openshiftEngine) DeleteCatalogSource(name string, opts cli.OpenshiftOp
 
 func (oe *openshiftEngine) GetCatalogSource(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error) {
 
-	csClient, err := client.CatalogSourceClient(oe.KubeConfig, opts.Namespace)
+	csClient, err := client.CatalogSourceClient(opts.Namespace)
 	if err != nil {
 		log.Error("unable to create a client for CatalogSource: ", err)
 		return nil, err
@@ -196,7 +186,7 @@ func (oe *openshiftEngine) GetCatalogSource(name string, opts cli.OpenshiftOptio
 
 func (oe openshiftEngine) CreateSubscription(data cli.SubscriptionData, opts cli.OpenshiftOptions) (*operatorv1alpha1.Subscription, error) {
 
-	subsClient, err := client.SubscriptionClient(oe.KubeConfig, opts.Namespace)
+	subsClient, err := client.SubscriptionClient(opts.Namespace)
 	if err != nil {
 		log.Error("unable to create a client for Subscription: ", err)
 		return nil, err
@@ -215,7 +205,7 @@ func (oe openshiftEngine) CreateSubscription(data cli.SubscriptionData, opts cli
 }
 
 func (oe *openshiftEngine) GetSubscription(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.Subscription, error) {
-	subsClient, err := client.SubscriptionClient(oe.KubeConfig, opts.Namespace)
+	subsClient, err := client.SubscriptionClient(opts.Namespace)
 	if err != nil {
 		log.Error("unable to create a client for Subscription: ", err)
 		return nil, err
@@ -226,7 +216,7 @@ func (oe *openshiftEngine) GetSubscription(name string, opts cli.OpenshiftOption
 
 func (oe openshiftEngine) DeleteSubscription(name string, opts cli.OpenshiftOptions) error {
 
-	subsClient, err := client.SubscriptionClient(oe.KubeConfig, opts.Namespace)
+	subsClient, err := client.SubscriptionClient(opts.Namespace)
 	if err != nil {
 		log.Error("unable to create a client for Subscription: ", err)
 		return err
@@ -245,7 +235,7 @@ func (oe openshiftEngine) DeleteSubscription(name string, opts cli.OpenshiftOpti
 
 func (oe *openshiftEngine) GetCSV(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.ClusterServiceVersion, error) {
 
-	csvClient, err := client.CsvClient(oe.KubeConfig, opts.Namespace)
+	csvClient, err := client.CsvClient(opts.Namespace)
 	if err != nil {
 		log.Error("unable to create a client for csv: ", err)
 		return nil, err

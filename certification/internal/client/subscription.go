@@ -7,7 +7,6 @@ import (
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -100,7 +99,7 @@ func (c subscriptionClient) convert(u *unstructured.Unstructured) (*operatorv1al
 	return &obj, nil
 }
 
-func SubscriptionClient(cfg *rest.Config, namespace string) (*subscriptionClient, error) {
+func SubscriptionClient(namespace string) (*subscriptionClient, error) {
 	scheme := runtime.NewScheme()
 	operatorv1alpha1.AddToScheme(scheme)
 	kubeconfig := ctrl.GetConfigOrDie()

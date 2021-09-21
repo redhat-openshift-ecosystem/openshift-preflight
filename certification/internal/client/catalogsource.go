@@ -7,7 +7,6 @@ import (
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/rest"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -99,7 +98,7 @@ func (c catalogSourceClient) convert(u *unstructured.Unstructured) (*operatorv1a
 	return &obj, nil
 }
 
-func CatalogSourceClient(cfg *rest.Config, namespace string) (*catalogSourceClient, error) {
+func CatalogSourceClient(namespace string) (*catalogSourceClient, error) {
 	scheme := runtime.NewScheme()
 	operatorv1alpha1.AddToScheme(scheme)
 	kubeconfig := ctrl.GetConfigOrDie()

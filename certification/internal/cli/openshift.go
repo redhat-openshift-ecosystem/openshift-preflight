@@ -30,8 +30,6 @@ type OperatorGroupData struct {
 }
 
 type OpenshiftEngine interface {
-	Setup() error
-
 	CreateNamespace(name string, opts OpenshiftOptions) (*corev1.Namespace, error)
 	DeleteNamespace(name string, opts OpenshiftOptions) error
 	GetNamespace(name string) (*corev1.Namespace, error)

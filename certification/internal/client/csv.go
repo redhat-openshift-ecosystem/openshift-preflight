@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -58,7 +57,7 @@ func (c csvClient) convert(u *unstructured.Unstructured) (*operatorv1alpha1.Clus
 	return &obj, nil
 }
 
-func CsvClient(cfg *rest.Config, namespace string) (*csvClient, error) {
+func CsvClient(namespace string) (*csvClient, error) {
 	scheme := runtime.NewScheme()
 	operatorv1alpha1.AddToScheme(scheme)
 	kubeconfig := ctrl.GetConfigOrDie()
