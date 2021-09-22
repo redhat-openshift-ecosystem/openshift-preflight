@@ -14,6 +14,11 @@ fmt:
 	go fmt ./...
 	git diff --exit-code
 
+.PHONY: tidy
+tidy:
+	go mod tidy
+	git diff --exit-code
+
 .PHONY: image-build
 image-build:
 	$(IMAGE_BUILDER) build -t $(IMAGE_REPO)/preflight:$(VERSION) .

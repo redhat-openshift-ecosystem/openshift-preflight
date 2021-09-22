@@ -18,6 +18,9 @@ jobs:
       with:
         go-version: 1.16
 
+    - name: Tidy
+      run: make tidy
+
     - name: Vet
       run: make vet
 
