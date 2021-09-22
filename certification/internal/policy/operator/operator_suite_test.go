@@ -64,10 +64,6 @@ func (bose BadOperatorSdkEngine) BundleValidate(bundleImage string, opts cli.Ope
 
 type FakeOpenshiftEngine struct{}
 
-func (foe FakeOpenshiftEngine) Setup() error {
-	return nil
-}
-
 func (foe FakeOpenshiftEngine) CreateNamespace(name string, opts cli.OpenshiftOptions) (*corev1.Namespace, error) {
 	return &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -192,10 +188,6 @@ func (foe FakeOpenshiftEngine) GetCSV(name string, opts cli.OpenshiftOptions) (*
 }
 
 type BadOpenshiftEngine struct{}
-
-func (foe BadOpenshiftEngine) Setup() error {
-	return nil
-}
 
 func (foe BadOpenshiftEngine) CreateNamespace(name string, opts cli.OpenshiftOptions) (*corev1.Namespace, error) {
 	return &corev1.Namespace{

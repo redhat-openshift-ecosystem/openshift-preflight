@@ -49,11 +49,6 @@ func (p *DeployableByOlmCheck) Validate(bundleRef certification.ImageReference) 
 		return false, err
 	}
 
-	err = p.OpenshiftEngine.Setup()
-	if err != nil {
-		return false, err
-	}
-
 	// create k8s custom resources for the operator deployment
 	err = p.setUp(*operatorData)
 	defer p.cleanUp(*operatorData)
