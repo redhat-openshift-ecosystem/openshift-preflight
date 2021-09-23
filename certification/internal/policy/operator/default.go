@@ -1,9 +1,6 @@
 package operator
 
 const (
-	// catalogSourceNS is the namespace in which the CatalogSource CR is installed
-	catalogSourceNS = "openshift-marketplace"
-
 	// packageKey is the packageKey in annotations.yaml that contains the package name.
 	packageKey = "operators.operatorframework.io.bundle.package.v1"
 
