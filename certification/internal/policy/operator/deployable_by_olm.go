@@ -107,7 +107,7 @@ func (p *DeployableByOlmCheck) setUp(operatorData OperatorData) error {
 		return err
 	}
 
-	if _, err := p.OpenshiftEngine.CreateCatalogSource(cli.CatalogSourceData{Name: operatorData.App, Image: operatorData.CatalogImage}, cli.OpenshiftOptions{Namespace: catalogSourceNS}); err != nil && !kubeErr.IsAlreadyExists(err) {
+	if _, err := p.OpenshiftEngine.CreateCatalogSource(cli.CatalogSourceData{Name: operatorData.App, Image: operatorData.CatalogImage}, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
 		return err
 	}
 
@@ -120,7 +120,7 @@ func (p *DeployableByOlmCheck) setUp(operatorData OperatorData) error {
 		Name:                   operatorData.App,
 		Channel:                operatorData.Channel,
 		CatalogSource:          operatorData.App,
-		CatalogSourceNamespace: catalogSourceNS,
+		CatalogSourceNamespace: operatorData.InstallNamespace,
 		Package:                operatorData.PackageName,
 	}
 	if _, err := p.OpenshiftEngine.CreateSubscription(subscriptionData, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
@@ -231,7 +231,7 @@ func (p *DeployableByOlmCheck) cleanUp(operatorData OperatorData) {
 	}
 	p.writeToFile(subs, operatorData.App, "subscription")
 
-	cs, err := p.OpenshiftEngine.GetCatalogSource(operatorData.App, cli.OpenshiftOptions{Namespace: catalogSourceNS})
+	cs, err := p.OpenshiftEngine.GetCatalogSource(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
 	if err != nil {
 		log.Error("unable to retrieve the catalogsource")
 	}
@@ -251,7 +251,7 @@ func (p *DeployableByOlmCheck) cleanUp(operatorData OperatorData) {
 
 	log.Trace("Deleting the resources created by Check")
 	p.OpenshiftEngine.DeleteSubscription(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
-	p.OpenshiftEngine.DeleteCatalogSource(operatorData.App, cli.OpenshiftOptions{Namespace: catalogSourceNS})
+	p.OpenshiftEngine.DeleteCatalogSource(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
 	p.OpenshiftEngine.DeleteOperatorGroup(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
 	p.OpenshiftEngine.DeleteNamespace(operatorData.InstallNamespace, cli.OpenshiftOptions{})
 }
