@@ -86,6 +86,7 @@ func (f *genericFormatter) FileExtension() string {
 // availableFormatters maps configuration-friendly values to pretty representations
 // of the same value, and their corresponding Formatter included with this library.
 var availableFormatters = map[string]ResponseFormatter{
-	"json": &genericFormatter{"Generic JSON", "json", genericJSONFormatter},
-	"xml":  &genericFormatter{"Generic XML", "xml", genericXMLFormatter},
+	"json":     &genericFormatter{"Generic JSON", "json", genericJSONFormatter},
+	"xml":      &genericFormatter{"Generic XML", "xml", genericXMLFormatter},
+	"junitxml": &genericFormatter{"JUnit XML", "xml", junitXMLFormatter},
 }

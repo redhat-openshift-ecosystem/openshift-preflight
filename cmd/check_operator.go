@@ -89,6 +89,10 @@ var checkOperatorCmd = &cobra.Command{
 			return err
 		}
 
+		if err := writeJunitIfEnabled(results); err != nil {
+			return err
+		}
+
 		return nil
 	},
 }

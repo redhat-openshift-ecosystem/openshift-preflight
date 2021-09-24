@@ -84,6 +84,10 @@ var checkContainerCmd = &cobra.Command{
 			return err
 		}
 
+		if err := writeJunitIfEnabled(results); err != nil {
+			return err
+		}
+
 		return nil
 	},
 }
