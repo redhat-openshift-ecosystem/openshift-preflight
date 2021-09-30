@@ -8,6 +8,17 @@ The project will include a commandline interface that will accept your operator
 bundle or container image as an input, and will run validate that your container
 image or operator bundle complies with a series of validations.
 
+## Requirements
+
+Development and testing preflight requires that you have the following tools installed,
+functional, and in your path.
+
+| Name             | Tool cli          | Minimum version |
+|----------------- |:-----------------:| ---------------:|
+| OperatorSDK      | `operator-sdk`    | v1.12.0          |
+| OpenShift Client | `oc`              | v4.7.19         |
+| Podman           | `podman`          | v3.0            |
+
 ## Checks
 
 The term "check" refers to a single validation executed against the given asset.

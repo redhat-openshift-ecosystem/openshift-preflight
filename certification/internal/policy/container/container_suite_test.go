@@ -46,14 +46,3 @@ func (fl FakeLayer) Size() (int64, error) {
 func (fl FakeLayer) MediaType() (types.MediaType, error) {
 	return "mediatype", nil
 }
-
-type FakeSkopeoEngine struct {
-	SkopeoReportStdout string
-	SkopeoReportStderr string
-	Tags               []string
-}
-
-type SkopeoData struct {
-	Repository string
-	Tags       []string
-}
