@@ -84,6 +84,32 @@ func (foe FakeOpenshiftEngine) GetNamespace(name string) (*corev1.Namespace, err
 	}, nil
 }
 
+func (foe FakeOpenshiftEngine) CreateSecret(name string, content map[string]string, secretType corev1.SecretType, opts cli.OpenshiftOptions) (*corev1.Secret, error) {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pull-image-secret",
+			Namespace: "test-ns",
+		},
+		Type:       "kubernetes.io/dockerconfigjson",
+		StringData: map[string]string{".dockerconfigjson": "secretData"},
+	}, nil
+}
+
+func (foe FakeOpenshiftEngine) DeleteSecret(name string, opts cli.OpenshiftOptions) error {
+	return nil
+}
+
+func (foe FakeOpenshiftEngine) GetSecret(name string, opts cli.OpenshiftOptions) (*corev1.Secret, error) {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pull-image-secret",
+			Namespace: "test-ns",
+		},
+		Type:       "kubernetes.io/dockerconfigjson",
+		StringData: map[string]string{".dockerconfigjson": "secretData"},
+	}, nil
+}
+
 func (foe FakeOpenshiftEngine) CreateOperatorGroup(data cli.OperatorGroupData, opts cli.OpenshiftOptions) (*operatorv1.OperatorGroup, error) {
 	return &operatorv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
@@ -206,6 +232,32 @@ func (foe BadOpenshiftEngine) GetNamespace(name string) (*corev1.Namespace, erro
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-ns",
 		},
+	}, nil
+}
+
+func (foe BadOpenshiftEngine) CreateSecret(name string, content map[string]string, secretType corev1.SecretType, opts cli.OpenshiftOptions) (*corev1.Secret, error) {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pull-image-secret",
+			Namespace: "test-ns",
+		},
+		Type:       "kubernetes.io/dockerconfigjson",
+		StringData: map[string]string{".dockerconfigjson": "secretData"},
+	}, nil
+}
+
+func (foe BadOpenshiftEngine) DeleteSecret(name string, opts cli.OpenshiftOptions) error {
+	return nil
+}
+
+func (foe BadOpenshiftEngine) GetSecret(name string, opts cli.OpenshiftOptions) (*corev1.Secret, error) {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pull-image-secret",
+			Namespace: "test-ns",
+		},
+		Type:       "kubernetes.io/dockerconfigjson",
+		StringData: map[string]string{".dockerconfigjson": "secretData"},
 	}, nil
 }
 

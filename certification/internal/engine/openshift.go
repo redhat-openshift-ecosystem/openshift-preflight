@@ -131,8 +131,71 @@ func (oe *openshiftEngine) GetOperatorGroup(name string, opts cli.OpenshiftOptio
 		log.Error("unable to obtain k8s client: ", err)
 		return nil, err
 	}
-	log.Debug(fmt.Sprintf("fetching operatorgroup %s from namespace %s ", name, opts.Namespace))
+	log.Debug(fmt.Sprintf("fetching operatorgroup %s from namespace %s", name, opts.Namespace))
 	return ogClient.Get(name, opts.Namespace)
+}
+
+func (oe openshiftEngine) CreateSecret(name string, content map[string]string, secretType corev1.SecretType, opts cli.OpenshiftOptions) (*corev1.Secret, error) {
+	kubeconfig := ctrl.GetConfigOrDie()
+	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
+
+	if err != nil {
+		log.Error("unable to obtain k8s client: ", err)
+		return nil, err
+	}
+	secret := corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: opts.Namespace,
+		},
+		StringData: content,
+		Type:       secretType,
+	}
+	resp, err := k8sClientset.CoreV1().
+		Secrets(opts.Namespace).
+		Create(context.Background(), &secret, metav1.CreateOptions{})
+
+	if err != nil {
+		log.Error(fmt.Sprintf("error while creating secret %s in namespace %s", name, opts.Namespace), err)
+		return nil, err
+	}
+
+	log.Debug("Secret created: ", name)
+	log.Trace("Received Secret object from API server: ", resp)
+
+	return resp, nil
+}
+
+func (oe openshiftEngine) DeleteSecret(name string, opts cli.OpenshiftOptions) error {
+	kubeconfig := ctrl.GetConfigOrDie()
+	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
+
+	if err != nil {
+		log.Error("unable to obtain k8s client: ", err)
+		return err
+	}
+	log.Debug(fmt.Sprintf("Deleting secret %s from namespace %s", name, opts.Namespace))
+	return k8sClientset.CoreV1().
+		Secrets(opts.Namespace).
+		Delete(context.Background(), name, metav1.DeleteOptions{})
+}
+
+func (oe openshiftEngine) GetSecret(name string, opts cli.OpenshiftOptions) (*corev1.Secret, error) {
+	kubeconfig := ctrl.GetConfigOrDie()
+	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
+
+	if err != nil {
+		log.Error("unable to obtain k8s client: ", err)
+		return nil, err
+	}
+	log.Debug(fmt.Sprintf("fetching secrets %s from namespace %s", name, opts.Namespace))
+	return k8sClientset.CoreV1().
+		Secrets(opts.Namespace).
+		Get(context.Background(), name, metav1.GetOptions{})
 }
 
 func (oe openshiftEngine) CreateCatalogSource(data cli.CatalogSourceData, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error) {

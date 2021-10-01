@@ -3,11 +3,12 @@ package operator
 import (
 	"context"
 	"fmt"
-	"strings"
+	"os"
 	"time"
 
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/spf13/viper"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
@@ -75,10 +76,6 @@ func (p *DeployableByOlmCheck) operatorMetadata(bundleRef certification.ImageRef
 	}
 
 	catalogImage := viper.GetString(indexImageKey)
-	if len(catalogImage) == 0 {
-		log.Error(fmt.Sprintf("To set the key, export PFLT_%s or add %s:<value> to config.yaml in the current working directory", strings.ToUpper(indexImageKey), indexImageKey))
-		return nil, errors.ErrIndexImageUndefined
-	}
 
 	channel, err := annotation(annotations, channelKey)
 	if err != nil {
@@ -107,7 +104,18 @@ func (p *DeployableByOlmCheck) setUp(operatorData OperatorData) error {
 		return err
 	}
 
-	if _, err := p.OpenshiftEngine.CreateCatalogSource(cli.CatalogSourceData{Name: operatorData.App, Image: operatorData.CatalogImage}, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
+	content, err := p.readFileAsByteArray(os.Getenv("DOCKERCONFIG"))
+	if err != nil {
+		return err
+	}
+
+	data := map[string]string{".dockerconfigjson": string(content)}
+
+	if _, err := p.OpenshiftEngine.CreateSecret(secretName, data, corev1.SecretTypeDockerConfigJson, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
+		return err
+	}
+
+	if _, err := p.OpenshiftEngine.CreateCatalogSource(cli.CatalogSourceData{Name: operatorData.App, Image: operatorData.CatalogImage, Secrets: []string{secretName}}, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
 		return err
 	}
 
@@ -253,6 +261,7 @@ func (p *DeployableByOlmCheck) cleanUp(operatorData OperatorData) {
 	p.OpenshiftEngine.DeleteSubscription(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
 	p.OpenshiftEngine.DeleteCatalogSource(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
 	p.OpenshiftEngine.DeleteOperatorGroup(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
+	p.OpenshiftEngine.DeleteSecret(secretName, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
 	p.OpenshiftEngine.DeleteNamespace(operatorData.InstallNamespace, cli.OpenshiftOptions{})
 }
 
@@ -269,6 +278,15 @@ func (p *DeployableByOlmCheck) writeToFile(data interface{}, resource string, re
 		return err
 	}
 	return nil
+}
+
+func (p *DeployableByOlmCheck) readFileAsByteArray(filename string) ([]byte, error) {
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		log.Error(fmt.Sprintf("error reading the file: %s", filename))
+		return nil, err
+	}
+	return content, nil
 }
 
 func (p *DeployableByOlmCheck) Name() string {

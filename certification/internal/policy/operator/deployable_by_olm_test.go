@@ -17,14 +17,24 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		deployableByOLMCheck DeployableByOlmCheck
 		engine               cli.OpenshiftEngine
 		imageRef             certification.ImageReference
+		tmpDockerDir         string
 	)
 	const (
-		metadataDir        = "metadata"
-		annotationFilename = "annotations.yaml"
-		annotations        = `annotations:
+		metadataDir            = "metadata"
+		registryConfigDir      = ".docker"
+		annotationFilename     = "annotations.yaml"
+		registryConfigFilename = "config.json"
+		annotations            = `annotations:
   operators.operatorframework.io.bundle.package.v1: testPackage
   operators.operatorframework.io.bundle.channel.default.v1: testChannel
 `
+		registryAuthToken = `{
+"auths": {
+  "quay.io": {
+    "auth": "auth-token-test"
+    }
+  }
+}`
 	)
 	BeforeEach(func() {
 		// override default timeout
@@ -41,6 +51,16 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		err = os.WriteFile(filepath.Join(tmpDir, metadataDir, annotationFilename), []byte(annotations), 0644)
 		Expect(err).ToNot(HaveOccurred())
 
+		// mock docker config file
+		tmpDockerDir, err = os.MkdirTemp("", "docker-config-*")
+		Expect(err).ToNot(HaveOccurred())
+
+		err = os.Mkdir(filepath.Join(tmpDockerDir, registryConfigDir), 0755)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = os.WriteFile(filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename), []byte(registryAuthToken), 0644)
+		Expect(err).ToNot(HaveOccurred())
+
 		fakeImage := fakecranev1.FakeImage{}
 		imageRef.ImageInfo = &fakeImage
 		imageRef.ImageFSPath = tmpDir
@@ -48,6 +68,8 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		// set env var for index image
 		os.Setenv("PFLT_INDEXIMAGE", "test_indeximage")
 		os.Setenv("PFLT_ARTIFACTS", tmpDir)
+		os.Setenv("DOCKERCONFIG", filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename))
+
 	})
 	Describe("When deploying an operator using OLM", func() {
 		Context("When CSV has been created successfully", func() {
@@ -79,5 +101,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		err := os.RemoveAll(imageRef.ImageFSPath)
 		Expect(err).ToNot(HaveOccurred())
 
+		err = os.RemoveAll(tmpDockerDir)
+		Expect(err).ToNot(HaveOccurred())
 	})
 })
