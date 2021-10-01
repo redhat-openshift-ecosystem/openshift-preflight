@@ -41,6 +41,7 @@ func (p *scorecardCheck) getDataToValidate(bundleImage string, selector []string
 		Kubeconfig:     kubeconfig,
 		Namespace:      namespace,
 		ServiceAccount: serviceAccount,
+		Verbose:        true,
 	}
 	return p.OperatorSdkEngine.Scorecard(bundleImage, opts)
 }
