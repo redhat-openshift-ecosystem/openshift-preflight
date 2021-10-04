@@ -7,7 +7,6 @@ Vagrant.configure("2") do |config|
     dnf -y install \
     podman \
     buildah \
-    skopeo \
     jq \
     make \
     bats \

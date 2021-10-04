@@ -17,11 +17,9 @@ functional, and in your path.
 |----------------- |:-----------------:| ---------------:|
 | OperatorSDK      | `operator-sdk`    | v1.12.0          |
 | OpenShift Client | `oc`              | v4.7.19         |
-| Podman           | `podman`          | v3.0            |
-| Skopeo           | `skopeo`          | v1.2.2          |
 
 See our [Vagrantfile](Vagrantfile) for more information on setting up a
-development environment. Some checks may also requires access to an OpenShift
+development environment. Some checks may also require access to an OpenShift
 cluster. which is not provided by the Vagrantfile
 
 ## Usage
