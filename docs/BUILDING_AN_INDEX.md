@@ -48,6 +48,7 @@ accessible to Preflight as well as the target cluster.
 ```shell
 podman push registry.example.org/your-namespace/your-index:0.0.1
 ```
+If the index image is stored in a private repository, set the value of `DOCKERCONFIG` to the path of the docker configuration path.
 
 Finally, set the value of `PFLT_INDEXIMAGE` to this value and run preflight:
 

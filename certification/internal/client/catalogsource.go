@@ -47,6 +47,7 @@ func (c catalogSourceClient) Create(data cli.CatalogSourceData, opts cli.Openshi
 			"sourceType":  operatorv1alpha1.SourceTypeGrpc,
 			"image":       data.Image,
 			"displayName": data.Name,
+			"secrets":     data.Secrets,
 		},
 	}
 	u.SetGroupVersionKind(catalogSourceKind)

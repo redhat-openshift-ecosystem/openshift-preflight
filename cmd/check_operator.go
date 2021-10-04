@@ -15,6 +15,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var checkOperatorCmd = &cobra.Command{
@@ -38,6 +39,14 @@ var checkOperatorCmd = &cobra.Command{
 
 		if _, ok := os.LookupEnv("KUBECONFIG"); !ok {
 			return errors.ErrNoKubeconfig
+		}
+
+		if _, ok := os.LookupEnv("DOCKERCONFIG"); !ok {
+			return errors.ErrNoDockerconfig
+		}
+
+		if catalogImage := viper.GetString("indexImage"); len(catalogImage) == 0 {
+			return errors.ErrIndexImageUndefined
 		}
 
 		cfg := runtime.Config{
