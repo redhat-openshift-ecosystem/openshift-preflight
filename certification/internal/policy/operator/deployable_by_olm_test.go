@@ -68,7 +68,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		// set env var for index image
 		os.Setenv("PFLT_INDEXIMAGE", "test_indeximage")
 		os.Setenv("PFLT_ARTIFACTS", tmpDir)
-		os.Setenv("DOCKERCONFIG", filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename))
+		os.Setenv("PFLT_DOCKERCONFIG", filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename))
 
 	})
 	Describe("When deploying an operator using OLM", func() {

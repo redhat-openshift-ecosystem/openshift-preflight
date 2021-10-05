@@ -41,10 +41,6 @@ var checkOperatorCmd = &cobra.Command{
 			return errors.ErrNoKubeconfig
 		}
 
-		if _, ok := os.LookupEnv("DOCKERCONFIG"); !ok {
-			return errors.ErrNoDockerconfig
-		}
-
 		if catalogImage := viper.GetString("indexImage"); len(catalogImage) == 0 {
 			return errors.ErrIndexImageUndefined
 		}

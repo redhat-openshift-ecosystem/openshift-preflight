@@ -104,15 +104,20 @@ func (p *DeployableByOlmCheck) setUp(operatorData OperatorData) error {
 		return err
 	}
 
-	content, err := p.readFileAsByteArray(os.Getenv("DOCKERCONFIG"))
-	if err != nil {
-		return err
-	}
+	dockerconfig := viper.GetString("dockerConfig")
+	if len(dockerconfig) != 0 {
+		content, err := p.readFileAsByteArray(dockerconfig)
+		if err != nil {
+			return err
+		}
 
-	data := map[string]string{".dockerconfigjson": string(content)}
+		data := map[string]string{".dockerconfigjson": string(content)}
 
-	if _, err := p.OpenshiftEngine.CreateSecret(secretName, data, corev1.SecretTypeDockerConfigJson, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
-		return err
+		if _, err := p.OpenshiftEngine.CreateSecret(secretName, data, corev1.SecretTypeDockerConfigJson, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
+			return err
+		}
+	} else {
+		log.Debug("No docker config file is found to access the index image in private registries. Proceeding...")
 	}
 
 	if _, err := p.OpenshiftEngine.CreateCatalogSource(cli.CatalogSourceData{Name: operatorData.App, Image: operatorData.CatalogImage, Secrets: []string{secretName}}, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
