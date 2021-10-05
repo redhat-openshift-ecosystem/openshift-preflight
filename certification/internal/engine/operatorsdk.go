@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -143,28 +144,28 @@ func (o operatorSdkEngine) writeScorecardFile(resultFile, stdout string) error {
 }
 
 func createScorecardConfigFile() (string, error) {
-	configTemplate := `kind: Configuration
+	configTemplate := fmt.Sprintf(`kind: Configuration
 apiversion: scorecard.operatorframework.io/v1alpha3
 metadata:
   name: config
 stages:
 - parallel: true
   tests:
-  - image: quay.io/operator-framework/scorecard-test:v1.12.0
+  - image: %s
     entrypoint:
       - scorecard-test
       - basic-check-spec
     labels:
       suite: basic
       test: basic-check-spec-test
-  - image: quay.io/operator-framework/scorecard-test:v1.12.0
+  - image: %s
     entrypoint:
       - scorecard-test
       - olm-bundle-validation
     labels:
       suite: olm
       test: olm-bundle-validation-test
-`
+`, runtime.ScorecardImage(), runtime.ScorecardImage())
 
 	tempConfigFile, err := os.CreateTemp("", "scorecard-test-config-*.yaml")
 	if err != nil {
