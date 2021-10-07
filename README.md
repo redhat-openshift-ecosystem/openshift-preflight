@@ -62,11 +62,32 @@ preflight check operator quay.io/example-namespace/example-operator:0.0.1
 
 For more detailed usage examples, see [Recipes](docs/RECIPES.md).
 
+For more information on how to configure the execution of `preflight`, see
+[CONFIG](docs/CONFIG.md)
+
 ### Authenticating to Registries
 
 The `preflight` command will automatically utilize a credential file at
 `$DOCKER_CONFIG/config.json` (default: `~/.docker/config.json`) to access images
 in private registries.
+
+#### Remote Checks
+
+In some cases (e.g. *DeployableByOLM*), `preflight` will also pass credentials
+to the cluster used for testing (i.e. the cluster that is accessible through the
+current-context of the provided `KUBECONFIG`).
+
+We anticipate that the credentials in `$DOCKER_CONFIG/config.json` may contain
+more access than what is needed for `preflight` execution. To avoid passing more
+credentials than needed into a cluster for those checks, `preflight` will also
+accept a full path to a dockerconfigjson that should be passed through to a
+remote cluster via the `PFLT_DOCKERCONFIG` environment variable.
+
+If this variable is unset, `preflight` will assume that the images in scope
+(e.g. PFLT_INDEXIMAGE value, and the test target itself) are already accessible
+from the cluster used for testing.
+
+#### Podman Users
 
 [Podman](https://podman.io/) stores credentials at
 `${XDG_RUNTIME_DIR}/containers/auth.json`, which can also be used by executing
@@ -76,9 +97,6 @@ the following:
 ln -sf ${XDG_RUNTIME_DIR}/containers/auth.json ${XDG_RUNTIME_DIR}/containers/config.json
 DOCKER_CONFIG=${XDG_RUNTIME_DIR}/containers
 ```
-
-For more information on how to configure the execution of `preflight`, see
-[CONFIG](docs/CONFIG.md)
 
 ## Installation
 
