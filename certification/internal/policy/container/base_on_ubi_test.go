@@ -82,7 +82,7 @@ NAME="Red Hat Enterprise Linux"
 	})
 	Describe("Checking for UBI as a base", func() {
 		Context("When it is based on UBI", func() {
-			Context("and has the correct labels and os-release", func() {
+			Context("and has the correct os-release", func() {
 				It("should pass Validate", func() {
 					ok, err := basedOnUbiCheck.Validate(imageRef)
 					Expect(err).ToNot(HaveOccurred())
@@ -91,36 +91,10 @@ NAME="Red Hat Enterprise Linux"
 			})
 		})
 		Context("When it is not based on UBI", func() {
-			Context("and has the correct labels but bad os-release", func() {
+			Context("and has a bad os-release", func() {
 				JustBeforeEach(func() {
 					err := os.WriteFile(filepath.Join(imageRef.ImageFSPath, "etc", osrelease), []byte("Not a good file"), 0644)
 					Expect(err).ToNot(HaveOccurred())
-				})
-				It("should not pass Validate", func() {
-					ok, err := basedOnUbiCheck.Validate(imageRef)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(ok).To(BeFalse())
-				})
-			})
-			Context("and has does not have correct labels but good os-release", func() {
-				JustBeforeEach(func() {
-					fakeImage := fakecranev1.FakeImage{
-						ConfigFileStub: badLabelsConfigFile,
-					}
-					imageRef.ImageInfo = &fakeImage
-				})
-				It("should not pass Validate", func() {
-					ok, err := basedOnUbiCheck.Validate(imageRef)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(ok).To(BeFalse())
-				})
-			})
-			Context("and it is missing the correct label", func() {
-				JustBeforeEach(func() {
-					fakeImage := fakecranev1.FakeImage{
-						ConfigFileStub: missingUbiLableConfigFile,
-					}
-					imageRef.ImageInfo = &fakeImage
 				})
 				It("should not pass Validate", func() {
 					ok, err := basedOnUbiCheck.Validate(imageRef)

@@ -49,20 +49,22 @@ func (p *BasedOnUBICheck) getOsReleaseContents(path string) ([]string, error) {
 }
 
 func (p *BasedOnUBICheck) validate(labels map[string]string, osRelease []string) (bool, error) {
-	var hasRHELID, hasRHELName, hasUbiComponentLabel bool
+	var hasRHELID, hasRHELName bool
 	for _, value := range osRelease {
-		if strings.HasPrefix(value, `ID="rhel"`) {
+		line := strings.Split(value, "=")
+		if line[0] == "ID" && line[1] == `"rhel"` {
+			log.Trace("Has RHEL ID")
 			hasRHELID = true
-		} else if strings.HasPrefix(value, `NAME="Red Hat Enterprise Linux"`) {
+			continue
+		}
+		if line[0] == "NAME" && line[1] == `"Red Hat Enterprise Linux"` {
+			log.Trace("Has RHEL Name")
 			hasRHELName = true
+			continue
 		}
 	}
 
-	if component, exists := labels["com.redhat.component"]; exists {
-		hasUbiComponentLabel = strings.Contains(component, "ubi")
-	}
-
-	if hasRHELID && hasRHELName && hasUbiComponentLabel {
+	if hasRHELID && hasRHELName {
 		return true, nil
 	}
 
