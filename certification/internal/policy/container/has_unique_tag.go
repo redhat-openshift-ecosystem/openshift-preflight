@@ -19,7 +19,12 @@ type HasUniqueTagCheck struct {
 }
 
 func (p *HasUniqueTagCheck) Validate(imgRef certification.ImageReference) (bool, error) {
-	tags, err := p.getDataToValidate(imgRef.ImageURI)
+	cleanUri := imgRef.ImageURI
+	badCharIndex := strings.IndexAny(cleanUri, "@:")
+	if badCharIndex > -1 {
+		cleanUri = imgRef.ImageURI[:badCharIndex]
+	}
+	tags, err := p.getDataToValidate(cleanUri)
 	if err != nil {
 		return false, err
 	}
