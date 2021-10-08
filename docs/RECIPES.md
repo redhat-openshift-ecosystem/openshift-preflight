@@ -31,7 +31,6 @@ test asset by executing the following.
 ```bash
 export KUBECONFIG=/path/to/your/kubeconfig 
 export PFLT_INDEXIMAGE=registry.example.org/your-namespace/your-index-image:sometag
-export PFLT_DOCKERCONFIG=~/.docker/config.json
 preflight check operator registry.example.org/your-namespace/your-bundle-image:sometag
 ```
 
@@ -59,7 +58,6 @@ $CONTAINER_TOOL run \
   --env KUBECONFIG=/kubeconfig \
   --env PFLT_LOGLEVEL=trace \
   --env PFLT_INDEXIMAGE=registry.example.org/your-namespace/your-index-image:sometag \
-  --env PFLT_DOCKERCONFIG=~/.docker/config.json \
   --env PFLT_ARTIFACTS=/artifacts \
   --env PFLT_LOGFILE=/artifacts/preflight.log \
   -v /some/path/on/your/host/artifacts:/artifacts \
@@ -111,8 +109,6 @@ spec:
             value: trace
           - name: PFLT_INDEXIMAGE
             value: "registry.example.org/your-namespace/your-index-image:sometag"
-          - name: PFLT_DOCKERCONFIG
-            value: "/root/.docker/config.json"
           - name: PFLT_LOGFILE
             value: "/artifacts/preflight.log"
           - name: PFLT_ARTIFACTS

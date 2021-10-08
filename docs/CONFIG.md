@@ -22,6 +22,8 @@ is called.
 |`PFLT_NAMESPACE`|env|The namespace to use when running [OperatorSDK Scorecard](https://sdk.operatorframework.io/docs/testing-operators/scorecard/)|optional|[default](https://github.com/redhat-openshift-ecosystem/openshift-preflight/blob/main/cmd/defaults.go#L8)|
 |`PFLT_SERVICEACCOUNT`|env|The service account to use when running [OperatorSDK Scorecard](https://sdk.operatorframework.io/docs/testing-operators/scorecard/)|optional|[default](https://github.com/redhat-openshift-ecosystem/openshift-preflight/blob/main/cmd/defaults.go#L9)|
 |`PFLT_INDEXIMAGE`|env|The index image to use when testing that an operator is `DeployableByOLM`|required|-|
+|`PFLT_DOCKERCONFIG`|env|The full path to a dockerconfigjson file, which is pushed to the target test cluster to access images in private repositories in the `DeployableByOLM`. If empty, no secret is created and the resource is assumed to be public.|optional|-|
+
 
 For information on how to build an index image, see [BUILDING_AN_INDEX.md](BUILDING_AN_INDEX.md).
 
