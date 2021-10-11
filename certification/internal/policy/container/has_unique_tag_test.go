@@ -1,6 +1,9 @@
 package container
 
 import (
+	"errors"
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -15,7 +18,11 @@ type fakeTagLister struct {
 	Tags []string
 }
 
-func (ftl *fakeTagLister) ListTags(_ string) ([]string, error) {
+func (ftl *fakeTagLister) ListTags(imageUri string) ([]string, error) {
+	if strings.ContainsAny(imageUri, "@:") {
+		// This would be an error from Crane
+		return nil, errors.New("repository can only contain the runes `abcdefghijklmnopqrstuvwxyz0123456789_-./`")
+	}
 	return ftl.Tags, nil
 }
 
@@ -43,6 +50,26 @@ var _ = Describe("UniqueTag", func() {
 				ok, err := hasUniqueTagCheck.Validate(certification.ImageReference{ImageURI: "dummy/image"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
+			})
+		})
+		Context("When a tag is provided", func() {
+			BeforeEach(func() {
+				hasUniqueTagCheck = *NewHasUniqueTagCheck(&fakeTagLister{Tags: validImageTags()})
+			})
+			It("should pass Validate", func() {
+				ok, err := hasUniqueTagCheck.Validate(certification.ImageReference{ImageURI: "dummy/image:atag"})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
+			})
+		})
+		Context("When sha256 is used", func() {
+			BeforeEach(func() {
+				hasUniqueTagCheck = *NewHasUniqueTagCheck(&fakeTagLister{Tags: validImageTags()})
+			})
+			It("should pass Validate", func() {
+				ok, err := hasUniqueTagCheck.Validate(certification.ImageReference{ImageURI: "dummy/image@sha256:thisisasha256"})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
 			})
 		})
 	})
