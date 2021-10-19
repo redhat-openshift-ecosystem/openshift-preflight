@@ -6,11 +6,14 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	imagestreamv1 "github.com/openshift/api/image/v1"
 	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
+	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
@@ -305,4 +308,48 @@ func (oe *openshiftEngine) GetCSV(name string, opts cli.OpenshiftOptions) (*oper
 	}
 	log.Debug(fmt.Sprintf("fetching csv %s from namespace %s ", name, opts.Namespace))
 	return csvClient.Get(name, opts.Namespace)
+}
+
+func (oe *openshiftEngine) GetImages() (map[string]struct{}, error) {
+	kubeconfig := ctrl.GetConfigOrDie()
+	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
+
+	if err != nil {
+		log.Error("unable to obtain k8s client: ", err)
+		return nil, err
+	}
+	pods, err := k8sClientset.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		log.Error("could not retrieve pod list: ", err)
+		return nil, err
+	}
+
+	imageList := make(map[string]struct{})
+	for _, pod := range pods.Items {
+		for _, container := range pod.Spec.Containers {
+			imageList[container.Image] = struct{}{}
+		}
+	}
+
+	scheme := runtime.NewScheme()
+	imagestreamv1.AddToScheme(scheme)
+	isClient, err := crclient.New(kubeconfig, crclient.Options{Scheme: scheme})
+	if err != nil {
+		log.Error("could not create isClient: ", err)
+		return nil, err
+	}
+	var imageStreamList imagestreamv1.ImageStreamList
+	if err := isClient.List(context.Background(), &imageStreamList, &crclient.ListOptions{}); err != nil {
+		log.Error("could not list image stream: ", err)
+		return nil, err
+	}
+	for _, imageStream := range imageStreamList.Items {
+		for _, tag := range imageStream.Spec.Tags {
+			if tag.From.Kind == "DockerImage" {
+				imageList[tag.From.Name] = struct{}{}
+			}
+		}
+	}
+
+	return imageList, nil
 }

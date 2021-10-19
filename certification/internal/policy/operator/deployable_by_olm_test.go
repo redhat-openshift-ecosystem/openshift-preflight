@@ -7,6 +7,7 @@ import (
 
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
@@ -97,6 +98,19 @@ var _ = Describe("DeployableByOLMCheck", func() {
 			})
 		})
 	})
+	DescribeTable("Image Registry validation",
+		func(bundleImages []string, expected bool) {
+			ok := checkImageSource(bundleImages)
+			Expect(ok).To(Equal(expected))
+		},
+		Entry("registry.connect.dev.redhat.com", []string{"registry.connect.dev.redhat.com/"}, true),
+		Entry("registry.connect.qa.redhat.com", []string{"registry.connect.qa.redhat.com/"}, true),
+		Entry("registry.connect.stage.redhat.com", []string{"registry.connect.stage.redhat.com/"}, true),
+		Entry("registry.connect.redhat.com", []string{"registry.connect.redhat.com"}, true),
+		Entry("registry.redhat.io", []string{"registry.redhat.io"}, true),
+		Entry("registry.access.redhat.com", []string{"registry.access.redhat.com/ubi8/ubi"}, true),
+		Entry("quay.io", []string{"quay.io/rocrisp/preflight-operator-bundle:v1"}, false),
+	)
 	AfterEach(func() {
 		err := os.RemoveAll(imageRef.ImageFSPath)
 		Expect(err).ToNot(HaveOccurred())
