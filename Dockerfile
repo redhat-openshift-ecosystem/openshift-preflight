@@ -18,7 +18,7 @@ LABEL quay.expires-after=${quay_expiration}
 
 # Define versions for dependencies
 ARG OPENSHIFT_CLIENT_VERSION=4.7.19
-ARG OPERATOR_SDK_VERSION=1.12.0
+ARG OPERATOR_SDK_VERSION=1.13.1
 
 # Add preflight binary
 COPY --from=builder /go/src/preflight/preflight /usr/local/bin/preflight
