@@ -57,7 +57,7 @@ func (p *BasedOnUBICheck) validate(labels map[string]string, osRelease []string)
 			hasRHELID = true
 			continue
 		}
-		if line[0] == "NAME" && line[1] == `"Red Hat Enterprise Linux"` {
+		if line[0] == "NAME" && strings.Contains(line[1], "Red Hat Enterprise Linux") {
 			log.Trace("Has RHEL Name")
 			hasRHELName = true
 			continue
