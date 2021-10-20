@@ -15,6 +15,7 @@ require (
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.16.0
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6 // indirect
+	github.com/openshift/api v3.9.0+incompatible
 	github.com/operator-framework/api v0.10.1
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/sirupsen/logrus v1.8.1

@@ -52,4 +52,6 @@ type OpenshiftEngine interface {
 	GetSubscription(name string, opts OpenshiftOptions) (*operatorv1alpha1.Subscription, error)
 
 	GetCSV(name string, opts OpenshiftOptions) (*operatorv1alpha1.ClusterServiceVersion, error)
+
+	GetImages() (map[string]struct{}, error)
 }

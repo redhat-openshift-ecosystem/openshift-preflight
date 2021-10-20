@@ -213,6 +213,10 @@ func (foe FakeOpenshiftEngine) GetCSV(name string, opts cli.OpenshiftOptions) (*
 	}, nil
 }
 
+func (foe FakeOpenshiftEngine) GetImages() (map[string]struct{}, error) {
+	return map[string]struct{}{}, nil
+}
+
 type BadOpenshiftEngine struct{}
 
 func (foe BadOpenshiftEngine) CreateNamespace(name string, opts cli.OpenshiftOptions) (*corev1.Namespace, error) {
@@ -348,5 +352,9 @@ func (foe BadOpenshiftEngine) GetSubscription(name string, opts cli.OpenshiftOpt
 }
 
 func (foe BadOpenshiftEngine) GetCSV(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.ClusterServiceVersion, error) {
+	return nil, nil
+}
+
+func (foe BadOpenshiftEngine) GetImages() (map[string]struct{}, error) {
 	return nil, nil
 }

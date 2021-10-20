@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -30,11 +31,21 @@ type OperatorData struct {
 
 type DeployableByOlmCheck struct {
 	OpenshiftEngine cli.OpenshiftEngine
+	csvReady        bool
+	validImages     bool
 }
 
 var (
 	subscriptionTimeout time.Duration = 180 * time.Second
 	csvTimeout          time.Duration = 90 * time.Second
+	approvedRegistries                = map[string]struct{}{
+		"registry.connect.dev.redhat.com":   {},
+		"registry.connect.qa.redhat.com":    {},
+		"registry.connect.stage.redhat.com": {},
+		"registry.connect.redhat.com":       {},
+		"registry.redhat.io":                {},
+		"registry.access.redhat.com":        {},
+	}
 )
 
 func NewDeployableByOlmCheck(openshiftEngine *cli.OpenshiftEngine) *DeployableByOlmCheck {
@@ -44,6 +55,12 @@ func NewDeployableByOlmCheck(openshiftEngine *cli.OpenshiftEngine) *DeployableBy
 }
 
 func (p *DeployableByOlmCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
+	// gather the list of registry and pod images
+	beforeOperatorImages, err := p.getImages()
+	if err != nil {
+		return false, err
+	}
+
 	// retrieve the required data
 	operatorData, err := p.operatorMetadata(bundleRef)
 	if err != nil {
@@ -63,7 +80,42 @@ func (p *DeployableByOlmCheck) Validate(bundleRef certification.ImageReference) 
 		return false, err
 	}
 
-	return p.isCSVReady(installedCSV, *operatorData)
+	p.csvReady, err = p.isCSVReady(installedCSV, *operatorData)
+	if err != nil {
+		return false, err
+	}
+
+	afterOperatorImages, err := p.getImages()
+	if err != nil {
+		return false, err
+	}
+
+	operatorImages := diffImageList(beforeOperatorImages, afterOperatorImages)
+	p.validImages = checkImageSource(operatorImages)
+
+	return p.csvReady && p.validImages, nil
+}
+
+func diffImageList(before, after map[string]struct{}) []string {
+	var operatorImages []string
+	for image := range after {
+		if _, ok := before[image]; !ok {
+			operatorImages = append(operatorImages, image)
+		}
+	}
+	return operatorImages
+}
+
+func checkImageSource(operatorImages []string) bool {
+	allApproved := true
+	for _, image := range operatorImages {
+		userRegistry := strings.Split(image, "/")[0]
+		if _, ok := approvedRegistries[userRegistry]; !ok {
+			log.Errorf("Unapproved registry found: %s", image)
+			allApproved = false
+		}
+	}
+	return allApproved
 }
 
 func (p *DeployableByOlmCheck) operatorMetadata(bundleRef certification.ImageReference) (*OperatorData, error) {
@@ -294,13 +346,17 @@ func (p *DeployableByOlmCheck) readFileAsByteArray(filename string) ([]byte, err
 	return content, nil
 }
 
+func (p *DeployableByOlmCheck) getImages() (map[string]struct{}, error) {
+	return p.OpenshiftEngine.GetImages()
+}
+
 func (p *DeployableByOlmCheck) Name() string {
 	return "DeployableByOLM"
 }
 
 func (p *DeployableByOlmCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Checking if the operator could be deployed by OLM",
+		Description:      "Checking if the operator could be deployed by OLM, and images are from approved sources",
 		Level:            "best",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide", // Placeholder
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
@@ -308,6 +364,12 @@ func (p *DeployableByOlmCheck) Metadata() certification.Metadata {
 }
 
 func (p *DeployableByOlmCheck) Help() certification.HelpText {
+	if !p.validImages {
+		return certification.HelpText{
+			Message:    "It is required that your operator contains images from valid sources",
+			Suggestion: "Images should only be sourced from approved registries",
+		}
+	}
 	return certification.HelpText{
 		Message:    "It is required that your operator could be deployed by OLM",
 		Suggestion: "Follow the guidelines on the operatorsdk website to learn how to package your operator https://sdk.operatorframework.io/docs/olm-integration/cli-overview/",
