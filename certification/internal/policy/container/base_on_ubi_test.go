@@ -81,8 +81,23 @@ NAME="Red Hat Enterprise Linux"
 		os.RemoveAll(imageRef.ImageFSPath)
 	})
 	Describe("Checking for UBI as a base", func() {
-		Context("When it is based on UBI", func() {
+		Context("When it is based on UBI 8", func() {
 			Context("and has the correct os-release", func() {
+				It("should pass Validate", func() {
+					ok, err := basedOnUbiCheck.Validate(imageRef)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(ok).To(BeTrue())
+				})
+			})
+		})
+		Context("When it is based on UBI 7", func() {
+			Context("and has the correct os-release", func() {
+				JustBeforeEach(func() {
+					err := os.WriteFile(filepath.Join(imageRef.ImageFSPath, "etc", osrelease), []byte(`ID="rhel"
+NAME="Red Hat Enterprise Linux Server"
+`), 0644)
+					Expect(err).ToNot(HaveOccurred())
+				})
 				It("should pass Validate", func() {
 					ok, err := basedOnUbiCheck.Validate(imageRef)
 					Expect(err).ToNot(HaveOccurred())
