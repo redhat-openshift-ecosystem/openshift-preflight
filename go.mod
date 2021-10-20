@@ -3,6 +3,7 @@ module github.com/redhat-openshift-ecosystem/openshift-preflight
 go 1.16
 
 require (
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/docker/docker-credential-helpers v0.6.4 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/google/go-containerregistry v0.6.0

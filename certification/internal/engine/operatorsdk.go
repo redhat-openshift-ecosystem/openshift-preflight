@@ -106,6 +106,11 @@ func (o operatorSdkEngine) BundleValidate(image string, opts cli.OperatorSdkBund
 			cmdArgs = append(cmdArgs, "--select-optional", fmt.Sprintf("name=%s", selector))
 		}
 	}
+	if opts.OptionalValues != nil {
+		for key, value := range opts.OptionalValues {
+			cmdArgs = append(cmdArgs, "--optional-values", fmt.Sprintf("%s=%s", key, value))
+		}
+	}
 	if opts.Verbose {
 		cmdArgs = append(cmdArgs, "--verbose")
 	}

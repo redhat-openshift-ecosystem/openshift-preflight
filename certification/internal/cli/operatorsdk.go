@@ -34,6 +34,7 @@ type OperatorSdkBundleValidateOptions struct {
 	LogLevel        string
 	ContainerEngine string
 	Selector        []string
+	OptionalValues  map[string]string
 	OutputFormat    string
 	Verbose         bool
 }
