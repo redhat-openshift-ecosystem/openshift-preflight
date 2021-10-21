@@ -12,6 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -136,6 +137,62 @@ func (foe FakeOpenshiftEngine) GetOperatorGroup(name string, opts cli.OpenshiftO
 			TargetNamespaces: []string{"test-ns"},
 		},
 	}, nil
+}
+
+func (foe FakeOpenshiftEngine) CreateRoleBinding(data cli.RoleBindingData, opts cli.OpenshiftOptions) (*rbacv1.RoleBinding, error) {
+	subjectsObj := make([]rbacv1.Subject, 1)
+
+	subjectsObj[0] = rbacv1.Subject{
+		Kind:      "ServiceAccount",
+		Name:      "test-sa",
+		Namespace: "test-ns",
+	}
+	return &rbacv1.RoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-rolebinding",
+			Namespace: "a namespace",
+		},
+		Subjects: subjectsObj,
+		RoleRef: rbacv1.RoleRef{
+			Kind:     "ClusterRole",
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "a role",
+		},
+	}, nil
+}
+
+func (foe FakeOpenshiftEngine) GetRoleBinding(name string, opts cli.OpenshiftOptions) (*rbacv1.RoleBinding, error) {
+	subjectsObj := make([]rbacv1.Subject, 1)
+
+	subjectsObj[0] = rbacv1.Subject{
+		Kind:      "ServiceAccount",
+		Name:      "test-sa",
+		Namespace: "test-ns",
+	}
+	return &rbacv1.RoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-rolebinding",
+			Namespace: "a namespace",
+		},
+		Subjects: subjectsObj,
+		RoleRef: rbacv1.RoleRef{
+			Kind:     "ClusterRole",
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "a role",
+		},
+	}, nil
+}
+
+func (foe FakeOpenshiftEngine) DeleteRoleBinding(name string, opts cli.OpenshiftOptions) error {
+	return nil
 }
 
 func (foe FakeOpenshiftEngine) CreateCatalogSource(data cli.CatalogSourceData, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error) {
@@ -357,4 +414,60 @@ func (foe BadOpenshiftEngine) GetCSV(name string, opts cli.OpenshiftOptions) (*o
 
 func (foe BadOpenshiftEngine) GetImages() (map[string]struct{}, error) {
 	return nil, nil
+}
+
+func (foe BadOpenshiftEngine) CreateRoleBinding(data cli.RoleBindingData, opts cli.OpenshiftOptions) (*rbacv1.RoleBinding, error) {
+	subjectsObj := make([]rbacv1.Subject, 1)
+
+	subjectsObj[0] = rbacv1.Subject{
+		Kind:      "ServiceAccount",
+		Name:      "test-sa",
+		Namespace: "test-ns",
+	}
+	return &rbacv1.RoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-rolebinding",
+			Namespace: "a namespace",
+		},
+		Subjects: subjectsObj,
+		RoleRef: rbacv1.RoleRef{
+			Kind:     "ClusterRole",
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "a role",
+		},
+	}, nil
+}
+
+func (foe BadOpenshiftEngine) GetRoleBinding(name string, opts cli.OpenshiftOptions) (*rbacv1.RoleBinding, error) {
+	subjectsObj := make([]rbacv1.Subject, 1)
+
+	subjectsObj[0] = rbacv1.Subject{
+		Kind:      "ServiceAccount",
+		Name:      "test-sa",
+		Namespace: "test-ns",
+	}
+	return &rbacv1.RoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-rolebinding",
+			Namespace: "a namespace",
+		},
+		Subjects: subjectsObj,
+		RoleRef: rbacv1.RoleRef{
+			Kind:     "ClusterRole",
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     "a role",
+		},
+	}, nil
+}
+
+func (foe BadOpenshiftEngine) DeleteRoleBinding(name string, opts cli.OpenshiftOptions) error {
+	return nil
 }

@@ -98,6 +98,22 @@ var _ = Describe("DeployableByOLMCheck", func() {
 			})
 		})
 	})
+	Describe("When deploying an operator using OLM", func() {
+		Context("When index image is in a custom namespace and CSV has been created successfully", func() {
+			BeforeEach(func() {
+				os.Setenv("PFLT_INDEXIMAGE", "image-registry.openshift-image-registry.svc/namespace/indeximage:v0.0.0")
+				engine = FakeOpenshiftEngine{}
+				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
+			})
+
+			It("Should pass Validate", func() {
+				ok, err := deployableByOLMCheck.Validate(imageRef)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
+			})
+		})
+	})
+
 	DescribeTable("Image Registry validation",
 		func(bundleImages []string, expected bool) {
 			ok := checkImageSource(bundleImages)

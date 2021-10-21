@@ -172,6 +172,29 @@ func (p *DeployableByOlmCheck) setUp(operatorData OperatorData) error {
 		log.Debug("No docker config file is found to access the index image in private registries. Proceeding...")
 	}
 
+	if strings.Contains(operatorData.CatalogImage, "image-registry.openshift-image-registry.svc") {
+		indexImageNamespace := strings.Split(operatorData.CatalogImage, "/")[1]
+
+		if len(indexImageNamespace) != 0 {
+			// create rolebindings for the pipeline service account
+			if err := p.grantRegistryPermissionToServiceAccount(pipelineServiceAccount, operatorData.InstallNamespace,
+				indexImageNamespace); err != nil {
+				return err
+			}
+			// create rolebinding for the default OperatorHub catalog sources
+			if err := p.grantRegistryPermissionToServiceAccount(operatorData.App, openshiftMarketplaceNamespace,
+				indexImageNamespace); err != nil {
+				return err
+			}
+			// create rolebindings for the custom catalog
+			if err := p.grantRegistryPermissionToServiceAccount(operatorData.App, operatorData.InstallNamespace,
+				indexImageNamespace); err != nil {
+				return err
+			}
+
+		}
+	}
+
 	if _, err := p.OpenshiftEngine.CreateCatalogSource(cli.CatalogSourceData{Name: operatorData.App, Image: operatorData.CatalogImage, Secrets: []string{secretName}}, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
 		return err
 	}
@@ -190,6 +213,21 @@ func (p *DeployableByOlmCheck) setUp(operatorData OperatorData) error {
 	}
 	if _, err := p.OpenshiftEngine.CreateSubscription(subscriptionData, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
 		return err
+	}
+	return nil
+}
+
+func (p *DeployableByOlmCheck) grantRegistryPermissionToServiceAccount(serviceAccount, serviceAccountNamespace, indexImageNamespace string) error {
+	for _, role := range []string{registryViewerRole, imagePullerRole} {
+		roleBindingData := cli.RoleBindingData{
+			Name:      fmt.Sprintf("%s:%s:%s", serviceAccount, serviceAccountNamespace, role),
+			Subjects:  []string{serviceAccount},
+			Role:      role,
+			Namespace: serviceAccountNamespace,
+		}
+		if _, err := p.OpenshiftEngine.CreateRoleBinding(roleBindingData, cli.OpenshiftOptions{Namespace: indexImageNamespace}); err != nil && !kubeErr.IsAlreadyExists(err) {
+			return err
+		}
 	}
 	return nil
 }
@@ -319,6 +357,21 @@ func (p *DeployableByOlmCheck) cleanUp(operatorData OperatorData) {
 	p.OpenshiftEngine.DeleteCatalogSource(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
 	p.OpenshiftEngine.DeleteOperatorGroup(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
 	p.OpenshiftEngine.DeleteSecret(secretName, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
+
+	if strings.Contains(operatorData.CatalogImage, "image-registry.openshift-image-registry.svc") {
+		indexImageNamespace := strings.Split(operatorData.CatalogImage, "/")[1]
+		operatorServiceAccount := operatorData.App
+		operatorNamespace := operatorData.InstallNamespace
+		// remove pipeline-related rolebindings
+		p.OpenshiftEngine.DeleteRoleBinding(fmt.Sprintf("%s:%s:%s", pipelineServiceAccount, operatorNamespace, registryViewerRole), cli.OpenshiftOptions{Namespace: indexImageNamespace})
+		p.OpenshiftEngine.DeleteRoleBinding(fmt.Sprintf("%s:%s:%s", pipelineServiceAccount, operatorNamespace, imagePullerRole), cli.OpenshiftOptions{Namespace: indexImageNamespace})
+		// remove rolebindings required for the default OperatorHub catalog sources
+		p.OpenshiftEngine.DeleteRoleBinding(fmt.Sprintf("%s:%s:%s", operatorServiceAccount, openshiftMarketplaceNamespace, registryViewerRole), cli.OpenshiftOptions{Namespace: indexImageNamespace})
+		p.OpenshiftEngine.DeleteRoleBinding(fmt.Sprintf("%s:%s:%s", operatorServiceAccount, openshiftMarketplaceNamespace, imagePullerRole), cli.OpenshiftOptions{Namespace: indexImageNamespace})
+		//remove rolebindings required for custom catalog sources
+		p.OpenshiftEngine.DeleteRoleBinding(fmt.Sprintf("%s:%s:%s", operatorServiceAccount, operatorNamespace, registryViewerRole), cli.OpenshiftOptions{Namespace: indexImageNamespace})
+		p.OpenshiftEngine.DeleteRoleBinding(fmt.Sprintf("%s:%s:%s", operatorServiceAccount, operatorNamespace, imagePullerRole), cli.OpenshiftOptions{Namespace: indexImageNamespace})
+	}
 	p.OpenshiftEngine.DeleteNamespace(operatorData.InstallNamespace, cli.OpenshiftOptions{})
 }
 

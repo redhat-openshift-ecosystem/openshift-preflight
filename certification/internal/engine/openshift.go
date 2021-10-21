@@ -9,6 +9,7 @@ import (
 	imagestreamv1 "github.com/openshift/api/image/v1"
 	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -54,7 +55,6 @@ func (oe *openshiftEngine) CreateNamespace(name string, opts cli.OpenshiftOption
 	}
 
 	log.Debug("Namespace created: ", name)
-	log.Trace("Received Namespace object from API server: ", resp)
 
 	return resp, nil
 }
@@ -352,4 +352,106 @@ func (oe *openshiftEngine) GetImages() (map[string]struct{}, error) {
 	}
 
 	return imageList, nil
+}
+
+func (oe *openshiftEngine) CreateRoleBinding(data cli.RoleBindingData, opts cli.OpenshiftOptions) (*rbacv1.RoleBinding, error) {
+
+	kubeconfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("unable to create a rest client: ", err)
+		return nil, err
+	}
+
+	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
+	if err != nil {
+		log.Error("unable to obtain k8s client: ", err)
+		return nil, err
+	}
+
+	log.Debug(fmt.Sprintf("Creating RoleBinding %s in namespace %s", data.Name, opts.Namespace))
+
+	subjectsObj := make([]rbacv1.Subject, 1)
+	for i := range data.Subjects {
+		subjectsObj[i] = rbacv1.Subject{
+			Kind:      "ServiceAccount",
+			Name:      data.Subjects[i],
+			Namespace: data.Namespace,
+		}
+	}
+	roleObj := rbacv1.RoleRef{
+		Kind:     "ClusterRole",
+		APIGroup: "rbac.authorization.k8s.io",
+		Name:     data.Role,
+	}
+	roleBindingObj := rbacv1.RoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      data.Name,
+			Namespace: opts.Namespace,
+		},
+		Subjects: subjectsObj,
+		RoleRef:  roleObj,
+	}
+	resp, err := k8sClientset.RbacV1().
+		RoleBindings(opts.Namespace).
+		Create(context.Background(), &roleBindingObj, metav1.CreateOptions{})
+
+	if err != nil {
+		log.Error(fmt.Sprintf("error while creating rolebinding %s in namespace %s: ", data.Name, opts.Namespace), err)
+		return nil, err
+	}
+
+	log.Debug(fmt.Sprintf("RoleBinding %s created in namespace %s", data.Name, opts.Namespace))
+
+	return resp, nil
+}
+
+func (oe *openshiftEngine) GetRoleBinding(name string, opts cli.OpenshiftOptions) (*rbacv1.RoleBinding, error) {
+	kubeconfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("unable to create a rest client: ", err)
+		return nil, err
+	}
+
+	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
+
+	if err != nil {
+		log.Error("unable to obtain k8s client: ", err)
+		return nil, err
+	}
+	log.Debug(fmt.Sprintf("fetching RoleBinding %s from namespace %s: ", name, opts.Namespace))
+
+	return k8sClientset.RbacV1().
+		RoleBindings(opts.Namespace).
+		Get(context.Background(), name, metav1.GetOptions{})
+}
+
+func (oe *openshiftEngine) DeleteRoleBinding(name string, opts cli.OpenshiftOptions) error {
+	kubeconfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("unable to create a rest client: ", err)
+		return err
+	}
+
+	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
+	if err != nil {
+		log.Error("unable to obtain k8s client: ", err)
+		return err
+	}
+
+	log.Debug(fmt.Sprintf("Deleting RoleBinding %s in namespace %s", name, opts.Namespace))
+
+	err = k8sClientset.RbacV1().
+		RoleBindings(opts.Namespace).
+		Delete(context.Background(), name, metav1.DeleteOptions{})
+
+	if err != nil {
+		log.Error(fmt.Sprintf("error while deleting RoleBiding %s in namespace %s: ", name, opts.Namespace), err)
+		return err
+	}
+	log.Debug(fmt.Sprintf("RoleBinding %s is deleted successfully from namespace %s", name, opts.Namespace))
+	return nil
 }

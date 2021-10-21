@@ -4,6 +4,7 @@ import (
 	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 )
 
 type OpenshiftOptions struct {
@@ -30,6 +31,13 @@ type OperatorGroupData struct {
 	TargetNamespaces []string
 }
 
+type RoleBindingData struct {
+	Name      string
+	Subjects  []string
+	Role      string
+	Namespace string
+}
+
 type OpenshiftEngine interface {
 	CreateNamespace(name string, opts OpenshiftOptions) (*corev1.Namespace, error)
 	DeleteNamespace(name string, opts OpenshiftOptions) error
@@ -54,4 +62,8 @@ type OpenshiftEngine interface {
 	GetCSV(name string, opts OpenshiftOptions) (*operatorv1alpha1.ClusterServiceVersion, error)
 
 	GetImages() (map[string]struct{}, error)
+
+	CreateRoleBinding(data RoleBindingData, opts OpenshiftOptions) (*rbacv1.RoleBinding, error)
+	GetRoleBinding(name string, opts OpenshiftOptions) (*rbacv1.RoleBinding, error)
+	DeleteRoleBinding(name string, opts OpenshiftOptions) error
 }
