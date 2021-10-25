@@ -93,7 +93,7 @@ func (p *DeployableByOlmCheck) Validate(bundleRef certification.ImageReference) 
 	operatorImages := diffImageList(beforeOperatorImages, afterOperatorImages)
 	p.validImages = checkImageSource(operatorImages)
 
-	return p.csvReady && p.validImages, nil
+	return p.csvReady, nil
 }
 
 func diffImageList(before, after map[string]struct{}) []string {
@@ -111,7 +111,7 @@ func checkImageSource(operatorImages []string) bool {
 	for _, image := range operatorImages {
 		userRegistry := strings.Split(image, "/")[0]
 		if _, ok := approvedRegistries[userRegistry]; !ok {
-			log.Errorf("Unapproved registry found: %s", image)
+			log.Warnf("Unapproved registry found: %s", image)
 			allApproved = false
 		}
 	}
