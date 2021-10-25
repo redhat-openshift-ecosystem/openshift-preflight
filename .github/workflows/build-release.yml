@@ -37,3 +37,15 @@ jobs:
 
     - name: Print image url
       run: echo "Image pushed to ${{ steps.push-image.outputs.registry-paths }}"
+      
+    - name: GitHub Release
+      id: github-release
+      uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest"
+        prerelease: false
+        title: "${{ env.RELEASE_TAG }}"
+        files: |
+            LICENSE.txt
+
