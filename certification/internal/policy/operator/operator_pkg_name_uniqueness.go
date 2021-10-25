@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 // apiRespondData is the response received from the defined API
@@ -144,6 +146,15 @@ func (p *OperatorPkgNameIsUniqueCheck) validate(resp *apiResponseData) (bool, er
 	// success case - the API returned no entries
 	if len(resp.Data) == 0 {
 		return true, nil
+	} else if viper.IsSet("certprojectid") {
+		for i := range resp.Data {
+			rawCertProjectID := string(resp.Data[i].Association)
+			strippedCertProjectID := strings.ReplaceAll(strings.TrimPrefix(rawCertProjectID, "ospid"), "-", "")
+			targetCertProjectID := viper.GetString("certprojectid")
+			if strings.EqualFold(targetCertProjectID, rawCertProjectID) || strings.EqualFold(targetCertProjectID, strippedCertProjectID) {
+				return true, nil
+			}
+		}
 	}
 
 	log.Error("a package already exists in the Red Hat ecosystem using the same name")
