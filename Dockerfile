@@ -1,13 +1,15 @@
 ARG quay_expiration=never
+ARG release_tag=0.0.0
 
 # golang:1.16 image created 2021-06-24T00:31:06.02014601Z 
 FROM docker.io/library/golang@sha256:be99fa59acd78bb22a41bbc1e15ebfab2262498ee0c2e28c3d09bc44d51d1774 AS builder
 ARG quay_expiration
+ARG release_tag
 
 # Build the preflight binary
 COPY . /go/src/preflight
 WORKDIR /go/src/preflight
-RUN make build
+RUN make build RELEASE_TAG=${release_tag}
 
 # ubi8:latest
 FROM registry.access.redhat.com/ubi8/ubi:latest

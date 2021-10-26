@@ -12,6 +12,8 @@ jobs:
       IMAGE_REGISTRY: quay.io/opdev
     steps:
     - uses: actions/checkout@v2
+    - name: Set Env Tags
+      run: echo RELEASE_TAG=$(git describe --tags --abbrev=0) >> $GITHUB_ENV
 
     - name: Build Image
       id: build-image
@@ -21,6 +23,7 @@ jobs:
         tags: ${{ github.sha }}
         build-args: |
           quay_expiration=1w
+          release_tag=${{ env.RELEASE_TAG }}-alpha+${{ github.sha }}
         dockerfiles: |
           ./Dockerfile
 

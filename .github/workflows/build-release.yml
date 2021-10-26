@@ -22,6 +22,8 @@ jobs:
       with:
         image: ${{ env.IMAGE_REGISTRY }}/preflight
         tags: ${{ env.RELEASE_TAG }}
+        build-args: |
+          release_tag=${{env.RELEASE_TAG }}
         dockerfiles: |
           ./Dockerfile
 
