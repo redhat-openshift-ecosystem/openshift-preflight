@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"log"
 
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
@@ -10,6 +9,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -102,10 +102,14 @@ func (c subscriptionClient) convert(u *unstructured.Unstructured) (*operatorv1al
 func SubscriptionClient(namespace string) (*subscriptionClient, error) {
 	scheme := runtime.NewScheme()
 	operatorv1alpha1.AddToScheme(scheme)
-	kubeconfig := ctrl.GetConfigOrDie()
+	kubeconfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("could not get kubeconfig")
+		return nil, err
+	}
 	controllerClient, err := client.New(kubeconfig, client.Options{Scheme: scheme})
 	if err != nil {
-		log.Fatal(err)
+		log.Error("could not get subscription client")
 		return nil, err
 	}
 

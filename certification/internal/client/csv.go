@@ -2,11 +2,11 @@ package client
 
 import (
 	"context"
-	"log"
 
 	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
 
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -60,10 +60,15 @@ func (c csvClient) convert(u *unstructured.Unstructured) (*operatorv1alpha1.Clus
 func CsvClient(namespace string) (*csvClient, error) {
 	scheme := runtime.NewScheme()
 	operatorv1alpha1.AddToScheme(scheme)
-	kubeconfig := ctrl.GetConfigOrDie()
+	kubeconfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("could not get kubeconfig")
+		return nil, err
+	}
+
 	controllerClient, err := client.New(kubeconfig, client.Options{Scheme: scheme})
 	if err != nil {
-		log.Fatal(err)
+		log.Error("could not get csv client")
 		return nil, err
 	}
 

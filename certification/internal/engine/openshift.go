@@ -29,7 +29,11 @@ func NewOpenshiftEngine() *cli.OpenshiftEngine {
 
 func (oe *openshiftEngine) CreateNamespace(name string, opts cli.OpenshiftOptions) (*corev1.Namespace, error) {
 
-	kubeconfig := ctrl.GetConfigOrDie()
+	kubeconfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("could not get kubeconfig")
+		return nil, err
+	}
 	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
 
 	if err != nil {
@@ -60,7 +64,11 @@ func (oe *openshiftEngine) CreateNamespace(name string, opts cli.OpenshiftOption
 }
 
 func (oe *openshiftEngine) DeleteNamespace(name string, opts cli.OpenshiftOptions) error {
-	kubeconfig := ctrl.GetConfigOrDie()
+	kubeconfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("could not get kubeconfig")
+		return err
+	}
 	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
 
 	if err != nil {
@@ -75,7 +83,11 @@ func (oe *openshiftEngine) DeleteNamespace(name string, opts cli.OpenshiftOption
 
 func (oe *openshiftEngine) GetNamespace(name string) (*corev1.Namespace, error) {
 
-	kubeconfig := ctrl.GetConfigOrDie()
+	kubeconfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("could not get kubeconfig")
+		return nil, err
+	}
 	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
 
 	if err != nil {
@@ -139,7 +151,11 @@ func (oe *openshiftEngine) GetOperatorGroup(name string, opts cli.OpenshiftOptio
 }
 
 func (oe openshiftEngine) CreateSecret(name string, content map[string]string, secretType corev1.SecretType, opts cli.OpenshiftOptions) (*corev1.Secret, error) {
-	kubeconfig := ctrl.GetConfigOrDie()
+	kubeconfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("could not get kubeconfig")
+		return nil, err
+	}
 	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
 
 	if err != nil {
@@ -174,7 +190,11 @@ func (oe openshiftEngine) CreateSecret(name string, content map[string]string, s
 }
 
 func (oe openshiftEngine) DeleteSecret(name string, opts cli.OpenshiftOptions) error {
-	kubeconfig := ctrl.GetConfigOrDie()
+	kubeconfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("could not get kubeconfig")
+		return err
+	}
 	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
 
 	if err != nil {
@@ -188,7 +208,11 @@ func (oe openshiftEngine) DeleteSecret(name string, opts cli.OpenshiftOptions) e
 }
 
 func (oe openshiftEngine) GetSecret(name string, opts cli.OpenshiftOptions) (*corev1.Secret, error) {
-	kubeconfig := ctrl.GetConfigOrDie()
+	kubeconfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("could not get kubeconfig")
+		return nil, err
+	}
 	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
 
 	if err != nil {
@@ -311,7 +335,11 @@ func (oe *openshiftEngine) GetCSV(name string, opts cli.OpenshiftOptions) (*oper
 }
 
 func (oe *openshiftEngine) GetImages() (map[string]struct{}, error) {
-	kubeconfig := ctrl.GetConfigOrDie()
+	kubeconfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("could not get kubeconfig")
+		return nil, err
+	}
 	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
 
 	if err != nil {
