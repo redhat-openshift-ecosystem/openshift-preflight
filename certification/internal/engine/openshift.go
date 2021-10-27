@@ -3,6 +3,8 @@ package engine
 import (
 	"context"
 	"fmt"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 
@@ -16,9 +18,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	configv1ClientSet "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	client "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/client"
+	preflighRuntime "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
 type openshiftEngine struct{}
@@ -482,4 +486,32 @@ func (oe *openshiftEngine) DeleteRoleBinding(name string, opts cli.OpenshiftOpti
 	}
 	log.Debug(fmt.Sprintf("RoleBinding %s is deleted successfully from namespace %s", name, opts.Namespace))
 	return nil
+}
+
+func GetOpenshiftClusterVersion() (preflighRuntime.OpenshiftClusterVersion, error) {
+
+	if _, ok := os.LookupEnv("KUBECONFIG"); !ok {
+		return preflighRuntime.UnknownOpenshiftClusterVersion(), errors.ErrNoKubeconfig
+	}
+	kubeConfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("unable to load the config, check if KUBECONFIG is set correctly: ", err)
+		return preflighRuntime.UnknownOpenshiftClusterVersion(), err
+	}
+	configV1Client, err := configv1ClientSet.NewForConfig(kubeConfig)
+	if err != nil {
+		log.Error("unable to create a client with the provided kubeconfig: ", err)
+		return preflighRuntime.UnknownOpenshiftClusterVersion(), err
+	}
+	openshiftApiServer, err := configV1Client.ClusterOperators().Get(context.Background(), "openshift-apiserver", metav1.GetOptions{})
+	if err != nil {
+		log.Error("unable to get openshift-apiserver cluster operator: ", err)
+		return preflighRuntime.UnknownOpenshiftClusterVersion(), err
+	}
+
+	log.Debug(fmt.Sprintf("fetching operator version and openshift-apiserver version %s from %s", openshiftApiServer.Status.Versions, kubeConfig.Host))
+	return preflighRuntime.OpenshiftClusterVersion{
+		Name:    "OpenShift",
+		Version: openshiftApiServer.Status.Versions[1].Version,
+	}, nil
 }
