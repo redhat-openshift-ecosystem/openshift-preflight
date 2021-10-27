@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"log"
 
 	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -12,6 +11,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -99,10 +99,15 @@ func (c operatorGroupClient) convert(u *unstructured.Unstructured) (*operatorv1.
 func OperatorGroupClient(namespace string) (*operatorGroupClient, error) {
 	scheme := runtime.NewScheme()
 	operatorv1alpha1.AddToScheme(scheme)
-	kubeconfig := ctrl.GetConfigOrDie()
+	kubeconfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("could not get kubeconfig")
+		return nil, err
+	}
+
 	controllerClient, err := client.New(kubeconfig, client.Options{Scheme: scheme})
 	if err != nil {
-		log.Fatal(err)
+		log.Error("could not get operator group client")
 		return nil, err
 	}
 

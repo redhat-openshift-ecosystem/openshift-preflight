@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"log"
 
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -12,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
+	log "github.com/sirupsen/logrus"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -102,10 +102,15 @@ func (c catalogSourceClient) convert(u *unstructured.Unstructured) (*operatorv1a
 func CatalogSourceClient(namespace string) (*catalogSourceClient, error) {
 	scheme := runtime.NewScheme()
 	operatorv1alpha1.AddToScheme(scheme)
-	kubeconfig := ctrl.GetConfigOrDie()
+	kubeconfig, err := ctrl.GetConfig()
+	if err != nil {
+		log.Error("could not read kubeconfig")
+		return nil, err
+	}
+
 	controllerClient, err := client.New(kubeconfig, client.Options{Scheme: scheme})
 	if err != nil {
-		log.Fatal(err)
+		log.Error("could not get catalog source client")
 		return nil, err
 	}
 
