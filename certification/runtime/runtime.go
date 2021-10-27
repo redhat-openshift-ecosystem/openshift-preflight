@@ -24,8 +24,21 @@ type Result struct {
 type Results struct {
 	TestedImage       string
 	PassedOverall     bool
+	TestedOn          OpenshiftClusterVersion
 	CertificationHash string
 	Passed            []Result
 	Failed            []Result
 	Errors            []Result
+}
+
+type OpenshiftClusterVersion struct {
+	Name    string
+	Version string
+}
+
+func UnknownOpenshiftClusterVersion() OpenshiftClusterVersion {
+	return OpenshiftClusterVersion{
+		Name:    "unknown",
+		Version: "unknown",
+	}
 }

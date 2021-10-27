@@ -100,6 +100,12 @@ func (c *CraneEngine) ExecuteChecks() error {
 		ImageInfo:   img,
 	}
 
+	// Record test cluster version
+	c.results.TestedOn, err = GetOpenshiftClusterVersion()
+	if err != nil {
+		log.Error("Unable to determine test cluster version: ", err)
+	}
+
 	// execute checks
 	log.Info("executing checks")
 	for _, check := range c.Checks {
