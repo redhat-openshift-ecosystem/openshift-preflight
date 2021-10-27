@@ -12,8 +12,11 @@ jobs:
       IMAGE_REGISTRY: quay.io/opdev
     steps:
     - uses: actions/checkout@v2
+    - name: Fetch latest release version
+      uses: reloc8/action-latest-release-version@1.0.0
+      id: fetch-latest-release
     - name: Set Env Tags
-      run: echo RELEASE_TAG=$(git describe --tags --abbrev=0) >> $GITHUB_ENV
+      run: echo RELEASE_TAG=${{ steps.fetch-latest-release.outputs.latest-release }} >> $GITHUB_ENV
 
     - name: Build Image
       id: build-image
