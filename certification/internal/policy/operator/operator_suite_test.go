@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"time"
 )
 
 func TestOperator(t *testing.T) {
@@ -136,6 +137,9 @@ func (foe FakeOpenshiftEngine) GetOperatorGroup(name string, opts cli.OpenshiftO
 		Spec: operatorv1.OperatorGroupSpec{
 			TargetNamespaces: []string{"test-ns"},
 		},
+		Status: operatorv1.OperatorGroupStatus{
+			LastUpdated: &metav1.Time{Time: time.Now()},
+		},
 	}, nil
 }
 
@@ -210,6 +214,10 @@ func (foe FakeOpenshiftEngine) DeleteCatalogSource(name string, opts cli.Openshi
 
 func (foe FakeOpenshiftEngine) GetCatalogSource(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error) {
 	return &operatorv1alpha1.CatalogSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-cs",
+			Namespace: "test-ns",
+		},
 		Spec: operatorv1alpha1.CatalogSourceSpec{
 			SourceType: operatorv1alpha1.SourceTypeGrpc,
 			Image:      "indexImageUri",
@@ -347,11 +355,18 @@ func (foe BadOpenshiftEngine) GetOperatorGroup(name string, opts cli.OpenshiftOp
 		Spec: operatorv1.OperatorGroupSpec{
 			TargetNamespaces: []string{"test-ns"},
 		},
+		Status: operatorv1.OperatorGroupStatus{
+			LastUpdated: &metav1.Time{Time: time.Now()},
+		},
 	}, nil
 }
 
 func (foe BadOpenshiftEngine) CreateCatalogSource(data cli.CatalogSourceData, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error) {
 	return &operatorv1alpha1.CatalogSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-cs",
+			Namespace: "test-ns",
+		},
 		Spec: operatorv1alpha1.CatalogSourceSpec{
 			SourceType: operatorv1alpha1.SourceTypeGrpc,
 			Image:      "indexImageUri",
@@ -365,6 +380,10 @@ func (foe BadOpenshiftEngine) DeleteCatalogSource(name string, opts cli.Openshif
 
 func (foe BadOpenshiftEngine) GetCatalogSource(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error) {
 	return &operatorv1alpha1.CatalogSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-cs",
+			Namespace: "test-ns",
+		},
 		Spec: operatorv1alpha1.CatalogSourceSpec{
 			SourceType: operatorv1alpha1.SourceTypeGrpc,
 			Image:      "indexImageUri",
