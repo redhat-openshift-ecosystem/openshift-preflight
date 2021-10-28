@@ -38,3 +38,4 @@ var ErrRemoveOSPIDFromProjectID = errors.New("please remove leading character os
 var ErrRemoveSpecialCharFromProjectID = errors.New("please remove all special characters from project id")
 var ErrPullRequestURL = errors.New("please enter a valid url: including scheme, host, and path to pull request")
 var ErrIndexImageUndefined = errors.New("no environment variable PFLT_INDEXIMAGE could be found")
+var ErrUnsupportedGoType = errors.New("go type unsupported")

@@ -7,9 +7,14 @@ import (
 	"strings"
 	"time"
 
+	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
@@ -17,7 +22,6 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 
 	log "github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 	kubeErr "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -332,25 +336,25 @@ func (p *DeployableByOlmCheck) cleanUp(operatorData OperatorData) {
 	if err != nil {
 		log.Error("unable to retrieve the subscription")
 	}
-	p.writeToFile(subs, operatorData.App, "subscription")
+	p.writeToFile(subs)
 
 	cs, err := p.OpenshiftEngine.GetCatalogSource(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
 	if err != nil {
 		log.Error("unable to retrieve the catalogsource")
 	}
-	p.writeToFile(cs, operatorData.App, "catalogsource")
+	p.writeToFile(cs)
 
 	og, err := p.OpenshiftEngine.GetOperatorGroup(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
 	if err != nil {
 		log.Error("unable to retrieve the operatorgroup")
 	}
-	p.writeToFile(og, operatorData.App, "operatorgroup")
+	p.writeToFile(og)
 
 	ns, err := p.OpenshiftEngine.GetNamespace(operatorData.InstallNamespace)
 	if err != nil {
 		log.Error("unable to retrieve the namespace")
 	}
-	p.writeToFile(ns, operatorData.InstallNamespace, "namespace")
+	p.writeToFile(ns)
 
 	log.Trace("Deleting the resources created by Check")
 	p.OpenshiftEngine.DeleteSubscription(operatorData.App, cli.OpenshiftOptions{Namespace: operatorData.InstallNamespace})
@@ -375,15 +379,52 @@ func (p *DeployableByOlmCheck) cleanUp(operatorData OperatorData) {
 	p.OpenshiftEngine.DeleteNamespace(operatorData.InstallNamespace, cli.OpenshiftOptions{})
 }
 
-func (p *DeployableByOlmCheck) writeToFile(data interface{}, resource string, resourceType string) error {
-	yamlData, err := yaml.Marshal(data)
+func (p *DeployableByOlmCheck) writeToFile(data interface{}) error {
+	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(data)
 	if err != nil {
-		log.Error("unable to serialize the data")
+		log.Error("unable to convert the object to unstructured.Unstructured: ", err)
 		return err
 	}
 
-	filename := fmt.Sprintf("%s-%s.yaml", resource, resourceType)
-	if _, err := artifacts.WriteFile(filename, string(yamlData)); err != nil {
+	u := &unstructured.Unstructured{Object: obj}
+
+	switch data.(type) {
+	case *operatorv1alpha1.CatalogSource:
+		u.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   "operators.coreos.com",
+			Kind:    "CatalogSource",
+			Version: "v1alpha1",
+		})
+	case *operatorv1.OperatorGroup:
+		u.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   "operators.coreos.com",
+			Kind:    "OperatorGroup",
+			Version: "v1",
+		})
+	case *operatorv1alpha1.Subscription:
+		u.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   "operators.coreos.com",
+			Kind:    "Subscription",
+			Version: "v1alpha1",
+		})
+	case *corev1.Namespace:
+		u.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   "",
+			Kind:    "Namespace",
+			Version: "v1",
+		})
+	default:
+		return errors.ErrUnsupportedGoType
+	}
+
+	jsonManifest, err := u.MarshalJSON()
+	if err != nil {
+		log.Error("unable to marshal to json: ", err)
+		return err
+	}
+
+	filename := fmt.Sprintf("%s-%s.json", u.GetName(), u.GetKind())
+	if _, err := artifacts.WriteFile(filename, string(jsonManifest)); err != nil {
 		log.Error("failed to write the k8s object to the file", err)
 		return err
 	}
