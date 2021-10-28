@@ -11,8 +11,8 @@ var (
 	// to enable disconnected environments.
 	images = map[string]string{
 		// operator policy, operator-sdk scorecard
-		// quay.io/operator-framework/scorecard-test:v1.13.1
-		"scorecard": "quay.io/operator-framework/scorecard-test@sha256:417d5157a782f72ba83cc613a0a3997cea088fe025c188121f782e93b38bf04e",
+		// quay.io/operator-framework/scorecard-test:v1.14.0
+		"scorecard": "quay.io/operator-framework/scorecard-test@sha256:66023c1e0f6021407811fb2b1d42aa16af6f41f2c791b2bdeb6ba696d000cf5d",
 	}
 )
 
