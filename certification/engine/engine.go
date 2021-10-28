@@ -86,11 +86,11 @@ var runAsRootCheck certification.Check = &containerpol.RunAsNonRootCheck{}
 var basedOnUbiCheck certification.Check = &containerpol.BasedOnUBICheck{}
 
 var operatorPolicy = map[string]certification.Check{
-	operatorPkgNameIsUniqueCheck.Name(): operatorPkgNameIsUniqueCheck,
-	scorecardBasicSpecCheck.Name():      scorecardBasicSpecCheck,
-	scorecardOlmSuiteCheck.Name():       scorecardOlmSuiteCheck,
-	deployableByOlmCheck.Name():         deployableByOlmCheck,
-	validateOperatorBundle.Name():       validateOperatorBundle,
+	//operatorPkgNameIsUniqueCheck.Name(): operatorPkgNameIsUniqueCheck,
+	scorecardBasicSpecCheck.Name(): scorecardBasicSpecCheck,
+	scorecardOlmSuiteCheck.Name():  scorecardOlmSuiteCheck,
+	deployableByOlmCheck.Name():    deployableByOlmCheck,
+	validateOperatorBundle.Name():  validateOperatorBundle,
 }
 
 var containerPolicy = map[string]certification.Check{
