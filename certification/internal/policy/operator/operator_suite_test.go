@@ -1,9 +1,8 @@
 package operator
 
 import (
+	"context"
 	"errors"
-	"testing"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
@@ -14,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"testing"
 	"time"
 )
 
@@ -66,7 +66,7 @@ func (bose BadOperatorSdkEngine) BundleValidate(bundleImage string, opts cli.Ope
 
 type FakeOpenshiftEngine struct{}
 
-func (foe FakeOpenshiftEngine) CreateNamespace(name string, opts cli.OpenshiftOptions) (*corev1.Namespace, error) {
+func (foe FakeOpenshiftEngine) CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
 	return &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-ns",
@@ -74,11 +74,11 @@ func (foe FakeOpenshiftEngine) CreateNamespace(name string, opts cli.OpenshiftOp
 	}, nil
 }
 
-func (foe FakeOpenshiftEngine) DeleteNamespace(name string, opts cli.OpenshiftOptions) error {
+func (foe FakeOpenshiftEngine) DeleteNamespace(ctx context.Context, name string) error {
 	return nil
 }
 
-func (foe FakeOpenshiftEngine) GetNamespace(name string) (*corev1.Namespace, error) {
+func (foe FakeOpenshiftEngine) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
 	return &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-ns",
@@ -86,7 +86,7 @@ func (foe FakeOpenshiftEngine) GetNamespace(name string) (*corev1.Namespace, err
 	}, nil
 }
 
-func (foe FakeOpenshiftEngine) CreateSecret(name string, content map[string]string, secretType corev1.SecretType, opts cli.OpenshiftOptions) (*corev1.Secret, error) {
+func (foe FakeOpenshiftEngine) CreateSecret(ctx context.Context, name string, content map[string]string, secretType corev1.SecretType, namespace string) (*corev1.Secret, error) {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pull-image-secret",
@@ -97,11 +97,11 @@ func (foe FakeOpenshiftEngine) CreateSecret(name string, content map[string]stri
 	}, nil
 }
 
-func (foe FakeOpenshiftEngine) DeleteSecret(name string, opts cli.OpenshiftOptions) error {
+func (foe FakeOpenshiftEngine) DeleteSecret(ctx context.Context, name, namespace string) error {
 	return nil
 }
 
-func (foe FakeOpenshiftEngine) GetSecret(name string, opts cli.OpenshiftOptions) (*corev1.Secret, error) {
+func (foe FakeOpenshiftEngine) GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error) {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pull-image-secret",
@@ -112,7 +112,7 @@ func (foe FakeOpenshiftEngine) GetSecret(name string, opts cli.OpenshiftOptions)
 	}, nil
 }
 
-func (foe FakeOpenshiftEngine) CreateOperatorGroup(data cli.OperatorGroupData, opts cli.OpenshiftOptions) (*operatorv1.OperatorGroup, error) {
+func (foe FakeOpenshiftEngine) CreateOperatorGroup(ctx context.Context, data cli.OperatorGroupData, namespace string) (*operatorv1.OperatorGroup, error) {
 	return &operatorv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-og",
@@ -124,11 +124,11 @@ func (foe FakeOpenshiftEngine) CreateOperatorGroup(data cli.OperatorGroupData, o
 	}, nil
 }
 
-func (foe FakeOpenshiftEngine) DeleteOperatorGroup(name string, opts cli.OpenshiftOptions) error {
+func (foe FakeOpenshiftEngine) DeleteOperatorGroup(ctx context.Context, name, namespace string) error {
 	return nil
 }
 
-func (foe FakeOpenshiftEngine) GetOperatorGroup(name string, opts cli.OpenshiftOptions) (*operatorv1.OperatorGroup, error) {
+func (foe FakeOpenshiftEngine) GetOperatorGroup(ctx context.Context, name, namespace string) (*operatorv1.OperatorGroup, error) {
 	return &operatorv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-og",
@@ -143,7 +143,7 @@ func (foe FakeOpenshiftEngine) GetOperatorGroup(name string, opts cli.OpenshiftO
 	}, nil
 }
 
-func (foe FakeOpenshiftEngine) CreateRoleBinding(data cli.RoleBindingData, opts cli.OpenshiftOptions) (*rbacv1.RoleBinding, error) {
+func (foe FakeOpenshiftEngine) CreateRoleBinding(ctx context.Context, data cli.RoleBindingData, namespace string) (*rbacv1.RoleBinding, error) {
 	subjectsObj := make([]rbacv1.Subject, 1)
 
 	subjectsObj[0] = rbacv1.Subject{
@@ -169,7 +169,7 @@ func (foe FakeOpenshiftEngine) CreateRoleBinding(data cli.RoleBindingData, opts 
 	}, nil
 }
 
-func (foe FakeOpenshiftEngine) GetRoleBinding(name string, opts cli.OpenshiftOptions) (*rbacv1.RoleBinding, error) {
+func (foe FakeOpenshiftEngine) GetRoleBinding(ctx context.Context, name, namespace string) (*rbacv1.RoleBinding, error) {
 	subjectsObj := make([]rbacv1.Subject, 1)
 
 	subjectsObj[0] = rbacv1.Subject{
@@ -195,11 +195,11 @@ func (foe FakeOpenshiftEngine) GetRoleBinding(name string, opts cli.OpenshiftOpt
 	}, nil
 }
 
-func (foe FakeOpenshiftEngine) DeleteRoleBinding(name string, opts cli.OpenshiftOptions) error {
+func (foe FakeOpenshiftEngine) DeleteRoleBinding(ctx context.Context, name, namespace string) error {
 	return nil
 }
 
-func (foe FakeOpenshiftEngine) CreateCatalogSource(data cli.CatalogSourceData, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error) {
+func (foe FakeOpenshiftEngine) CreateCatalogSource(ctx context.Context, data cli.CatalogSourceData, namespace string) (*operatorv1alpha1.CatalogSource, error) {
 	return &operatorv1alpha1.CatalogSource{
 		Spec: operatorv1alpha1.CatalogSourceSpec{
 			SourceType: operatorv1alpha1.SourceTypeGrpc,
@@ -208,11 +208,11 @@ func (foe FakeOpenshiftEngine) CreateCatalogSource(data cli.CatalogSourceData, o
 	}, nil
 }
 
-func (foe FakeOpenshiftEngine) DeleteCatalogSource(name string, opts cli.OpenshiftOptions) error {
+func (foe FakeOpenshiftEngine) DeleteCatalogSource(ctx context.Context, name, namespace string) error {
 	return nil
 }
 
-func (foe FakeOpenshiftEngine) GetCatalogSource(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error) {
+func (foe FakeOpenshiftEngine) GetCatalogSource(ctx context.Context, name, namespace string) (*operatorv1alpha1.CatalogSource, error) {
 	return &operatorv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-cs",
@@ -225,7 +225,7 @@ func (foe FakeOpenshiftEngine) GetCatalogSource(name string, opts cli.OpenshiftO
 	}, nil
 }
 
-func (foe FakeOpenshiftEngine) CreateSubscription(data cli.SubscriptionData, opts cli.OpenshiftOptions) (*operatorv1alpha1.Subscription, error) {
+func (foe FakeOpenshiftEngine) CreateSubscription(ctx context.Context, data cli.SubscriptionData, namespace string) (*operatorv1alpha1.Subscription, error) {
 	return &operatorv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-sub",
@@ -243,11 +243,11 @@ func (foe FakeOpenshiftEngine) CreateSubscription(data cli.SubscriptionData, opt
 	}, nil
 }
 
-func (foe FakeOpenshiftEngine) DeleteSubscription(name string, opts cli.OpenshiftOptions) error {
+func (foe FakeOpenshiftEngine) DeleteSubscription(ctx context.Context, name, namespace string) error {
 	return nil
 }
 
-func (foe FakeOpenshiftEngine) GetSubscription(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.Subscription, error) {
+func (foe FakeOpenshiftEngine) GetSubscription(ctx context.Context, name, namespace string) (*operatorv1alpha1.Subscription, error) {
 	return &operatorv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-sub",
@@ -265,7 +265,7 @@ func (foe FakeOpenshiftEngine) GetSubscription(name string, opts cli.OpenshiftOp
 	}, nil
 }
 
-func (foe FakeOpenshiftEngine) GetCSV(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.ClusterServiceVersion, error) {
+func (foe FakeOpenshiftEngine) GetCSV(ctx context.Context, name, namespace string) (*operatorv1alpha1.ClusterServiceVersion, error) {
 	return &operatorv1alpha1.ClusterServiceVersion{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "csv-v0.0.0",
@@ -284,7 +284,7 @@ func (foe FakeOpenshiftEngine) GetImages() (map[string]struct{}, error) {
 
 type BadOpenshiftEngine struct{}
 
-func (foe BadOpenshiftEngine) CreateNamespace(name string, opts cli.OpenshiftOptions) (*corev1.Namespace, error) {
+func (foe BadOpenshiftEngine) CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
 	return &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-ns",
@@ -292,11 +292,11 @@ func (foe BadOpenshiftEngine) CreateNamespace(name string, opts cli.OpenshiftOpt
 	}, nil
 }
 
-func (foe BadOpenshiftEngine) DeleteNamespace(name string, opts cli.OpenshiftOptions) error {
+func (foe BadOpenshiftEngine) DeleteNamespace(ctx context.Context, name string) error {
 	return nil
 }
 
-func (foe BadOpenshiftEngine) GetNamespace(name string) (*corev1.Namespace, error) {
+func (foe BadOpenshiftEngine) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
 	return &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-ns",
@@ -304,7 +304,7 @@ func (foe BadOpenshiftEngine) GetNamespace(name string) (*corev1.Namespace, erro
 	}, nil
 }
 
-func (foe BadOpenshiftEngine) CreateSecret(name string, content map[string]string, secretType corev1.SecretType, opts cli.OpenshiftOptions) (*corev1.Secret, error) {
+func (foe BadOpenshiftEngine) CreateSecret(ctx context.Context, name string, content map[string]string, secretType corev1.SecretType, namespace string) (*corev1.Secret, error) {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pull-image-secret",
@@ -315,11 +315,11 @@ func (foe BadOpenshiftEngine) CreateSecret(name string, content map[string]strin
 	}, nil
 }
 
-func (foe BadOpenshiftEngine) DeleteSecret(name string, opts cli.OpenshiftOptions) error {
+func (foe BadOpenshiftEngine) DeleteSecret(ctx context.Context, name, namespace string) error {
 	return nil
 }
 
-func (foe BadOpenshiftEngine) GetSecret(name string, opts cli.OpenshiftOptions) (*corev1.Secret, error) {
+func (foe BadOpenshiftEngine) GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error) {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pull-image-secret",
@@ -330,7 +330,7 @@ func (foe BadOpenshiftEngine) GetSecret(name string, opts cli.OpenshiftOptions) 
 	}, nil
 }
 
-func (foe BadOpenshiftEngine) CreateOperatorGroup(data cli.OperatorGroupData, opts cli.OpenshiftOptions) (*operatorv1.OperatorGroup, error) {
+func (foe BadOpenshiftEngine) CreateOperatorGroup(ctx context.Context, data cli.OperatorGroupData, namespace string) (*operatorv1.OperatorGroup, error) {
 	return &operatorv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-og",
@@ -342,11 +342,11 @@ func (foe BadOpenshiftEngine) CreateOperatorGroup(data cli.OperatorGroupData, op
 	}, nil
 }
 
-func (foe BadOpenshiftEngine) DeleteOperatorGroup(name string, opts cli.OpenshiftOptions) error {
+func (foe BadOpenshiftEngine) DeleteOperatorGroup(ctx context.Context, name, namespace string) error {
 	return nil
 }
 
-func (foe BadOpenshiftEngine) GetOperatorGroup(name string, opts cli.OpenshiftOptions) (*operatorv1.OperatorGroup, error) {
+func (foe BadOpenshiftEngine) GetOperatorGroup(ctx context.Context, name, namespace string) (*operatorv1.OperatorGroup, error) {
 	return &operatorv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-og",
@@ -361,7 +361,7 @@ func (foe BadOpenshiftEngine) GetOperatorGroup(name string, opts cli.OpenshiftOp
 	}, nil
 }
 
-func (foe BadOpenshiftEngine) CreateCatalogSource(data cli.CatalogSourceData, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error) {
+func (foe BadOpenshiftEngine) CreateCatalogSource(ctx context.Context, data cli.CatalogSourceData, namespace string) (*operatorv1alpha1.CatalogSource, error) {
 	return &operatorv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-cs",
@@ -374,11 +374,11 @@ func (foe BadOpenshiftEngine) CreateCatalogSource(data cli.CatalogSourceData, op
 	}, nil
 }
 
-func (foe BadOpenshiftEngine) DeleteCatalogSource(name string, opts cli.OpenshiftOptions) error {
+func (foe BadOpenshiftEngine) DeleteCatalogSource(ctx context.Context, name, namespace string) error {
 	return nil
 }
 
-func (foe BadOpenshiftEngine) GetCatalogSource(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error) {
+func (foe BadOpenshiftEngine) GetCatalogSource(ctx context.Context, name, namespace string) (*operatorv1alpha1.CatalogSource, error) {
 	return &operatorv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-cs",
@@ -391,7 +391,7 @@ func (foe BadOpenshiftEngine) GetCatalogSource(name string, opts cli.OpenshiftOp
 	}, nil
 }
 
-func (foe BadOpenshiftEngine) CreateSubscription(data cli.SubscriptionData, opts cli.OpenshiftOptions) (*operatorv1alpha1.Subscription, error) {
+func (foe BadOpenshiftEngine) CreateSubscription(ctx context.Context, data cli.SubscriptionData, namespace string) (*operatorv1alpha1.Subscription, error) {
 	return &operatorv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-sub",
@@ -407,11 +407,11 @@ func (foe BadOpenshiftEngine) CreateSubscription(data cli.SubscriptionData, opts
 	}, nil
 }
 
-func (foe BadOpenshiftEngine) DeleteSubscription(name string, opts cli.OpenshiftOptions) error {
+func (foe BadOpenshiftEngine) DeleteSubscription(ctx context.Context, name, namespace string) error {
 	return nil
 }
 
-func (foe BadOpenshiftEngine) GetSubscription(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.Subscription, error) {
+func (foe BadOpenshiftEngine) GetSubscription(ctx context.Context, name, namespace string) (*operatorv1alpha1.Subscription, error) {
 	return &operatorv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-sub",
@@ -427,7 +427,7 @@ func (foe BadOpenshiftEngine) GetSubscription(name string, opts cli.OpenshiftOpt
 	}, nil
 }
 
-func (foe BadOpenshiftEngine) GetCSV(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.ClusterServiceVersion, error) {
+func (foe BadOpenshiftEngine) GetCSV(ctx context.Context, name, namespace string) (*operatorv1alpha1.ClusterServiceVersion, error) {
 	return nil, nil
 }
 
@@ -435,7 +435,7 @@ func (foe BadOpenshiftEngine) GetImages() (map[string]struct{}, error) {
 	return nil, nil
 }
 
-func (foe BadOpenshiftEngine) CreateRoleBinding(data cli.RoleBindingData, opts cli.OpenshiftOptions) (*rbacv1.RoleBinding, error) {
+func (foe BadOpenshiftEngine) CreateRoleBinding(ctx context.Context, data cli.RoleBindingData, namespace string) (*rbacv1.RoleBinding, error) {
 	subjectsObj := make([]rbacv1.Subject, 1)
 
 	subjectsObj[0] = rbacv1.Subject{
@@ -461,7 +461,7 @@ func (foe BadOpenshiftEngine) CreateRoleBinding(data cli.RoleBindingData, opts c
 	}, nil
 }
 
-func (foe BadOpenshiftEngine) GetRoleBinding(name string, opts cli.OpenshiftOptions) (*rbacv1.RoleBinding, error) {
+func (foe BadOpenshiftEngine) GetRoleBinding(ctx context.Context, name, namespace string) (*rbacv1.RoleBinding, error) {
 	subjectsObj := make([]rbacv1.Subject, 1)
 
 	subjectsObj[0] = rbacv1.Subject{
@@ -487,6 +487,6 @@ func (foe BadOpenshiftEngine) GetRoleBinding(name string, opts cli.OpenshiftOpti
 	}, nil
 }
 
-func (foe BadOpenshiftEngine) DeleteRoleBinding(name string, opts cli.OpenshiftOptions) error {
+func (foe BadOpenshiftEngine) DeleteRoleBinding(ctx context.Context, name, namespace string) error {
 	return nil
 }

@@ -8,95 +8,49 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var subscriptionKind schema.GroupVersionKind = schema.GroupVersionKind{
-	Group:   "operators.coreos.com",
-	Kind:    "Subscription",
-	Version: "v1alpha1",
-}
-
-type SubscriptionInterface interface {
-	Create(data cli.SubscriptionData, opts cli.OpenshiftOptions) (*operatorv1alpha1.Subscription, error)
-	Delete(name string, options *metav1.DeleteOptions) error
-	Get(name string, namespace string) operatorv1alpha1.Subscription
-	convert(u *unstructured.Unstructured) (*operatorv1alpha1.Subscription, error)
-}
-
 type subscriptionClient struct {
-	client client.Client
-	ns     string
+	client runtimeclient.Client
 }
 
-func (c subscriptionClient) Create(data cli.SubscriptionData, opts cli.OpenshiftOptions) (*operatorv1alpha1.Subscription, error) {
+func (c subscriptionClient) Create(ctx context.Context, data cli.SubscriptionData) (*operatorv1alpha1.Subscription, error) {
 
-	u := &unstructured.Unstructured{}
-	u.Object = map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"name":      data.Name,
-			"namespace": opts.Namespace,
-			"labels":    opts.Labels,
+	subscription := &operatorv1alpha1.Subscription{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: data.Name,
 		},
-		"spec": map[string]interface{}{
-			"name":            data.Package,
-			"source":          data.CatalogSource,
-			"channel":         data.Channel,
-			"sourceNamespace": data.CatalogSourceNamespace,
+		Spec: &operatorv1alpha1.SubscriptionSpec{
+			CatalogSource:          data.CatalogSource,
+			CatalogSourceNamespace: data.CatalogSourceNamespace,
+			Channel:                data.Channel,
+			Package:                data.Package,
 		},
 	}
-
-	u.SetGroupVersionKind(subscriptionKind)
-
-	err := c.client.Create(context.Background(), u)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return c.convert(u)
+	err := c.client.Create(ctx, subscription)
+	return subscription, err
 }
 
-func (c subscriptionClient) Delete(name string, opts cli.OpenshiftOptions) error {
-
-	u := &unstructured.Unstructured{}
-
-	u.SetName(name)
-	u.SetNamespace(opts.Namespace)
-	u.SetGroupVersionKind(subscriptionKind)
-
-	return c.client.Delete(context.Background(), u)
+func (c subscriptionClient) Delete(ctx context.Context, name string) error {
+	subscription := &operatorv1alpha1.Subscription{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+	return c.client.Delete(ctx, subscription)
 }
 
-func (c subscriptionClient) Get(name string, namespace string) (*operatorv1alpha1.Subscription, error) {
+func (c subscriptionClient) Get(ctx context.Context, name string) (*operatorv1alpha1.Subscription, error) {
+	subscription := &operatorv1alpha1.Subscription{}
+	err := c.client.Get(ctx, runtimeclient.ObjectKey{
+		Name: name,
+	}, subscription)
 
-	u := &unstructured.Unstructured{}
-	u.SetGroupVersionKind(subscriptionKind)
-
-	err := c.client.Get(context.Background(), client.ObjectKey{
-		Namespace: namespace,
-		Name:      name,
-	}, u)
-	if err != nil {
-		return nil, err
-	}
-
-	return c.convert(u)
-}
-
-func (c subscriptionClient) convert(u *unstructured.Unstructured) (*operatorv1alpha1.Subscription, error) {
-	var obj operatorv1alpha1.Subscription
-	err := runtime.DefaultUnstructuredConverter.
-		FromUnstructured(u.UnstructuredContent(), &obj)
-	if err != nil {
-		return nil, err
-	}
-
-	return &obj, nil
+	return subscription, err
 }
 
 func SubscriptionClient(namespace string) (*subscriptionClient, error) {
@@ -107,15 +61,14 @@ func SubscriptionClient(namespace string) (*subscriptionClient, error) {
 		log.Error("could not get kubeconfig")
 		return nil, err
 	}
-	controllerClient, err := client.New(kubeconfig, client.Options{Scheme: scheme})
+	client, err := client.New(kubeconfig, runtimeclient.Options{Scheme: scheme})
 	if err != nil {
 		log.Error("could not get subscription client")
 		return nil, err
 	}
 
 	return &subscriptionClient{
-		client: controllerClient,
-		ns:     namespace,
+		client: runtimeclient.NewNamespacedClient(client, namespace),
 	}, nil
 
 }

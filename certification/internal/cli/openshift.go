@@ -1,16 +1,13 @@
 package cli
 
 import (
+	"context"
+
 	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 )
-
-type OpenshiftOptions struct {
-	Namespace string
-	Labels    map[string]string
-}
 
 type SubscriptionData struct {
 	Name                   string
@@ -39,31 +36,31 @@ type RoleBindingData struct {
 }
 
 type OpenshiftEngine interface {
-	CreateNamespace(name string, opts OpenshiftOptions) (*corev1.Namespace, error)
-	DeleteNamespace(name string, opts OpenshiftOptions) error
-	GetNamespace(name string) (*corev1.Namespace, error)
+	CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
+	DeleteNamespace(ctx context.Context, name string) error
+	GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
 
-	CreateSecret(name string, content map[string]string, secretType corev1.SecretType, opts OpenshiftOptions) (*corev1.Secret, error)
-	DeleteSecret(name string, opts OpenshiftOptions) error
-	GetSecret(name string, opts OpenshiftOptions) (*corev1.Secret, error)
+	CreateSecret(ctx context.Context, name string, content map[string]string, secretType corev1.SecretType, namespace string) (*corev1.Secret, error)
+	DeleteSecret(ctx context.Context, name string, namespace string) error
+	GetSecret(ctx context.Context, name string, namespace string) (*corev1.Secret, error)
 
-	CreateOperatorGroup(data OperatorGroupData, opts OpenshiftOptions) (*operatorv1.OperatorGroup, error)
-	DeleteOperatorGroup(name string, opts OpenshiftOptions) error
-	GetOperatorGroup(name string, opts OpenshiftOptions) (*operatorv1.OperatorGroup, error)
+	CreateOperatorGroup(ctx context.Context, data OperatorGroupData, namespace string) (*operatorv1.OperatorGroup, error)
+	DeleteOperatorGroup(ctx context.Context, name string, namespace string) error
+	GetOperatorGroup(ctx context.Context, name string, namespace string) (*operatorv1.OperatorGroup, error)
 
-	CreateCatalogSource(data CatalogSourceData, opts OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error)
-	DeleteCatalogSource(name string, opts OpenshiftOptions) error
-	GetCatalogSource(name string, opts OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error)
+	CreateCatalogSource(ctx context.Context, data CatalogSourceData, namespace string) (*operatorv1alpha1.CatalogSource, error)
+	DeleteCatalogSource(ctx context.Context, name string, namespace string) error
+	GetCatalogSource(ctx context.Context, name string, namespace string) (*operatorv1alpha1.CatalogSource, error)
 
-	CreateSubscription(data SubscriptionData, opts OpenshiftOptions) (*operatorv1alpha1.Subscription, error)
-	DeleteSubscription(name string, opts OpenshiftOptions) error
-	GetSubscription(name string, opts OpenshiftOptions) (*operatorv1alpha1.Subscription, error)
+	CreateSubscription(ctx context.Context, data SubscriptionData, namespace string) (*operatorv1alpha1.Subscription, error)
+	DeleteSubscription(ctx context.Context, name string, namespace string) error
+	GetSubscription(ctx context.Context, name string, namespace string) (*operatorv1alpha1.Subscription, error)
 
-	GetCSV(name string, opts OpenshiftOptions) (*operatorv1alpha1.ClusterServiceVersion, error)
+	GetCSV(ctx context.Context, name string, namespace string) (*operatorv1alpha1.ClusterServiceVersion, error)
 
 	GetImages() (map[string]struct{}, error)
 
-	CreateRoleBinding(data RoleBindingData, opts OpenshiftOptions) (*rbacv1.RoleBinding, error)
-	GetRoleBinding(name string, opts OpenshiftOptions) (*rbacv1.RoleBinding, error)
-	DeleteRoleBinding(name string, opts OpenshiftOptions) error
+	CreateRoleBinding(ctx context.Context, data RoleBindingData, namespace string) (*rbacv1.RoleBinding, error)
+	GetRoleBinding(ctx context.Context, name string, namespace string) (*rbacv1.RoleBinding, error)
+	DeleteRoleBinding(ctx context.Context, name string, namespace string) error
 }

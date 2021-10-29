@@ -3,8 +3,9 @@ package engine
 import (
 	"context"
 	"fmt"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"os"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 
 	log "github.com/sirupsen/logrus"
 
@@ -32,15 +33,13 @@ func NewOpenshiftEngine() *cli.OpenshiftEngine {
 	return &engine
 }
 
-func (oe *openshiftEngine) CreateNamespace(name string, opts cli.OpenshiftOptions) (*corev1.Namespace, error) {
-
+func (oe *openshiftEngine) CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
 	kubeconfig, err := ctrl.GetConfig()
 	if err != nil {
 		log.Error("could not get kubeconfig")
 		return nil, err
 	}
 	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
-
 	if err != nil {
 		log.Error("unable to obtain k8s client: ", err)
 		return nil, err
@@ -48,26 +47,22 @@ func (oe *openshiftEngine) CreateNamespace(name string, opts cli.OpenshiftOption
 
 	nsSpec := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: opts.Labels,
+			Name: name,
 		},
 	}
-
-	resp, err := k8sClientset.CoreV1().
+	ns, err := k8sClientset.CoreV1().
 		Namespaces().
-		Create(context.Background(), nsSpec, metav1.CreateOptions{})
+		Create(ctx, nsSpec, metav1.CreateOptions{})
 
 	if err != nil {
 		log.Error(fmt.Sprintf("error while creating Namespace %s: ", name), err)
 		return nil, err
 	}
-
 	log.Debug("Namespace created: ", name)
-
-	return resp, nil
+	return ns, nil
 }
 
-func (oe *openshiftEngine) DeleteNamespace(name string, opts cli.OpenshiftOptions) error {
+func (oe *openshiftEngine) DeleteNamespace(ctx context.Context, name string) error {
 	kubeconfig, err := ctrl.GetConfig()
 	if err != nil {
 		log.Error("could not get kubeconfig")
@@ -80,92 +75,92 @@ func (oe *openshiftEngine) DeleteNamespace(name string, opts cli.OpenshiftOption
 		return err
 	}
 	log.Debug("Deleting namespace: " + name)
+
 	return k8sClientset.CoreV1().
 		Namespaces().
-		Delete(context.Background(), name, metav1.DeleteOptions{})
+		Delete(ctx, name, metav1.DeleteOptions{})
 }
 
-func (oe *openshiftEngine) GetNamespace(name string) (*corev1.Namespace, error) {
-
+func (oe *openshiftEngine) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
 	kubeconfig, err := ctrl.GetConfig()
 	if err != nil {
 		log.Error("could not get kubeconfig")
 		return nil, err
 	}
 	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
-
 	if err != nil {
 		log.Error("unable to obtain k8s client: ", err)
 		return nil, err
 	}
 	log.Debug("fetching namespace: " + name)
+
 	return k8sClientset.CoreV1().
 		Namespaces().
-		Get(context.Background(), name, metav1.GetOptions{})
+		Get(ctx, name, metav1.GetOptions{})
 }
 
-func (oe *openshiftEngine) CreateOperatorGroup(data cli.OperatorGroupData, opts cli.OpenshiftOptions) (*operatorv1.OperatorGroup, error) {
+func (oe *openshiftEngine) CreateOperatorGroup(ctx context.Context, data cli.OperatorGroupData, namespace string) (*operatorv1.OperatorGroup, error) {
 
-	ogClient, err := client.OperatorGroupClient(opts.Namespace)
+	ogClient, err := client.OperatorGroupClient(namespace)
 	if err != nil {
 		log.Error("unable to create a client for OperatorGroup: ", err)
 		return nil, err
 	}
 
-	log.Debug(fmt.Sprintf("Creating OperatorGroup %s in namespace %s", data.Name, opts.Namespace))
-	resp, err := ogClient.Create(data, opts)
+	log.Debug(fmt.Sprintf("Creating OperatorGroup %s in namespace %s", data.Name, namespace))
+	resp, err := ogClient.Create(ctx, data)
 
 	if err != nil {
 		log.Error(fmt.Sprintf("error while creating OperatorGroup %s: ", data.Name), err)
 		return nil, err
 	}
-	log.Debug(fmt.Sprintf("OperatorGroup %s is created successfully in namespace %s", data.Name, opts.Namespace))
+	log.Debug(fmt.Sprintf("OperatorGroup %s is created successfully in namespace %s", data.Name, namespace))
 
 	return resp, nil
 }
 
-func (oe *openshiftEngine) DeleteOperatorGroup(name string, opts cli.OpenshiftOptions) error {
-	ogClient, err := client.OperatorGroupClient(opts.Namespace)
+func (oe *openshiftEngine) DeleteOperatorGroup(ctx context.Context, name string, namespace string) error {
+	ogClient, err := client.OperatorGroupClient(namespace)
 	if err != nil {
 		log.Error("unable to create a client for OperatorGroup: ", err)
 		return err
 	}
-	log.Debug(fmt.Sprintf("Deleting OperatorGroup %s in namespace %s", name, opts.Namespace))
+	log.Debug(fmt.Sprintf("Deleting OperatorGroup %s in namespace %s", name, namespace))
 
-	err = ogClient.Delete(name, opts)
+	err = ogClient.Delete(ctx, name)
 	if err != nil {
-		log.Error(fmt.Sprintf("error while deleting OperatorGroup %s in namespace %s: ", name, opts.Namespace), err)
+		log.Error(fmt.Sprintf("error while deleting OperatorGroup %s in namespace %s: ", name, namespace), err)
 		return err
 	}
-	log.Debug(fmt.Sprintf("OperatorGroup %s is deleted successfully from namespace %s", name, opts.Namespace))
+	log.Debug(fmt.Sprintf("OperatorGroup %s is deleted successfully from namespace %s", name, namespace))
 
 	return nil
-
 }
 
-func (oe *openshiftEngine) GetOperatorGroup(name string, opts cli.OpenshiftOptions) (*operatorv1.OperatorGroup, error) {
-	ogClient, err := client.OperatorGroupClient(opts.Namespace)
+func (oe *openshiftEngine) GetOperatorGroup(ctx context.Context, name string, namespace string) (*operatorv1.OperatorGroup, error) {
+	ogClient, err := client.OperatorGroupClient(namespace)
 
 	if err != nil {
 		log.Error("unable to obtain k8s client: ", err)
 		return nil, err
 	}
-	log.Debug(fmt.Sprintf("fetching operatorgroup %s from namespace %s", name, opts.Namespace))
-	return ogClient.Get(name, opts.Namespace)
+	log.Debug(fmt.Sprintf("fetching operatorgroup %s from namespace %s", name, namespace))
+	return ogClient.Get(ctx, name)
 }
 
-func (oe openshiftEngine) CreateSecret(name string, content map[string]string, secretType corev1.SecretType, opts cli.OpenshiftOptions) (*corev1.Secret, error) {
+func (oe openshiftEngine) CreateSecret(ctx context.Context, name string, content map[string]string, secretType corev1.SecretType, namespace string) (*corev1.Secret, error) {
 	kubeconfig, err := ctrl.GetConfig()
 	if err != nil {
 		log.Error("could not get kubeconfig")
 		return nil, err
 	}
-	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
 
+	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
 	if err != nil {
 		log.Error("unable to obtain k8s client: ", err)
 		return nil, err
 	}
+
 	secret := corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
@@ -173,27 +168,24 @@ func (oe openshiftEngine) CreateSecret(name string, content map[string]string, s
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: opts.Namespace,
+			Namespace: namespace,
 		},
 		StringData: content,
 		Type:       secretType,
 	}
 	resp, err := k8sClientset.CoreV1().
-		Secrets(opts.Namespace).
-		Create(context.Background(), &secret, metav1.CreateOptions{})
-
+		Secrets(namespace).
+		Create(ctx, &secret, metav1.CreateOptions{})
 	if err != nil {
-		log.Error(fmt.Sprintf("error while creating secret %s in namespace %s", name, opts.Namespace), err)
+		log.Error(fmt.Sprintf("error while creating secret %s in namespace %s: ", name, namespace), err)
 		return nil, err
 	}
 
-	log.Debug("Secret created: ", name)
-	log.Trace("Received Secret object from API server: ", resp)
-
+	log.Debug(fmt.Sprintf("Secret %s created successfully in namespace %s", name, namespace))
 	return resp, nil
 }
 
-func (oe openshiftEngine) DeleteSecret(name string, opts cli.OpenshiftOptions) error {
+func (oe openshiftEngine) DeleteSecret(ctx context.Context, name string, namespace string) error {
 	kubeconfig, err := ctrl.GetConfig()
 	if err != nil {
 		log.Error("could not get kubeconfig")
@@ -205,13 +197,13 @@ func (oe openshiftEngine) DeleteSecret(name string, opts cli.OpenshiftOptions) e
 		log.Error("unable to obtain k8s client: ", err)
 		return err
 	}
-	log.Debug(fmt.Sprintf("Deleting secret %s from namespace %s", name, opts.Namespace))
+	log.Debug(fmt.Sprintf("Deleting secret %s from namespace %s", name, namespace))
 	return k8sClientset.CoreV1().
-		Secrets(opts.Namespace).
-		Delete(context.Background(), name, metav1.DeleteOptions{})
+		Secrets(namespace).
+		Delete(ctx, name, metav1.DeleteOptions{})
 }
 
-func (oe openshiftEngine) GetSecret(name string, opts cli.OpenshiftOptions) (*corev1.Secret, error) {
+func (oe openshiftEngine) GetSecret(ctx context.Context, name string, namespace string) (*corev1.Secret, error) {
 	kubeconfig, err := ctrl.GetConfig()
 	if err != nil {
 		log.Error("could not get kubeconfig")
@@ -223,119 +215,109 @@ func (oe openshiftEngine) GetSecret(name string, opts cli.OpenshiftOptions) (*co
 		log.Error("unable to obtain k8s client: ", err)
 		return nil, err
 	}
-	log.Debug(fmt.Sprintf("fetching secrets %s from namespace %s", name, opts.Namespace))
+	log.Debug(fmt.Sprintf("fetching secrets %s from namespace %s", name, namespace))
 	return k8sClientset.CoreV1().
-		Secrets(opts.Namespace).
-		Get(context.Background(), name, metav1.GetOptions{})
+		Secrets(namespace).
+		Get(ctx, name, metav1.GetOptions{})
 }
 
-func (oe openshiftEngine) CreateCatalogSource(data cli.CatalogSourceData, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error) {
-
-	csClient, err := client.CatalogSourceClient(opts.Namespace)
+func (oe openshiftEngine) CreateCatalogSource(ctx context.Context, data cli.CatalogSourceData, namespace string) (*operatorv1alpha1.CatalogSource, error) {
+	csClient, err := client.CatalogSourceClient(namespace)
 	if err != nil {
 		log.Error("unable to create a client for CatalogSource: ", err)
 		return nil, err
 	}
-
-	log.Debug(fmt.Sprintf("Creating CatalogSource %s in namespace %s", data.Name, opts.Namespace))
-	resp, err := csClient.Create(data, opts)
-
+	log.Debug(fmt.Sprintf("Creating CatalogSource %s in namespace %s", data.Name, namespace))
+	resp, err := csClient.Create(ctx, data)
 	if err != nil {
 		log.Error(fmt.Sprintf("error while creating CatalogSource %s: ", data.Name), err)
 		return nil, err
 	}
-	log.Debug(fmt.Sprintf("CatalogSource %s is created successfully in namespace %s", data.Name, opts.Namespace))
-
+	log.Debug(fmt.Sprintf("CatalogSource %s is created successfully in namespace %s", data.Name, namespace))
 	return resp, nil
 }
 
-func (oe *openshiftEngine) DeleteCatalogSource(name string, opts cli.OpenshiftOptions) error {
-	csClient, err := client.CatalogSourceClient(opts.Namespace)
+func (oe *openshiftEngine) DeleteCatalogSource(ctx context.Context, name string, namespace string) error {
+	csClient, err := client.CatalogSourceClient(namespace)
 	if err != nil {
 		log.Error("unable to create a client for CatalogSource: ", err)
 		return err
 	}
-	log.Debug(fmt.Sprintf("Deleting CatalogSource %s in namespace %s", name, opts.Namespace))
-
-	err = csClient.Delete(name, opts)
+	log.Debug(fmt.Sprintf("Deleting CatalogSource %s in namespace %s", name, namespace))
+	err = csClient.Delete(ctx, name)
 	if err != nil {
-		log.Error(fmt.Sprintf("error while deleting CatalogSource %s in namespace %s: ", name, opts.Namespace), err)
+		log.Error(fmt.Sprintf("error while deleting CatalogSource %s in namespace %s: ", name, namespace), err)
 		return err
 	}
-	log.Debug(fmt.Sprintf("CatalogSource %s is deleted successfully from namespace %s", name, opts.Namespace))
-
+	log.Debug(fmt.Sprintf("CatalogSource %s is deleted successfully from namespace %s", name, namespace))
 	return nil
 }
 
-func (oe *openshiftEngine) GetCatalogSource(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.CatalogSource, error) {
-
-	csClient, err := client.CatalogSourceClient(opts.Namespace)
+func (oe *openshiftEngine) GetCatalogSource(ctx context.Context, name string, namespace string) (*operatorv1alpha1.CatalogSource, error) {
+	csClient, err := client.CatalogSourceClient(namespace)
 	if err != nil {
 		log.Error("unable to create a client for CatalogSource: ", err)
 		return nil, err
 	}
 	log.Debug("fetching catalogsource: " + name)
-	return csClient.Get(name, opts.Namespace)
+	return csClient.Get(ctx, name)
 }
 
-func (oe openshiftEngine) CreateSubscription(data cli.SubscriptionData, opts cli.OpenshiftOptions) (*operatorv1alpha1.Subscription, error) {
+func (oe openshiftEngine) CreateSubscription(ctx context.Context, data cli.SubscriptionData, namespace string) (*operatorv1alpha1.Subscription, error) {
 
-	subsClient, err := client.SubscriptionClient(opts.Namespace)
+	subsClient, err := client.SubscriptionClient(namespace)
 	if err != nil {
 		log.Error("unable to create a client for Subscription: ", err)
 		return nil, err
 	}
 
-	log.Debug(fmt.Sprintf("Creating Subscription %s in namespace %s", data.Name, opts.Namespace))
-	resp, err := subsClient.Create(data, opts)
+	log.Debug(fmt.Sprintf("Creating Subscription %s in namespace %s", data.Name, namespace))
+	resp, err := subsClient.Create(ctx, data)
 
 	if err != nil {
 		log.Error(fmt.Sprintf("error while creating Subscription %s: ", data.Name), err)
 		return nil, err
 	}
-	log.Debug(fmt.Sprintf("Subscription %s is created successfully in namespace %s", data.Name, opts.Namespace))
+	log.Debug(fmt.Sprintf("Subscription %s is created successfully in namespace %s", data.Name, namespace))
 
 	return resp, nil
 }
 
-func (oe *openshiftEngine) GetSubscription(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.Subscription, error) {
-	subsClient, err := client.SubscriptionClient(opts.Namespace)
+func (oe *openshiftEngine) GetSubscription(ctx context.Context, name string, namespace string) (*operatorv1alpha1.Subscription, error) {
+	subsClient, err := client.SubscriptionClient(namespace)
 	if err != nil {
 		log.Error("unable to create a client for Subscription: ", err)
 		return nil, err
 	}
-	log.Debug(fmt.Sprintf("fetching subscription %s from namespace %s ", name, opts.Namespace))
-	return subsClient.Get(name, opts.Namespace)
+	log.Debug(fmt.Sprintf("fetching subscription %s from namespace %s ", name, namespace))
+	return subsClient.Get(ctx, name)
 }
 
-func (oe openshiftEngine) DeleteSubscription(name string, opts cli.OpenshiftOptions) error {
-
-	subsClient, err := client.SubscriptionClient(opts.Namespace)
+func (oe openshiftEngine) DeleteSubscription(ctx context.Context, name string, namespace string) error {
+	subsClient, err := client.SubscriptionClient(namespace)
 	if err != nil {
 		log.Error("unable to create a client for Subscription: ", err)
 		return err
 	}
-	log.Debug(fmt.Sprintf("Deleting Subscription %s in namespace %s", name, opts.Namespace))
+	log.Debug(fmt.Sprintf("Deleting Subscription %s in namespace %s", name, namespace))
 
-	err = subsClient.Delete(name, opts)
+	err = subsClient.Delete(ctx, name)
 	if err != nil {
-		log.Error(fmt.Sprintf("error while deleting Subscription %s in namespace %s: ", name, opts.Namespace), err)
+		log.Error(fmt.Sprintf("error while deleting Subscription %s in namespace %s: ", name, namespace), err)
 		return err
 	}
-	log.Debug(fmt.Sprintf("Subscription %s is deleted successfully from namespace %s", name, opts.Namespace))
-
+	log.Debug(fmt.Sprintf("Subscription %s is deleted successfully from namespace %s", name, namespace))
 	return nil
 }
 
-func (oe *openshiftEngine) GetCSV(name string, opts cli.OpenshiftOptions) (*operatorv1alpha1.ClusterServiceVersion, error) {
-
-	csvClient, err := client.CsvClient(opts.Namespace)
+func (oe *openshiftEngine) GetCSV(ctx context.Context, name string, namespace string) (*operatorv1alpha1.ClusterServiceVersion, error) {
+	csvClient, err := client.CsvClient(namespace)
 	if err != nil {
 		log.Error("unable to create a client for csv: ", err)
 		return nil, err
 	}
-	log.Debug(fmt.Sprintf("fetching csv %s from namespace %s ", name, opts.Namespace))
-	return csvClient.Get(name, opts.Namespace)
+	log.Debug(fmt.Sprintf("fetching csv %s from namespace %s ", name, namespace))
+	return csvClient.Get(ctx, name)
 }
 
 func (oe *openshiftEngine) GetImages() (map[string]struct{}, error) {
@@ -386,8 +368,7 @@ func (oe *openshiftEngine) GetImages() (map[string]struct{}, error) {
 	return imageList, nil
 }
 
-func (oe *openshiftEngine) CreateRoleBinding(data cli.RoleBindingData, opts cli.OpenshiftOptions) (*rbacv1.RoleBinding, error) {
-
+func (oe *openshiftEngine) CreateRoleBinding(ctx context.Context, data cli.RoleBindingData, namespace string) (*rbacv1.RoleBinding, error) {
 	kubeconfig, err := ctrl.GetConfig()
 	if err != nil {
 		log.Error("unable to create a rest client: ", err)
@@ -400,8 +381,7 @@ func (oe *openshiftEngine) CreateRoleBinding(data cli.RoleBindingData, opts cli.
 		return nil, err
 	}
 
-	log.Debug(fmt.Sprintf("Creating RoleBinding %s in namespace %s", data.Name, opts.Namespace))
-
+	log.Debug(fmt.Sprintf("Creating RoleBinding %s in namespace %s", data.Name, namespace))
 	subjectsObj := make([]rbacv1.Subject, 1)
 	for i := range data.Subjects {
 		subjectsObj[i] = rbacv1.Subject{
@@ -422,26 +402,24 @@ func (oe *openshiftEngine) CreateRoleBinding(data cli.RoleBindingData, opts cli.
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      data.Name,
-			Namespace: opts.Namespace,
+			Namespace: namespace,
 		},
 		Subjects: subjectsObj,
 		RoleRef:  roleObj,
 	}
 	resp, err := k8sClientset.RbacV1().
-		RoleBindings(opts.Namespace).
-		Create(context.Background(), &roleBindingObj, metav1.CreateOptions{})
-
+		RoleBindings(namespace).
+		Create(ctx, &roleBindingObj, metav1.CreateOptions{})
 	if err != nil {
-		log.Error(fmt.Sprintf("error while creating rolebinding %s in namespace %s: ", data.Name, opts.Namespace), err)
+		log.Error(fmt.Sprintf("error while creating rolebinding %s in namespace %s: ", data.Name, namespace), err)
 		return nil, err
 	}
 
-	log.Debug(fmt.Sprintf("RoleBinding %s created in namespace %s", data.Name, opts.Namespace))
-
+	log.Debug(fmt.Sprintf("RoleBinding %s created in namespace %s", data.Name, namespace))
 	return resp, nil
 }
 
-func (oe *openshiftEngine) GetRoleBinding(name string, opts cli.OpenshiftOptions) (*rbacv1.RoleBinding, error) {
+func (oe *openshiftEngine) GetRoleBinding(ctx context.Context, name string, namespace string) (*rbacv1.RoleBinding, error) {
 	kubeconfig, err := ctrl.GetConfig()
 	if err != nil {
 		log.Error("unable to create a rest client: ", err)
@@ -449,19 +427,18 @@ func (oe *openshiftEngine) GetRoleBinding(name string, opts cli.OpenshiftOptions
 	}
 
 	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
-
 	if err != nil {
 		log.Error("unable to obtain k8s client: ", err)
 		return nil, err
 	}
-	log.Debug(fmt.Sprintf("fetching RoleBinding %s from namespace %s: ", name, opts.Namespace))
 
+	log.Debug(fmt.Sprintf("fetching RoleBinding %s from namespace %s: ", name, namespace))
 	return k8sClientset.RbacV1().
-		RoleBindings(opts.Namespace).
-		Get(context.Background(), name, metav1.GetOptions{})
+		RoleBindings(namespace).
+		Get(ctx, name, metav1.GetOptions{})
 }
 
-func (oe *openshiftEngine) DeleteRoleBinding(name string, opts cli.OpenshiftOptions) error {
+func (oe *openshiftEngine) DeleteRoleBinding(ctx context.Context, name string, namespace string) error {
 	kubeconfig, err := ctrl.GetConfig()
 	if err != nil {
 		log.Error("unable to create a rest client: ", err)
@@ -474,17 +451,17 @@ func (oe *openshiftEngine) DeleteRoleBinding(name string, opts cli.OpenshiftOpti
 		return err
 	}
 
-	log.Debug(fmt.Sprintf("Deleting RoleBinding %s in namespace %s", name, opts.Namespace))
+	log.Debug(fmt.Sprintf("Deleting RoleBinding %s in namespace %s", name, namespace))
 
 	err = k8sClientset.RbacV1().
-		RoleBindings(opts.Namespace).
-		Delete(context.Background(), name, metav1.DeleteOptions{})
+		RoleBindings(namespace).
+		Delete(ctx, name, metav1.DeleteOptions{})
 
 	if err != nil {
-		log.Error(fmt.Sprintf("error while deleting RoleBiding %s in namespace %s: ", name, opts.Namespace), err)
+		log.Error(fmt.Sprintf("error while deleting RoleBiding %s in namespace %s: ", name, namespace), err)
 		return err
 	}
-	log.Debug(fmt.Sprintf("RoleBinding %s is deleted successfully from namespace %s", name, opts.Namespace))
+	log.Debug(fmt.Sprintf("RoleBinding %s is deleted successfully from namespace %s", name, namespace))
 	return nil
 }
 
