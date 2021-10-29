@@ -3,15 +3,13 @@ package client
 import (
 	"context"
 
-	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
-
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var csvKind schema.GroupVersionKind = schema.GroupVersionKind{
@@ -20,41 +18,17 @@ var csvKind schema.GroupVersionKind = schema.GroupVersionKind{
 	Version: "v1alpha1",
 }
 
-type CSVInterface interface {
-	Get(name string, namespace string) operatorv1.OperatorGroup
-	convert(u *unstructured.Unstructured) (*operatorv1.OperatorGroup, error)
-}
-
 type csvClient struct {
-	client client.Client
-	ns     string
+	client runtimeclient.Client
 }
 
-func (c csvClient) Get(name string, namespace string) (*operatorv1alpha1.ClusterServiceVersion, error) {
+func (c csvClient) Get(ctx context.Context, name string) (*operatorv1alpha1.ClusterServiceVersion, error) {
+	csv := &operatorv1alpha1.ClusterServiceVersion{}
+	err := c.client.Get(ctx, runtimeclient.ObjectKey{
+		Name: name,
+	}, csv)
 
-	u := &unstructured.Unstructured{}
-	u.SetGroupVersionKind(csvKind)
-
-	err := c.client.Get(context.Background(), client.ObjectKey{
-		Namespace: namespace,
-		Name:      name,
-	}, u)
-	if err != nil {
-		return nil, err
-	}
-
-	return c.convert(u)
-}
-
-func (c csvClient) convert(u *unstructured.Unstructured) (*operatorv1alpha1.ClusterServiceVersion, error) {
-	var obj operatorv1alpha1.ClusterServiceVersion
-	err := runtime.DefaultUnstructuredConverter.
-		FromUnstructured(u.UnstructuredContent(), &obj)
-	if err != nil {
-		return nil, err
-	}
-
-	return &obj, nil
+	return csv, err
 }
 
 func CsvClient(namespace string) (*csvClient, error) {
@@ -65,16 +39,13 @@ func CsvClient(namespace string) (*csvClient, error) {
 		log.Error("could not get kubeconfig")
 		return nil, err
 	}
-
-	controllerClient, err := client.New(kubeconfig, client.Options{Scheme: scheme})
+	client, err := runtimeclient.New(kubeconfig, client.Options{Scheme: scheme})
 	if err != nil {
 		log.Error("could not get csv client")
 		return nil, err
 	}
 
 	return &csvClient{
-		client: controllerClient,
-		ns:     namespace,
+		client: runtimeclient.NewNamespacedClient(client, namespace),
 	}, nil
-
 }
