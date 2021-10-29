@@ -278,7 +278,7 @@ func (foe FakeOpenshiftEngine) GetCSV(ctx context.Context, name, namespace strin
 	}, nil
 }
 
-func (foe FakeOpenshiftEngine) GetImages() (map[string]struct{}, error) {
+func (foe FakeOpenshiftEngine) GetImages(ctx context.Context) (map[string]struct{}, error) {
 	return map[string]struct{}{}, nil
 }
 
@@ -431,7 +431,7 @@ func (foe BadOpenshiftEngine) GetCSV(ctx context.Context, name, namespace string
 	return nil, nil
 }
 
-func (foe BadOpenshiftEngine) GetImages() (map[string]struct{}, error) {
+func (foe BadOpenshiftEngine) GetImages(ctx context.Context) (map[string]struct{}, error) {
 	return nil, nil
 }
 

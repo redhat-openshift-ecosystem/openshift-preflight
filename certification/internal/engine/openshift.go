@@ -320,7 +320,7 @@ func (oe *openshiftEngine) GetCSV(ctx context.Context, name string, namespace st
 	return csvClient.Get(ctx, name)
 }
 
-func (oe *openshiftEngine) GetImages() (map[string]struct{}, error) {
+func (oe *openshiftEngine) GetImages(ctx context.Context) (map[string]struct{}, error) {
 	kubeconfig, err := ctrl.GetConfig()
 	if err != nil {
 		log.Error("could not get kubeconfig")
@@ -332,7 +332,7 @@ func (oe *openshiftEngine) GetImages() (map[string]struct{}, error) {
 		log.Error("unable to obtain k8s client: ", err)
 		return nil, err
 	}
-	pods, err := k8sClientset.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{})
+	pods, err := k8sClientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		log.Error("could not retrieve pod list: ", err)
 		return nil, err
@@ -353,7 +353,7 @@ func (oe *openshiftEngine) GetImages() (map[string]struct{}, error) {
 		return nil, err
 	}
 	var imageStreamList imagestreamv1.ImageStreamList
-	if err := isClient.List(context.Background(), &imageStreamList, &crclient.ListOptions{}); err != nil {
+	if err := isClient.List(ctx, &imageStreamList, &crclient.ListOptions{}); err != nil {
 		log.Error("could not list image stream: ", err)
 		return nil, err
 	}
