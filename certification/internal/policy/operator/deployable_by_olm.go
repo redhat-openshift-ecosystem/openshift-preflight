@@ -294,6 +294,7 @@ func (p *DeployableByOlmCheck) installedCSV(ctx context.Context, operatorData Op
 		for {
 			log.Debug("Waiting for Subscription.status.installedCSV to become ready...")
 			subs, _ := p.OpenshiftEngine.GetSubscription(ctx, operatorData.App, operatorData.InstallNamespace)
+			log.Trace(subs.Status)
 			installedCSV := subs.Status.InstalledCSV
 			// if the installedCSV field is present, stop the querying
 			if len(installedCSV) > 0 {
