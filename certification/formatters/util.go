@@ -52,7 +52,7 @@ func getResponse(r runtime.Results) UserResponse {
 		Passed:            r.PassedOverall,
 		LibraryInfo:       version.Version,
 		CertificationHash: r.CertificationHash,
-		TestedOn:          r.TestedOn,
+		// TestedOn:          r.TestedOn,
 		Results: resultsText{
 			Passed: passedChecks,
 			Failed: failedChecks,
@@ -65,12 +65,12 @@ func getResponse(r runtime.Results) UserResponse {
 
 // UserResponse is the standard user-facing response.
 type UserResponse struct {
-	Image             string                          `json:"image" xml:"image"`
-	Passed            bool                            `json:"passed" xml:"passed"`
-	CertificationHash string                          `json:"certification_hash,omitempty" xml:"certification_hash,omitempty"`
-	LibraryInfo       version.VersionContext          `json:"test_library" xml:"test_library"`
-	TestedOn          runtime.OpenshiftClusterVersion `json:"tested_on" xml:"tested_on"`
-	Results           resultsText                     `json:"results" xml:"results"`
+	Image             string                 `json:"image" xml:"image"`
+	Passed            bool                   `json:"passed" xml:"passed"`
+	CertificationHash string                 `json:"certification_hash,omitempty" xml:"certification_hash,omitempty"`
+	LibraryInfo       version.VersionContext `json:"test_library" xml:"test_library"`
+	// TestedOn          runtime.OpenshiftClusterVersion `json:"tested_on" xml:"tested_on"`
+	Results resultsText `json:"results" xml:"results"`
 }
 
 // resultsText represents the results of check execution against the asset.
