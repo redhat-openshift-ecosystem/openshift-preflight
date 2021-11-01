@@ -62,7 +62,7 @@ func (p *DeployableByOlmCheck) Validate(bundleRef certification.ImageReference) 
 	ctx := context.Background()
 
 	// gather the list of registry and pod images
-	beforeOperatorImages, err := p.getImages()
+	beforeOperatorImages, err := p.getImages(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -91,7 +91,7 @@ func (p *DeployableByOlmCheck) Validate(bundleRef certification.ImageReference) 
 		return false, err
 	}
 
-	afterOperatorImages, err := p.getImages()
+	afterOperatorImages, err := p.getImages(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -435,8 +435,8 @@ func (p *DeployableByOlmCheck) readFileAsByteArray(filename string) ([]byte, err
 	return content, nil
 }
 
-func (p *DeployableByOlmCheck) getImages() (map[string]struct{}, error) {
-	return p.OpenshiftEngine.GetImages()
+func (p *DeployableByOlmCheck) getImages(ctx context.Context) (map[string]struct{}, error) {
+	return p.OpenshiftEngine.GetImages(ctx)
 }
 
 func (p *DeployableByOlmCheck) Name() string {

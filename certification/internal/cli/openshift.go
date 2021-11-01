@@ -58,7 +58,7 @@ type OpenshiftEngine interface {
 
 	GetCSV(ctx context.Context, name string, namespace string) (*operatorv1alpha1.ClusterServiceVersion, error)
 
-	GetImages() (map[string]struct{}, error)
+	GetImages(ctx context.Context) (map[string]struct{}, error)
 
 	CreateRoleBinding(ctx context.Context, data RoleBindingData, namespace string) (*rbacv1.RoleBinding, error)
 	GetRoleBinding(ctx context.Context, name string, namespace string) (*rbacv1.RoleBinding, error)
