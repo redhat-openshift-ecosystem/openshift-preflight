@@ -90,7 +90,7 @@ func junitXMLFormatter(r runtime.Results) ([]byte, error) {
 		totalDuration += result.ElapsedTime
 	}
 
-	testsuite.Time = totalDuration.String()
+	testsuite.Time = fmt.Sprintf("%f", totalDuration.Seconds())
 	suites.Suites = append(suites.Suites, testsuite)
 
 	bytes, err := xml.MarshalIndent(suites, "", "\t")
