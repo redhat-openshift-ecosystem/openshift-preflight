@@ -39,3 +39,4 @@ var ErrRemoveSpecialCharFromProjectID = errors.New("please remove all special ch
 var ErrPullRequestURL = errors.New("please enter a valid url: including scheme, host, and path to pull request")
 var ErrIndexImageUndefined = errors.New("no environment variable PFLT_INDEXIMAGE could be found")
 var ErrUnsupportedGoType = errors.New("go type unsupported")
+var ErrEmptyClusterServiceVersionFile = errors.New("the clusterserviceversion file was empty")

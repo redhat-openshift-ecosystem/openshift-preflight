@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	log "github.com/sirupsen/logrus"
@@ -61,4 +62,67 @@ func annotation(annotations map[string]string, key string) (string, error) {
 	}
 
 	return value, nil
+}
+
+func getCsvFilePathFromBundle(mountedDir string) (string, error) {
+	log.Trace("reading clusterserviceversion file from the bundle")
+	log.Debug("mounted directory is ", mountedDir)
+	matches, err := filepath.Glob(filepath.Join(mountedDir, "manifests", "*.clusterserviceversion.yaml"))
+
+	if err != nil {
+		log.Error("glob pattern is malformed: ", err)
+		return "", err
+	}
+	if len(matches) == 0 {
+		log.Error("unable to find clusterserviceversion file in the bundle image: ", err)
+		return "", err
+	}
+	if len(matches) > 1 {
+		log.Error("found more than one clusterserviceversion file in the bundle image: ", err)
+		return "", err
+	}
+	log.Debug(fmt.Sprintf("The path to csv file is %s", matches[0]))
+	return matches[0], nil
+}
+
+func getSupportedInstalledModes(mountedDir string) (map[string]bool, error) {
+	csvFilepath, err := getCsvFilePathFromBundle(mountedDir)
+	if err != nil {
+		return nil, err
+	}
+
+	csvFileReader, err := os.ReadFile(csvFilepath)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	var csv ClusterServiceVersion
+	err = yaml.Unmarshal(csvFileReader, &csv)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	var installedModes map[string]bool = make(map[string]bool, len(csv.Spec.InstallModes))
+	for _, v := range csv.Spec.InstallModes {
+		if v.Supported {
+			installedModes[v.Type] = true
+		}
+	}
+	return installedModes, nil
+}
+
+type ClusterServiceVersion struct {
+	Spec ClusterServiceVersionSpec `yaml:"spec"`
+}
+
+type ClusterServiceVersionSpec struct {
+	// InstallModes specify supported installation types
+	InstallModes []InstallMode `yaml:"installModes,omitempty"`
+}
+
+type InstallMode struct {
+	Type      string `yaml:"type"`
+	Supported bool   `yaml:"supported"`
 }

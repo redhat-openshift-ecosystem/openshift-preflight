@@ -22,8 +22,10 @@ var _ = Describe("DeployableByOLMCheck", func() {
 	)
 	const (
 		metadataDir            = "metadata"
+		manifestDir            = "manifests"
 		registryConfigDir      = ".docker"
 		annotationFilename     = "annotations.yaml"
+		csvFilename            = "test-operator.clusterserviceversion.yaml"
 		registryConfigFilename = "config.json"
 		annotations            = `annotations:
   operators.operatorframework.io.bundle.package.v1: testPackage
@@ -36,6 +38,19 @@ var _ = Describe("DeployableByOLMCheck", func() {
     }
   }
 }`
+
+		csv = `
+    spec:
+      installModes:
+        - supported: false
+          type: OwnNamespace
+        - supported: false
+          type: SingleNamespace
+        - supported: false
+          type: MultiNamespace
+        - supported: true
+          type: AllNamespaces
+`
 	)
 	BeforeEach(func() {
 		// override default timeout
@@ -50,6 +65,13 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		err = os.WriteFile(filepath.Join(tmpDir, metadataDir, annotationFilename), []byte(annotations), 0644)
+		Expect(err).ToNot(HaveOccurred())
+
+		// mock csv file
+		err = os.Mkdir(filepath.Join(tmpDir, manifestDir), 0755)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = os.WriteFile(filepath.Join(tmpDir, manifestDir, csvFilename), []byte(csv), 0644)
 		Expect(err).ToNot(HaveOccurred())
 
 		// mock docker config file
@@ -69,8 +91,6 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		// set env var for index image
 		os.Setenv("PFLT_INDEXIMAGE", "test_indeximage")
 		os.Setenv("PFLT_ARTIFACTS", tmpDir)
-		os.Setenv("PFLT_DOCKERCONFIG", filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename))
-
 	})
 	Describe("When deploying an operator using OLM", func() {
 		Context("When CSV has been created successfully", func() {
@@ -78,7 +98,6 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				engine = FakeOpenshiftEngine{}
 				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
 			})
-
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(imageRef)
 				Expect(err).ToNot(HaveOccurred())
@@ -90,22 +109,43 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				engine = BadOpenshiftEngine{}
 				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
 			})
-
 			It("Should fail Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(imageRef)
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
 		})
-	})
-	Describe("When deploying an operator using OLM", func() {
 		Context("When index image is in a custom namespace and CSV has been created successfully", func() {
 			BeforeEach(func() {
 				os.Setenv("PFLT_INDEXIMAGE", "image-registry.openshift-image-registry.svc/namespace/indeximage:v0.0.0")
 				engine = FakeOpenshiftEngine{}
 				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
 			})
+			It("Should pass Validate", func() {
+				ok, err := deployableByOLMCheck.Validate(imageRef)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
+			})
+		})
+		Context("When index image is in a private registry and CSV has been created successfully", func() {
+			BeforeEach(func() {
+				os.Setenv("PFLT_DOCKERCONFIG", filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename))
+				defer os.Unsetenv("PFLT_DOCKERCONFIG")
 
+				engine = FakeOpenshiftEngine{}
+				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
+			})
+			It("Should pass Validate", func() {
+				ok, err := deployableByOLMCheck.Validate(imageRef)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
+			})
+		})
+		Context("When the only supported install mode is AllNamespaces", func() {
+			BeforeEach(func() {
+				engine = FakeOpenshiftEngine{}
+				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
+			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(imageRef)
 				Expect(err).ToNot(HaveOccurred())
@@ -113,7 +153,6 @@ var _ = Describe("DeployableByOLMCheck", func() {
 			})
 		})
 	})
-
 	DescribeTable("Image Registry validation",
 		func(bundleImages []string, expected bool) {
 			ok := checkImageSource(bundleImages)
