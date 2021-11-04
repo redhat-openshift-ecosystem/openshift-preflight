@@ -67,7 +67,7 @@ func junitXMLFormatter(r runtime.Results) ([]byte, error) {
 		testCase := JUnitTestCase{
 			Classname: response.Image,
 			Name:      result.Name(),
-			Time:      result.ElapsedTime.String(),
+			Time:      fmt.Sprintf("%f", result.ElapsedTime.Seconds()),
 			Failure:   nil,
 			Message:   result.Metadata().Description,
 		}
