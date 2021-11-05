@@ -12,7 +12,7 @@ var (
 	images = map[string]string{
 		// operator policy, operator-sdk scorecard
 		// quay.io/operator-framework/scorecard-test:v1.14.0
-		"scorecard": "quay.io/operator-framework/scorecard-test@sha256:66023c1e0f6021407811fb2b1d42aa16af6f41f2c791b2bdeb6ba696d000cf5d",
+		"scorecard": "quay.io/operator-framework/scorecard-test@sha256:ff3ce0785e706185260a8308c0f40bae950fdba03cbb302fd002dddf3129b189",
 	}
 )
 
