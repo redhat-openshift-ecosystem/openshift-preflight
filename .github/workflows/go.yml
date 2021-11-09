@@ -27,8 +27,8 @@ jobs:
     - name: Format
       run: make fmt
 
-    - name: Build
-      run: make build
+    - name: Build Multi-arch
+      run: make build-multi-arch
 
     - name: Test
       run: make test
