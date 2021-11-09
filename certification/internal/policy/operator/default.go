@@ -1,5 +1,11 @@
 package operator
 
+import (
+	"time"
+
+	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+)
+
 const (
 	// packageKey is the packageKey in annotations.yaml that contains the package name.
 	packageKey = "operators.operatorframework.io.bundle.package.v1"
@@ -30,4 +36,32 @@ const (
 
 	// openshiftMarketplaceNamespace is the project name for the default openshift marketplace
 	openshiftMarketplaceNamespace = "openshift-marketplace"
+
+	// errorPrefix is the prefix used by goroutines to send error messages on the same channel as the data
+	errorPrefix = "error:"
+
+	// imageRegistryService is the service name of the image registry
+	imageRegistryService = "image-registry.openshift-image-registry.svc"
+)
+
+var (
+	subscriptionTimeout time.Duration = 180 * time.Second
+
+	csvTimeout time.Duration = 180 * time.Second
+
+	approvedRegistries = map[string]struct{}{
+		"registry.connect.dev.redhat.com":   {},
+		"registry.connect.qa.redhat.com":    {},
+		"registry.connect.stage.redhat.com": {},
+		"registry.connect.redhat.com":       {},
+		"registry.redhat.io":                {},
+		"registry.access.redhat.com":        {},
+	}
+
+	prioritizedInstallModes = []string{
+		string(operatorv1alpha1.InstallModeTypeOwnNamespace),
+		string(operatorv1alpha1.InstallModeTypeSingleNamespace),
+		string(operatorv1alpha1.InstallModeTypeMultiNamespace),
+		string(operatorv1alpha1.InstallModeTypeAllNamespaces),
+	}
 )

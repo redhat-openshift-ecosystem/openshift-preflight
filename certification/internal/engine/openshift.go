@@ -316,7 +316,7 @@ func (oe *openshiftEngine) GetCSV(ctx context.Context, name string, namespace st
 		log.Error("unable to create a client for csv: ", err)
 		return nil, err
 	}
-	log.Debug(fmt.Sprintf("fetching csv %s from namespace %s ", name, namespace))
+	log.Debug(fmt.Sprintf("fetching csv %s from namespace %s", name, namespace))
 	return csvClient.Get(ctx, name)
 }
 
