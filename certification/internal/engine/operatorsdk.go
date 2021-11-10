@@ -73,6 +73,14 @@ func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecard
 		if stderr.Len() != 0 && strings.Contains(stderr.String(), "FATA") {
 			log.Error("stdout: ", stdout.String())
 			log.Error("stderr: ", stderr.String())
+			log.Error("stderr: operator-sdk scorecard failed to run properly. " +
+				"Please review the " + artifacts.Path() + "/" + opts.ResultFile + " file for more information. ")
+
+			if err := o.writeScorecardFile(opts.ResultFile, stderr.String()); err != nil {
+				log.Error("unable to copy result to artifacts directory: ", err)
+				return nil, err
+			}
+
 			return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkScorecardFailed, err)
 		}
 	}
