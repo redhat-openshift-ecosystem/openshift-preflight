@@ -68,9 +68,9 @@ func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecard
 		// Until resolved, we are concluding/assuming that non-zero exit codes with len(stderr) == 0
 		// means that we failed a test, but the command execution succeeded.
 		//
-		// We also conclude/assume that anything being in stderr would indicate an error in the
+		// We also conclude/assume that "FATA" being in stderr would indicate an error in the
 		// check execution itself.
-		if stderr.Len() != 0 {
+		if stderr.Len() != 0 && strings.Contains(stderr.String(), "FATA") {
 			log.Error("stdout: ", stdout.String())
 			log.Error("stderr: ", stderr.String())
 			return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkScorecardFailed, err)
@@ -122,9 +122,19 @@ func (o operatorSdkEngine) BundleValidate(image string, opts cli.OperatorSdkBund
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		log.Debugf("Stderr: %s", stderr.String())
-		log.Debugf("Stdout: %s", stdout.String())
-		return &cli.OperatorSdkBundleValidateReport{Stderr: stderr.String(), Stdout: stdout.String()}, fmt.Errorf("%w: %s", errors.ErrOperatorSdkBundleValidateFailed, err)
+		// This is a workaround due to operator-sdk scorecard always returning a 1 exit code
+		// whether a test failed or the tool encountered a fatal error.
+		//
+		// Until resolved, we are concluding/assuming that non-zero exit codes with len(stderr) == 0
+		// means that we failed a test, but the command execution succeeded.
+		//
+		// We also conclude/assume that "FATA" being in stderr would indicate an error in the
+		// check execution itself.
+		if stderr.Len() != 0 && strings.Contains(stderr.String(), "FATA") {
+			log.Error("stdout: ", stdout.String())
+			log.Error("stderr: ", stderr.String())
+			return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkBundleValidateFailed, err)
+		}
 	}
 
 	var bundleValidateData cli.OperatorSdkBundleValidateReport
