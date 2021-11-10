@@ -36,6 +36,9 @@ func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecard
 	if opts.Kubeconfig != "" {
 		cmdArgs = append(cmdArgs, "--kubeconfig", opts.Kubeconfig)
 	}
+	if opts.WaitTime != "" {
+		cmdArgs = append(cmdArgs, "--wait-time", opts.WaitTime)
+	}
 	if opts.Namespace != "" {
 		cmdArgs = append(cmdArgs, "--namespace", opts.Namespace)
 	}

@@ -8,6 +8,7 @@ type OperatorSdkScorecardOptions struct {
 	Namespace      string
 	ServiceAccount string
 	Verbose        bool
+	WaitTime       string
 }
 
 type OperatorSdkScorecardReport struct {
@@ -37,6 +38,7 @@ type OperatorSdkBundleValidateOptions struct {
 	OptionalValues  map[string]string
 	OutputFormat    string
 	Verbose         bool
+	WaitTime        string
 }
 
 type OperatorSdkBundleValidateReport struct {
