@@ -107,13 +107,26 @@ func diffImageList(before, after map[string]struct{}) []string {
 }
 
 func checkImageSource(operatorImages []string) bool {
+	log.Info("Checking that images are from approved sources...")
+
+	registries := make([]string, len(approvedRegistries))
+	i := 0
+	for registry := range approvedRegistries {
+		registries[i] = registry
+		i++
+	}
+
+	log.Debug("List of approved registries are: ", registries)
 	allApproved := true
 	for _, image := range operatorImages {
 		userRegistry := strings.Split(image, "/")[0]
 		if _, ok := approvedRegistries[userRegistry]; !ok {
-			log.Warnf("Unapproved registry found: %s", image)
+			log.Warnf("Unapproved registry found for image %s", image)
 			allApproved = false
 		}
+	}
+	if allApproved {
+		log.Info("All images are from approved sources...")
 	}
 	return allApproved
 }
@@ -250,7 +263,7 @@ func (p *DeployableByOlmCheck) generateOperatorGroupData(operatorData *OperatorD
 		targetNamespaces = []string{}
 
 	}
-	log.Debug(fmt.Sprintf("The operator group's targetNamespaces is %s", targetNamespaces))
+	log.Debug(fmt.Sprintf("The OperatorGroup's TargetNamespaces is %s", targetNamespaces))
 	operatorData.CsvNamespaces = targetNamespaces
 	return cli.OperatorGroupData{Name: operatorData.App, TargetNamespaces: targetNamespaces}, nil
 }
@@ -283,12 +296,12 @@ func watch(ctx context.Context, engine cli.OpenshiftEngine, wg *sync.WaitGroup, 
 		obj, done, err := fn(ctx, engine, name, namespace)
 		if err != nil {
 			// Something bad happened. Get out of town
-			log.Error(fmt.Sprintf("could not retrieve the object %s: ", name), err)
+			log.Error(fmt.Sprintf("could not retrieve the object %s/%s: ", namespace, name), err)
 			channel <- fmt.Sprintf("%s %v", errorPrefix, err)
 			return
 		}
 		if done {
-			log.Debug(fmt.Sprintf("Object is %s/%s", namespace, obj))
+			log.Info(fmt.Sprintf("Successfully retrieved object %s/%s", namespace, obj))
 			channel <- obj
 			return
 		}
@@ -296,7 +309,7 @@ func watch(ctx context.Context, engine cli.OpenshiftEngine, wg *sync.WaitGroup, 
 
 		select {
 		case <-ctx.Done():
-			log.Error("failed to fetch object: ", ctx.Err())
+			log.Error(fmt.Sprintf("failed to retrieve object %s/%s: ", namespace, name), ctx.Err())
 			channel <- fmt.Sprintf("%s %v", errorPrefix, ctx.Err())
 			return
 		default:
@@ -524,7 +537,7 @@ func (p *DeployableByOlmCheck) Name() string {
 
 func (p *DeployableByOlmCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Checking if the operator could be deployed by OLM, and images are from approved sources",
+		Description:      "Checking if the operator could be deployed by OLM",
 		Level:            "best",
 		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide", // Placeholder
 		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
@@ -532,12 +545,6 @@ func (p *DeployableByOlmCheck) Metadata() certification.Metadata {
 }
 
 func (p *DeployableByOlmCheck) Help() certification.HelpText {
-	if !p.validImages {
-		return certification.HelpText{
-			Message:    "It is required that your operator contains images from valid sources",
-			Suggestion: "Images should only be sourced from approved registries",
-		}
-	}
 	return certification.HelpText{
 		Message:    "It is required that your operator could be deployed by OLM",
 		Suggestion: "Follow the guidelines on the operatorsdk website to learn how to package your operator https://sdk.operatorframework.io/docs/olm-integration/cli-overview/",
