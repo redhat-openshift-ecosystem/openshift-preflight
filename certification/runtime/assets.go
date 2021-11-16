@@ -1,18 +1,23 @@
 package runtime
 
+import (
+	"fmt"
+	"strings"
+
+	"github.com/google/go-containerregistry/pkg/crane"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+)
+
 var (
 
 	// images maps the images use by preflight with their purpose.
 	//
 	// these should have accessor functions made available if they are
 	// to be used outside of this package.
-	//
-	// These images should also all be referenced using digests over tags
-	// to enable disconnected environments.
 	images = map[string]string{
 		// operator policy, operator-sdk scorecard
-		// quay.io/operator-framework/scorecard-test:v1.14.0
-		"scorecard": "quay.io/operator-framework/scorecard-test@sha256:ff3ce0785e706185260a8308c0f40bae950fdba03cbb302fd002dddf3129b189",
+		"scorecard": "quay.io/operator-framework/scorecard-test:v1.14.0",
 	}
 )
 
@@ -23,7 +28,14 @@ func imageList() []string {
 
 	i := 0
 	for _, image := range images {
-		imageList[i] = image
+		base := strings.Split(image, ":")[0]
+		digest, err := crane.Digest(image)
+		if err != nil {
+			log.Error(err)
+			// Skip this entry
+			continue
+		}
+		imageList[i] = fmt.Sprintf("%s@%s", base, digest)
 		i++
 	}
 
@@ -40,6 +52,11 @@ func Assets() AssetData {
 // ScorecardImage returns the container image used for OperatorSDK
 // Scorecard based checks.
 func ScorecardImage() string {
+	scorecardImage := viper.GetString("scorecard_image")
+	if scorecardImage != "" {
+		log.Info(fmt.Sprintf("Using %s as the scorecard test image", scorecardImage))
+		return scorecardImage
+	}
 	return images["scorecard"]
 }
 
