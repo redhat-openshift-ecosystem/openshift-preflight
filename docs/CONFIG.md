@@ -23,6 +23,7 @@ is called.
 |`PFLT_SERVICEACCOUNT`|env|The service account to use when running [OperatorSDK Scorecard](https://sdk.operatorframework.io/docs/testing-operators/scorecard/)|optional|[default](https://github.com/redhat-openshift-ecosystem/openshift-preflight/blob/main/cmd/defaults.go#L9)|
 |`PFLT_INDEXIMAGE`|env|The index image to use when testing that an operator is `DeployableByOLM`|required|-|
 |`PFLT_DOCKERCONFIG`|env|The full path to a dockerconfigjson file, which is pushed to the target test cluster to access images in private repositories in the `DeployableByOLM`. If empty, no secret is created and the resource is assumed to be public.|optional|-|
+|`PFLT_SCORECARD_IMAGE`|env|A uri that points to the scorecard image digest, used in disconnected environments. It should only be used in a disconnected environment. Use `preflight runtime-assets` on a connected workstation to generate the digest that needs to be mirrored.|optional|-|
 
 
 For information on how to build an index image, see [BUILDING_AN_INDEX.md](BUILDING_AN_INDEX.md).
