@@ -49,7 +49,7 @@ vet:
 
 .PHONY: test-e2e
 test-e2e:
-	go test -v ./test/e2e/
+	./test/e2e/operator-test.sh
 
 .PHONY: clean
 clean:
