@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 DEFAULT_PREFLIGHT_BIN="preflight"
 DEFAULT_OPERATOR_BUNDLE="quay.io/opdev/simple-demo-operator-bundle:latest"
 DEFAULT_OPERATOR_INDEXIMAGE="quay.io/opdev/simple-demo-operator-catalog:latest"
@@ -51,12 +53,6 @@ PFLT_LOGLEVEL=trace PFLT_INDEXIMAGE="${OPERATOR_INDEXIMAGE}" \
     "./${PREFLIGHT_BIN}" check operator "${OPERATOR_BUNDLE}"
 
 echo -e "\n========================"
-
-# If preflight threw a non-zero return code, we fail outright.
-if [ $? != 0 ]; then
-    echo "ERR The preflight execution itself exited with an error."
-    exit 1
-fi
 
 # Before we check the error count, make sure that it still
 # exists at the expected path in the results.json
