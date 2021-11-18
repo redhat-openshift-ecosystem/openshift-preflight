@@ -42,7 +42,7 @@ func (p *scorecardCheck) getDataToValidate(bundleImage string, selector []string
 		Namespace:      namespace,
 		ServiceAccount: serviceAccount,
 		Verbose:        true,
-		WaitTime:       "120s",
+		WaitTime:       "240s",
 	}
 	return p.OperatorSdkEngine.Scorecard(bundleImage, opts)
 }
