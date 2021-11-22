@@ -1,8 +1,11 @@
 package formatters
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
@@ -35,6 +38,21 @@ var _ = Describe("Formatters", func() {
 	})
 
 	Describe("When creating a new generic formatter", func() {
+
+		Context("with improper arguments", func() {
+			expectedResult := []byte(fmt.Errorf("failed to create a new generic formatter: %w",
+				errors.ErrFormatterNameNotProvided).Error())
+			var fn FormatterFunc = func(runtime.Results) ([]byte, error) {
+				return expectedResult, nil
+			}
+
+			emptyNameFormatter, err := New("", "txt", fn)
+			It("should return an error because of an empty name", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(emptyNameFormatter).To(BeNil())
+			})
+		})
+
 		Context("with proper arguments", func() {
 			var expectedResult []byte = []byte("this is a test")
 			var name string = "testFormatter"

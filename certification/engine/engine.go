@@ -1,3 +1,4 @@
+// Package engine contains the interfaces necessary to implement policy execution.
 package engine
 
 import (
@@ -5,11 +6,13 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/shell"
+	internal "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/engine"
+	containerpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/container"
+	operatorpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/operator"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
-// CheckEngine defines the functonality necessary to run all checks for a policy,
+// CheckEngine defines the functionality necessary to run all checks for a policy,
 // and return the results of that check execution.
 type CheckEngine interface {
 	// ExecuteChecks should execute all checks in a policy and internally
@@ -40,25 +43,24 @@ func NewForConfig(config runtime.Config) (CheckEngine, error) {
 		checks[i] = check
 	}
 
-	engine := &shell.CheckEngine{
-		Image:  config.Image,
-		Checks: checks,
+	engine := &internal.CraneEngine{
+		Image:    config.Image,
+		Checks:   checks,
+		IsBundle: config.Bundle,
 	}
 
 	return engine, nil
 }
 
 // queryChecks queries Operator and Container checks by name, and return certification.Check
-// if found; nil otherwise
+// if found; nil otherwise. This will be collapsed when old checks are all deprecated.
 func queryChecks(checkName string) certification.Check {
 	// query Operator checks
-	check, exists := operatorPolicy[checkName]
-	if exists {
+	if check, exists := operatorPolicy[checkName]; exists {
 		return check
 	}
 	// if not found in Operator Policy, query container policy
-	check, exists = containerPolicy[checkName]
-	if exists {
+	if check, exists := containerPolicy[checkName]; exists {
 		return check
 	}
 
@@ -66,33 +68,39 @@ func queryChecks(checkName string) certification.Check {
 }
 
 // Register all checks
-var runAsNonRootCheck certification.Check = &shell.RunAsNonRootCheck{}
-var underLayerMaxCheck certification.Check = &shell.UnderLayerMaxCheck{}
-var hasRequiredLabelCheck certification.Check = &shell.HasRequiredLabelsCheck{}
-var basedOnUbiCheck certification.Check = &shell.BaseOnUBICheck{}
-var hasLicenseCheck certification.Check = &shell.HasLicenseCheck{}
-var hasMinimalVulnerabilitiesCheck certification.Check = &shell.HasMinimalVulnerabilitiesCheck{}
-var hasUniqueTagCheck certification.Check = &shell.HasUniqueTagCheck{}
-var hasNoProhibitedCheck certification.Check = &shell.HasNoProhibitedPackagesCheck{}
-var validateOperatorBundle certification.Check = &shell.ValidateOperatorBundleCheck{}
-var scorecardBasicSpecCheck certification.Check = &shell.ScorecardBasicSpecCheck{}
-var scorecardOlmSuiteCheck certification.Check = &shell.ScorecardOlmSuiteCheck{}
 
-var containerPolicy = map[string]certification.Check{
-	runAsNonRootCheck.Name():              runAsNonRootCheck,
-	underLayerMaxCheck.Name():             underLayerMaxCheck,
-	hasRequiredLabelCheck.Name():          hasRequiredLabelCheck,
-	basedOnUbiCheck.Name():                basedOnUbiCheck,
-	hasLicenseCheck.Name():                hasLicenseCheck,
-	hasMinimalVulnerabilitiesCheck.Name(): hasMinimalVulnerabilitiesCheck,
-	hasUniqueTagCheck.Name():              hasUniqueTagCheck,
-	hasNoProhibitedCheck.Name():           hasNoProhibitedCheck,
-}
+// Operator checks
+var operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgNameIsUniqueCheck{}
+var scorecardBasicSpecCheck certification.Check = operatorpol.NewScorecardBasicSpecCheck(internal.NewOperatorSdkEngine())
+var scorecardOlmSuiteCheck certification.Check = operatorpol.NewScorecardOlmSuiteCheck(internal.NewOperatorSdkEngine())
+var deployableByOlmCheck certification.Check = operatorpol.NewDeployableByOlmCheck(internal.NewOpenshiftEngine())
+var validateOperatorBundle certification.Check = operatorpol.NewValidateOperatorBundleCheck(internal.NewOperatorSdkEngine())
+
+// Container checks
+var hasLicenseCheck certification.Check = &containerpol.HasLicenseCheck{}
+var hasUniqueTagCheck certification.Check = containerpol.NewHasUniqueTagCheck(internal.NewCraneEngine())
+var maxLayersCheck certification.Check = &containerpol.MaxLayersCheck{}
+var hasNoProhibitedCheck certification.Check = &containerpol.HasNoProhibitedPackagesCheck{}
+var hasRequiredLabelsCheck certification.Check = &containerpol.HasRequiredLabelsCheck{}
+var runAsRootCheck certification.Check = &containerpol.RunAsNonRootCheck{}
+var basedOnUbiCheck certification.Check = &containerpol.BasedOnUBICheck{}
 
 var operatorPolicy = map[string]certification.Check{
-	validateOperatorBundle.Name():  validateOperatorBundle,
+	//operatorPkgNameIsUniqueCheck.Name(): operatorPkgNameIsUniqueCheck,
 	scorecardBasicSpecCheck.Name(): scorecardBasicSpecCheck,
 	scorecardOlmSuiteCheck.Name():  scorecardOlmSuiteCheck,
+	deployableByOlmCheck.Name():    deployableByOlmCheck,
+	validateOperatorBundle.Name():  validateOperatorBundle,
+}
+
+var containerPolicy = map[string]certification.Check{
+	hasLicenseCheck.Name():        hasLicenseCheck,
+	hasUniqueTagCheck.Name():      hasUniqueTagCheck,
+	maxLayersCheck.Name():         maxLayersCheck,
+	hasNoProhibitedCheck.Name():   hasNoProhibitedCheck,
+	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
+	runAsRootCheck.Name():         runAsRootCheck,
+	basedOnUbiCheck.Name():        basedOnUbiCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {

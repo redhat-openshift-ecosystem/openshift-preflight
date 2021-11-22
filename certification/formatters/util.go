@@ -16,7 +16,7 @@ func getResponse(r runtime.Results) UserResponse {
 		for i, check := range r.Passed {
 			passedChecks[i] = checkExecutionInfo{
 				Name:        check.Name(),
-				ElapsedTime: check.ElapsedTime.String(),
+				ElapsedTime: float64(check.ElapsedTime.Milliseconds()),
 				Description: check.Metadata().Description,
 			}
 		}
@@ -26,7 +26,7 @@ func getResponse(r runtime.Results) UserResponse {
 		for i, check := range r.Failed {
 			failedChecks[i] = checkExecutionInfo{
 				Name:             check.Name(),
-				ElapsedTime:      check.ElapsedTime.String(),
+				ElapsedTime:      float64(check.ElapsedTime.Milliseconds()),
 				Description:      check.Metadata().Description,
 				Help:             check.Help().Message,
 				Suggestion:       check.Help().Suggestion,
@@ -40,7 +40,7 @@ func getResponse(r runtime.Results) UserResponse {
 		for i, check := range r.Errors {
 			erroredChecks[i] = checkExecutionInfo{
 				Name:        check.Name(),
-				ElapsedTime: check.ElapsedTime.String(),
+				ElapsedTime: float64(check.ElapsedTime.Milliseconds()),
 				Description: check.Metadata().Description,
 				Help:        check.Help().Message,
 			}
@@ -49,8 +49,10 @@ func getResponse(r runtime.Results) UserResponse {
 
 	response := UserResponse{
 		Image:             r.TestedImage,
-		Status:            r.Status,
-		ValidationVersion: version.Version,
+		Passed:            r.PassedOverall,
+		LibraryInfo:       version.Version,
+		CertificationHash: r.CertificationHash,
+		// TestedOn:          r.TestedOn,
 		Results: resultsText{
 			Passed: passedChecks,
 			Failed: failedChecks,
@@ -61,25 +63,31 @@ func getResponse(r runtime.Results) UserResponse {
 	return response
 }
 
+// UserResponse is the standard user-facing response.
 type UserResponse struct {
 	Image             string                 `json:"image" xml:"image"`
-	Status            string                 `jsoon:"status" xml:"status"`
-	ValidationVersion version.VersionContext `json:"validation_lib_version" xml:"validationLibVersion"`
-	Results           resultsText            `json:"results" xml:"results"`
+	Passed            bool                   `json:"passed" xml:"passed"`
+	CertificationHash string                 `json:"certification_hash,omitempty" xml:"certification_hash,omitempty"`
+	LibraryInfo       version.VersionContext `json:"test_library" xml:"test_library"`
+	// TestedOn          runtime.OpenshiftClusterVersion `json:"tested_on" xml:"tested_on"`
+	Results resultsText `json:"results" xml:"results"`
 }
 
+// resultsText represents the results of check execution against the asset.
 type resultsText struct {
 	Passed []checkExecutionInfo `json:"passed" xml:"passed"`
 	Failed []checkExecutionInfo `json:"failed" xml:"failed"`
 	Errors []checkExecutionInfo `json:"errors" xml:"errors"`
 }
 
+// checkExecutionInfo contains all possible output fields that a user might see in their result.
+// Empty fields will be omitted.
 type checkExecutionInfo struct {
-	Name             string `json:"name,omitempty" xml:"name,omitempty"`
-	ElapsedTime      string `json:"elapsed_time,omitempty" xml:"elapsed_time,omitempty"`
-	Description      string `json:"description,omitempty" xml:"description,omitempty"`
-	Help             string `json:"help,omitempty" xml:"help,omitempty"`
-	Suggestion       string `json:"suggestion,omitempty" xml:"suggestion,omitempty"`
-	KnowledgeBaseURL string `json:"knowledgebase_url,omitempty" xml:"knowledgebase_url,omitempty"`
-	CheckURL         string `json:"check_url,omitempty" xml:"check_url,omitempty"`
+	Name             string  `json:"name,omitempty" xml:"name,omitempty"`
+	ElapsedTime      float64 `json:"elapsed_time,omitempty" xml:"elapsed_time,omitempty"`
+	Description      string  `json:"description,omitempty" xml:"description,omitempty"`
+	Help             string  `json:"help,omitempty" xml:"help,omitempty"`
+	Suggestion       string  `json:"suggestion,omitempty" xml:"suggestion,omitempty"`
+	KnowledgeBaseURL string  `json:"knowledgebase_url,omitempty" xml:"knowledgebase_url,omitempty"`
+	CheckURL         string  `json:"check_url,omitempty" xml:"check_url,omitempty"`
 }

@@ -4,14 +4,15 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/shell"
+	containerpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/container"
+	operatorpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/operator"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
 var _ = Describe("TestPolicyEngine", func() {
 	var (
-		hasNoProhibitedCheck   certification.Check = &shell.HasNoProhibitedPackagesCheck{}
-		validateOperatorBundle certification.Check = &shell.ValidateOperatorBundleCheck{}
+		hasNoProhibitedCheck   certification.Check = &containerpol.HasNoProhibitedPackagesCheck{}
+		validateOperatorBundle certification.Check = &operatorpol.ValidateOperatorBundleCheck{}
 	)
 
 	Describe("Querying all policies", func() {

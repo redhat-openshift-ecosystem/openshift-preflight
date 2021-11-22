@@ -2,7 +2,7 @@
 
 **Preflight** is a commandline interface for validating if
 [OpenShift](https://www.openshift.com/) operator bundles and containers meet minimum
-reqiurements for [Red Hat OpenShift
+requirements for [Red Hat OpenShift
 Certification](https://connect.redhat.com/en/partner-with-us/red-hat-openshift-certification).
 
 This project is in active and rapid development! Many facets of this project are
@@ -13,14 +13,13 @@ subject to change, and some features are not fully implemented.
 The preflight binary currently requires that you have the following tools installed,
 functional, and in your path.
 
-- OperatorSDK `operator-sdk`
-- OpenShift Client `oc`
-- Podman `podman`
-- OpenSCAP `openscap-podman`
-- Skopeo `skopeo`
+| Name             | Tool cli          | Minimum version |
+|----------------- |:-----------------:| ---------------:|
+| OperatorSDK      | `operator-sdk`    | v1.14.0         |
+| OpenShift Client | `oc`              | v4.7.19         |
 
 See our [Vagrantfile](Vagrantfile) for more information on setting up a
-development environment. Some checks may also requires access to an OpenShift
+development environment. Some checks may also require access to an OpenShift
 cluster. which is not provided by the Vagrantfile
 
 ## Usage
@@ -55,10 +54,48 @@ To check a container, utilize the `check container` sub-command:
 preflight check container quay.io/example-namespace/example-container:0.0.1
 ```
 
-The check an Operator bundle, utilize the `check Operator` sub-command:
+To check an Operator bundle, utilize the `check Operator` sub-command:
 
 ```text
 preflight check operator quay.io/example-namespace/example-operator:0.0.1
+```
+
+For more detailed usage examples, see [Recipes](docs/RECIPES.md).
+
+For more information on how to configure the execution of `preflight`, see
+[CONFIG](docs/CONFIG.md)
+
+### Authenticating to Registries
+
+The `preflight` command will automatically utilize a credential file at
+`$DOCKER_CONFIG/config.json` (default: `~/.docker/config.json`) to access images
+in private registries.
+
+#### Remote Checks
+
+In some cases (e.g. *DeployableByOLM*), `preflight` will also pass credentials
+to the cluster used for testing (i.e. the cluster that is accessible through the
+current-context of the provided `KUBECONFIG`).
+
+We anticipate that the credentials in `$DOCKER_CONFIG/config.json` may contain
+more access than what is needed for `preflight` execution. To avoid passing more
+credentials than needed into a cluster for those checks, `preflight` will also
+accept a full path to a dockerconfigjson that should be passed through to a
+remote cluster via the `PFLT_DOCKERCONFIG` environment variable.
+
+If this variable is unset, `preflight` will assume that the images in scope
+(e.g. PFLT_INDEXIMAGE value, and the test target itself) are already accessible
+from the cluster used for testing.
+
+#### Podman Users
+
+[Podman](https://podman.io/) stores credentials at
+`${XDG_RUNTIME_DIR}/containers/auth.json`, which can also be used by executing
+the following:
+
+```shell
+ln -sf ${XDG_RUNTIME_DIR}/containers/auth.json ${XDG_RUNTIME_DIR}/containers/config.json
+DOCKER_CONFIG=${XDG_RUNTIME_DIR}/containers
 ```
 
 ## Installation
@@ -79,7 +116,8 @@ from source by using the provided target from within the root of the project dir
 make build
 ```
 
-The `preflight` binary will be created in the root of the project directory. The binary can then be copied manually to a location in the local `$PATH`.
+The `preflight` binary will be created in the root of the project directory. The
+binary can then be copied manually to a location in the local `$PATH`.
 
 ```bash
 sudo mv preflight /usr/local/bin/
@@ -99,13 +137,40 @@ preflight version 0.0.0 <commit: 2d3bb671bff8a95d385621382f31215234877d44>
 
 [releases_link]:https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
 
+## Preflight Testing
+
+For e2e testing, run
+
+```bash
+go test -v ./test/e2e/
+```
+
+or run
+
+```bash
+make test-e2e
+```
+
+For unit testing, run
+
+```bash
+go test -v `go list ./... | grep -v e2e`
+```
+
+or run
+
+```bash
+make test
+```
+
 ## How to Contribute
 
 Check out the [contributor documentation][contribution_docs].
 
 ## License
 
-Operator SDK is under Apache 2.0 license. See the [LICENSE][license_file] file for details.
+Operator SDK is under Apache 2.0 license. See the [LICENSE][license_file] file
+for details.
 
 [contribution_docs]: ./CONTRIBUTING.md
 [license_file]:./LICENSE

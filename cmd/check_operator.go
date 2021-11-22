@@ -4,13 +4,18 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var checkOperatorCmd = &cobra.Command{
@@ -23,16 +28,28 @@ var checkOperatorCmd = &cobra.Command{
 		}
 		return nil
 	},
+	PreRun: preRunConfig,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Expect exactly one positional arg. Check here instead of using builtin Args key
 		// so that we can get a more user-friendly error message
 
+		log.Info("certification library version ", version.Version.String())
+
 		operatorImage := args[0]
+
+		if _, ok := os.LookupEnv("KUBECONFIG"); !ok {
+			return errors.ErrNoKubeconfig
+		}
+
+		if catalogImage := viper.GetString("indexImage"); len(catalogImage) == 0 {
+			return errors.ErrIndexImageUndefined
+		}
 
 		cfg := runtime.Config{
 			Image:          operatorImage,
 			EnabledChecks:  engine.OperatorPolicy(),
 			ResponseFormat: DefaultOutputFormat,
+			Bundle:         true,
 		}
 
 		engine, err := engine.NewForConfig(cfg)
@@ -48,7 +65,7 @@ var checkOperatorCmd = &cobra.Command{
 		// create the results file early to catch cases where we are not
 		// able to write to the filesystem before we attempt to execute checks.
 		resultsFile, err := os.OpenFile(
-			resultsFilenameWithExtension(formatter.FileExtension()),
+			filepath.Join(artifacts.Path(), resultsFilenameWithExtension(formatter.FileExtension())),
 			os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
 			0600,
 		)
@@ -74,6 +91,10 @@ var checkOperatorCmd = &cobra.Command{
 
 		fmt.Fprint(resultsOutputTarget, string(formattedResults))
 		if err := resultsFile.Close(); err != nil {
+			return err
+		}
+
+		if err := writeJunitIfEnabled(results); err != nil {
 			return err
 		}
 

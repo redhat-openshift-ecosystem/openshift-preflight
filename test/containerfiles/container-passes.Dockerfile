@@ -2,7 +2,7 @@ FROM registry.access.redhat.com/ubi8/ubi:latest
 
 RUN useradd preflightuser
 
-COPY --chown=preflightuser:preflightuser example-license.txt /licenses
+COPY --chown=preflightuser:preflightuser example-license.txt /licenses/
 
 LABEL name="preflight test image" \ 
       vendor="preflight test vendor" \
