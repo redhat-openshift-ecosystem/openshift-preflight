@@ -174,8 +174,8 @@ func (p *OperatorPkgNameIsUniqueCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Validating Bundle image package name uniqueness",
 		Level:            "best",
-		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
-		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		KnowledgeBaseURL: "https://sdk.operatorframework.io/docs/olm-integration/tutorial-bundle/",
+		CheckURL:         "https://sdk.operatorframework.io/docs/olm-integration/tutorial-bundle/",
 	}
 }
 

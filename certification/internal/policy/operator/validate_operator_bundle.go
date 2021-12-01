@@ -158,8 +158,8 @@ func (p ValidateOperatorBundleCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Validating Bundle image that checks if it can validate the content and format of the operator bundle",
 		Level:            "best",
-		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
-		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		KnowledgeBaseURL: "https://sdk.operatorframework.io/docs/olm-integration/tutorial-bundle/",
+		CheckURL:         "https://sdk.operatorframework.io/docs/olm-integration/tutorial-bundle/",
 	}
 }
 
