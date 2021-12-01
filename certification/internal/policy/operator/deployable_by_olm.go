@@ -539,8 +539,8 @@ func (p *DeployableByOlmCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checking if the operator could be deployed by OLM",
 		Level:            "best",
-		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide", // Placeholder
-		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		KnowledgeBaseURL: "https://sdk.operatorframework.io/docs/olm-integration/testing-deployment/",
+		CheckURL:         "https://sdk.operatorframework.io/docs/olm-integration/testing-deployment/",
 	}
 }
 
