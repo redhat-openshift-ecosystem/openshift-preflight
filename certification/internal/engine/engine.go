@@ -20,6 +20,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	preflightRuntime "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
 // CraneEngine implements a certification.CheckEngine, and leverage crane to interact with
@@ -100,10 +101,15 @@ func (c *CraneEngine) ExecuteChecks() error {
 		ImageInfo:   img,
 	}
 
-	// Record test cluster version
-	c.results.TestedOn, err = GetOpenshiftClusterVersion()
-	if err != nil {
-		log.Error("Unable to determine test cluster version: ", err)
+	if c.IsBundle {
+		// Record test cluster version
+		c.results.TestedOn, err = GetOpenshiftClusterVersion()
+		if err != nil {
+			log.Error("Unable to determine test cluster version: ", err)
+		}
+	} else {
+		log.Info("Container checks do not require a cluster. skipping cluster version check.")
+		c.results.TestedOn = preflightRuntime.UnknownOpenshiftClusterVersion()
 	}
 
 	// execute checks
