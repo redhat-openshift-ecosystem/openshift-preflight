@@ -59,6 +59,7 @@ $CONTAINER_TOOL run \
   --env PFLT_LOGLEVEL=trace \
   --env PFLT_INDEXIMAGE=registry.example.org/your-namespace/your-index-image:sometag \
   --env PFLT_ARTIFACTS=/artifacts \
+  --env PFLT_CHANNEL=beta \
   --env PFLT_LOGFILE=/artifacts/preflight.log \
   -v /some/path/on/your/host/artifacts:/artifacts \
   -v /some/path/on/your/host/kubeconfig:/kubeconfig \
@@ -112,7 +113,9 @@ spec:
           - name: PFLT_LOGFILE
             value: "/artifacts/preflight.log"
           - name: PFLT_ARTIFACTS
-            value: "/artifacts"  
+            value: "/artifacts"
+          - name: PFLT_CHANNEL
+            value: "beta"
         volumeMounts:
           - name: "outputdir"
             mountPath: "/artifacts"

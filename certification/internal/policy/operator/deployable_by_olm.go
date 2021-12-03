@@ -65,6 +65,8 @@ func (p *DeployableByOlmCheck) Validate(bundleRef certification.ImageReference) 
 		return false, err
 	}
 
+	log.Debug("The operator Metadata is: ", fmt.Sprintf("%+v", *operatorData))
+
 	// create k8s custom resources for the operator deployment
 	err = p.setUp(ctx, operatorData)
 	defer p.cleanUp(ctx, *operatorData)
@@ -142,10 +144,14 @@ func (p *DeployableByOlmCheck) operatorMetadata(bundleRef certification.ImageRef
 
 	catalogImage := viper.GetString(indexImageKey)
 
-	channel, err := annotation(annotations, channelKey)
+	channel, err := annotation(annotations, channelKeyInBundle)
 	if err != nil {
 		log.Error("unable to extract channel name from the bundle: ", err)
 		return nil, err
+	}
+
+	if len(viper.GetString(channelKey)) != 0 {
+		channel = viper.GetString(channelKey)
 	}
 
 	packageName, err := annotation(annotations, packageKey)
