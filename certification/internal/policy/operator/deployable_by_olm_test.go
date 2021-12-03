@@ -130,7 +130,6 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		Context("When index image is in a private registry and CSV has been created successfully", func() {
 			BeforeEach(func() {
 				os.Setenv("PFLT_DOCKERCONFIG", filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename))
-				defer os.Unsetenv("PFLT_DOCKERCONFIG")
 
 				engine = FakeOpenshiftEngine{}
 				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
@@ -139,6 +138,9 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				ok, err := deployableByOLMCheck.Validate(imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
+			})
+			AfterEach(func() {
+				os.Unsetenv("PFLT_DOCKERCONFIG")
 			})
 		})
 		Context("When the only supported install mode is AllNamespaces", func() {
@@ -150,6 +152,22 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				ok, err := deployableByOLMCheck.Validate(imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
+			})
+		})
+		Context("When the non-default channel is being tested", func() {
+			BeforeEach(func() {
+				os.Setenv("PFLT_CHANNEL", "non-default-channel")
+
+				engine = FakeOpenshiftEngine{}
+				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
+			})
+			It("Should pass Validate", func() {
+				ok, err := deployableByOLMCheck.Validate(imageRef)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
+			})
+			AfterEach(func() {
+				os.Unsetenv("PFLT_CHANNEL")
 			})
 		})
 	})
