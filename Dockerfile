@@ -20,6 +20,9 @@ ARG quay_expiration
 # Define that tags should expire after 1 week. This should not apply to versioned releases.
 LABEL quay.expires-after=${quay_expiration}
 
+# Fetch the build image Architecture
+LABEL ARCH=${ARCH}
+
 # Define versions for dependencies
 ARG OPENSHIFT_CLIENT_VERSION=4.7.19
 ARG OPERATOR_SDK_VERSION=1.14.0
