@@ -19,10 +19,10 @@ If any part of the openshift-preflight project has bugs or documentation mistake
 
 To make the bug report accurate and easy to understand, please try to create bug reports that are:
 
-- Specific. Include as much details as possible: which version, what environment, what configuration, etc.
+- Specific. Include as many details as possible: which version, what environment, what configuration, etc.
 - Reproducible. Include the steps to reproduce the problem. We understand some issues might be hard to reproduce, please include the steps that might lead to the problem.
 - Isolated. Please try to isolate and reproduce the bug with minimum dependencies. It would significantly slow down the speed to fix a bug if too many dependencies are involved in a bug report. Debugging external systems that rely on openshift-preflight is out of scope, but we are happy to provide guidance in the right direction or help with using openshift-preflight itself.
-- Unique. Do not duplicate existing bug report.
+- Unique. Do not duplicate the existing bug report.
 - Scoped. One bug per report. Do not follow up with another bug inside one report.
 
 It may be worthwhile to read Elika Etemad’s article on filing good bug reports before creating a bug report.
@@ -38,7 +38,7 @@ This is a rough outline of what a contributor's workflow looks like:
 - Make sure commit messages are in the proper format (see below).
 - Push changes in a topic branch to a personal fork of the repository.
 - Submit a pull request to redhat-openshift-ecosystem/openshift-preflight.
-- The PR must receive a LGTM from two maintainers found in the MAINTAINERS file.
+- The PR must receive an LGTM from two maintainers found in the MAINTAINERS file.
 
 Thanks for contributing!
 
