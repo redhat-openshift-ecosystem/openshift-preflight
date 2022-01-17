@@ -11,6 +11,7 @@ import (
 // scorecard check with the basic-check-spec-test suite selected.
 type ScorecardBasicSpecCheck struct {
 	scorecardCheck
+	fatalError bool
 }
 
 const scorecardBasicCheckResult string = "operator_bundle_scorecard_BasicSpecCheck.json"
@@ -18,6 +19,7 @@ const scorecardBasicCheckResult string = "operator_bundle_scorecard_BasicSpecChe
 func NewScorecardBasicSpecCheck(operatorSdkEngine *cli.OperatorSdkEngine) *ScorecardBasicSpecCheck {
 	return &ScorecardBasicSpecCheck{
 		scorecardCheck{OperatorSdkEngine: *operatorSdkEngine},
+		false,
 	}
 }
 
@@ -27,6 +29,7 @@ func (p *ScorecardBasicSpecCheck) Validate(bundleRef certification.ImageReferenc
 	log.Debugf("--selector=%s", selector)
 	scorecardReport, err := p.getDataToValidate(bundleRef.ImageFSPath, selector, scorecardBasicCheckResult)
 	if err != nil {
+		p.fatalError = true
 		return false, err
 	}
 
@@ -47,6 +50,13 @@ func (p *ScorecardBasicSpecCheck) Metadata() certification.Metadata {
 }
 
 func (p *ScorecardBasicSpecCheck) Help() certification.HelpText {
+	if p.fatalError {
+		return certification.HelpText{
+			Message: "There was a fatal error while running operator-sdk scorecard tests. " +
+				"Please see the preflight log for details. If necessary, set logging to be more verbose.",
+			Suggestion: "If the logs are showing a context timeout, try setting wait time to a higher value.",
+		}
+	}
 	return certification.HelpText{
 		Message: "Check ScorecardBasicSpecCheck encountered an error. Please review the " +
 			artifacts.Path() + "/" + scorecardBasicCheckResult + " file for more information.",

@@ -11,6 +11,7 @@ import (
 // scorecard check with the olm suite selected.
 type ScorecardOlmSuiteCheck struct {
 	scorecardCheck
+	fatalError bool
 }
 
 const scorecardOlmSuiteResult string = "operator_bundle_scorecard_OlmSuiteCheck.json"
@@ -18,6 +19,7 @@ const scorecardOlmSuiteResult string = "operator_bundle_scorecard_OlmSuiteCheck.
 func NewScorecardOlmSuiteCheck(operatorSdkEngine *cli.OperatorSdkEngine) *ScorecardOlmSuiteCheck {
 	return &ScorecardOlmSuiteCheck{
 		scorecardCheck{OperatorSdkEngine: *operatorSdkEngine},
+		false,
 	}
 }
 
@@ -27,6 +29,7 @@ func (p *ScorecardOlmSuiteCheck) Validate(bundleRef certification.ImageReference
 	log.Debugf("--selector=%s", selector)
 	scorecardReport, err := p.getDataToValidate(bundleRef.ImageFSPath, selector, scorecardOlmSuiteResult)
 	if err != nil {
+		p.fatalError = true
 		return false, err
 	}
 
@@ -47,6 +50,13 @@ func (p *ScorecardOlmSuiteCheck) Metadata() certification.Metadata {
 }
 
 func (p *ScorecardOlmSuiteCheck) Help() certification.HelpText {
+	if p.fatalError {
+		return certification.HelpText{
+			Message: "There was a fatal error while running operator-sdk scorecard tests. " +
+				"Please see the preflight log for details. If necessary, set logging to be more verbose.",
+			Suggestion: "If the logs are showing a context timeout, try setting wait time to a higher value.",
+		}
+	}
 	return certification.HelpText{
 		Message: "Check ScorecardOlmSuiteCheck encountered an error. Please review the " +
 			artifacts.Path() + "/" + scorecardOlmSuiteResult + " file for more information.",
