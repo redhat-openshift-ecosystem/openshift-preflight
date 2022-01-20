@@ -24,6 +24,7 @@ is called.
 |`PFLT_INDEXIMAGE`|env|The index image to use when testing that an operator is `DeployableByOLM`|required|-|
 |`PFLT_DOCKERCONFIG`|env|The full path to a dockerconfigjson file, which is pushed to the target test cluster to access images in private repositories in the `DeployableByOLM`. If empty, no secret is created and the resource is assumed to be public.|optional|-|
 |`PFLT_SCORECARD_IMAGE`|env|A uri that points to the scorecard image digest, used in disconnected environments. It should only be used in a disconnected environment. Use `preflight runtime-assets` on a connected workstation to generate the digest that needs to be mirrored.|optional|-|
+|`PFLT_SCORECARD_WAIT_TIME`|env|A time value that will be passed to scorecard's `--wait-time` environment variable.|optional|[default](https://github.com/redhat-openshift-ecosystem/openshift-preflight/blob/main/cmd/defaults.go#L10)|
 |`PFLT_CHANNEL`|env|The name of the operator channel which is used by `DeployableByOLM` to deploy the operator. If empty, the default operator channel in bundle's annotations file is used.|optional|-|
 
 

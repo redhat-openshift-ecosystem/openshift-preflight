@@ -41,6 +41,9 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 	viper.SetDefault("namespace", DefaultNamespace)
 	viper.SetDefault("serviceaccount", DefaultServiceAccount)
 
+	// Set up scorecard wait time default
+	viper.SetDefault("scorecard_wait_time", DefaultScorecardWaitTime)
+
 	// set up logging
 	logname := viper.GetString("logfile")
 	logFile, err := os.OpenFile(logname, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
