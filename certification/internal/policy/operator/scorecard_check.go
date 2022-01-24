@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -33,7 +34,9 @@ func (p *scorecardCheck) validate(items []cli.OperatorSdkScorecardItem) (bool, e
 func (p *scorecardCheck) getDataToValidate(bundleImage string, selector []string, resultFile string) (*cli.OperatorSdkScorecardReport, error) {
 	namespace := viper.GetString("namespace")
 	serviceAccount := viper.GetString("serviceaccount")
+	waitTime := viper.GetString("scorecard_wait_time")
 	kubeconfig := os.Getenv("KUBECONFIG")
+
 	opts := cli.OperatorSdkScorecardOptions{
 		OutputFormat:   "json",
 		Selector:       selector,
@@ -42,7 +45,7 @@ func (p *scorecardCheck) getDataToValidate(bundleImage string, selector []string
 		Namespace:      namespace,
 		ServiceAccount: serviceAccount,
 		Verbose:        true,
-		WaitTime:       "240s",
+		WaitTime:       fmt.Sprintf("%ss", waitTime),
 	}
 	return p.OperatorSdkEngine.Scorecard(bundleImage, opts)
 }
