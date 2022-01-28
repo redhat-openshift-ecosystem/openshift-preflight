@@ -23,12 +23,22 @@ var checkOperatorCmd = &cobra.Command{
 	Short: "Run checks for an Operator",
 	Long:  `This command will run the Certification checks for an Operator bundle image. `,
 	Args: func(cmd *cobra.Command, args []string) error {
+		if l, _ := cmd.Flags().GetBool("list-checks"); l {
+			fmt.Println(fmt.Sprintf("\n%s\n%s%s", "The checks that will be executed are the following:", "- ",
+				strings.Join(engine.OperatorPolicy(), "\n- ")))
+
+			// exiting gracefully instead of retuning, otherwise cobra calls RunE
+			os.Exit(0)
+		}
+
 		if len(args) != 1 {
 			return fmt.Errorf("%w: An operator image positional argument is required", errors.ErrInsufficientPosArguments)
 		}
 		return nil
 	},
-	PreRun: preRunConfig,
+	// this fmt.Sprintf is in place to keep spacing consistent with cobras two spaces that's used in: Usage, Flags, etc
+	Example: fmt.Sprintf("  %s", "preflight check operator quay.io/repo-name/operator-bundle:version"),
+	PreRun:  preRunConfig,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Expect exactly one positional arg. Check here instead of using builtin Args key
 		// so that we can get a more user-friendly error message
@@ -103,16 +113,5 @@ var checkOperatorCmd = &cobra.Command{
 }
 
 func init() {
-	checks := strings.Join(engine.OperatorPolicy(), "\n- ")
-
-	usage := "\n" + `The checks that will be executed are the following:` + "\n- " +
-		checks + "\n\n" +
-		`Usage:
-  preflight check operator <url to Operator bundle image> [flags]
-	
-Flags:
-  -h, --help   help for operator
-`
-	checkOperatorCmd.SetUsageTemplate(usage)
 	checkCmd.AddCommand(checkOperatorCmd)
 }
