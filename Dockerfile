@@ -16,6 +16,7 @@ RUN make build RELEASE_TAG=${release_tag}
 # ubi8:latest
 FROM registry.access.redhat.com/ubi8/ubi:latest
 ARG quay_expiration
+ARG ARCH
 
 # Define that tags should expire after 1 week. This should not apply to versioned releases.
 LABEL quay.expires-after=${quay_expiration}
@@ -39,10 +40,10 @@ RUN dnf install -y \
     && dnf clean all
 
 # Install OpenShift client binary
-RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OPENSHIFT_CLIENT_VERSION}/openshift-client-linux-${OPENSHIFT_CLIENT_VERSION}.tar.gz | tar -xzv -C /usr/local/bin oc
+RUN curl --fail -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OPENSHIFT_CLIENT_VERSION}/openshift-client-linux-${OPENSHIFT_CLIENT_VERSION}.tar.gz | tar -xzv -C /usr/local/bin oc
 
 # Install Operator SDK binray
-RUN curl -Lo /usr/local/bin/operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk_linux_${ARCH} \
+RUN curl --fail -Lo /usr/local/bin/operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk_linux_${ARCH} \
     && chmod 755 /usr/local/bin/operator-sdk
 
 ENTRYPOINT ["/usr/local/bin/preflight"]
