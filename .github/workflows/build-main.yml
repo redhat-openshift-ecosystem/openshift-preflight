@@ -6,7 +6,11 @@ on:
 
 jobs:
   build-main:
-    name: Build and push a main snapshot image
+    name: Build and push main snapshot images
+    strategy: 
+      matrix:
+        architecture: [amd64,ppc64le,arm64,s390x]
+        platform: [linux]
     runs-on: ubuntu-latest
     env:
       IMAGE_REGISTRY: quay.io/opdev
@@ -17,16 +21,25 @@ jobs:
       id: fetch-latest-release
     - name: Set Env Tags
       run: echo RELEASE_TAG=${{ steps.fetch-latest-release.outputs.latest-release }} >> $GITHUB_ENV
-
+    - name: set short sha
+      run: echo SHA_SHORT=$(git rev-parse --short HEAD) >> $GITHUB_ENV
+    
+    - name: Install qemu dependency
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y qemu-user-static
+        
     - name: Build Image
       id: build-image
       uses: redhat-actions/buildah-build@v2
       with:
         image: ${{ env.IMAGE_REGISTRY }}/preflight
-        tags: ${{ github.sha }}
+        tags: ${{ env.SHA_SHORT }}+${{ matrix.platform }}-${{ matrix.architecture }}
+        archs: ${{ matrix.architecture }}
         build-args: |
           quay_expiration=1w
           release_tag=${{ env.RELEASE_TAG }}-alpha+${{ github.sha }}
+          ARCH=${{ matrix.architecture }}
         dockerfiles: |
           ./Dockerfile
 
@@ -35,7 +48,7 @@ jobs:
       uses: redhat-actions/push-to-registry@v2
       with:
         image: preflight
-        tags: ${{ steps.build-image.outputs.tags }}
+        tags: ${{ env.SHA_SHORT }}+${{ matrix.platform }}-${{ matrix.architecture }}
         registry: ${{ env.IMAGE_REGISTRY }}
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASSWORD }}

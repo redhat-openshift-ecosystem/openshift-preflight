@@ -1,0 +1,22 @@
+name: Create Release Artifacts
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  build-binaries:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build Multi-arch binaries
+      id: build-multi-arch-binaries
+      run: make build-multi-arch
+
+    - name: Upload binaries to the release
+      uses: AButler/upload-release-assets@v2.0
+      with:
+        files: "preflight*"
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
