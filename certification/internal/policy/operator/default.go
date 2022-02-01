@@ -25,9 +25,6 @@ const (
 	// secretName is the K8s secret name which stores the auth keys for the private registry access
 	secretName = "registry-auth-keys"
 
-	// versionsKey is the OpenShift versions in annotations.yaml that lists the versions allowed for an operator
-	versionsKey = "com.redhat.openshift.versions"
-
 	// pipelineServiceAccount is the name of the service account which is used by the pipeline
 	pipelineServiceAccount = "pipeline"
 

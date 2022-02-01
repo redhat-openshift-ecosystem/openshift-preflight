@@ -17,6 +17,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 	var (
 		deployableByOLMCheck DeployableByOlmCheck
 		engine               cli.OpenshiftEngine
+		fakeEngine           cli.OperatorSdkEngine
 		imageRef             certification.ImageReference
 		tmpDockerDir         string
 	)
@@ -88,6 +89,14 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		imageRef.ImageInfo = &fakeImage
 		imageRef.ImageFSPath = tmpDir
 
+		report := cli.OperatorSdkBundleValidateReport{
+			Passed:  true,
+			Outputs: []cli.OperatorSdkBundleValidateOutput{},
+		}
+		fakeEngine = FakeOperatorSdkEngine{
+			OperatorSdkBVReport: report,
+		}
+
 		// set env var for index image
 		os.Setenv("PFLT_INDEXIMAGE", "test_indeximage")
 		os.Setenv("PFLT_ARTIFACTS", tmpDir)
@@ -96,7 +105,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		Context("When CSV has been created successfully", func() {
 			BeforeEach(func() {
 				engine = FakeOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
+				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(imageRef)
@@ -107,7 +116,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		Context("When installedCSV field of Subscription is not set", func() {
 			BeforeEach(func() {
 				engine = BadOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
+				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should fail Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(imageRef)
@@ -119,7 +128,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 			BeforeEach(func() {
 				os.Setenv("PFLT_INDEXIMAGE", "image-registry.openshift-image-registry.svc/namespace/indeximage:v0.0.0")
 				engine = FakeOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
+				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(imageRef)
@@ -132,7 +141,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				os.Setenv("PFLT_DOCKERCONFIG", filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename))
 
 				engine = FakeOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
+				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(imageRef)
@@ -146,7 +155,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		Context("When the only supported install mode is AllNamespaces", func() {
 			BeforeEach(func() {
 				engine = FakeOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
+				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(imageRef)
@@ -159,7 +168,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				os.Setenv("PFLT_CHANNEL", "non-default-channel")
 
 				engine = FakeOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine)
+				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(imageRef)

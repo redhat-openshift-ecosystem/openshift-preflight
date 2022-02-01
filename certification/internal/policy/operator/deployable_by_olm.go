@@ -20,6 +20,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	pflterr "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 
 	log "github.com/sirupsen/logrus"
@@ -39,19 +40,25 @@ type OperatorData struct {
 }
 
 type DeployableByOlmCheck struct {
-	OpenshiftEngine cli.OpenshiftEngine
-	csvReady        bool
-	validImages     bool
+	OpenshiftEngine   cli.OpenshiftEngine
+	OperatorSdkEngine cli.OperatorSdkEngine
+	csvReady          bool
+	validImages       bool
 }
 
-func NewDeployableByOlmCheck(openshiftEngine *cli.OpenshiftEngine) *DeployableByOlmCheck {
+func NewDeployableByOlmCheck(openshiftEngine *cli.OpenshiftEngine, operatorSdkEngine *cli.OperatorSdkEngine) *DeployableByOlmCheck {
 	return &DeployableByOlmCheck{
-		OpenshiftEngine: *openshiftEngine,
+		OpenshiftEngine:   *openshiftEngine,
+		OperatorSdkEngine: *operatorSdkEngine,
 	}
 }
 
 func (p *DeployableByOlmCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
 	ctx := context.Background()
+
+	if report, err := bundle.ValidateBundle(p.OperatorSdkEngine, bundleRef.ImageFSPath); err != nil || !report.Passed {
+		return false, err
+	}
 
 	// gather the list of registry and pod images
 	beforeOperatorImages, err := p.getImages(ctx)
@@ -135,7 +142,7 @@ func checkImageSource(operatorImages []string) bool {
 
 func (p *DeployableByOlmCheck) operatorMetadata(bundleRef certification.ImageReference) (*OperatorData, error) {
 	// retrieve the operator metadata from bundle image
-	annotations, err := getAnnotationsFromBundle(bundleRef.ImageFSPath)
+	annotations, err := bundle.GetAnnotations(bundleRef.ImageFSPath)
 
 	if err != nil {
 		log.Errorf("unable to get annotations.yaml from the bundle")
@@ -160,7 +167,7 @@ func (p *DeployableByOlmCheck) operatorMetadata(bundleRef certification.ImageRef
 		return nil, err
 	}
 
-	installedModes, err := getSupportedInstalledModes(bundleRef.ImageFSPath)
+	installedModes, err := bundle.GetSupportedInstalledModes(bundleRef.ImageFSPath)
 	if err != nil {
 		log.Error("unable to extract operator install modes from ClusterServicVersion: ", err)
 		return nil, err

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -36,7 +37,7 @@ type packageData struct {
 type OperatorPkgNameIsUniqueCheck struct{}
 
 func (p *OperatorPkgNameIsUniqueCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
-	annotations, err := getAnnotationsFromBundle(bundleRef.ImageFSPath)
+	annotations, err := bundle.GetAnnotations(bundleRef.ImageFSPath)
 	if err != nil {
 		log.Errorf("unable to get annotations.yaml from the bundle")
 		return false, err
