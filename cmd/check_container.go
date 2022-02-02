@@ -15,6 +15,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var checkContainerCmd = &cobra.Command{
@@ -103,5 +104,8 @@ var checkContainerCmd = &cobra.Command{
 }
 
 func init() {
+	checkContainerCmd.Flags().String("pyxis-api-token", "", "API token for Pyxis authentication")
+	viper.BindPFlag("pyxis_api_token", checkContainerCmd.Flags().Lookup("pyxis-api-token"))
+
 	checkCmd.AddCommand(checkContainerCmd)
 }

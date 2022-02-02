@@ -32,4 +32,10 @@ For information on how to build an index image, see [BUILDING_AN_INDEX.md](BUILD
 
 ## Container Policy Configuration
 
-There are no configurables specific to the container policy (i.e. when running `preflight check container ...`).
+These configurables are specific to cases where `preflight check container ...`
+is called.
+
+|Variable|Kind|Doc|Required or Optional|Default|
+|--|--|--|--|--|
+|`PFLT_PYXIS_HOST`|env|The Pyxis host to connect to|optional|pyxis.engineering.redhat.com|
+|`PFLT_PYXIS_API_TOKEN`|env|The API Token to be used when connecting to Pyxis. Used for authenticated calls only.|optional?|-|

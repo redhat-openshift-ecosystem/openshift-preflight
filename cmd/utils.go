@@ -44,6 +44,10 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 	// Set up scorecard wait time default
 	viper.SetDefault("scorecard_wait_time", DefaultScorecardWaitTime)
 
+	// Set up pyxis host
+	viper.SetDefault("pyxis_host", DefaultPyxisHost)
+	viper.SetDefault("pyxis_api_token", "")
+
 	// set up logging
 	logname := viper.GetString("logfile")
 	logFile, err := os.OpenFile(logname, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
