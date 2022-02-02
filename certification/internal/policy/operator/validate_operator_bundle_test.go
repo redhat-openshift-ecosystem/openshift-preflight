@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
@@ -96,21 +95,5 @@ var _ = Describe("BundleValidateCheck", func() {
 				Expect(ok).To(BeFalse())
 			})
 		})
-	})
-	DescribeTable("Image Registry validation",
-		func(versions string, expected bool) {
-			ok := isTarget49OrGreater(versions)
-			Expect(ok).To(Equal(expected))
-		},
-		Entry("range 4.6 to 4.8", "v4.6-v4.8", false),
-		Entry("exactly 4.8", "=v4.8", false),
-		Entry("exactly 4.9", "=v4.9", true),
-		Entry("range 4.6 to 4.9", "v4.6-v4.9", true),
-		Entry(">= 4.8", "v4.8", true),
-		Entry(">= 4.9", "v4.9", true),
-	)
-	AfterEach(func() {
-		err := os.RemoveAll(imageRef.ImageFSPath)
-		Expect(err).ToNot(HaveOccurred())
 	})
 })

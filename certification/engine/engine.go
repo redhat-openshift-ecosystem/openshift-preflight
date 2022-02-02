@@ -73,7 +73,7 @@ func queryChecks(checkName string) certification.Check {
 var operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgNameIsUniqueCheck{}
 var scorecardBasicSpecCheck certification.Check = operatorpol.NewScorecardBasicSpecCheck(internal.NewOperatorSdkEngine())
 var scorecardOlmSuiteCheck certification.Check = operatorpol.NewScorecardOlmSuiteCheck(internal.NewOperatorSdkEngine())
-var deployableByOlmCheck certification.Check = operatorpol.NewDeployableByOlmCheck(internal.NewOpenshiftEngine())
+var deployableByOlmCheck certification.Check = operatorpol.NewDeployableByOlmCheck(internal.NewOpenshiftEngine(), internal.NewOperatorSdkEngine())
 var validateOperatorBundle certification.Check = operatorpol.NewValidateOperatorBundleCheck(internal.NewOperatorSdkEngine())
 
 // Container checks
