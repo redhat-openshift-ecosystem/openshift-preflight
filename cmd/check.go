@@ -16,6 +16,8 @@ var checkCmd = &cobra.Command{
 }
 
 func init() {
+	checkCmd.PersistentFlags().BoolP("list-checks", "l", false, "lists all the checks run for a given check")
+
 	rootCmd.AddCommand(checkCmd)
 }
 
