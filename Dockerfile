@@ -41,6 +41,7 @@ RUN dnf install -y \
       gzip \
       iptables \
       findutils \
+      podman \
     && dnf clean all
 
 # Install OpenShift client binary

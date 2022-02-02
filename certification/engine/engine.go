@@ -84,6 +84,7 @@ var hasNoProhibitedCheck certification.Check = &containerpol.HasNoProhibitedPack
 var hasRequiredLabelsCheck certification.Check = &containerpol.HasRequiredLabelsCheck{}
 var runAsRootCheck certification.Check = &containerpol.RunAsNonRootCheck{}
 var basedOnUbiCheck certification.Check = &containerpol.BasedOnUBICheck{}
+var runnableContainerCheck certification.Check = containerpol.NewRunnableContainerCheck(internal.NewPodmanEngine())
 
 var operatorPolicy = map[string]certification.Check{
 	//operatorPkgNameIsUniqueCheck.Name(): operatorPkgNameIsUniqueCheck,
@@ -101,6 +102,7 @@ var containerPolicy = map[string]certification.Check{
 	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
 	runAsRootCheck.Name():         runAsRootCheck,
 	basedOnUbiCheck.Name():        basedOnUbiCheck,
+	runnableContainerCheck.Name(): runnableContainerCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {
