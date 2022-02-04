@@ -40,3 +40,4 @@ var ErrPullRequestURL = errors.New("please enter a valid url: including scheme, 
 var ErrIndexImageUndefined = errors.New("no environment variable PFLT_INDEXIMAGE could be found")
 var ErrUnsupportedGoType = errors.New("go type unsupported")
 var ErrEmptyClusterServiceVersionFile = errors.New("the clusterserviceversion file was empty")
+var ErrInvalidPyxisHost = errors.New("invalid pyxis host specified")
