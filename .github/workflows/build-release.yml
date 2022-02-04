@@ -7,7 +7,11 @@ on:
 
 jobs:
   build-release:
-    name: Build and push a tag image
+    name: Build and push tag images
+    strategy: 
+      matrix:
+        architecture: [amd64,ppc64le,arm64,s390x]
+        platform: [linux]
     runs-on: ubuntu-latest
     env:
       IMAGE_REGISTRY: quay.io/opdev
@@ -16,14 +20,21 @@ jobs:
     - name: Set Env Tags
       run: echo RELEASE_TAG=$(echo $GITHUB_REF | cut -d '/' -f 3) >> $GITHUB_ENV
 
+    - name: Install qemu dependency
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y qemu-user-static
+
     - name: Build Image
       id: build-image
       uses: redhat-actions/buildah-build@v2
       with:
         image: ${{ env.IMAGE_REGISTRY }}/preflight
-        tags: ${{ env.RELEASE_TAG }}
+        tags: ${{ env.RELEASE_TAG }}-${{ matrix.platform }}-${{ matrix.architecture }}
+        archs: ${{ matrix.architecture }}
         build-args: |
           release_tag=${{env.RELEASE_TAG }}
+          ARCH=${{ matrix.architecture }}
         dockerfiles: |
           ./Dockerfile
 
@@ -32,7 +43,7 @@ jobs:
       uses: redhat-actions/push-to-registry@v2
       with:
         image: preflight
-        tags: ${{ steps.build-image.outputs.tags }}
+        tags: ${{ env.RELEASE_TAG }}-${{ matrix.platform }}-${{ matrix.architecture }}
         registry: ${{ env.IMAGE_REGISTRY }}
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
