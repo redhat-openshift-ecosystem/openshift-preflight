@@ -34,7 +34,7 @@ jobs:
       uses: redhat-actions/buildah-build@v2
       with:
         image: ${{ env.IMAGE_REGISTRY }}/preflight
-        tags: ${{ env.SHA_SHORT }}+${{ matrix.platform }}-${{ matrix.architecture }}
+        tags: ${{ env.SHA_SHORT }}-${{ matrix.platform }}-${{ matrix.architecture }}
         archs: ${{ matrix.architecture }}
         build-args: |
           quay_expiration=1w
@@ -48,7 +48,7 @@ jobs:
       uses: redhat-actions/push-to-registry@v2
       with:
         image: preflight
-        tags: ${{ env.SHA_SHORT }}+${{ matrix.platform }}-${{ matrix.architecture }}
+        tags: ${{ env.SHA_SHORT }}-${{ matrix.platform }}-${{ matrix.architecture }}
         registry: ${{ env.IMAGE_REGISTRY }}
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
