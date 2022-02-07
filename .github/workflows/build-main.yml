@@ -7,10 +7,10 @@ on:
 jobs:
   build-main:
     name: Build and push main snapshot images
-    strategy: 
-      matrix:
-        architecture: [amd64,ppc64le,arm64,s390x]
-        platform: [linux]
+    #strategy: 
+    #  matrix:
+    #    architecture: [amd64,ppc64le,arm64,s390x]
+    #    platform: [linux]
     runs-on: ubuntu-latest
     env:
       IMAGE_REGISTRY: quay.io/opdev
@@ -29,29 +29,101 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y qemu-user-static
         
-    - name: Build Image
-      id: build-image
+    - name: Build Image1
+      id: build-image1
       uses: redhat-actions/buildah-build@v2
       with:
         image: ${{ env.IMAGE_REGISTRY }}/preflight
-        tags: ${{ env.SHA_SHORT }}-${{ matrix.platform }}-${{ matrix.architecture }}
-        archs: ${{ matrix.architecture }}
+        tags: ${{ env.SHA_SHORT }}-linux-amd64
+        archs: amd64
         build-args: |
           quay_expiration=1w
           release_tag=${{ env.RELEASE_TAG }}-alpha+${{ github.sha }}
-          ARCH=${{ matrix.architecture }}
+          ARCH=amd64
         dockerfiles: |
           ./Dockerfile
 
-    - name: Push Image
-      id: push-image
+    - name: Build Image2
+      id: build-image2
+      uses: redhat-actions/buildah-build@v2
+      with:
+        image: ${{ env.IMAGE_REGISTRY }}/preflight
+        tags: ${{ env.SHA_SHORT }}-linux-ppc64le
+        archs: ppc64le
+        build-args: |
+          quay_expiration=1w
+          release_tag=${{ env.RELEASE_TAG }}-alpha+${{ github.sha }}
+          ARCH=ppc64le
+        dockerfiles: |
+          ./Dockerfile
+ 
+    - name: Build Image3
+      id: build-image3
+      uses: redhat-actions/buildah-build@v2
+      with:
+        image: ${{ env.IMAGE_REGISTRY }}/preflight
+        tags: ${{ env.SHA_SHORT }}-linux-arm64
+        archs: arm64
+        build-args: |
+          quay_expiration=1w
+          release_tag=${{ env.RELEASE_TAG }}-alpha+${{ github.sha }}
+          ARCH=arm64
+        dockerfiles: |
+          ./Dockerfile
+          
+    - name: Build Image4
+      id: build-image4
+      uses: redhat-actions/buildah-build@v2
+      with:
+        image: ${{ env.IMAGE_REGISTRY }}/preflight
+        tags: ${{ env.SHA_SHORT }}-linux-s390x
+        archs: s390x
+        build-args: |
+          quay_expiration=1w
+          release_tag=${{ env.RELEASE_TAG }}-alpha+${{ github.sha }}
+          ARCH=s390x
+        dockerfiles: |
+          ./Dockerfile
+      
+    - name: Push Image1
+      id: push-image1
       uses: redhat-actions/push-to-registry@v2
       with:
         image: preflight
-        tags: ${{ env.SHA_SHORT }}-${{ matrix.platform }}-${{ matrix.architecture }}
+        tags: ${{ env.SHA_SHORT }}-linux-amd64
         registry: ${{ env.IMAGE_REGISTRY }}
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
-    - name: Print image url
-      run: echo "Image pushed to ${{ steps.push-image.outputs.registry-paths }}"
+    - name: Push Image2
+      id: push-image2
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: preflight
+        tags: ${{ env.SHA_SHORT }}-linux-ppc64le
+        registry: ${{ env.IMAGE_REGISTRY }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+        
+    - name: Push Image3
+      id: push-image3
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: preflight
+        tags: ${{ env.SHA_SHORT }}-linux-arm64
+        registry: ${{ env.IMAGE_REGISTRY }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+
+    - name: Push Image4
+      id: push-image4
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: preflight
+        tags: ${{ env.SHA_SHORT }}-linux-s390x
+        registry: ${{ env.IMAGE_REGISTRY }}
+        username: ${{ secrets.REGISTRY_USER }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+        
+   # - name: Print image url
+   #   run: echo "Image pushed to ${{ steps.push-image.outputs.registry-paths }}"
