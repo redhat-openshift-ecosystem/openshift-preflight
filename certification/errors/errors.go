@@ -41,3 +41,4 @@ var ErrIndexImageUndefined = errors.New("no environment variable PFLT_INDEXIMAGE
 var ErrUnsupportedGoType = errors.New("go type unsupported")
 var ErrEmptyClusterServiceVersionFile = errors.New("the clusterserviceversion file was empty")
 var ErrInvalidPyxisHost = errors.New("invalid pyxis host specified")
+var ErrInvalidCertProjectId = errors.New("invalid certification project id")
