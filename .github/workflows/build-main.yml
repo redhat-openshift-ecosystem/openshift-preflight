@@ -23,11 +23,9 @@ jobs:
       run: echo RELEASE_TAG=${{ steps.fetch-latest-release.outputs.latest-release }} >> $GITHUB_ENV
     - name: set short sha
       run: echo SHA_SHORT=$(git rev-parse --short HEAD) >> $GITHUB_ENV
-    
-    - name: Install qemu dependency
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y qemu-user-static
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
         
     - name: Build Image
       id: build-image
