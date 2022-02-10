@@ -37,5 +37,5 @@ is called.
 
 |Variable|Kind|Doc|Required or Optional|Default|
 |--|--|--|--|--|
-|`PFLT_PYXIS_HOST`|env|The Pyxis host to connect to|optional|catalog.redhat.com|
+|`PFLT_PYXIS_HOST`|env|The Pyxis host to connect to. Must contain any additional path information leading up to the API version|optional|catalog.redhat.com/api/containers|
 |`PFLT_PYXIS_API_TOKEN`|env|The API Token to be used when connecting to Pyxis. Used for authenticated calls only.|optional?|-|
