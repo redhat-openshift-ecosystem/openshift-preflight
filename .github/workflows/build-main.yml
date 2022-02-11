@@ -2,7 +2,7 @@ name: Build Main
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, ghactions ]
 
 jobs:
   build-main:
@@ -12,8 +12,6 @@ jobs:
         architecture: [amd64,ppc64le,arm64,s390x]
         platform: [linux]
     runs-on: ubuntu-latest
-    env:
-      IMAGE_REGISTRY: quay.io/opdev
     steps:
     - uses: actions/checkout@v2
     - name: Fetch latest release version
@@ -31,7 +29,7 @@ jobs:
       id: build-image
       uses: redhat-actions/buildah-build@v2
       with:
-        image: ${{ env.IMAGE_REGISTRY }}/preflight
+        image: ${{ secrets.IMAGE_REGISTRY }}/preflight
         tags: ${{ env.SHA_SHORT }}-${{ matrix.platform }}-${{ matrix.architecture }}
         archs: ${{ matrix.architecture }}
         build-args: |
@@ -47,7 +45,7 @@ jobs:
       with:
         image: preflight
         tags: ${{ env.SHA_SHORT }}-${{ matrix.platform }}-${{ matrix.architecture }}
-        registry: ${{ env.IMAGE_REGISTRY }}
+        registry: ${{ secrets.IMAGE_REGISTRY }}
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
