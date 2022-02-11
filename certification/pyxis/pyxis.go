@@ -27,7 +27,7 @@ type pyxisEngine struct {
 }
 
 func getPyxisUrl(path string) string {
-	return fmt.Sprintf("https://%s/%s/%s", viper.GetString("pyxis-host"), apiVersion, path)
+	return fmt.Sprintf("https://%s/%s/%s", viper.GetString("pyxis_host"), apiVersion, path)
 }
 
 func NewPyxisEngine(apiToken string, projectId string, httpClient HTTPClient) *pyxisEngine {

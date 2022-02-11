@@ -59,7 +59,9 @@ func queryChecks(checkName string) certification.Check {
 	if check, exists := operatorPolicy[checkName]; exists {
 		return check
 	}
-	// if not found in Operator Policy, query container policy
+	// if not found in Operator Policy, query container policy.
+	// No need to check scratch container policy since this is
+	// a superset.
 	if check, exists := containerPolicy[checkName]; exists {
 		return check
 	}
@@ -105,6 +107,15 @@ var containerPolicy = map[string]certification.Check{
 	runnableContainerCheck.Name(): runnableContainerCheck,
 }
 
+var scratchContainerPolicy = map[string]certification.Check{
+	hasLicenseCheck.Name():        hasLicenseCheck,
+	hasUniqueTagCheck.Name():      hasUniqueTagCheck,
+	maxLayersCheck.Name():         maxLayersCheck,
+	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
+	runAsRootCheck.Name():         runAsRootCheck,
+	runnableContainerCheck.Name(): runnableContainerCheck,
+}
+
 func makeCheckList(checkMap map[string]certification.Check) []string {
 	checks := make([]string, len(checkMap))
 	i := 0
@@ -123,4 +134,8 @@ func OperatorPolicy() []string {
 
 func ContainerPolicy() []string {
 	return makeCheckList(containerPolicy)
+}
+
+func ScratchContainerPolicy() []string {
+	return makeCheckList(scratchContainerPolicy)
 }

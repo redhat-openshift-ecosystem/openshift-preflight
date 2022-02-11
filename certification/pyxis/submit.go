@@ -2,34 +2,21 @@ package pyxis
 
 import (
 	"context"
-	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	log "github.com/sirupsen/logrus"
 )
 
-func (p *pyxisEngine) SubmitResults(containerImage string) (*CertProject, *CertImage, error) {
+func (p *pyxisEngine) SubmitResults(certProject *CertProject) (*CertProject, *CertImage, error) {
+	var err error
 	ctx := context.Background()
-	projectId := p.ProjectId
-	if projectId == "" {
-		return nil, nil, errors.ErrEmptyProjectID
-	}
-	if strings.HasPrefix(projectId, "ospid-") {
-		projectId = strings.Split(projectId, "-")[1]
-	}
-	project, err := p.GetProject(ctx)
-	if err != nil {
-		log.Error(err, "could not retrieve project")
-		return nil, nil, err
-	}
-	oldProject := project
+	oldProject := certProject
 
-	if project.CertificationStatus == "Started" {
-		project.CertificationStatus = "In Progress"
+	if certProject.CertificationStatus == "Started" {
+		certProject.CertificationStatus = "In Progress"
 	}
 
-	if project != oldProject {
-		project, err = p.updateProject(ctx, projectId, project)
+	if certProject != oldProject {
+		certProject, err = p.updateProject(ctx, p.ProjectId, certProject)
 		if err != nil {
 			log.Error(err, "could not update project")
 			return nil, nil, err
@@ -50,5 +37,5 @@ func (p *pyxisEngine) SubmitResults(containerImage string) (*CertProject, *CertI
 		return nil, nil, err
 	}
 
-	return project, certImage, nil
+	return certProject, certImage, nil
 }

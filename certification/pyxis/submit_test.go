@@ -16,7 +16,7 @@ var _ = Describe("Pyxis Submit", func() {
 	Context("when a project is submitted", func() {
 		Context("and it is not already In Progress", func() {
 			It("should switch to In Progress", func() {
-				certProject, certImage, err := pyxisEngine.SubmitResults("foo/container")
+				certProject, certImage, err := pyxisEngine.SubmitResults(&CertProject{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(certProject).ToNot(BeNil())
 				Expect(certImage).ToNot(BeNil())
