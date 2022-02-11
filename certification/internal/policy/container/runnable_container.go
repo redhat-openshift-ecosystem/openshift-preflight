@@ -42,8 +42,9 @@ func (p *RunnableContainerCheck) Validate(imgRef certification.ImageReference) (
 	}
 
 	return p.PodmanEngine.WaitContainer(creationOutput.ContainerId, cli.WaitOptions{
-		Interval:  checkContainerTimeout.String(),
+		Interval:  waitContainer.String(),
 		Condition: define.ContainerStateRunning.String(),
+		Timeout:   checkContainerTimeout,
 	})
 }
 
