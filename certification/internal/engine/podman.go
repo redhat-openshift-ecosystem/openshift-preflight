@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -153,7 +154,10 @@ func (p *podmanEngine) WaitContainer(containerId string, waitOptions cli.WaitOpt
 	}
 	cmdArgs = append(cmdArgs, containerId)
 
-	cmd := exec.Command("podman", cmdArgs...)
+	ctx, cancel := context.WithTimeout(context.Background(), waitOptions.Timeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "podman", cmdArgs...)
 
 	log.Debugf("Command being run: %+v", cmd)
 
@@ -164,6 +168,9 @@ func (p *podmanEngine) WaitContainer(containerId string, waitOptions cli.WaitOpt
 	if err := cmd.Run(); err != nil {
 		log.Error(fmt.Sprintf("unable to wait for container %s: ", containerId), err)
 		log.Error("Stderr: ", stderr.String())
+		if strings.Contains(strings.ToLower(err.Error()), "killed") {
+			return false, nil
+		}
 		return false, err
 	}
 

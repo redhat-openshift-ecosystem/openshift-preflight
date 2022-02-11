@@ -1,5 +1,7 @@
 package cli
 
+import "time"
+
 type PodmanCreateOutput struct {
 	ContainerId string
 	Stdout      string
@@ -23,6 +25,7 @@ type ImagePullOptions struct {
 type WaitOptions struct {
 	Interval  string
 	Condition string
+	Timeout   time.Duration
 }
 
 type InspectContainerData struct {
