@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,6 +13,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 	log "github.com/sirupsen/logrus"
@@ -51,6 +54,26 @@ var checkContainerCmd = &cobra.Command{
 			Image:          containerImage,
 			EnabledChecks:  engine.ContainerPolicy(),
 			ResponseFormat: DefaultOutputFormat,
+		}
+
+		projectId := viper.GetString("certification_project_id")
+		if projectId == "" {
+			return errors.ErrEmptyProjectID
+		}
+		if strings.HasPrefix(projectId, "ospid-") {
+			projectId = strings.Split(projectId, "-")[1]
+		}
+		apiToken := viper.GetString("pyxis_api_token")
+		ctx := context.Background()
+		pyxisEngine := pyxis.NewPyxisEngine(apiToken, projectId, &http.Client{})
+		project, err := pyxisEngine.GetProject(ctx)
+		if err != nil {
+			log.Error(err, "could not retrieve project")
+			return err
+		}
+		log.Debugf("Certification project name is: %s", project.Name)
+		if project.OsContentType == "scratch" {
+			cfg.EnabledChecks = engine.ScratchContainerPolicy()
 		}
 
 		engine, err := engine.NewForConfig(cfg)
@@ -106,6 +129,10 @@ var checkContainerCmd = &cobra.Command{
 func init() {
 	checkContainerCmd.Flags().String("pyxis-api-token", "", "API token for Pyxis authentication")
 	viper.BindPFlag("pyxis_api_token", checkContainerCmd.Flags().Lookup("pyxis-api-token"))
+	checkContainerCmd.Flags().String("pyxis-host", DefaultPyxisHost, "Host to use for Pyxis submissions.")
+	viper.BindPFlag("pyxis_host", checkContainerCmd.Flags().Lookup("pyxis-host"))
+	checkContainerCmd.Flags().String("certification-project-id", "", "Certification Project ID from conenct.redhat.com. Should be supplied without the ospid- prefix.")
+	viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
 
 	checkCmd.AddCommand(checkContainerCmd)
 }

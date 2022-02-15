@@ -66,6 +66,7 @@ type CertProject struct {
 	Name                string    `json:"name"`                      // required
 	ProjectStatus       string    `json:"project_status"`            // required
 	Type                string    `json:"type" default:"Containers"` // required
+	OsContentType       string    `json:"os_content_type,omitempty"`
 }
 
 type Container struct {
