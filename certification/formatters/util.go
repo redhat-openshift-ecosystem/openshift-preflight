@@ -8,23 +8,23 @@ import (
 // getResponse will extract the runtime's results and format it to fit the
 // UserResponse definition in a way that can then be formatted.
 func getResponse(r runtime.Results) UserResponse {
-	passedChecks := make([]checkExecutionInfo, len(r.Passed))
-	failedChecks := make([]checkExecutionInfo, len(r.Failed))
-	erroredChecks := make([]checkExecutionInfo, len(r.Errors))
+	passedChecks := make([]checkExecutionInfo, 0, len(r.Passed))
+	failedChecks := make([]checkExecutionInfo, 0, len(r.Failed))
+	erroredChecks := make([]checkExecutionInfo, 0, len(r.Errors))
 
 	if len(r.Passed) > 0 {
-		for i, check := range r.Passed {
-			passedChecks[i] = checkExecutionInfo{
+		for _, check := range r.Passed {
+			passedChecks = append(passedChecks, checkExecutionInfo{
 				Name:        check.Name(),
 				ElapsedTime: float64(check.ElapsedTime.Milliseconds()),
 				Description: check.Metadata().Description,
-			}
+			})
 		}
 	}
 
 	if len(r.Failed) > 0 {
-		for i, check := range r.Failed {
-			failedChecks[i] = checkExecutionInfo{
+		for _, check := range r.Failed {
+			failedChecks = append(failedChecks, checkExecutionInfo{
 				Name:             check.Name(),
 				ElapsedTime:      float64(check.ElapsedTime.Milliseconds()),
 				Description:      check.Metadata().Description,
@@ -32,18 +32,18 @@ func getResponse(r runtime.Results) UserResponse {
 				Suggestion:       check.Help().Suggestion,
 				KnowledgeBaseURL: check.Metadata().KnowledgeBaseURL,
 				CheckURL:         check.Metadata().CheckURL,
-			}
+			})
 		}
 	}
 
 	if len(r.Errors) > 0 {
-		for i, check := range r.Errors {
-			erroredChecks[i] = checkExecutionInfo{
+		for _, check := range r.Errors {
+			erroredChecks = append(erroredChecks, checkExecutionInfo{
 				Name:        check.Name(),
 				ElapsedTime: float64(check.ElapsedTime.Milliseconds()),
 				Description: check.Metadata().Description,
 				Help:        check.Help().Message,
-			}
+			})
 		}
 	}
 

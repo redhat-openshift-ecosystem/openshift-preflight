@@ -24,9 +24,8 @@ var (
 // imageList takes the images mapping and represents them using just
 // the image URIs.
 func imageList() []string {
-	var imageList = make([]string, len(images))
+	var imageList = make([]string, 0, len(images))
 
-	i := 0
 	for _, image := range images {
 		base := strings.Split(image, ":")[0]
 		digest, err := crane.Digest(image)
@@ -35,8 +34,7 @@ func imageList() []string {
 			// Skip this entry
 			continue
 		}
-		imageList[i] = fmt.Sprintf("%s@%s", base, digest)
-		i++
+		imageList = append(imageList, fmt.Sprintf("%s@%s", base, digest))
 	}
 
 	return imageList

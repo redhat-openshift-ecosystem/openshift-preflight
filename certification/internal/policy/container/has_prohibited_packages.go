@@ -32,9 +32,9 @@ func (p *HasNoProhibitedPackagesCheck) getDataToValidate(dir string) ([]string, 
 	if err != nil {
 		return nil, err
 	}
-	pkgs := make([]string, len(pkgList))
-	for i, pkg := range pkgList {
-		pkgs[i] = pkg.Name
+	pkgs := make([]string, 0, len(pkgList))
+	for _, pkg := range pkgList {
+		pkgs = append(pkgs, pkg.Name)
 	}
 	return pkgs, nil
 }
