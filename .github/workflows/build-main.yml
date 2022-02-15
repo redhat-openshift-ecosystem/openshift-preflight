@@ -2,15 +2,14 @@ name: Build Main
 
 on:
   push:
-    branches: [ main, ghactions ]
+    branches: [ main, singleManifest ]
+
+env:
+  IMAGE_NAME: preflight
 
 jobs:
   build-main:
     name: Build and push main snapshot images
-    strategy: 
-      matrix:
-        architecture: [amd64,ppc64le,arm64,s390x]
-        platform: [linux]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -23,28 +22,29 @@ jobs:
       run: echo SHA_SHORT=$(git rev-parse --short HEAD) >> $GITHUB_ENV
 
     - name: Set up QEMU
+      if: matrix.architecture != 'unified'
       uses: docker/setup-qemu-action@v1
         
     - name: Build Image
       id: build-image
-      uses: redhat-actions/buildah-build@v2
+      uses: redhat-actions/buildah-build@v2.9
       with:
-        image: ${{ secrets.IMAGE_REGISTRY }}/preflight
-        tags: ${{ env.SHA_SHORT }}-${{ matrix.platform }}-${{ matrix.architecture }}
-        archs: ${{ matrix.architecture }}
+        image: ${{ env.IMAGE_NAME }}
+        tags: ${{ env.SHA_SHORT }}
+        archs: amd64, ppc64le, arm64, s390x
         build-args: |
           quay_expiration=1w
           release_tag=${{ env.RELEASE_TAG }}-alpha+${{ github.sha }}
-          ARCH=${{ matrix.architecture }}
         dockerfiles: |
           ./Dockerfile
+
 
     - name: Push Image
       id: push-image
       uses: redhat-actions/push-to-registry@v2
       with:
-        image: preflight
-        tags: ${{ env.SHA_SHORT }}-${{ matrix.platform }}-${{ matrix.architecture }}
+        image: ${{ env.IMAGE_NAME }}
+        tags: ${{ env.SHA_SHORT }}
         registry: ${{ secrets.IMAGE_REGISTRY }}
         username: ${{ secrets.REGISTRY_USER }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
