@@ -118,11 +118,9 @@ func diffImageList(before, after map[string]struct{}) []string {
 func checkImageSource(operatorImages []string) bool {
 	log.Info("Checking that images are from approved sources...")
 
-	registries := make([]string, len(approvedRegistries))
-	i := 0
+	registries := make([]string, 0, len(approvedRegistries))
 	for registry := range approvedRegistries {
-		registries[i] = registry
-		i++
+		registries = append(registries, registry)
 	}
 
 	log.Debug("List of approved registries are: ", registries)

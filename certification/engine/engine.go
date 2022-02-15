@@ -30,8 +30,8 @@ func NewForConfig(config runtime.Config) (CheckEngine, error) {
 		return nil, errors.ErrNoChecksEnabled
 	}
 
-	checks := make([]certification.Check, len(config.EnabledChecks))
-	for i, checkString := range config.EnabledChecks {
+	checks := make([]certification.Check, 0, len(config.EnabledChecks))
+	for _, checkString := range config.EnabledChecks {
 		check := queryChecks(checkString)
 		if check == nil {
 			err := fmt.Errorf("%w: %s",
@@ -40,7 +40,7 @@ func NewForConfig(config runtime.Config) (CheckEngine, error) {
 			return nil, err
 		}
 
-		checks[i] = check
+		checks = append(checks, check)
 	}
 
 	engine := &internal.CraneEngine{
@@ -106,12 +106,10 @@ var containerPolicy = map[string]certification.Check{
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {
-	checks := make([]string, len(checkMap))
-	i := 0
+	checks := make([]string, 0, len(checkMap))
 
-	for key := range checkMap {
-		checks[i] = key
-		i++
+	for key, _ := range checkMap {
+		checks = append(checks, key)
 	}
 
 	return checks
