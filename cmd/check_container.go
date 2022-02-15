@@ -101,6 +101,10 @@ var checkContainerCmd = &cobra.Command{
 		// also write to stdout
 		resultsOutputTarget := io.MultiWriter(os.Stdout, resultsFile)
 
+		// At this point, we would no longer want usage information printed out
+		// on error, so it doesn't contaminate the output.
+		cmd.SilenceUsage = true
+
 		// execute the checks
 		if err := engine.ExecuteChecks(); err != nil {
 			return err
