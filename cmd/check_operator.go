@@ -24,8 +24,8 @@ var checkOperatorCmd = &cobra.Command{
 	Long:  `This command will run the Certification checks for an Operator bundle image. `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if l, _ := cmd.Flags().GetBool("list-checks"); l {
-			fmt.Println(fmt.Sprintf("\n%s\n%s%s", "The checks that will be executed are the following:", "- ",
-				strings.Join(engine.OperatorPolicy(), "\n- ")))
+			fmt.Printf("\n%s\n%s%s\n", "The checks that will be executed are the following:", "- ",
+				strings.Join(engine.OperatorPolicy(), "\n- "))
 
 			// exiting gracefully instead of retuning, otherwise cobra calls RunE
 			os.Exit(0)
