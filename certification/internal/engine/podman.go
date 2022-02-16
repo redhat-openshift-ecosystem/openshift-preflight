@@ -4,11 +4,18 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os/exec"
+	"os"
+	exec "os/exec"
+	"regexp"
 	"strings"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	runAsPrivileged = true
 )
 
 type podmanEngine struct{}
@@ -18,52 +25,18 @@ func NewPodmanEngine() *cli.PodmanEngine {
 	return &engine
 }
 
-func (p *podmanEngine) PullImage(imageURI string, options cli.ImagePullOptions) (*cli.PodmanOutput, error) {
-	log.Debug(fmt.Sprintf("Pulling image %s from repository", imageURI))
-	cmdArgs := []string{"pull"}
-
-	if options.Quiet {
-		cmdArgs = append(cmdArgs, "--quiet")
-	}
-
-	cmdArgs = append(cmdArgs, imageURI)
-
-	cmd := exec.Command("podman", cmdArgs...)
-
-	log.Debugf("Command being run: %+v", cmd)
-
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		log.Error(fmt.Sprintf("unable to pull image %s: ", imageURI), err)
-		log.Error("Stderr: ", stderr.String())
-		return &cli.PodmanOutput{
-			Stderr: stderr.String(),
-		}, err
-	}
-	log.Debug(fmt.Sprintf("Successfully pulled image %s from repository", imageURI))
-	return &cli.PodmanOutput{
-		Stdout: stdout.String(),
-	}, nil
-}
-
 func (p *podmanEngine) CreateContainer(imageURI string, createOptions cli.PodmanCreateOption) (*cli.PodmanCreateOutput, error) {
 	log.Debug(fmt.Sprintf("Creating container %s with the run options: %+v", imageURI, createOptions))
 
-	if _, err := p.PullImage(imageURI, cli.ImagePullOptions{Quiet: true}); err != nil {
-		return nil, err
-	}
 	cmdArgs := []string{"create"}
-
 	if len(createOptions.Entrypoint) > 0 {
 		cmdArgs = append(cmdArgs, "--entrypoint")
 		cmdArgs = append(cmdArgs, createOptions.Entrypoint...)
 	}
-
+	if len(createOptions.ContainerName) > 0 {
+		cmdArgs = append(cmdArgs, "--name", createOptions.ContainerName)
+	}
 	cmdArgs = append(cmdArgs, imageURI)
-
 	if len(createOptions.Cmd) > 0 {
 		cmdArgs = append(cmdArgs, createOptions.Cmd...)
 	}
@@ -134,8 +107,7 @@ func (p *podmanEngine) RemoveContainer(containerId string) error {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		log.Error(fmt.Sprintf("unable to remove container %s: ", containerId), err)
-		log.Error("Stderr: ", stderr.String())
+		log.Debug("Stderr: ", stderr.String())
 		return err
 	}
 	return nil
@@ -176,4 +148,134 @@ func (p *podmanEngine) WaitContainer(containerId string, waitOptions cli.WaitOpt
 
 	log.Info("container reached a running state")
 	return true, nil
+}
+
+func (p *podmanEngine) RunSystemContainer(containerName string) (*cli.PodmanOutput, error) {
+	log.Debug(fmt.Sprintf("Generating Systemd file for container %s", containerName))
+	cmdArgs := []string{"generate", "systemd", "--new", "--files", "--name", containerName}
+
+	output, err := RunCommand(!runAsPrivileged, "podman", cmdArgs)
+
+	if err != nil {
+		return output, err
+	}
+	serviceFilepath := strings.TrimSpace(output.Stdout)
+
+	r, err := regexp.Compile(".*/(.+.service)")
+	if err != nil {
+		log.Error("unable to fetch the name of the systemd service: ", err)
+		return &cli.PodmanOutput{
+			Stderr: err.Error(),
+		}, err
+	}
+	serviceName := r.FindStringSubmatch(serviceFilepath)[1]
+
+	// copy the unit file from working dir to systemd dir
+	_, err = copyFile(runAsPrivileged, serviceFilepath, certification.SystemdDir)
+	defer os.Remove(serviceFilepath)
+
+	if err != nil {
+		log.Error(fmt.Sprintf("unable to copy the unit file into the systemd dir %s: ", certification.SystemdDir), err)
+		return &cli.PodmanOutput{
+			Stderr: err.Error(),
+		}, err
+	}
+
+	log.Debug(fmt.Sprintf("Reloading daemon set and start the service %s", serviceName))
+
+	if output, err = RunCommand(runAsPrivileged, "systemctl", []string{"daemon-reload"}); err != nil {
+		log.Error("unable to reaload the daemon set: ", err)
+		log.Error("Stderr: ", output.Stderr)
+		// remove the service file
+		RunCommand(runAsPrivileged, "rm", []string{"-f", fmt.Sprintf("%s/%s", certification.SystemdDir, serviceName)})
+
+		return &cli.PodmanOutput{
+			Stderr: output.Stderr,
+		}, err
+	}
+	if output, err = RunCommand(runAsPrivileged, "systemctl", []string{"start", serviceName}); err != nil {
+		log.Error(fmt.Sprintf("unable to start the service %s: ", serviceName), err)
+		log.Error("Stderr: ", output.Stderr)
+		// remove the service file
+		RunCommand(runAsPrivileged, "rm", []string{"-f", fmt.Sprintf("%s/%s", certification.SystemdDir, serviceName)})
+
+		return &cli.PodmanOutput{
+			Stderr: output.Stderr,
+		}, err
+	}
+
+	return &cli.PodmanOutput{
+		Stdout: serviceName,
+	}, nil
+}
+
+func (p *podmanEngine) IsSystemContainerRunning(serviceName string) (bool, error) {
+	log.Debug("Checking the service status of ", serviceName)
+
+	output, err := RunCommand(runAsPrivileged, "systemctl", []string{"is-active", serviceName})
+	if err != nil {
+		log.Error(fmt.Sprintf("unable to check the status of the service %s: ", serviceName), err)
+		log.Error("Stderr: ", output.Stderr)
+		return false, err
+	}
+	serviceStatus := strings.TrimSpace(output.Stdout)
+	log.Debug(fmt.Sprintf("The %s status is %s", serviceName, serviceStatus))
+	return strings.ToLower(serviceStatus) == "active", nil
+}
+
+func (p *podmanEngine) StopSystemContainer(serviceName string) error {
+	log.Debug("Stopping the container service ", serviceName)
+
+	if output, err := RunCommand(runAsPrivileged, "systemctl", []string{"stop", serviceName}); err != nil {
+		log.Error(fmt.Sprintf("unable to start the service %s: ", serviceName), err)
+		log.Error("Stderr: ", output.Stderr)
+		return err
+	}
+
+	if output, err := RunCommand(runAsPrivileged, "systemctl", []string{"daemon-reload"}); err != nil {
+		log.Error("unable to reaload the daemon set: ", err)
+		log.Error("Stderr: ", output.Stderr)
+		return err
+	}
+	log.Debug("Successfully stopped the container service ", serviceName)
+	return nil
+}
+
+func copyFile(isPrivileged bool, src string, dst string) (int64, error) {
+	log.Debug(fmt.Sprintf("Copying %s into %s", src, dst))
+
+	if _, err := RunCommand(isPrivileged, "cp", []string{src, dst}); err != nil {
+		log.Error(fmt.Sprintf("failed to copy %s to %s", src, dst))
+		return -1, err
+	}
+	log.Debug(fmt.Sprintf("Successfully copied %s to %s", src, dst))
+	return 0, nil
+}
+
+func RunCommand(isPrivileged bool, command string, args []string) (*cli.PodmanOutput, error) {
+	var cmd *exec.Cmd
+
+	if isPrivileged {
+		cmdArgs := "sudo " + command + " " + strings.Join(args, " ")
+		cmd = exec.Command("sh", "-c", cmdArgs)
+	} else {
+		cmd = exec.Command(command, args...)
+	}
+
+	log.Debugf("Command being run: %+v", cmd)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		log.Error(fmt.Sprintf("unable to run command %+v ", command), err)
+		log.Error("Stderr: ", stderr.String())
+		return &cli.PodmanOutput{
+			Stderr: stderr.String(),
+		}, err
+	}
+	return &cli.PodmanOutput{
+		Stdout: stdout.String(),
+	}, nil
 }

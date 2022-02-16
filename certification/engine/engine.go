@@ -87,6 +87,7 @@ var hasRequiredLabelsCheck certification.Check = &containerpol.HasRequiredLabels
 var runAsRootCheck certification.Check = &containerpol.RunAsNonRootCheck{}
 var basedOnUbiCheck certification.Check = &containerpol.BasedOnUBICheck{}
 var runnableContainerCheck certification.Check = containerpol.NewRunnableContainerCheck(internal.NewPodmanEngine())
+var runSystemContainerCheck certification.Check = containerpol.NewRunSystemContainerCheck(internal.NewPodmanEngine())
 
 var operatorPolicy = map[string]certification.Check{
 	//operatorPkgNameIsUniqueCheck.Name(): operatorPkgNameIsUniqueCheck,
@@ -97,14 +98,15 @@ var operatorPolicy = map[string]certification.Check{
 }
 
 var containerPolicy = map[string]certification.Check{
-	hasLicenseCheck.Name():        hasLicenseCheck,
-	hasUniqueTagCheck.Name():      hasUniqueTagCheck,
-	maxLayersCheck.Name():         maxLayersCheck,
-	hasNoProhibitedCheck.Name():   hasNoProhibitedCheck,
-	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
-	runAsRootCheck.Name():         runAsRootCheck,
-	basedOnUbiCheck.Name():        basedOnUbiCheck,
-	runnableContainerCheck.Name(): runnableContainerCheck,
+	hasLicenseCheck.Name():         hasLicenseCheck,
+	hasUniqueTagCheck.Name():       hasUniqueTagCheck,
+	maxLayersCheck.Name():          maxLayersCheck,
+	hasNoProhibitedCheck.Name():    hasNoProhibitedCheck,
+	hasRequiredLabelsCheck.Name():  hasRequiredLabelsCheck,
+	runAsRootCheck.Name():          runAsRootCheck,
+	basedOnUbiCheck.Name():         basedOnUbiCheck,
+	runnableContainerCheck.Name():  runnableContainerCheck,
+	runSystemContainerCheck.Name(): runSystemContainerCheck,
 }
 
 var scratchContainerPolicy = map[string]certification.Check{

@@ -51,10 +51,6 @@ func (fl FakeLayer) MediaType() (types.MediaType, error) {
 
 type GoodPodmanEngine struct{}
 
-func (pe GoodPodmanEngine) PullImage(imageURI string, options cli.ImagePullOptions) (*cli.PodmanOutput, error) {
-	return &cli.PodmanOutput{}, nil
-}
-
 func (pe GoodPodmanEngine) CreateContainer(imageURI string, createOptions cli.PodmanCreateOption) (*cli.PodmanCreateOutput, error) {
 	return &cli.PodmanCreateOutput{
 		ContainerId: "containerId",
@@ -73,11 +69,19 @@ func (p GoodPodmanEngine) WaitContainer(containerId string, waitOptions cli.Wait
 	return true, nil
 }
 
-type BadPodmanEngine struct{}
-
-func (pe BadPodmanEngine) PullImage(imageURI string, options cli.ImagePullOptions) (*cli.PodmanOutput, error) {
+func (p GoodPodmanEngine) RunSystemContainer(containerName string) (*cli.PodmanOutput, error) {
 	return &cli.PodmanOutput{}, nil
 }
+
+func (p GoodPodmanEngine) IsSystemContainerRunning(serviceName string) (bool, error) {
+	return true, nil
+}
+
+func (p GoodPodmanEngine) StopSystemContainer(serviceName string) error {
+	return nil
+}
+
+type BadPodmanEngine struct{}
 
 func (pe BadPodmanEngine) CreateContainer(imageURI string, createOptions cli.PodmanCreateOption) (*cli.PodmanCreateOutput, error) {
 	return &cli.PodmanCreateOutput{
@@ -95,4 +99,16 @@ func (p BadPodmanEngine) RemoveContainer(containerId string) error {
 
 func (p BadPodmanEngine) WaitContainer(containerId string, waitOptions cli.WaitOptions) (bool, error) {
 	return false, errors.New("the container wait had failed")
+}
+
+func (p BadPodmanEngine) RunSystemContainer(containerName string) (*cli.PodmanOutput, error) {
+	return &cli.PodmanOutput{}, nil
+}
+
+func (p BadPodmanEngine) IsSystemContainerRunning(serviceName string) (bool, error) {
+	return false, nil
+}
+
+func (p BadPodmanEngine) StopSystemContainer(serviceName string) error {
+	return nil
 }
