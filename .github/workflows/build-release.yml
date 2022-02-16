@@ -6,6 +6,9 @@ on:
       - "[0-9]+.[0-9]+.[0-9]+"
     branches: [ ghactions ]
 
+env:
+  IMAGE_NAME: preflight
+
 jobs:
   build-release:
     name: Build and push tag images
@@ -26,7 +29,7 @@ jobs:
       id: build-image
       uses: redhat-actions/buildah-build@v2
       with:
-        image: ${{ secrets.IMAGE_REGISTRY }}/preflight
+        image: ${{ secrets.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: ${{ env.RELEASE_TAG }}-${{ matrix.platform }}-${{ matrix.architecture }}
         archs: ${{ matrix.architecture }}
         build-args: |
@@ -39,7 +42,7 @@ jobs:
       id: push-image
       uses: redhat-actions/push-to-registry@v2
       with:
-        image: preflight
+        image: ${{ env.IMAGE_NAME }}
         tags: ${{ env.RELEASE_TAG }}-${{ matrix.platform }}-${{ matrix.architecture }}
         registry: ${{ secrets.IMAGE_REGISTRY }}
         username: ${{ secrets.REGISTRY_USER }}
@@ -47,3 +50,18 @@ jobs:
 
     - name: Print image url
       run: echo "Image pushed to ${{ steps.push-image.outputs.registry-paths }}"
+
+    outputs:
+      imageName: ${{ env.IMAGE_NAME }}
+      imageVersion: ${{ env.RELEASE_TAG }}
+
+  build-multiarch:
+    needs: build-release
+    uses: ./.github/workflows/build-multiarch.yml
+    with:
+      name: ${{ needs.build-release.outputs.imageName }}
+      tag: ${{ needs.build-release.outputs.imageVersion }}
+    secrets:
+      registry: ${{ secrets.IMAGE_REGISTRY }}
+      user: ${{ secrets.REGISTRY_USER }}
+      password: ${{ secrets.REGISTRY_PASSWORD }}
