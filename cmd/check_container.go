@@ -148,10 +148,10 @@ var checkContainerCmd = &cobra.Command{
 			log.Info("preparing results that will be submitted to Red Hat")
 
 			certImageJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultCertImageFilename))
-			defer certImageJsonFile.Close()
 			if err != nil {
 				return err
 			}
+			defer certImageJsonFile.Close()
 
 			certImageBytes, err := io.ReadAll(certImageJsonFile)
 			if err != nil {
@@ -165,10 +165,10 @@ var checkContainerCmd = &cobra.Command{
 			}
 
 			rpmManifestJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename))
-			defer rpmManifestJsonFile.Close()
 			if err != nil {
 				return err
 			}
+			defer rpmManifestJsonFile.Close()
 
 			rpmManifestBytes, err := io.ReadAll(rpmManifestJsonFile)
 			if err != nil {
@@ -182,10 +182,10 @@ var checkContainerCmd = &cobra.Command{
 			}
 
 			testResultsJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultTestResultsFilename))
-			defer testResultsJsonFile.Close()
 			if err != nil {
 				return err
 			}
+			defer testResultsJsonFile.Close()
 
 			testResultsBytes, err := io.ReadAll(testResultsJsonFile)
 			if err != nil {
