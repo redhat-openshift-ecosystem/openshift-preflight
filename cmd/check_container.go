@@ -25,14 +25,16 @@ import (
 	"github.com/spf13/viper"
 )
 
+var submit bool
+
 var checkContainerCmd = &cobra.Command{
 	Use:   "container",
 	Short: "Run checks for a container",
 	Long:  `This command will run the Certification checks for a container image. `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if l, _ := cmd.Flags().GetBool("list-checks"); l {
-			fmt.Println(fmt.Sprintf("\n%s\n%s%s", "The checks that will be executed are the following:", "- ",
-				strings.Join(engine.ContainerPolicy(), "\n- ")))
+			fmt.Printf("\n%s\n%s%s\n", "The checks that will be executed are the following:", "- ",
+				strings.Join(engine.ContainerPolicy(), "\n- "))
 
 			// exiting gracefully instead of retuning, otherwise cobra calls RunE
 			os.Exit(0)
@@ -42,16 +44,8 @@ var checkContainerCmd = &cobra.Command{
 			return fmt.Errorf("%w: A container image positional argument is required", errors.ErrInsufficientPosArguments)
 		}
 
-		if s, _ := cmd.Flags().GetBool("submit"); s {
-			if d, _ := cmd.Flags().GetString("docker-config"); len(d) == 0 {
-				return fmt.Errorf("%w: A docker configuration file must be present when calling --submit", errors.ErrNoDockerConfig)
-			}
-			if p, _ := cmd.Flags().GetString("pyxis-api-token"); len(p) == 0 {
-				return fmt.Errorf("%w: A Pyxis API token must be present when calling --submit", errors.ErrNoPyxisAPIKey)
-			}
-			if p, _ := cmd.Flags().GetString("certification-project-id"); len(p) == 0 {
-				return fmt.Errorf("%w: A Certification Project ID must be present when calling --submit", errors.ErrEmptyProjectID)
-			}
+		if submit {
+			cmd.MarkFlagRequired("docker-config")
 		}
 
 		return nil
@@ -210,19 +204,21 @@ var checkContainerCmd = &cobra.Command{
 }
 
 func init() {
-	checkContainerCmd.Flags().BoolP("submit", "s", false, "submit check container results to red hat")
+	checkContainerCmd.Flags().BoolVarP(&submit, "submit", "s", false, "submit check container results to red hat")
 	viper.BindPFlag("submit", checkContainerCmd.Flags().Lookup("submit"))
 
 	checkContainerCmd.Flags().StringP("docker-config", "d", "", "path to docker config.json file")
 	viper.BindPFlag("docker_config", checkContainerCmd.Flags().Lookup("docker-config"))
 
 	checkContainerCmd.Flags().String("pyxis-api-token", "", "API token for Pyxis authentication")
+	checkContainerCmd.MarkFlagRequired("pyxis-api-token")
 	viper.BindPFlag("pyxis_api_token", checkContainerCmd.Flags().Lookup("pyxis-api-token"))
 
 	checkContainerCmd.Flags().String("pyxis-host", DefaultPyxisHost, "Host to use for Pyxis submissions.")
 	viper.BindPFlag("pyxis_host", checkContainerCmd.Flags().Lookup("pyxis-host"))
 
 	checkContainerCmd.Flags().String("certification-project-id", "", "Certification Project ID from conenct.redhat.com. Should be supplied without the ospid- prefix.")
+	checkContainerCmd.MarkFlagRequired("certification-project-id")
 	viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
 
 	checkCmd.AddCommand(checkContainerCmd)
