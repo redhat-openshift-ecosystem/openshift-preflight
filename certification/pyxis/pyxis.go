@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -57,14 +58,17 @@ func (p *pyxisEngine) createImage(ctx context.Context, certImage *CertImage) (*C
 		return nil, err
 	}
 
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Error(err)
 		return nil, err
+	}
+
+	if !checkStatus(resp.StatusCode) {
+		log.Errorf("%s: %s", "received non 200 status code in create manifest call", string(body))
+		return nil, errors.ErrNon200StatusCode
 	}
 
 	var newCertImage CertImage
@@ -93,10 +97,23 @@ func (p *pyxisEngine) createRPMManifest(ctx context.Context, imageId string, rpm
 	}
 	req = withJson(req, b)
 
-	_, err = p.Client.Do(req)
+	resp, err := p.Client.Do(req)
 	if err != nil {
 		log.Error(err)
 		return err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	if !checkStatus(resp.StatusCode) {
+		log.Errorf("%s: %s", "received non 200 status code in createRPMManifest", string(body))
+		return errors.ErrNon200StatusCode
 	}
 
 	return nil
@@ -115,14 +132,17 @@ func (p *pyxisEngine) GetProject(ctx context.Context) (*CertProject, error) {
 		return nil, err
 	}
 
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Error(err)
 		return nil, err
+	}
+
+	if !checkStatus(resp.StatusCode) {
+		log.Errorf("%s: %s", "received non 200 status code in GetProject", string(body))
+		return nil, errors.ErrNon200StatusCode
 	}
 
 	var certProject CertProject
@@ -153,14 +173,17 @@ func (p *pyxisEngine) updateProject(ctx context.Context, certProject *CertProjec
 		return nil, err
 	}
 
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Error(err)
 		return nil, err
+	}
+
+	if !checkStatus(resp.StatusCode) {
+		log.Errorf("%s: %s", "received non 200 status code in updateProject", string(body))
+		return nil, errors.ErrNon200StatusCode
 	}
 
 	var newCertProject CertProject
@@ -191,14 +214,17 @@ func (p *pyxisEngine) createTestResults(ctx context.Context, testResults *TestRe
 		return nil, err
 	}
 
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Error(err)
 		return nil, err
+	}
+
+	if !checkStatus(resp.StatusCode) {
+		log.Errorf("%s: %s", "received non 200 status code in createTestResults", string(body))
+		return nil, errors.ErrNon200StatusCode
 	}
 
 	var newTestResults = TestResults{}
@@ -226,4 +252,9 @@ func withJson(req *http.Request, b []byte) *http.Request {
 	req.Header.Add("Content-length", fmt.Sprint(len(b)))
 	req.Body = io.NopCloser(bytes.NewReader(b))
 	return req
+}
+
+// checkStatus is used to check for a 2xx status code
+func checkStatus(statusCode int) bool {
+	return statusCode >= 200 && statusCode < 300
 }

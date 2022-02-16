@@ -25,18 +25,19 @@ func (p *pyxisEngine) SubmitResults(certProject *CertProject, certImage *CertIma
 
 	certImage, err = p.createImage(ctx, certImage)
 	if err != nil {
-		log.Error(err)
+		log.Error(err, "could not create image")
 		return nil, nil, nil, err
 	}
 
 	err = p.createRPMManifest(ctx, certImage.ImageID, rpmManifest.RPMS)
 	if err != nil {
-		log.Error(err)
+		log.Error(err, "could not create rpm manifest")
 		return nil, nil, nil, err
 	}
 
 	testResults, err = p.createTestResults(ctx, testResults)
 	if err != nil {
+		log.Error(err, "could not create test results")
 		return nil, nil, nil, err
 	}
 
