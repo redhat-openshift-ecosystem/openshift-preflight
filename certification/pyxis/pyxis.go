@@ -134,7 +134,7 @@ func (p *pyxisEngine) GetProject(ctx context.Context) (*CertProject, error) {
 	return &certProject, nil
 }
 
-func (p *pyxisEngine) updateProject(ctx context.Context, certProjectId string, certProject *CertProject) (*CertProject, error) {
+func (p *pyxisEngine) updateProject(ctx context.Context, certProject *CertProject) (*CertProject, error) {
 	b, err := json.Marshal(certProject)
 	if err != nil {
 		log.Error(err)
@@ -170,6 +170,44 @@ func (p *pyxisEngine) updateProject(ctx context.Context, certProjectId string, c
 	}
 
 	return &newCertProject, nil
+}
+
+func (p *pyxisEngine) createTestResults(ctx context.Context, testResults *TestResults) (*TestResults, error) {
+	b, err := json.Marshal(testResults)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	req, err := newRequestWithApiToken(ctx, http.MethodPost, getPyxisUrl(fmt.Sprintf("projects/certification/id/%s/test-results", p.ProjectId)), p.ApiToken)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	req = withJson(req, b)
+
+	resp, err := p.Client.Do(req)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	if resp.Body != nil {
+		defer resp.Body.Close()
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	var newTestResults = TestResults{}
+	if err := json.Unmarshal(body, &newTestResults); err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return &newTestResults, nil
 }
 
 func newRequestWithApiToken(ctx context.Context, method string, url string, token string) (*http.Request, error) {

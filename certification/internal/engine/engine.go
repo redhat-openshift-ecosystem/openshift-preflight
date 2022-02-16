@@ -4,23 +4,29 @@ import (
 	"archive/tar"
 	"bytes"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/crane"
-	log "github.com/sirupsen/logrus"
-
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	preflightRuntime "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 // CraneEngine implements a certification.CheckEngine, and leverage crane to interact with
@@ -91,6 +97,19 @@ func (c *CraneEngine) ExecuteChecks() error {
 	err = untar(containerFSPath, r)
 	if err != nil {
 		return fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
+	}
+
+	// if --submit flag is set write json files to disk to be used to send to pyxis after all checks are complete
+	if viper.GetBool("submit") {
+		err := writeCertImage(img)
+		if err != nil {
+			return err
+		}
+
+		err = writeRPMManifest(containerFSPath)
+		if err != nil {
+			return err
+		}
 	}
 
 	// store the image internals in the engine image reference to pass to validations.
@@ -278,4 +297,171 @@ func untar(dst string, r io.Reader) error {
 			}
 		}
 	}
+}
+
+func writeCertImage(img v1.Image) error {
+	config, err := img.ConfigFile()
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+	}
+
+	manifest, err := img.Manifest()
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+	}
+
+	digest, err := img.Digest()
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+	}
+
+	layers, err := img.Layers()
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+	}
+
+	rawConfig, err := img.RawConfigFile()
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+	}
+
+	size, err := img.Size()
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+	}
+
+	labels := convertLabels(config.Config.Labels)
+	layerSize := make([]pyxis.Layer, 10)
+
+	sumLayersSizeBytes, err := sumLayerSizeBytes(layers)
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+	}
+
+	certImage := pyxis.CertImage{
+		DockerImageDigest: digest.String(),
+		DockerImageID:     manifest.Config.Digest.String(),
+		ImageID:           digest.String(),
+		ParsedData: &pyxis.ParsedData{
+			Architecture:  config.Architecture,
+			Command:       strings.Join(config.Config.Cmd, " "),
+			Created:       config.Created.String(),
+			DockerVersion: config.DockerVersion,
+			ImageID:       digest.String(),
+			Labels:        labels,
+			OS:            config.OS,
+			Size:          size,
+			//TODO: figure out how to get/convert this data from crane
+			UncompressedLayerSizes: layerSize,
+		},
+		RawConfig:         string(rawConfig),
+		SumLayerSizeBytes: sumLayersSizeBytes,
+		//TODO: figure out how to get/convert this data from crane
+		UncompressedTopLayerId: "placeholder",
+	}
+
+	// calling MarshalIndent so the json file written to disk is human-readable when opened
+	certImageJson, err := json.MarshalIndent(certImage, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	fileName, err := artifacts.WriteFile(certification.DefaultCertImageFilename, string(certImageJson))
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrSaveFileFailed, err)
+	}
+
+	log.Tracef("image config written to disk: %s", fileName)
+
+	return nil
+}
+
+func writeRPMManifest(containerFSPath string) error {
+	db, err := rpmdb.Open(filepath.Join(containerFSPath, "var", "lib", "rpm", "Packages"))
+	if err != nil {
+		return err
+	}
+
+	pkgList, err := db.ListPackages()
+	if err != nil {
+		return err
+	}
+
+	// covert rpm struct to pxyis struct
+	rpms := make([]pyxis.RPM, 0, len(pkgList))
+	for _, packageInfo := range pkgList {
+
+		var bgName string
+		var endChop string
+		var srpmNevra string
+
+		// accounting for the fact that not all packages have a source rpm
+		if len(packageInfo.SourceRpm) > 0 {
+			bgName = packageInfo.SourceRpm[0:strings.LastIndex(strings.SplitAfter(packageInfo.SourceRpm, ".")[0], "-")]
+			endChop = strings.TrimPrefix(strings.TrimSuffix(regexp.MustCompile("(-[0-9].*)").FindString(packageInfo.SourceRpm), ".rpm"), "-")
+
+			srpmNevra = fmt.Sprintf("%s-%d:%s", bgName, packageInfo.Epoch, endChop)
+		}
+
+		rpm := pyxis.RPM{
+			Architecture: packageInfo.Arch,
+			Gpg:          "placeholder", //TODO: change this once GPG is implemented in go-rpm library
+			Name:         packageInfo.Name,
+			Nvra:         fmt.Sprintf("%s-%s-%s.%s", packageInfo.Name, packageInfo.Version, packageInfo.Release, packageInfo.Arch),
+			Release:      packageInfo.Release,
+			SrpmName:     bgName,
+			SrpmNevra:    srpmNevra,
+			Summary:      packageInfo.Summary,
+			Version:      packageInfo.Version,
+		}
+
+		rpms = append(rpms, rpm)
+	}
+
+	rpmManifest := pyxis.RPMManifest{
+		RPMS: rpms,
+	}
+
+	// calling MarshalIndent so the json file written to disk is human-readable when opened
+	rpmManifestJson, err := json.MarshalIndent(rpmManifest, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	fileName, err := artifacts.WriteFile(certification.DefaultRPMManifestFilename, string(rpmManifestJson))
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrSaveFileFailed, err)
+	}
+
+	log.Tracef("rpm manifest written to disk: %s", fileName)
+
+	return nil
+}
+
+func sumLayerSizeBytes(layers []v1.Layer) (int64, error) {
+	var sum int64
+	for _, layer := range layers {
+		size, err := layer.Size()
+		if err != nil {
+			return 0, err
+		}
+
+		sum = sum + size
+	}
+
+	return sum, nil
+}
+
+func convertLabels(imageLabels map[string]string) []pyxis.Label {
+	pyxisLabels := make([]pyxis.Label, 0, len(imageLabels))
+	for key, value := range imageLabels {
+		label := pyxis.Label{
+			Name:  key,
+			Value: value,
+		}
+
+		pyxisLabels = append(pyxisLabels, label)
+	}
+
+	return pyxisLabels
 }

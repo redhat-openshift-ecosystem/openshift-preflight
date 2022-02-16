@@ -1,18 +1,17 @@
 package pyxis
 
-//todo-adam reduce these fields to just what we need for now
 type CertImage struct {
-	Certified              bool          `json:"certified" default:"false"` //todo-adam I'm going to assume we want to set this to false??
-	Deleted                bool          `json:"deleted" default:"false"`
-	DockerImageDigest      string        `json:"docker_image_digest,omitempty"`
-	DockerImageID          string        `json:"docker_image_id,omitempty"`
-	ImageID                string        `json:"image_id,omitempty"`
-	ISVPID                 string        `json:"isv_pid,omitempty"`
-	ParsedData             *ParsedData   `json:"parsed_data,omitempty"`
-	RawConfig              string        `json:"raw_config,omitempty"`
-	Repositories           *Repositories `json:"repositories,omitempty"`
-	SumLayerSizeBytes      int32         `json:"sum_layer_size_bytes,omitempty"`
-	UncompressedTopLayerId string        `json:"uncompressed_top_layer_id,omitempty"`
+	Certified              bool         `json:"certified" default:"false"`
+	Deleted                bool         `json:"deleted" default:"false"`
+	DockerImageDigest      string       `json:"docker_image_digest,omitempty"`
+	DockerImageID          string       `json:"docker_image_id,omitempty"`
+	ImageID                string       `json:"image_id,omitempty"`
+	ISVPID                 string       `json:"isv_pid,omitempty"`
+	ParsedData             *ParsedData  `json:"parsed_data,omitempty"`
+	RawConfig              string       `json:"raw_config,omitempty"`
+	Repositories           []Repository `json:"repositories,omitempty"`
+	SumLayerSizeBytes      int64        `json:"sum_layer_size_bytes,omitempty"`
+	UncompressedTopLayerId string       `json:"uncompressed_top_layer_id,omitempty"` //TODO: figure out how to populate this, it is not required
 }
 
 type ParsedData struct {
@@ -20,24 +19,30 @@ type ParsedData struct {
 	Command                string  `json:"command,omitempty"`
 	Comment                string  `json:"comment,omitempty"`
 	Container              string  `json:"container,omitempty"`
+	Created                string  `json:"created,omitempty"`
 	DockerVersion          string  `json:"docker_version,omitempty"`
-	FilesNum               int32   `json:"files#"`
 	ImageID                string  `json:"image_id,omitempty"`
+	Labels                 []Label `json:"labels,omitempty"` // required
 	OS                     string  `json:"os,omitempty"`
 	Ports                  string  `json:"ports,omitempty"`
-	Size                   int32   `json:"size,omitempty"`
-	UncompressedLayerSizes []Layer `json:"uncompressed_layer_sizes,omitempty"`
+	Size                   int64   `json:"size,omitempty"`
+	UncompressedLayerSizes []Layer `json:"uncompressed_layer_sizes,omitempty"` //TODO: figure out how to populate this its required
 }
 
-type Repositories []struct {
+type Repository struct {
 	Published  bool   `json:"published" default:"false"`
 	PushDate   string `json:"push_date,omitempty"` // time.Now
 	Registry   string `json:"registry,omitempty"`
 	Repository string `json:"repository,omitempty"`
-	Tags       *Tags  `json:"tags,omitempty"`
+	Tags       []Tag  `json:"tags,omitempty"`
 }
 
-type Tags []struct {
+type Label struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type Tag struct {
 	AddedDate string `json:"added_date,omitempty"` // time.Now
 	Name      string `json:"name,omitempty"`
 }
@@ -59,7 +64,6 @@ type RPM struct {
 	Version      string `json:"version,omitempty"`
 }
 
-//todo-adam make sure to set certProject.certification_status to "In Progress"
 type CertProject struct {
 	CertificationStatus string    `json:"certification_status" default:"In Progress"`
 	Container           Container `json:"container"`
@@ -76,5 +80,58 @@ type Container struct {
 
 type Layer struct {
 	LayerId string `json:"layer_id"`
-	Size    uint64 `json:"size_bytes"`
+	Size    int64  `json:"size_bytes"`
+}
+
+type TestResults struct {
+	CertProject       string      `json:"cert_project"`       // TODO: see if this should be populated, if so with what?
+	CertificationHash string      `json:"certification_hash"` // TODO: see if this should be populated, if so with what?
+	Image             string      `json:"image"`
+	OrgID             int         `json:"org_id"`
+	Passed            bool        `json:"passed"`
+	Results           Results     `json:"results"`
+	TestLibrary       TestLibrary `json:"test_library"`
+	Version           string      `json:"version"` // TODO: see if this should be populated, if so with what?
+}
+
+type Errors struct {
+	CheckURL         string `json:"check_url"`
+	Description      string `json:"description"`
+	ElapsedTime      int    `json:"elapsed_time"`
+	Help             string `json:"help"`
+	KnowledgeBaseURL string `json:"knowledgebase_url"`
+	Name             string `json:"name"`
+	Suggestion       string `json:"suggestion"`
+}
+
+type Failed struct {
+	CheckURL         string `json:"check_url"`
+	Description      string `json:"description"`
+	ElapsedTime      int    `json:"elapsed_time"`
+	Help             string `json:"help"`
+	KnowledgeBaseURL string `json:"knowledgebase_url"`
+	Name             string `json:"name"`
+	Suggestion       string `json:"suggestion"`
+}
+
+type Passed struct {
+	CheckURL         string `json:"check_url"`
+	Description      string `json:"description"`
+	ElapsedTime      int    `json:"elapsed_time"`
+	Help             string `json:"help"`
+	KnowledgeBaseURL string `json:"knowledgebase_url"`
+	Name             string `json:"name"`
+	Suggestion       string `json:"suggestion"`
+}
+
+type Results struct {
+	Errors []Errors `json:"errors"`
+	Failed []Failed `json:"failed"`
+	Passed []Passed `json:"passed"`
+}
+
+type TestLibrary struct {
+	Commit  string `json:"commit"`
+	Name    string `json:"name"`
+	Version string `json:"version"`
 }
