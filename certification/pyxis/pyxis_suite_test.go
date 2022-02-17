@@ -40,5 +40,5 @@ func (fhc fakeHttpClient) Do(req *http.Request) (*http.Response, error) {
 		results = `{"image": "quay.io/awesome/image:latest", "passed": false,}`
 	}
 
-	return &http.Response{Body: io.NopCloser(bytes.NewReader([]byte(results)))}, nil
+	return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewReader([]byte(results)))}, nil
 }

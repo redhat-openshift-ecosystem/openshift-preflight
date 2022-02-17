@@ -28,3 +28,4 @@ var ErrPullRequestURL = errors.New("please enter a valid url: including scheme, 
 var ErrIndexImageUndefined = errors.New("no environment variable PFLT_INDEXIMAGE could be found")
 var ErrUnsupportedGoType = errors.New("go type unsupported")
 var ErrSaveFileFailed = errors.New("failed to save file to artifacts directory")
+var ErrNon200StatusCode = errors.New("error calling remote API")
