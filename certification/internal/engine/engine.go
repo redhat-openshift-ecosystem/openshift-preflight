@@ -82,7 +82,7 @@ func (c *CraneEngine) ExecuteChecks() error {
 	r, w := io.Pipe()
 	go func() {
 		defer w.Close()
-		log.Debug("writing container filesystem to output dir", containerFSPath)
+		log.Debugf("writing container filesystem to output dir: %s", containerFSPath)
 		err = crane.Export(img, w)
 		if err != nil {
 			// TODO: Handle this error more effectively. Right now we rely on

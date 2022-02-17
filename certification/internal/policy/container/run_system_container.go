@@ -34,7 +34,7 @@ func (p *RunSystemContainerCheck) Validate(imgRef certification.ImageReference) 
 	}
 	defer func() {
 		if err := p.PodmanEngine.RemoveContainer(containerName); err != nil {
-			log.Warn(fmt.Sprintf("unable to remove container %s: ", createOutput.ContainerId), err)
+			log.Warnf("unable to remove container %s %s", createOutput.ContainerId, err)
 		}
 	}()
 
@@ -46,7 +46,7 @@ func (p *RunSystemContainerCheck) Validate(imgRef certification.ImageReference) 
 	serviceName := podmanOutput.Stdout
 	defer func() {
 		if err := p.PodmanEngine.StopSystemContainer(serviceName); err != nil {
-			log.Warn(fmt.Sprintf("unable to stop service %s: ", serviceName), err)
+			log.Warnf("unable to stop service %s: %s", serviceName, err)
 		}
 		os.Remove(fmt.Sprintf("%s/%s", certification.SystemdDir, serviceName))
 	}()

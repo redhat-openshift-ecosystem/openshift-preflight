@@ -52,7 +52,7 @@ func Assets() AssetData {
 func ScorecardImage() string {
 	scorecardImage := viper.GetString("scorecard_image")
 	if scorecardImage != "" {
-		log.Info(fmt.Sprintf("Using %s as the scorecard test image", scorecardImage))
+		log.Infof("Using %s as the scorecard test image", scorecardImage)
 		return scorecardImage
 	}
 	return images["scorecard"]

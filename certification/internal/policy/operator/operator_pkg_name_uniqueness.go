@@ -39,7 +39,7 @@ type OperatorPkgNameIsUniqueCheck struct{}
 func (p *OperatorPkgNameIsUniqueCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
 	annotations, err := bundle.GetAnnotations(bundleRef.ImageFSPath)
 	if err != nil {
-		log.Errorf("unable to get annotations.yaml from the bundle")
+		log.Error("unable to get annotations.yaml from the bundle")
 		return false, err
 	}
 
