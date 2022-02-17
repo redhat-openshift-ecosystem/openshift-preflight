@@ -1,8 +1,6 @@
 package container
 
 import (
-	"fmt"
-
 	"github.com/containers/podman/v3/libpod/define"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
@@ -34,7 +32,7 @@ func (p *RunnableContainerCheck) Validate(imgRef certification.ImageReference) (
 	_, err = p.PodmanEngine.StartContainer(creationOutput.ContainerId)
 	defer func() {
 		if err := p.PodmanEngine.RemoveContainer(creationOutput.ContainerId); err != nil {
-			log.Error(fmt.Sprintf("unable to stop container %s: ", creationOutput.ContainerId), err)
+			log.Errorf("unable to stop container %s: %s", creationOutput.ContainerId, err)
 		}
 	}()
 	if err != nil {

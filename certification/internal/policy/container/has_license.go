@@ -2,7 +2,6 @@ package container
 
 import (
 	stdliberrors "errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -37,17 +36,17 @@ func (p *HasLicenseCheck) getDataToValidate(mountedPath string) ([]fs.DirEntry, 
 	fullPath := filepath.Join(mountedPath, licensePath)
 	fileinfo, err := os.Stat(fullPath)
 	if err != nil {
-		log.Error(fmt.Sprintf("Error when checking for %s : ", licensePath), err)
+		log.Errorf("Error when checking for %s : %s", licensePath, err)
 		return nil, err
 	}
 	if !fileinfo.IsDir() {
-		log.Error(fmt.Sprintf("%s is not a directory", licensePath))
+		log.Errorf("%s is not a directory", licensePath)
 		return nil, errors.ErrLicensesNotADir
 	}
 
 	files, err := os.ReadDir(fullPath)
 	if err != nil {
-		log.Error(fmt.Sprintf("Error when reading directory %s", licensePath), err)
+		log.Errorf("Error when reading directory %s: %s", licensePath, err)
 		return nil, err
 	}
 	return files, nil

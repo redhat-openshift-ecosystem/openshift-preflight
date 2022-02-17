@@ -72,7 +72,7 @@ func (p *DeployableByOlmCheck) Validate(bundleRef certification.ImageReference) 
 		return false, err
 	}
 
-	log.Debug("The operator Metadata is: ", fmt.Sprintf("%+v", *operatorData))
+	log.Debugf("The operator Metadata is %+v", *operatorData)
 
 	// create k8s custom resources for the operator deployment
 	err = p.setUp(ctx, operatorData)
@@ -143,7 +143,7 @@ func (p *DeployableByOlmCheck) operatorMetadata(bundleRef certification.ImageRef
 	annotations, err := bundle.GetAnnotations(bundleRef.ImageFSPath)
 
 	if err != nil {
-		log.Errorf("unable to get annotations.yaml from the bundle")
+		log.Error("unable to get annotations.yaml from the bundle")
 		return nil, err
 	}
 
@@ -260,7 +260,7 @@ func (p *DeployableByOlmCheck) generateOperatorGroupData(operatorData *OperatorD
 			break
 		}
 	}
-	log.Debug(fmt.Sprintf("The operator install mode is %s", installMode))
+	log.Debugf("The operator install mode is %s", installMode)
 	targetNamespaces := make([]string, 2)
 
 	switch installMode {
@@ -274,7 +274,7 @@ func (p *DeployableByOlmCheck) generateOperatorGroupData(operatorData *OperatorD
 		targetNamespaces = []string{}
 
 	}
-	log.Debug(fmt.Sprintf("The OperatorGroup's TargetNamespaces is %s", targetNamespaces))
+	log.Debugf("The OperatorGroup's TargetNamespaces is %s", targetNamespaces)
 	operatorData.CsvNamespaces = targetNamespaces
 	return cli.OperatorGroupData{Name: operatorData.App, TargetNamespaces: targetNamespaces}, nil
 }
@@ -307,12 +307,12 @@ func watch(ctx context.Context, engine cli.OpenshiftEngine, wg *sync.WaitGroup, 
 		obj, done, err := fn(ctx, engine, name, namespace)
 		if err != nil {
 			// Something bad happened. Get out of town
-			log.Error(fmt.Sprintf("could not retrieve the object %s/%s: ", namespace, name), err)
+			log.Errorf("could not retrieve the object %s/%s: %s", namespace, name, err)
 			channel <- fmt.Sprintf("%s %v", errorPrefix, err)
 			return
 		}
 		if done {
-			log.Info(fmt.Sprintf("Successfully retrieved object %s/%s", namespace, obj))
+			log.Infof("Successfully retrieved object %s/%s", namespace, obj)
 			channel <- obj
 			return
 		}
@@ -320,7 +320,7 @@ func watch(ctx context.Context, engine cli.OpenshiftEngine, wg *sync.WaitGroup, 
 
 		select {
 		case <-ctx.Done():
-			log.Error(fmt.Sprintf("failed to retrieve object %s/%s: ", namespace, name), ctx.Err())
+			log.Errorf("failed to retrieve object %s/%s: %s", namespace, name, ctx.Err())
 			channel <- fmt.Sprintf("%s %v", errorPrefix, ctx.Err())
 			return
 		default:
@@ -333,12 +333,12 @@ func csvStatusSucceeded(ctx context.Context, engine cli.OpenshiftEngine, name, n
 	csv, err := engine.GetCSV(ctx, name, namespace)
 	if err != nil && !k8serr.IsNotFound(err) {
 		// This is not a normal error. Get out of town
-		log.Error(fmt.Sprintf("failed to fetch the csv %s from namespace %s: ", name, namespace), err)
+		log.Errorf("failed to fetch the csv %s from namespace %s: %s", name, namespace, err)
 		return "", false, err
 	}
 	// if the CSV phase is succeeded, stop the querying
 	if csv.Status.Phase == operatorv1alpha1.CSVPhaseSucceeded {
-		log.Debug(fmt.Sprintf("CSV %s is created successfully in namespace %s", name, namespace))
+		log.Debugf("CSV %s is created successfully in namespace %s", name, namespace)
 		return name, true, nil
 	}
 	return "", false, nil
@@ -351,7 +351,7 @@ func (p *DeployableByOlmCheck) isCSVReady(ctx context.Context, operatorData Oper
 	} else {
 		CsvNamespaces = []string{operatorData.CsvNamespaces[0]}
 	}
-	log.Trace(fmt.Sprintf("Looking for csv %s in namespace(s) %s", operatorData.InstalledCsv, CsvNamespaces))
+	log.Tracef("Looking for csv %s in namespace(s) %s", operatorData.InstalledCsv, CsvNamespaces)
 
 	csvChannel := make(chan string)
 
@@ -380,10 +380,10 @@ func (p *DeployableByOlmCheck) isCSVReady(ctx context.Context, operatorData Oper
 func subscriptionCsvIsInstalled(ctx context.Context, engine cli.OpenshiftEngine, name, namespace string) (string, bool, error) {
 	sub, err := engine.GetSubscription(ctx, name, namespace)
 	if err != nil && !k8serr.IsNotFound(err) {
-		log.Error(fmt.Sprintf("failed to fetch the subscription %s from namespace %s: ", name, namespace), err)
+		log.Errorf("failed to fetch the subscription %s from namespace %s: %s", name, namespace, err)
 		return "", false, err
 	}
-	log.Trace("current subscription status is: ", sub.Status)
+	log.Tracef("current subscription status is %+v", sub.Status)
 	installedCSV := sub.Status.InstalledCSV
 	// if the installedCSV field is present, stop the querying
 	if len(installedCSV) > 0 {
@@ -416,45 +416,44 @@ func (p *DeployableByOlmCheck) installedCSV(ctx context.Context, operatorData Op
 }
 
 func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData OperatorData) {
-
 	log.Debug("Dumping data in artifacts/ directory")
 
 	subs, err := p.OpenshiftEngine.GetSubscription(ctx, operatorData.App, operatorData.InstallNamespace)
 	if err != nil {
-		log.Error("unable to retrieve the subscription")
+		log.Warn("unable to retrieve the subscription")
 	} else {
 		p.writeToFile(subs)
 	}
 
 	cs, err := p.OpenshiftEngine.GetCatalogSource(ctx, operatorData.App, operatorData.InstallNamespace)
 	if err != nil {
-		log.Error("unable to retrieve the catalogsource")
+		log.Warn("unable to retrieve the catalogsource")
 	} else {
 		p.writeToFile(cs)
 	}
 
 	og, err := p.OpenshiftEngine.GetOperatorGroup(ctx, operatorData.App, operatorData.InstallNamespace)
 	if err != nil {
-		log.Error("unable to retrieve the operatorgroup")
+		log.Warn("unable to retrieve the operatorgroup")
 	} else {
 		p.writeToFile(og)
 	}
 
 	installNamespace, err := p.OpenshiftEngine.GetNamespace(ctx, operatorData.InstallNamespace)
 	if err != nil {
-		log.Error("unable to retrieve the install namespace")
+		log.Warn("unable to retrieve the install namespace")
 	} else {
 		p.writeToFile(installNamespace)
 	}
 
 	targetNamespace, err := p.OpenshiftEngine.GetNamespace(ctx, operatorData.TargetNamespace)
 	if err != nil {
-		log.Error("unable to retrieve the target namespace")
+		log.Warn("unable to retrieve the target namespace")
 	} else {
 		p.writeToFile(targetNamespace)
 	}
 
-	log.Trace("Deleting the resources created by Check")
+	log.Trace("Deleting the resources created by DeployableByOLM Check")
 	p.OpenshiftEngine.DeleteSubscription(ctx, operatorData.App, operatorData.InstallNamespace)
 	p.OpenshiftEngine.DeleteCatalogSource(ctx, operatorData.App, operatorData.InstallNamespace)
 	p.OpenshiftEngine.DeleteOperatorGroup(ctx, operatorData.App, operatorData.InstallNamespace)
@@ -532,7 +531,7 @@ func (p *DeployableByOlmCheck) writeToFile(data interface{}) error {
 func (p *DeployableByOlmCheck) readFileAsByteArray(filename string) ([]byte, error) {
 	content, err := os.ReadFile(filename)
 	if err != nil {
-		log.Error(fmt.Sprintf("error reading the file: %s", filename))
+		log.Errorf("error reading the file: %s", filename)
 		return nil, err
 	}
 	return content, nil
