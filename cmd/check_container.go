@@ -197,6 +197,11 @@ var checkContainerCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
+
+			log.Info("results successfully submitted to Red Hat")
+			//TODO: displaying this to the user for now so they know submission has be complete
+			// once we get new API contract with actually info to give to the user we can update this
+			fmt.Println("results successfully submitted to Red Hat")
 		}
 
 		return nil
