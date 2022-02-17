@@ -9,8 +9,18 @@ jobs:
   build-binaries:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
 
+    - name: code checkout
+      uses: actions/checkout@v2
+
+    - name: Install system deps
+      run: 'sudo apt update && sudo apt install -y libgpgme-dev libbtrfs-dev libdevmapper-dev'
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+    
     - name: Build Multi-arch binaries
       id: build-multi-arch-binaries
       run: make build-multi-arch
