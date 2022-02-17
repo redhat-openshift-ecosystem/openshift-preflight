@@ -138,7 +138,7 @@ var checkContainerCmd = &cobra.Command{
 		}
 
 		// submitting results to pxysis if submit flag is set
-		if s, _ := cmd.Flags().GetBool("submit"); s {
+		if submit {
 			log.Info("preparing results that will be submitted to Red Hat")
 
 			certImageJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultCertImageFilename))
