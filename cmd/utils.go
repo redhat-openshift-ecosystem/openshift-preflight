@@ -50,7 +50,7 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 
 	// set up logging
 	logname := viper.GetString("logfile")
-	logFile, err := os.OpenFile(logname, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	logFile, err := os.OpenFile(logname, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err == nil {
 		mw := io.MultiWriter(os.Stderr, logFile)
 		log.SetOutput(mw)

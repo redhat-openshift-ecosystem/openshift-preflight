@@ -155,7 +155,6 @@ func (p *podmanEngine) RunSystemContainer(containerName string) (*cli.PodmanOutp
 	cmdArgs := []string{"generate", "systemd", "--new", "--files", "--name", containerName}
 
 	output, err := RunCommand(!runAsPrivileged, "podman", cmdArgs)
-
 	if err != nil {
 		return output, err
 	}

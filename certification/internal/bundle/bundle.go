@@ -161,7 +161,6 @@ func getCsvFilePathFromBundle(mountedDir string) (string, error) {
 	log.Trace("reading clusterserviceversion file from the bundle")
 	log.Debug("mounted directory is ", mountedDir)
 	matches, err := filepath.Glob(filepath.Join(mountedDir, "manifests", "*.clusterserviceversion.yaml"))
-
 	if err != nil {
 		log.Error("glob pattern is malformed: ", err)
 		return "", err

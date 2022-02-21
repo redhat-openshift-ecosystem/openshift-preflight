@@ -4,9 +4,11 @@ package version
 
 import "fmt"
 
-var projectName = "github.com/redhat-openshift-ecosystem/openshift-preflight"
-var version = "unknown"
-var commit = "unknown"
+var (
+	projectName = "github.com/redhat-openshift-ecosystem/openshift-preflight"
+	version     = "unknown"
+	commit      = "unknown"
+)
 
 var Version = VersionContext{
 	Name:    projectName,

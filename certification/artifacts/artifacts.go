@@ -15,7 +15,7 @@ import (
 func WriteFile(filename, contents string) (string, error) {
 	fullFilePath := filepath.Join(Path(), filename)
 
-	err := os.WriteFile(fullFilePath, []byte(contents), 0644)
+	err := os.WriteFile(fullFilePath, []byte(contents), 0o644)
 	if err != nil {
 		return fullFilePath, err
 	}
@@ -33,7 +33,7 @@ func createArtifactsDir(artifactsDir string) (string, error) {
 		artifactsDir = filepath.Join(currentDir, artifactsDir)
 	}
 
-	err := os.MkdirAll(artifactsDir, 0777)
+	err := os.MkdirAll(artifactsDir, 0o777)
 	if err != nil {
 		log.Error("unable to create artifactsDir: ", err)
 		return "", err

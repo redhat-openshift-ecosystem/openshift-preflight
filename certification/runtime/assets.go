@@ -9,22 +9,19 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-
-	// images maps the images use by preflight with their purpose.
-	//
-	// these should have accessor functions made available if they are
-	// to be used outside of this package.
-	images = map[string]string{
-		// operator policy, operator-sdk scorecard
-		"scorecard": "quay.io/operator-framework/scorecard-test:v1.14.0",
-	}
-)
+// images maps the images use by preflight with their purpose.
+//
+// these should have accessor functions made available if they are
+// to be used outside of this package.
+var images = map[string]string{
+	// operator policy, operator-sdk scorecard
+	"scorecard": "quay.io/operator-framework/scorecard-test:v1.14.0",
+}
 
 // imageList takes the images mapping and represents them using just
 // the image URIs.
 func imageList() []string {
-	var imageList = make([]string, 0, len(images))
+	imageList := make([]string, 0, len(images))
 
 	for _, image := range images {
 		base := strings.Split(image, ":")[0]

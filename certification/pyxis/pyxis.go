@@ -227,7 +227,7 @@ func (p *pyxisEngine) createTestResults(ctx context.Context, testResults *TestRe
 		return nil, errors.ErrNon200StatusCode
 	}
 
-	var newTestResults = TestResults{}
+	newTestResults := TestResults{}
 	if err := json.Unmarshal(body, &newTestResults); err != nil {
 		log.Error(err)
 		return nil, err

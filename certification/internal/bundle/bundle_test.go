@@ -21,13 +21,10 @@ var _ = Describe("BundleValidateCheck", func() {
 `
 	)
 
-	var (
-		// fakeEngine cli.OperatorSdkEngine
-		imageRef certification.ImageReference
-	)
+	// fakeEngine cli.OperatorSdkEngine
+	var imageRef certification.ImageReference
 
 	Describe("While ensuring that container util is working", func() {
-
 		// tests: extractAnnotationsBytes
 		Context("with an annotations yaml data read from disk", func() {
 			Context("with the correct format", func() {
@@ -80,10 +77,10 @@ var _ = Describe("BundleValidateCheck", func() {
 		tmpDir, err := os.MkdirTemp("", "bundle-metadata-*")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = os.Mkdir(filepath.Join(tmpDir, metadataDir), 0755)
+		err = os.Mkdir(filepath.Join(tmpDir, metadataDir), 0o755)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = os.WriteFile(filepath.Join(tmpDir, metadataDir, annotationFilename), []byte(annotations), 0644)
+		err = os.WriteFile(filepath.Join(tmpDir, metadataDir, annotationFilename), []byte(annotations), 0o644)
 		Expect(err).ToNot(HaveOccurred())
 
 		imageRef.ImageFSPath = tmpDir
