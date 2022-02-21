@@ -9,6 +9,7 @@ type CertImage struct {
 	ImageID                string       `json:"image_id,omitempty"`
 	ISVPID                 string       `json:"isv_pid,omitempty"`
 	ParsedData             *ParsedData  `json:"parsed_data,omitempty"`
+	Architecture           string       `json:"architecture" default:"amd64"`
 	RawConfig              string       `json:"raw_config,omitempty"`
 	Repositories           []Repository `json:"repositories,omitempty"`
 	SumLayerSizeBytes      int64        `json:"sum_layer_size_bytes,omitempty"`
