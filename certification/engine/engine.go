@@ -110,12 +110,13 @@ var containerPolicy = map[string]certification.Check{
 }
 
 var scratchContainerPolicy = map[string]certification.Check{
-	hasLicenseCheck.Name():        hasLicenseCheck,
-	hasUniqueTagCheck.Name():      hasUniqueTagCheck,
-	maxLayersCheck.Name():         maxLayersCheck,
-	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
-	runAsRootCheck.Name():         runAsRootCheck,
-	runnableContainerCheck.Name(): runnableContainerCheck,
+	hasLicenseCheck.Name():         hasLicenseCheck,
+	hasUniqueTagCheck.Name():       hasUniqueTagCheck,
+	maxLayersCheck.Name():          maxLayersCheck,
+	hasRequiredLabelsCheck.Name():  hasRequiredLabelsCheck,
+	runAsRootCheck.Name():          runAsRootCheck,
+	runnableContainerCheck.Name():  runnableContainerCheck,
+	runSystemContainerCheck.Name(): runSystemContainerCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {
