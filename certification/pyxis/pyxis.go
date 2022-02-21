@@ -45,12 +45,11 @@ func (p *pyxisEngine) createImage(ctx context.Context, certImage *CertImage) (*C
 		log.Error(err)
 		return nil, err
 	}
-	req, err := newRequestWithApiToken(ctx, http.MethodPost, getPyxisUrl("images"), p.ApiToken)
+	req, err := p.newRequestWithApiToken(ctx, http.MethodPost, getPyxisUrl("images"), bytes.NewReader(b))
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	req = withJson(req, b)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -86,12 +85,11 @@ func (p *pyxisEngine) createRPMManifest(ctx context.Context, rpmManifest *RPMMan
 		log.Error(err)
 		return nil, err
 	}
-	req, err := newRequestWithApiToken(ctx, http.MethodPost, getPyxisUrl(fmt.Sprintf("images/id/%s/rpm-manifest", rpmManifest.ImageID)), p.ApiToken)
+	req, err := p.newRequestWithApiToken(ctx, http.MethodPost, getPyxisUrl(fmt.Sprintf("images/id/%s/rpm-manifest", rpmManifest.ImageID)), bytes.NewReader(b))
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	req = withJson(req, b)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -122,7 +120,7 @@ func (p *pyxisEngine) createRPMManifest(ctx context.Context, rpmManifest *RPMMan
 }
 
 func (p *pyxisEngine) GetProject(ctx context.Context) (*CertProject, error) {
-	req, err := newRequestWithApiToken(ctx, http.MethodGet, getPyxisUrl(fmt.Sprintf("projects/certification/id/%s", p.ProjectId)), p.ApiToken)
+	req, err := p.newRequestWithApiToken(ctx, http.MethodGet, getPyxisUrl(fmt.Sprintf("projects/certification/id/%s", p.ProjectId)), nil)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -162,12 +160,11 @@ func (p *pyxisEngine) updateProject(ctx context.Context, certProject *CertProjec
 		log.Error(err)
 		return nil, err
 	}
-	req, err := newRequestWithApiToken(ctx, http.MethodPatch, getPyxisUrl(fmt.Sprintf("projects/certification/id/%s", p.ProjectId)), p.ApiToken)
+	req, err := p.newRequestWithApiToken(ctx, http.MethodPatch, getPyxisUrl(fmt.Sprintf("projects/certification/id/%s", p.ProjectId)), bytes.NewReader(b))
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	req = withJson(req, b)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -203,12 +200,11 @@ func (p *pyxisEngine) createTestResults(ctx context.Context, testResults *TestRe
 		log.Error(err)
 		return nil, err
 	}
-	req, err := newRequestWithApiToken(ctx, http.MethodPost, getPyxisUrl(fmt.Sprintf("projects/certification/id/%s/test-results", p.ProjectId)), p.ApiToken)
+	req, err := p.newRequestWithApiToken(ctx, http.MethodPost, getPyxisUrl(fmt.Sprintf("projects/certification/id/%s/test-results", p.ProjectId)), bytes.NewReader(b))
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	req = withJson(req, b)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -238,22 +234,19 @@ func (p *pyxisEngine) createTestResults(ctx context.Context, testResults *TestRe
 	return &newTestResults, nil
 }
 
-func newRequestWithApiToken(ctx context.Context, method string, url string, token string) (*http.Request, error) {
-	req, err := http.NewRequestWithContext(ctx, method, url, nil)
+func (p *pyxisEngine) newRequestWithApiToken(ctx context.Context, method string, url string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Add("X-API-TOKEN", token)
+	req.Header.Add("X-API-TOKEN", p.ApiToken)
+
+	if body != nil {
+		req.Header.Add("Content-type", "application/json")
+	}
 
 	return req, nil
-}
-
-func withJson(req *http.Request, b []byte) *http.Request {
-	req.Header.Add("Content-type", "application/json")
-	req.Header.Add("Content-length", fmt.Sprint(len(b)))
-	req.Body = io.NopCloser(bytes.NewReader(b))
-	return req
 }
 
 // checkStatus is used to check for a 2xx status code
