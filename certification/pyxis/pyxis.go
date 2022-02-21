@@ -80,27 +80,23 @@ func (p *pyxisEngine) createImage(ctx context.Context, certImage *CertImage) (*C
 	return &newCertImage, nil
 }
 
-func (p *pyxisEngine) createRPMManifest(ctx context.Context, imageId string, rpms []RPM) error {
-	rpmManifest := RPMManifest{
-		ImageID: imageId,
-		RPMS:    rpms,
-	}
+func (p *pyxisEngine) createRPMManifest(ctx context.Context, rpmManifest *RPMManifest) (*RPMManifest, error) {
 	b, err := json.Marshal(rpmManifest)
 	if err != nil {
 		log.Error(err)
-		return err
+		return nil, err
 	}
-	req, err := newRequestWithApiToken(ctx, http.MethodPost, getPyxisUrl(fmt.Sprintf("images/id/%s/rpm-manifest", imageId)), p.ApiToken)
+	req, err := newRequestWithApiToken(ctx, http.MethodPost, getPyxisUrl(fmt.Sprintf("images/id/%s/rpm-manifest", rpmManifest.ImageID)), p.ApiToken)
 	if err != nil {
 		log.Error(err)
-		return err
+		return nil, err
 	}
 	req = withJson(req, b)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
 		log.Error(err)
-		return err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
@@ -108,15 +104,21 @@ func (p *pyxisEngine) createRPMManifest(ctx context.Context, imageId string, rpm
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Error(err)
-		return err
+		return nil, err
+	}
+
+	var newRPMManifest RPMManifest
+	if err := json.Unmarshal(body, &newRPMManifest); err != nil {
+		log.Error(err)
+		return nil, err
 	}
 
 	if !checkStatus(resp.StatusCode) {
 		log.Errorf("%s: %s", "received non 200 status code in createRPMManifest", string(body))
-		return errors.ErrNon200StatusCode
+		return nil, errors.ErrNon200StatusCode
 	}
 
-	return nil
+	return &newRPMManifest, nil
 }
 
 func (p *pyxisEngine) GetProject(ctx context.Context) (*CertProject, error) {

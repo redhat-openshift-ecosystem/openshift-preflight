@@ -1,6 +1,7 @@
 package pyxis
 
 type CertImage struct {
+	ID                     string       `json:"_id,omitempty"`
 	Certified              bool         `json:"certified" default:"false"`
 	Deleted                bool         `json:"deleted" default:"false"`
 	DockerImageDigest      string       `json:"docker_image_digest,omitempty"`
@@ -48,6 +49,7 @@ type Tag struct {
 }
 
 type RPMManifest struct {
+	ID      string `json:"_id,omitempty"`
 	ImageID string `json:"image_id,omitempty"`
 	RPMS    []RPM  `json:"rpms,omitempty"`
 }
@@ -65,6 +67,7 @@ type RPM struct {
 }
 
 type CertProject struct {
+	ID                  string    `json:"_id,omitempty"`
 	CertificationStatus string    `json:"certification_status" default:"In Progress"`
 	Container           Container `json:"container"`
 	Name                string    `json:"name"`                      // required
@@ -84,6 +87,7 @@ type Layer struct {
 }
 
 type TestResults struct {
+	ID                string      `json:"_id,omitempty"`
 	CertProject       string      `json:"cert_project"`       // TODO: see if this should be populated, if so with what?
 	CertificationHash string      `json:"certification_hash"` // TODO: see if this should be populated, if so with what?
 	Image             string      `json:"image"`
@@ -92,6 +96,7 @@ type TestResults struct {
 	Results           Results     `json:"results"`
 	TestLibrary       TestLibrary `json:"test_library"`
 	Version           string      `json:"version"` // TODO: see if this should be populated, if so with what?
+	ImageID           string      `json:"image_id"`
 }
 
 type Errors struct {
