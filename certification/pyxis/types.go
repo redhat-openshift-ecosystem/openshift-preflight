@@ -12,7 +12,7 @@ type CertImage struct {
 	RawConfig              string       `json:"raw_config,omitempty"`
 	Repositories           []Repository `json:"repositories,omitempty"`
 	SumLayerSizeBytes      int64        `json:"sum_layer_size_bytes,omitempty"`
-	UncompressedTopLayerId string       `json:"uncompressed_top_layer_id,omitempty"` //TODO: figure out how to populate this, it is not required
+	UncompressedTopLayerId string       `json:"uncompressed_top_layer_id,omitempty"` // TODO: figure out how to populate this, it is not required
 }
 
 type ParsedData struct {
@@ -27,7 +27,7 @@ type ParsedData struct {
 	OS                     string  `json:"os,omitempty"`
 	Ports                  string  `json:"ports,omitempty"`
 	Size                   int64   `json:"size,omitempty"`
-	UncompressedLayerSizes []Layer `json:"uncompressed_layer_sizes,omitempty"` //TODO: figure out how to populate this its required
+	UncompressedLayerSizes []Layer `json:"uncompressed_layer_sizes,omitempty"` // TODO: figure out how to populate this its required
 }
 
 type Repository struct {

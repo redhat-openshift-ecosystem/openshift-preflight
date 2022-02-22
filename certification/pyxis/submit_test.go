@@ -6,9 +6,7 @@ import (
 )
 
 var _ = Describe("Pyxis Submit", func() {
-	var (
-		pyxisEngine *pyxisEngine
-	)
+	var pyxisEngine *pyxisEngine
 
 	BeforeEach(func() {
 		pyxisEngine = NewPyxisEngine("my-spiffy-api-token", "my-awseome-project-id", fakeHttpClient{})

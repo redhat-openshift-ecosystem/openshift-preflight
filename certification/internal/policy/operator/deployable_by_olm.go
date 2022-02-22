@@ -141,7 +141,6 @@ func checkImageSource(operatorImages []string) bool {
 func (p *DeployableByOlmCheck) operatorMetadata(bundleRef certification.ImageReference) (*OperatorData, error) {
 	// retrieve the operator metadata from bundle image
 	annotations, err := bundle.GetAnnotations(bundleRef.ImageFSPath)
-
 	if err != nil {
 		log.Error("unable to get annotations.yaml from the bundle")
 		return nil, err
@@ -469,7 +468,7 @@ func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData Operato
 		// remove rolebindings required for the default OperatorHub catalog sources
 		p.OpenshiftEngine.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", operatorServiceAccount, openshiftMarketplaceNamespace, registryViewerRole), indexImageNamespace)
 		p.OpenshiftEngine.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", operatorServiceAccount, openshiftMarketplaceNamespace, imagePullerRole), indexImageNamespace)
-		//remove rolebindings required for custom catalog sources
+		// remove rolebindings required for custom catalog sources
 		p.OpenshiftEngine.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", operatorServiceAccount, operatorNamespace, registryViewerRole), indexImageNamespace)
 		p.OpenshiftEngine.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", operatorServiceAccount, operatorNamespace, imagePullerRole), indexImageNamespace)
 	}

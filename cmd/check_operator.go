@@ -77,9 +77,8 @@ var checkOperatorCmd = &cobra.Command{
 		resultsFile, err := os.OpenFile(
 			filepath.Join(artifacts.Path(), resultsFilenameWithExtension(formatter.FileExtension())),
 			os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
-			0600,
+			0o600,
 		)
-
 		if err != nil {
 			return err
 		}

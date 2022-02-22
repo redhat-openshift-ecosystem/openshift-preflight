@@ -29,14 +29,12 @@ var supportCmd = &cobra.Command{
 	This command can be used when you'd like assistance from Red Hat Support when attempting to pass your certification checks. `,
 	PreRun: preRunConfig,
 	RunE: func(cmd *cobra.Command, args []string) error {
-
 		certProjectTypeLabel := promptui.Select{
 			Label: "Select a Certification Project Type",
 			Items: []string{"Container Image", "Operator Bundle Image"},
 		}
 
 		_, certProjectTypeValue, err := certProjectTypeLabel.Run()
-
 		if err != nil {
 			return errors.ErrSupportCmdPromptFailed
 		}
@@ -49,7 +47,6 @@ var supportCmd = &cobra.Command{
 			// validate makes sure that the project id is not blank, does not contain special characters,
 			// and is in the proper format
 			Validate: func(s string) error {
-
 				if s == "" {
 					return errors.ErrEmptyProjectID
 				}
@@ -74,7 +71,6 @@ var supportCmd = &cobra.Command{
 		}
 
 		certProjectIDValue, err := certProjectIDLabel.Run()
-
 		if err != nil {
 			return errors.ErrSupportCmdPromptFailed
 		}
@@ -101,7 +97,6 @@ var supportCmd = &cobra.Command{
 		}
 
 		pullRequestURLValue, err := pullRequestURLLabel.Run()
-
 		if err != nil {
 			return errors.ErrSupportCmdPromptFailed
 		}

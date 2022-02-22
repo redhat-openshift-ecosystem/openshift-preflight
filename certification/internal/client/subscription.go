@@ -19,7 +19,6 @@ type subscriptionClient struct {
 }
 
 func (c subscriptionClient) Create(ctx context.Context, data cli.SubscriptionData) (*operatorv1alpha1.Subscription, error) {
-
 	subscription := &operatorv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: data.Name,
@@ -70,5 +69,4 @@ func SubscriptionClient(namespace string) (*subscriptionClient, error) {
 	return &subscriptionClient{
 		client: runtimeclient.NewNamespacedClient(client, namespace),
 	}, nil
-
 }

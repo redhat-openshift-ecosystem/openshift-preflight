@@ -39,5 +39,4 @@ var _ = Describe("RunnableContainerCheck", func() {
 			})
 		})
 	})
-
 })

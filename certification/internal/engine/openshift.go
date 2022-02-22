@@ -53,7 +53,6 @@ func (oe *openshiftEngine) CreateNamespace(ctx context.Context, name string) (*c
 	ns, err := k8sClientset.CoreV1().
 		Namespaces().
 		Create(ctx, nsSpec, metav1.CreateOptions{})
-
 	if err != nil {
 		log.Errorf("error while creating Namespace %s: %s", name, err)
 		return nil, err
@@ -69,7 +68,6 @@ func (oe *openshiftEngine) DeleteNamespace(ctx context.Context, name string) err
 		return err
 	}
 	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
-
 	if err != nil {
 		log.Error("unable to obtain k8s client: ", err)
 		return err
@@ -100,7 +98,6 @@ func (oe *openshiftEngine) GetNamespace(ctx context.Context, name string) (*core
 }
 
 func (oe *openshiftEngine) CreateOperatorGroup(ctx context.Context, data cli.OperatorGroupData, namespace string) (*operatorv1.OperatorGroup, error) {
-
 	ogClient, err := client.OperatorGroupClient(namespace)
 	if err != nil {
 		log.Error("unable to create a client for OperatorGroup: ", err)
@@ -109,7 +106,6 @@ func (oe *openshiftEngine) CreateOperatorGroup(ctx context.Context, data cli.Ope
 
 	log.Debugf("Creating OperatorGroup %s in namespace %s", data.Name, namespace)
 	resp, err := ogClient.Create(ctx, data)
-
 	if err != nil {
 		log.Errorf("error while creating OperatorGroup %s: %s", data.Name, err)
 		return nil, err
@@ -139,7 +135,6 @@ func (oe *openshiftEngine) DeleteOperatorGroup(ctx context.Context, name string,
 
 func (oe *openshiftEngine) GetOperatorGroup(ctx context.Context, name string, namespace string) (*operatorv1.OperatorGroup, error) {
 	ogClient, err := client.OperatorGroupClient(namespace)
-
 	if err != nil {
 		log.Error("unable to obtain k8s client: ", err)
 		return nil, err
@@ -192,7 +187,6 @@ func (oe openshiftEngine) DeleteSecret(ctx context.Context, name string, namespa
 		return err
 	}
 	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
-
 	if err != nil {
 		log.Error("unable to obtain k8s client: ", err)
 		return err
@@ -210,7 +204,6 @@ func (oe openshiftEngine) GetSecret(ctx context.Context, name string, namespace 
 		return nil, err
 	}
 	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
-
 	if err != nil {
 		log.Error("unable to obtain k8s client: ", err)
 		return nil, err
@@ -264,7 +257,6 @@ func (oe *openshiftEngine) GetCatalogSource(ctx context.Context, name string, na
 }
 
 func (oe openshiftEngine) CreateSubscription(ctx context.Context, data cli.SubscriptionData, namespace string) (*operatorv1alpha1.Subscription, error) {
-
 	subsClient, err := client.SubscriptionClient(namespace)
 	if err != nil {
 		log.Error("unable to create a client for Subscription: ", err)
@@ -273,7 +265,6 @@ func (oe openshiftEngine) CreateSubscription(ctx context.Context, data cli.Subsc
 
 	log.Debugf("Creating Subscription %s in namespace %s", data.Name, namespace)
 	resp, err := subsClient.Create(ctx, data)
-
 	if err != nil {
 		log.Errorf("error while creating Subscription %s: %s", data.Name, err)
 		return nil, err
@@ -327,7 +318,6 @@ func (oe *openshiftEngine) GetImages(ctx context.Context) (map[string]struct{}, 
 		return nil, err
 	}
 	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
-
 	if err != nil {
 		log.Error("unable to obtain k8s client: ", err)
 		return nil, err
@@ -466,7 +456,6 @@ func (oe *openshiftEngine) DeleteRoleBinding(ctx context.Context, name string, n
 }
 
 func GetOpenshiftClusterVersion() (preflightRuntime.OpenshiftClusterVersion, error) {
-
 	if _, ok := os.LookupEnv("KUBECONFIG"); !ok {
 		return preflightRuntime.UnknownOpenshiftClusterVersion(), errors.ErrNoKubeconfig
 	}

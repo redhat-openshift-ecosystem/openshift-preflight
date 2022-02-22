@@ -27,9 +27,7 @@ func (ftl *fakeTagLister) ListTags(imageUri string) ([]string, error) {
 }
 
 var _ = Describe("UniqueTag", func() {
-	var (
-		hasUniqueTagCheck HasUniqueTagCheck
-	)
+	var hasUniqueTagCheck HasUniqueTagCheck
 
 	Describe("Checking for unique tags", func() {
 		Context("When it has tags other than latest", func() {

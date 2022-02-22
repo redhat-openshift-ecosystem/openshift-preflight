@@ -20,7 +20,6 @@ var _ = Describe("policy validation", func() {
 		)
 
 		Context("with a known-good image", func() {
-
 			cfg := runtime.Config{
 				Image:         goodImage,
 				EnabledChecks: engine.OperatorPolicy(),
@@ -57,7 +56,6 @@ var _ = Describe("policy validation", func() {
 	})
 
 	Describe("When enforcing container policy", func() {
-
 		var (
 			// TODO: replace the passing case with the container used by
 			// https://github.com/opdev/simple-demo-operator
@@ -66,7 +64,6 @@ var _ = Describe("policy validation", func() {
 		)
 
 		Context("with a known-good image", func() {
-
 			cfg := runtime.Config{
 				Image:         goodImage,
 				EnabledChecks: engine.ContainerPolicy(),

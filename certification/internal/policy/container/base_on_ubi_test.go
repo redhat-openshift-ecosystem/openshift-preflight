@@ -69,11 +69,11 @@ var _ = Describe("BaseOnUBI", func() {
 		var err error
 		tmpDir, err := os.MkdirTemp("", "based-on-ubi-*")
 		Expect(err).ToNot(HaveOccurred())
-		err = os.Mkdir(filepath.Join(tmpDir, "etc"), 0755)
+		err = os.Mkdir(filepath.Join(tmpDir, "etc"), 0o755)
 		Expect(err).ToNot(HaveOccurred())
 		err = os.WriteFile(filepath.Join(tmpDir, "etc", osrelease), []byte(`ID="rhel"
 NAME="Red Hat Enterprise Linux"
-`), 0644)
+`), 0o644)
 		Expect(err).ToNot(HaveOccurred())
 		imageRef.ImageFSPath = tmpDir
 	})
@@ -95,7 +95,7 @@ NAME="Red Hat Enterprise Linux"
 				JustBeforeEach(func() {
 					err := os.WriteFile(filepath.Join(imageRef.ImageFSPath, "etc", osrelease), []byte(`ID="rhel"
 NAME="Red Hat Enterprise Linux Server"
-`), 0644)
+`), 0o644)
 					Expect(err).ToNot(HaveOccurred())
 				})
 				It("should pass Validate", func() {
@@ -108,7 +108,7 @@ NAME="Red Hat Enterprise Linux Server"
 		Context("When it is not based on UBI", func() {
 			Context("and has a bad os-release", func() {
 				JustBeforeEach(func() {
-					err := os.WriteFile(filepath.Join(imageRef.ImageFSPath, "etc", osrelease), []byte("Not a good file"), 0644)
+					err := os.WriteFile(filepath.Join(imageRef.ImageFSPath, "etc", osrelease), []byte("Not a good file"), 0o644)
 					Expect(err).ToNot(HaveOccurred())
 				})
 				It("should not pass Validate", func() {

@@ -72,25 +72,29 @@ func queryChecks(checkName string) certification.Check {
 // Register all checks
 
 // Operator checks
-var operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgNameIsUniqueCheck{}
-var scorecardBasicSpecCheck certification.Check = operatorpol.NewScorecardBasicSpecCheck(internal.NewOperatorSdkEngine())
-var scorecardOlmSuiteCheck certification.Check = operatorpol.NewScorecardOlmSuiteCheck(internal.NewOperatorSdkEngine())
-var deployableByOlmCheck certification.Check = operatorpol.NewDeployableByOlmCheck(internal.NewOpenshiftEngine(), internal.NewOperatorSdkEngine())
-var validateOperatorBundle certification.Check = operatorpol.NewValidateOperatorBundleCheck(internal.NewOperatorSdkEngine())
+var (
+	// operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgNameIsUniqueCheck{}
+	scorecardBasicSpecCheck certification.Check = operatorpol.NewScorecardBasicSpecCheck(internal.NewOperatorSdkEngine())
+	scorecardOlmSuiteCheck  certification.Check = operatorpol.NewScorecardOlmSuiteCheck(internal.NewOperatorSdkEngine())
+	deployableByOlmCheck    certification.Check = operatorpol.NewDeployableByOlmCheck(internal.NewOpenshiftEngine(), internal.NewOperatorSdkEngine())
+	validateOperatorBundle  certification.Check = operatorpol.NewValidateOperatorBundleCheck(internal.NewOperatorSdkEngine())
+)
 
 // Container checks
-var hasLicenseCheck certification.Check = &containerpol.HasLicenseCheck{}
-var hasUniqueTagCheck certification.Check = containerpol.NewHasUniqueTagCheck(internal.NewCraneEngine())
-var maxLayersCheck certification.Check = &containerpol.MaxLayersCheck{}
-var hasNoProhibitedCheck certification.Check = &containerpol.HasNoProhibitedPackagesCheck{}
-var hasRequiredLabelsCheck certification.Check = &containerpol.HasRequiredLabelsCheck{}
-var runAsRootCheck certification.Check = &containerpol.RunAsNonRootCheck{}
-var basedOnUbiCheck certification.Check = &containerpol.BasedOnUBICheck{}
-var runnableContainerCheck certification.Check = containerpol.NewRunnableContainerCheck(internal.NewPodmanEngine())
-var runSystemContainerCheck certification.Check = containerpol.NewRunSystemContainerCheck(internal.NewPodmanEngine())
+var (
+	hasLicenseCheck         certification.Check = &containerpol.HasLicenseCheck{}
+	hasUniqueTagCheck       certification.Check = containerpol.NewHasUniqueTagCheck(internal.NewCraneEngine())
+	maxLayersCheck          certification.Check = &containerpol.MaxLayersCheck{}
+	hasNoProhibitedCheck    certification.Check = &containerpol.HasNoProhibitedPackagesCheck{}
+	hasRequiredLabelsCheck  certification.Check = &containerpol.HasRequiredLabelsCheck{}
+	runAsRootCheck          certification.Check = &containerpol.RunAsNonRootCheck{}
+	basedOnUbiCheck         certification.Check = &containerpol.BasedOnUBICheck{}
+	runnableContainerCheck  certification.Check = containerpol.NewRunnableContainerCheck(internal.NewPodmanEngine())
+	runSystemContainerCheck certification.Check = containerpol.NewRunSystemContainerCheck(internal.NewPodmanEngine())
+)
 
 var operatorPolicy = map[string]certification.Check{
-	//operatorPkgNameIsUniqueCheck.Name(): operatorPkgNameIsUniqueCheck,
+	// operatorPkgNameIsUniqueCheck.Name(): operatorPkgNameIsUniqueCheck,
 	scorecardBasicSpecCheck.Name(): scorecardBasicSpecCheck,
 	scorecardOlmSuiteCheck.Name():  scorecardOlmSuiteCheck,
 	deployableByOlmCheck.Name():    deployableByOlmCheck,
@@ -122,7 +126,7 @@ var scratchContainerPolicy = map[string]certification.Check{
 func makeCheckList(checkMap map[string]certification.Check) []string {
 	checks := make([]string, 0, len(checkMap))
 
-	for key, _ := range checkMap {
+	for key := range checkMap {
 		checks = append(checks, key)
 	}
 

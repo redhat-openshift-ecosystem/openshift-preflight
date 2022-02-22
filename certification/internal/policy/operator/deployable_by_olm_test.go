@@ -62,27 +62,27 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		tmpDir, err := os.MkdirTemp("", "bundle-metadata-*")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = os.Mkdir(filepath.Join(tmpDir, metadataDir), 0755)
+		err = os.Mkdir(filepath.Join(tmpDir, metadataDir), 0o755)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = os.WriteFile(filepath.Join(tmpDir, metadataDir, annotationFilename), []byte(annotations), 0644)
+		err = os.WriteFile(filepath.Join(tmpDir, metadataDir, annotationFilename), []byte(annotations), 0o644)
 		Expect(err).ToNot(HaveOccurred())
 
 		// mock csv file
-		err = os.Mkdir(filepath.Join(tmpDir, manifestDir), 0755)
+		err = os.Mkdir(filepath.Join(tmpDir, manifestDir), 0o755)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = os.WriteFile(filepath.Join(tmpDir, manifestDir, csvFilename), []byte(csv), 0644)
+		err = os.WriteFile(filepath.Join(tmpDir, manifestDir, csvFilename), []byte(csv), 0o644)
 		Expect(err).ToNot(HaveOccurred())
 
 		// mock docker config file
 		tmpDockerDir, err = os.MkdirTemp("", "docker-config-*")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = os.Mkdir(filepath.Join(tmpDockerDir, registryConfigDir), 0755)
+		err = os.Mkdir(filepath.Join(tmpDockerDir, registryConfigDir), 0o755)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = os.WriteFile(filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename), []byte(registryAuthToken), 0644)
+		err = os.WriteFile(filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename), []byte(registryAuthToken), 0o644)
 		Expect(err).ToNot(HaveOccurred())
 
 		fakeImage := fakecranev1.FakeImage{}

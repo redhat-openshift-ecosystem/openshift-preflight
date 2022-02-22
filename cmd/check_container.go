@@ -102,9 +102,8 @@ var checkContainerCmd = &cobra.Command{
 		resultsFile, err := os.OpenFile(
 			filepath.Join(artifacts.Path(), resultsFilenameWithExtension(formatter.FileExtension())),
 			os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
-			0600,
+			0o600,
 		)
-
 		if err != nil {
 			return err
 		}
@@ -186,13 +185,13 @@ var checkContainerCmd = &cobra.Command{
 				return err
 			}
 
-			var testResults = new(pyxis.TestResults)
+			testResults := new(pyxis.TestResults)
 			err = json.Unmarshal(testResultsBytes, &testResults)
 			if err != nil {
 				return err
 			}
 
-			//TODO: use the return values once we know what we need to display to the user
+			// TODO: use the return values once we know what we need to display to the user
 			_, _, _, err = pyxisEngine.SubmitResults(certProject, certImage, rpmManifest, testResults)
 			if err != nil {
 				return err

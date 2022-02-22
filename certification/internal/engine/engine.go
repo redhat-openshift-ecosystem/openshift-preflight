@@ -73,7 +73,7 @@ func (c *CraneEngine) ExecuteChecks() error {
 	}()
 
 	containerFSPath := path.Join(tmpdir, "fs")
-	if err := os.Mkdir(containerFSPath, 0755); err != nil {
+	if err := os.Mkdir(containerFSPath, 0o755); err != nil {
 		return fmt.Errorf("%w: %s: %s", errors.ErrCreateTempDir, containerFSPath, err)
 	}
 
@@ -267,7 +267,7 @@ func untar(dst string, r io.Reader) error {
 		// if its a dir and it doesn't exist create it
 		case tar.TypeDir:
 			if _, err := os.Stat(target); err != nil {
-				if err := os.MkdirAll(target, 0755); err != nil {
+				if err := os.MkdirAll(target, 0o755); err != nil {
 					return err
 				}
 			}
@@ -351,12 +351,12 @@ func writeCertImage(img v1.Image) error {
 			Labels:        labels,
 			OS:            config.OS,
 			Size:          size,
-			//TODO: figure out how to get/convert this data from crane
+			// TODO: figure out how to get/convert this data from crane
 			UncompressedLayerSizes: layerSize,
 		},
 		RawConfig:         string(rawConfig),
 		SumLayerSizeBytes: sumLayersSizeBytes,
-		//TODO: figure out how to get/convert this data from crane
+		// TODO: figure out how to get/convert this data from crane
 		UncompressedTopLayerId: "placeholder",
 	}
 
@@ -405,7 +405,7 @@ func writeRPMManifest(containerFSPath string) error {
 
 		rpm := pyxis.RPM{
 			Architecture: packageInfo.Arch,
-			Gpg:          "placeholder", //TODO: change this once GPG is implemented in go-rpm library
+			Gpg:          "placeholder", // TODO: change this once GPG is implemented in go-rpm library
 			Name:         packageInfo.Name,
 			Nvra:         fmt.Sprintf("%s-%s-%s.%s", packageInfo.Name, packageInfo.Version, packageInfo.Release, packageInfo.Arch),
 			Release:      packageInfo.Release,
