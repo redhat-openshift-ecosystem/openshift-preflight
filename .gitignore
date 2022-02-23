@@ -16,6 +16,7 @@ vuln.html
 bin
 preflight
 openshift-preflight
+container-podman-test.service
 
 # Config files
 config.yaml
