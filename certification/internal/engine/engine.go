@@ -24,7 +24,6 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
-	preflightRuntime "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -128,7 +127,7 @@ func (c *CraneEngine) ExecuteChecks() error {
 		}
 	} else {
 		log.Info("Container checks do not require a cluster. skipping cluster version check.")
-		c.results.TestedOn = preflightRuntime.UnknownOpenshiftClusterVersion()
+		c.results.TestedOn = runtime.UnknownOpenshiftClusterVersion()
 	}
 
 	// execute checks
@@ -315,11 +314,6 @@ func writeCertImage(img v1.Image) error {
 		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
 	}
 
-	layers, err := img.Layers()
-	if err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
-	}
-
 	rawConfig, err := img.RawConfigFile()
 	if err != nil {
 		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
@@ -331,9 +325,30 @@ func writeCertImage(img v1.Image) error {
 	}
 
 	labels := convertLabels(config.Config.Labels)
-	layerSize := make([]pyxis.Layer, 10)
+	layerSizes := make([]pyxis.Layer, 0, len(config.RootFS.DiffIDs))
+	for _, diffid := range config.RootFS.DiffIDs {
+		layer, err := img.LayerByDiffID(diffid)
+		if err != nil {
+			return err
+		}
 
-	sumLayersSizeBytes, err := sumLayerSizeBytes(layers)
+		uncompressed, err := layer.Uncompressed()
+		if err != nil {
+			return err
+		}
+		written, err := io.Copy(io.Discard, uncompressed)
+		if err != nil {
+			return err
+		}
+
+		pyxisLayer := pyxis.Layer{
+			LayerId: diffid.String(),
+			Size:    written,
+		}
+		layerSizes = append(layerSizes, pyxisLayer)
+	}
+
+	sumLayersSizeBytes, err := sumLayerSizeBytes(layerSizes)
 	if err != nil {
 		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
 	}
@@ -342,22 +357,23 @@ func writeCertImage(img v1.Image) error {
 		DockerImageDigest: digest.String(),
 		DockerImageID:     manifest.Config.Digest.String(),
 		ImageID:           digest.String(),
+		Architecture:      config.Architecture,
 		ParsedData: &pyxis.ParsedData{
-			Architecture:  config.Architecture,
-			Command:       strings.Join(config.Config.Cmd, " "),
-			Created:       config.Created.String(),
-			DockerVersion: config.DockerVersion,
-			ImageID:       digest.String(),
-			Labels:        labels,
-			OS:            config.OS,
-			Size:          size,
-			// TODO: figure out how to get/convert this data from crane
-			UncompressedLayerSizes: layerSize,
+			Architecture:           config.Architecture,
+			Command:                strings.Join(config.Config.Cmd, " "),
+			Created:                config.Created.String(),
+			DockerVersion:          config.DockerVersion,
+			ImageID:                digest.String(),
+			Labels:                 labels,
+			OS:                     config.OS,
+			Size:                   size,
+			UncompressedLayerSizes: layerSizes,
 		},
 		RawConfig:         string(rawConfig),
 		SumLayerSizeBytes: sumLayersSizeBytes,
-		// TODO: figure out how to get/convert this data from crane
-		UncompressedTopLayerId: "placeholder",
+		// This is an assumption that the DiffIDs are in order from base up.
+		// Need more evisdence that this is always the case.
+		UncompressedTopLayerId: config.RootFS.DiffIDs[0].String(),
 	}
 
 	// calling MarshalIndent so the json file written to disk is human-readable when opened
@@ -438,15 +454,10 @@ func writeRPMManifest(containerFSPath string) error {
 	return nil
 }
 
-func sumLayerSizeBytes(layers []v1.Layer) (int64, error) {
+func sumLayerSizeBytes(layers []pyxis.Layer) (int64, error) {
 	var sum int64
 	for _, layer := range layers {
-		size, err := layer.Size()
-		if err != nil {
-			return 0, err
-		}
-
-		sum = sum + size
+		sum += layer.Size
 	}
 
 	return sum, nil

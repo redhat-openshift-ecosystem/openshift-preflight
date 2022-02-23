@@ -125,10 +125,11 @@ func (p *pyxisEngine) GetProject(ctx context.Context) (*CertProject, error) {
 		log.Error(err)
 		return nil, err
 	}
+	log.Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
-		log.Error(err)
+		log.Error(err, "client.Do failed")
 		return nil, err
 	}
 
@@ -136,7 +137,7 @@ func (p *pyxisEngine) GetProject(ctx context.Context) (*CertProject, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(err)
+		log.Error(err, "readall failed")
 		return nil, err
 	}
 
@@ -240,7 +241,7 @@ func (p *pyxisEngine) newRequestWithApiToken(ctx context.Context, method string,
 		return nil, err
 	}
 
-	req.Header.Add("X-API-TOKEN", p.ApiToken)
+	req.Header.Add("X-API-KEY", p.ApiToken)
 
 	if body != nil {
 		req.Header.Add("Content-type", "application/json")
