@@ -191,11 +191,15 @@ var checkContainerCmd = &cobra.Command{
 				return err
 			}
 
-			// TODO: use the return values once we know what we need to display to the user
-			_, _, _, err = pyxisEngine.SubmitResults(certProject, certImage, rpmManifest, testResults)
+			_, certImage, _, err = pyxisEngine.SubmitResults(certProject, certImage, rpmManifest, testResults)
 			if err != nil {
 				return err
 			}
+
+			log.Info("Test results have been submitted to Red Hat.")
+			log.Info("These results will be reviewed by Red Hat for final certification.")
+			log.Infof("The container's image id is: %s.", certImage.ImageID)
+			log.Infof("Please check https://connect.redhat.com/projects/%s/overview to monitior the progress.", projectId)
 		}
 
 		return nil
