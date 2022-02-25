@@ -64,7 +64,7 @@ func (p *HasLicenseCheck) validate(licenseFileList []fs.DirEntry) (bool, error) 
 			break
 		}
 	}
-	log.Infof("%d Licenses found", len(licenseFileList))
+	log.Debugf("%d Licenses found", len(licenseFileList))
 	return len(licenseFileList) >= minLicenseFileCount && nonZeroLength, nil
 }
 

@@ -47,13 +47,13 @@ type CraneEngine struct {
 }
 
 func (c *CraneEngine) ExecuteChecks() error {
-	log.Info("target image: ", c.Image)
+	log.Debug("target image: ", c.Image)
 
 	// prepare crane runtime options, if necessary
 	options := make([]crane.Option, 0)
 
 	// pull the image and save to fs
-	log.Info("pulling image from target registry")
+	log.Debug("pulling image from target registry")
 	img, err := crane.Pull(c.Image, options...)
 	if err != nil {
 		return fmt.Errorf("%w: %s", errors.ErrGetRemoteContainerFailed, err)
@@ -126,16 +126,16 @@ func (c *CraneEngine) ExecuteChecks() error {
 			log.Error("Unable to determine test cluster version: ", err)
 		}
 	} else {
-		log.Info("Container checks do not require a cluster. skipping cluster version check.")
+		log.Debug("Container checks do not require a cluster. skipping cluster version check.")
 		c.results.TestedOn = runtime.UnknownOpenshiftClusterVersion()
 	}
 
 	// execute checks
-	log.Info("executing checks")
+	log.Debug("executing checks")
 	for _, check := range c.Checks {
 		c.results.TestedImage = c.Image
 
-		log.Info("running check: ", check.Name())
+		log.Debug("running check: ", check.Name())
 
 		// run the validation
 		checkStartTime := time.Now()
