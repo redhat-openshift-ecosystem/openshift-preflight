@@ -157,6 +157,8 @@ var checkContainerCmd = &cobra.Command{
 				return err
 			}
 
+			certImage.ISVPID = certProject.Container.ISVPID
+
 			rpmManifestJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename))
 			if err != nil {
 				return err

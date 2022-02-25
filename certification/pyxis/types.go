@@ -9,7 +9,7 @@ type CertImage struct {
 	DockerImageDigest      string       `json:"docker_image_digest,omitempty"`
 	DockerImageID          string       `json:"docker_image_id,omitempty"`
 	ImageID                string       `json:"image_id,omitempty"`
-	ISVPID                 string       `json:"isv_pid,omitempty"`
+	ISVPID                 string       `json:"isv_pid,omitempty"` // required
 	ParsedData             *ParsedData  `json:"parsed_data,omitempty"`
 	Architecture           string       `json:"architecture" default:"amd64"`
 	RawConfig              string       `json:"raw_config,omitempty"`
@@ -30,7 +30,7 @@ type ParsedData struct {
 	OS                     string  `json:"os,omitempty"`
 	Ports                  string  `json:"ports,omitempty"`
 	Size                   int64   `json:"size,omitempty"`
-	UncompressedLayerSizes []Layer `json:"uncompressed_layer_sizes,omitempty"` // TODO: figure out how to populate this its required
+	UncompressedLayerSizes []Layer `json:"uncompressed_layer_sizes,omitempty"`
 }
 
 type Repository struct {
@@ -82,6 +82,7 @@ type CertProject struct {
 type Container struct {
 	DockerConfigJSON string `json:"docker_config_json"`
 	Type             string `json:"type " default:"Containers"` // conditionally required
+	ISVPID           string `json:"isv_pid,omitempty"`          // required
 }
 
 type Layer struct {
