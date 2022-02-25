@@ -1,5 +1,7 @@
 package pyxis
 
+import "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
+
 type CertImage struct {
 	ID                     string       `json:"_id,omitempty"`
 	Certified              bool         `json:"certified" default:"false"`
@@ -88,56 +90,10 @@ type Layer struct {
 }
 
 type TestResults struct {
-	ID                string      `json:"_id,omitempty"`
-	CertProject       string      `json:"cert_project"`       // TODO: see if this should be populated, if so with what?
-	CertificationHash string      `json:"certification_hash"` // TODO: see if this should be populated, if so with what?
-	Image             string      `json:"image"`
-	OrgID             int         `json:"org_id"`
-	Passed            bool        `json:"passed"`
-	Results           Results     `json:"results"`
-	TestLibrary       TestLibrary `json:"test_library"`
-	Version           string      `json:"version"` // TODO: see if this should be populated, if so with what?
-	ImageID           string      `json:"image_id"`
-}
-
-type Errors struct {
-	CheckURL         string `json:"check_url"`
-	Description      string `json:"description"`
-	ElapsedTime      int    `json:"elapsed_time"`
-	Help             string `json:"help"`
-	KnowledgeBaseURL string `json:"knowledgebase_url"`
-	Name             string `json:"name"`
-	Suggestion       string `json:"suggestion"`
-}
-
-type Failed struct {
-	CheckURL         string `json:"check_url"`
-	Description      string `json:"description"`
-	ElapsedTime      int    `json:"elapsed_time"`
-	Help             string `json:"help"`
-	KnowledgeBaseURL string `json:"knowledgebase_url"`
-	Name             string `json:"name"`
-	Suggestion       string `json:"suggestion"`
-}
-
-type Passed struct {
-	CheckURL         string `json:"check_url"`
-	Description      string `json:"description"`
-	ElapsedTime      int    `json:"elapsed_time"`
-	Help             string `json:"help"`
-	KnowledgeBaseURL string `json:"knowledgebase_url"`
-	Name             string `json:"name"`
-	Suggestion       string `json:"suggestion"`
-}
-
-type Results struct {
-	Errors []Errors `json:"errors"`
-	Failed []Failed `json:"failed"`
-	Passed []Passed `json:"passed"`
-}
-
-type TestLibrary struct {
-	Commit  string `json:"commit"`
-	Name    string `json:"name"`
-	Version string `json:"version"`
+	ID          string `json:"_id,omitempty"`
+	CertProject string `json:"cert_project"` // TODO: see if this should be populated, if so with what?
+	OrgID       int    `json:"org_id"`
+	Version     string `json:"version"` // TODO: see if this should be populated, if so with what?
+	ImageID     string `json:"image_id"`
+	formatters.UserResponse
 }
