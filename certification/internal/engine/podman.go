@@ -146,7 +146,7 @@ func (p *podmanEngine) WaitContainer(containerId string, waitOptions cli.WaitOpt
 		return false, err
 	}
 
-	log.Info("container reached a running state")
+	log.Trace("container reached a running state")
 	return true, nil
 }
 

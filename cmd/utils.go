@@ -55,7 +55,7 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 		mw := io.MultiWriter(os.Stderr, logFile)
 		log.SetOutput(mw)
 	} else {
-		log.Info("Failed to log to file, using default stderr")
+		log.Debug("Failed to log to file, using default stderr")
 	}
 	if ll, err := log.ParseLevel(viper.GetString("loglevel")); err == nil {
 		log.SetLevel(ll)
@@ -63,6 +63,6 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 
 	log.SetFormatter(&log.TextFormatter{})
 	if !configFileUsed {
-		log.Info("config file not found, proceeding without it")
+		log.Debug("config file not found, proceeding without it")
 	}
 }

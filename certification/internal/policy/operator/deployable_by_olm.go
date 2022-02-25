@@ -116,7 +116,7 @@ func diffImageList(before, after map[string]struct{}) []string {
 }
 
 func checkImageSource(operatorImages []string) bool {
-	log.Info("Checking that images are from approved sources...")
+	log.Debug("Checking that images are from approved sources...")
 
 	registries := make([]string, 0, len(approvedRegistries))
 	for registry := range approvedRegistries {
@@ -133,7 +133,7 @@ func checkImageSource(operatorImages []string) bool {
 		}
 	}
 	if allApproved {
-		log.Info("All images are from approved sources...")
+		log.Debug("All images are from approved sources...")
 	}
 	return allApproved
 }
@@ -311,7 +311,7 @@ func watch(ctx context.Context, engine cli.OpenshiftEngine, wg *sync.WaitGroup, 
 			return
 		}
 		if done {
-			log.Infof("Successfully retrieved object %s/%s", namespace, obj)
+			log.Debugf("Successfully retrieved object %s/%s", namespace, obj)
 			channel <- obj
 			return
 		}
