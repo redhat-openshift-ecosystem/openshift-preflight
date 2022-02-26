@@ -66,7 +66,7 @@ func (p *pyxisEngine) createImage(ctx context.Context, certImage *CertImage) (*C
 	}
 
 	if !checkStatus(resp.StatusCode) {
-		log.Errorf("%s: %s", "received non 200 status code in create manifest call", string(body))
+		log.Errorf("%s: %s", "received non 200 status code in createImage", string(body))
 		return nil, errors.ErrNon200StatusCode
 	}
 
