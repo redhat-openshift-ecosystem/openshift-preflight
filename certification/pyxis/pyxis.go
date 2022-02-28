@@ -105,15 +105,15 @@ func (p *pyxisEngine) createRPMManifest(ctx context.Context, rpmManifest *RPMMan
 		return nil, err
 	}
 
+	if !checkStatus(resp.StatusCode) {
+		log.Errorf("%s: %s", "received non 200 status code in createRPMManifest", string(body))
+		return nil, errors.ErrNon200StatusCode
+	}
+
 	var newRPMManifest RPMManifest
 	if err := json.Unmarshal(body, &newRPMManifest); err != nil {
 		log.Error(err)
 		return nil, err
-	}
-
-	if !checkStatus(resp.StatusCode) {
-		log.Errorf("%s: %s", "received non 200 status code in createRPMManifest", string(body))
-		return nil, errors.ErrNon200StatusCode
 	}
 
 	return &newRPMManifest, nil
