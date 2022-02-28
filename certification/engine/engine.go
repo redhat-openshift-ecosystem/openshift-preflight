@@ -82,15 +82,15 @@ var (
 
 // Container checks
 var (
-	hasLicenseCheck         certification.Check = &containerpol.HasLicenseCheck{}
-	hasUniqueTagCheck       certification.Check = containerpol.NewHasUniqueTagCheck(internal.NewCraneEngine())
-	maxLayersCheck          certification.Check = &containerpol.MaxLayersCheck{}
-	hasNoProhibitedCheck    certification.Check = &containerpol.HasNoProhibitedPackagesCheck{}
-	hasRequiredLabelsCheck  certification.Check = &containerpol.HasRequiredLabelsCheck{}
-	runAsRootCheck          certification.Check = &containerpol.RunAsNonRootCheck{}
-	basedOnUbiCheck         certification.Check = &containerpol.BasedOnUBICheck{}
-	runnableContainerCheck  certification.Check = containerpol.NewRunnableContainerCheck(internal.NewPodmanEngine())
-	runSystemContainerCheck certification.Check = containerpol.NewRunSystemContainerCheck(internal.NewPodmanEngine())
+	hasLicenseCheck        certification.Check = &containerpol.HasLicenseCheck{}
+	hasUniqueTagCheck      certification.Check = containerpol.NewHasUniqueTagCheck(internal.NewCraneEngine())
+	maxLayersCheck         certification.Check = &containerpol.MaxLayersCheck{}
+	hasNoProhibitedCheck   certification.Check = &containerpol.HasNoProhibitedPackagesCheck{}
+	hasRequiredLabelsCheck certification.Check = &containerpol.HasRequiredLabelsCheck{}
+	runAsRootCheck         certification.Check = &containerpol.RunAsNonRootCheck{}
+	basedOnUbiCheck        certification.Check = &containerpol.BasedOnUBICheck{}
+	// runnableContainerCheck  certification.Check = containerpol.NewRunnableContainerCheck(internal.NewPodmanEngine())
+	// runSystemContainerCheck certification.Check = containerpol.NewRunSystemContainerCheck(internal.NewPodmanEngine())
 )
 
 var operatorPolicy = map[string]certification.Check{
@@ -102,25 +102,25 @@ var operatorPolicy = map[string]certification.Check{
 }
 
 var containerPolicy = map[string]certification.Check{
-	hasLicenseCheck.Name():         hasLicenseCheck,
-	hasUniqueTagCheck.Name():       hasUniqueTagCheck,
-	maxLayersCheck.Name():          maxLayersCheck,
-	hasNoProhibitedCheck.Name():    hasNoProhibitedCheck,
-	hasRequiredLabelsCheck.Name():  hasRequiredLabelsCheck,
-	runAsRootCheck.Name():          runAsRootCheck,
-	basedOnUbiCheck.Name():         basedOnUbiCheck,
-	runnableContainerCheck.Name():  runnableContainerCheck,
-	runSystemContainerCheck.Name(): runSystemContainerCheck,
+	hasLicenseCheck.Name():        hasLicenseCheck,
+	hasUniqueTagCheck.Name():      hasUniqueTagCheck,
+	maxLayersCheck.Name():         maxLayersCheck,
+	hasNoProhibitedCheck.Name():   hasNoProhibitedCheck,
+	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
+	runAsRootCheck.Name():         runAsRootCheck,
+	basedOnUbiCheck.Name():        basedOnUbiCheck,
+	// runnableContainerCheck.Name():  runnableContainerCheck,
+	// runSystemContainerCheck.Name(): runSystemContainerCheck,
 }
 
 var scratchContainerPolicy = map[string]certification.Check{
-	hasLicenseCheck.Name():         hasLicenseCheck,
-	hasUniqueTagCheck.Name():       hasUniqueTagCheck,
-	maxLayersCheck.Name():          maxLayersCheck,
-	hasRequiredLabelsCheck.Name():  hasRequiredLabelsCheck,
-	runAsRootCheck.Name():          runAsRootCheck,
-	runnableContainerCheck.Name():  runnableContainerCheck,
-	runSystemContainerCheck.Name(): runSystemContainerCheck,
+	hasLicenseCheck.Name():        hasLicenseCheck,
+	hasUniqueTagCheck.Name():      hasUniqueTagCheck,
+	maxLayersCheck.Name():         maxLayersCheck,
+	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
+	runAsRootCheck.Name():         runAsRootCheck,
+	// runnableContainerCheck.Name():  runnableContainerCheck,
+	// runSystemContainerCheck.Name(): runSystemContainerCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {
