@@ -92,9 +92,9 @@ type Layer struct {
 
 type TestResults struct {
 	ID          string `json:"_id,omitempty"`
-	CertProject string `json:"cert_project"` // TODO: see if this should be populated, if so with what?
-	OrgID       int    `json:"org_id"`
-	Version     string `json:"version"` // TODO: see if this should be populated, if so with what?
-	ImageID     string `json:"image_id"`
+	CertProject string `json:"cert_project,omitempty"`
+	OrgID       int    `json:"org_id,omitempty"`
+	Version     string `json:"version,omitempty"`
+	ImageID     string `json:"image_id,omitempty"`
 	formatters.UserResponse
 }
