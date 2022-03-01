@@ -407,9 +407,7 @@ func writeRPMManifest(containerFSPath string) error {
 	rpms := make([]pyxis.RPM, 0, len(pkgList))
 	for _, packageInfo := range pkgList {
 
-		var bgName string
-		var endChop string
-		var srpmNevra string
+		var bgName, endChop, srpmNevra, pgpKeyId string
 
 		// accounting for the fact that not all packages have a source rpm
 		if len(packageInfo.SourceRpm) > 0 {
@@ -419,9 +417,19 @@ func writeRPMManifest(containerFSPath string) error {
 			srpmNevra = fmt.Sprintf("%s-%d:%s", bgName, packageInfo.Epoch, endChop)
 		}
 
+		if len(packageInfo.PGP) > 0 {
+			matches := regexp.MustCompile(".*, Key ID (.*)").FindStringSubmatch(packageInfo.PGP)
+			if matches != nil {
+				pgpKeyId = matches[1]
+			} else {
+				log.Debugf("string did not match the format required: %s", packageInfo.PGP)
+				pgpKeyId = ""
+			}
+		}
+
 		rpm := pyxis.RPM{
 			Architecture: packageInfo.Arch,
-			Gpg:          "placeholder", // TODO: change this once GPG is implemented in go-rpm library
+			Gpg:          pgpKeyId,
 			Name:         packageInfo.Name,
 			Nvra:         fmt.Sprintf("%s-%s-%s.%s", packageInfo.Name, packageInfo.Version, packageInfo.Release, packageInfo.Arch),
 			Release:      packageInfo.Release,
