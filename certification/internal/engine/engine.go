@@ -25,7 +25,6 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 // CraneEngine implements a certification.CheckEngine, and leverage crane to interact with
@@ -93,20 +92,17 @@ func (c *CraneEngine) ExecuteChecks() error {
 	}()
 
 	log.Debug("extracting container filesystem to ", containerFSPath)
-	err = untar(containerFSPath, r)
-	if err != nil {
+	if err := untar(containerFSPath, r); err != nil {
 		return fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
 	}
 
-	// if --submit flag is set write json files to disk to be used to send to pyxis after all checks are complete
-	if viper.GetBool("submit") {
-		err := writeCertImage(img)
-		if err != nil {
+	// only write these files to disk for container checks
+	if !c.IsBundle {
+		if err := writeCertImage(img); err != nil {
 			return err
 		}
 
-		err = writeRPMManifest(containerFSPath)
-		if err != nil {
+		if err := writeRPMManifest(containerFSPath); err != nil {
 			return err
 		}
 	}
