@@ -14,6 +14,7 @@ type Config struct {
 	ResponseFormat string
 	Mounted        bool
 	Bundle         bool
+	Scratch        bool
 }
 
 type Result struct {

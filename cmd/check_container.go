@@ -85,6 +85,7 @@ var checkContainerCmd = &cobra.Command{
 		log.Debugf("Certification project name is: %s", certProject.Name)
 		if certProject.OsContentType == "scratch" {
 			cfg.EnabledChecks = engine.ScratchContainerPolicy()
+			cfg.Scratch = true
 		}
 
 		engine, err := engine.NewForConfig(cfg)

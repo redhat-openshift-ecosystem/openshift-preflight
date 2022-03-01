@@ -60,6 +60,7 @@ var checkOperatorCmd = &cobra.Command{
 			EnabledChecks:  engine.OperatorPolicy(),
 			ResponseFormat: DefaultOutputFormat,
 			Bundle:         true,
+			Scratch:        true,
 		}
 
 		engine, err := engine.NewForConfig(cfg)
