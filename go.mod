@@ -103,4 +103,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/knqyf263/go-rpmdb v0.0.0-20201215100354-a9e3110d8ee1 => github.com/opdev/go-rpmdb v0.0.0-20220208191623-d02daff2dffb
+replace github.com/knqyf263/go-rpmdb v0.0.0-20201215100354-a9e3110d8ee1 => github.com/opdev/go-rpmdb v0.0.0-20220224224313-40fc34da2676
