@@ -30,4 +30,5 @@ var (
 	ErrUnsupportedGoType               = errors.New("go type unsupported")
 	ErrSaveFileFailed                  = errors.New("failed to save file to artifacts directory")
 	ErrNon200StatusCode                = errors.New("error calling remote API")
+	Err409StatusCode                   = errors.New("remote API returned conflict")
 )
