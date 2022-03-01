@@ -41,6 +41,9 @@ type CraneEngine struct {
 	// IsBundle is an indicator that the asset is a bundle.
 	IsBundle bool
 
+	// IsScratch is an indicator that the asset is a scratch image
+	IsScratch bool
+
 	imageRef certification.ImageReference
 	results  runtime.Results
 }
@@ -96,12 +99,11 @@ func (c *CraneEngine) ExecuteChecks() error {
 		return fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
 	}
 
-	// only write these files to disk for container checks
-	if !c.IsBundle {
-		if err := writeCertImage(img); err != nil {
-			return err
-		}
+	if err := writeCertImage(img); err != nil {
+		return err
+	}
 
+	if !c.IsScratch {
 		if err := writeRPMManifest(containerFSPath); err != nil {
 			return err
 		}

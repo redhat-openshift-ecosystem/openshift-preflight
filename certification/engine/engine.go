@@ -44,9 +44,10 @@ func NewForConfig(config runtime.Config) (CheckEngine, error) {
 	}
 
 	engine := &internal.CraneEngine{
-		Image:    config.Image,
-		Checks:   checks,
-		IsBundle: config.Bundle,
+		Image:     config.Image,
+		Checks:    checks,
+		IsBundle:  config.Bundle,
+		IsScratch: config.Scratch,
 	}
 
 	return engine, nil
