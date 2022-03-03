@@ -2,53 +2,46 @@ package pyxis
 
 import (
 	"context"
-	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	log "github.com/sirupsen/logrus"
 )
 
-func (p *pyxisEngine) SubmitResults(containerImage string) (*CertProject, *CertImage, error) {
+func (p *pyxisEngine) SubmitResults(certProject *CertProject, certImage *CertImage, rpmManifest *RPMManifest, testResults *TestResults) (*CertProject, *CertImage, *TestResults, error) {
+	var err error
 	ctx := context.Background()
-	projectId := p.ProjectId
-	if projectId == "" {
-		return nil, nil, errors.ErrEmptyProjectID
-	}
-	if strings.HasPrefix(projectId, "ospid-") {
-		projectId = strings.Split(projectId, "-")[1]
-	}
-	project, err := p.GetProject(ctx)
-	if err != nil {
-		log.Error(err, "could not retrieve project")
-		return nil, nil, err
-	}
-	oldProject := project
+	oldProject := certProject
 
-	if project.CertificationStatus == "Started" {
-		project.CertificationStatus = "In Progress"
+	if certProject.CertificationStatus == "Started" {
+		certProject.CertificationStatus = "In Progress"
 	}
 
-	if project != oldProject {
-		project, err = p.updateProject(ctx, projectId, project)
+	if certProject != oldProject {
+		certProject, err = p.updateProject(ctx, certProject)
 		if err != nil {
 			log.Error(err, "could not update project")
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 	}
 
-	certImage := new(CertImage)
 	certImage, err = p.createImage(ctx, certImage)
 	if err != nil {
-		log.Error(err)
-		return nil, nil, err
+		log.Error(err, "could not create image")
+		return nil, nil, nil, err
 	}
 
-	rpms := make([]RPM, 10)
-	err = p.createRPMManifest(ctx, certImage.ImageID, rpms)
+	rpmManifest.ImageID = certImage.ID
+	_, err = p.createRPMManifest(ctx, rpmManifest)
 	if err != nil {
-		log.Error(err)
-		return nil, nil, err
+		log.Error(err, "could not create rpm manifest")
+		return nil, nil, nil, err
 	}
 
-	return project, certImage, nil
+	testResults.ImageID = certImage.ID
+	testResults, err = p.createTestResults(ctx, testResults)
+	if err != nil {
+		log.Error(err, "could not create test results")
+		return nil, nil, nil, err
+	}
+
+	return certProject, certImage, testResults, nil
 }

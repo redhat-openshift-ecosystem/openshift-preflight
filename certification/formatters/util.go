@@ -84,7 +84,7 @@ type resultsText struct {
 // Empty fields will be omitted.
 type checkExecutionInfo struct {
 	Name             string  `json:"name,omitempty" xml:"name,omitempty"`
-	ElapsedTime      float64 `json:"elapsed_time,omitempty" xml:"elapsed_time,omitempty"`
+	ElapsedTime      float64 `json:"elapsed_time" xml:"elapsed_time"`
 	Description      string  `json:"description,omitempty" xml:"description,omitempty"`
 	Help             string  `json:"help,omitempty" xml:"help,omitempty"`
 	Suggestion       string  `json:"suggestion,omitempty" xml:"suggestion,omitempty"`

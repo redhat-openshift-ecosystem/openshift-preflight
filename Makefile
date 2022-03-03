@@ -22,8 +22,8 @@ build-multi-arch:
 	@ls | grep preflight
 
 .PHONY: fmt
-fmt:
-	go fmt ./...
+fmt: gofumpt
+	${GOFUMPT} -l -w .
 	git diff --exit-code
 
 .PHONY: tidy
@@ -60,3 +60,21 @@ clean:
 	$(foreach GOOS, $(PLATFORMS),\
 	$(foreach GOARCH, $(ARCHITECTURES),\
 	$(shell if [ -f "$(BINARY)-$(GOOS)-$(GOARCH)" ]; then rm -f $(BINARY)-$(GOOS)-$(GOARCH); fi)))
+
+GOFUMPT = $(shell pwd)/bin/gofumpt
+gofumpt: ## Download envtest-setup locally if necessary.
+	$(call go-get-tool,$(GOFUMPT),mvdan.cc/gofumpt@latest)
+
+# go-get-tool will 'go get' any package $2 and install it to $1.
+PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+define go-get-tool
+@[ -f $(1) ] || { \
+set -e ;\
+TMP_DIR=$$(mktemp -d) ;\
+cd $$TMP_DIR ;\
+go mod init tmp ;\
+echo "Downloading $(2)" ;\
+GOBIN=$(PROJECT_DIR)/bin go get $(2) ;\
+rm -rf $$TMP_DIR ;\
+}
+endef

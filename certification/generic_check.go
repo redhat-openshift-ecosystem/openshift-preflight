@@ -38,7 +38,8 @@ func NewGenericCheck(
 	name string,
 	validatorFn ValidatorFunc,
 	metadata Metadata,
-	helptext HelpText) Check {
+	helptext HelpText,
+) Check {
 	return &genericCheckDefinition{
 		name:        name,
 		validatorFn: validatorFn,

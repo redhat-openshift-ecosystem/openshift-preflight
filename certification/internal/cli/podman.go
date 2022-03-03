@@ -14,8 +14,9 @@ type PodmanOutput struct {
 }
 
 type PodmanCreateOption struct {
-	Entrypoint []string
-	Cmd        []string
+	Entrypoint    []string
+	Cmd           []string
+	ContainerName string
 }
 
 type ImagePullOptions struct {
@@ -39,9 +40,11 @@ type InspectContainerConfig struct {
 }
 
 type PodmanEngine interface {
-	PullImage(imageURI string, options ImagePullOptions) (*PodmanOutput, error)
 	CreateContainer(imageURI string, createOptions PodmanCreateOption) (*PodmanCreateOutput, error)
 	StartContainer(nameOrId string) (*PodmanOutput, error)
 	RemoveContainer(containerId string) error
 	WaitContainer(containerId string, waitOptions WaitOptions) (bool, error)
+	RunSystemContainer(containerName string) (*PodmanOutput, error)
+	IsSystemContainerRunning(serviceName string) (bool, error)
+	StopSystemContainer(serviceName string) error
 }

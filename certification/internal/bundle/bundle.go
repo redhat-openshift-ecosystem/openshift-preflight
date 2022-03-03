@@ -1,7 +1,6 @@
 package bundle
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -30,7 +29,7 @@ func ValidateBundle(engine cli.OperatorSdkEngine, imagePath string) (*cli.Operat
 
 	annotations, err := GetAnnotations(imagePath)
 	if err != nil {
-		log.Errorf("unable to get annotations.yaml from the bundle")
+		log.Error("unable to get annotations.yaml from the bundle")
 		return nil, err
 	}
 
@@ -162,7 +161,6 @@ func getCsvFilePathFromBundle(mountedDir string) (string, error) {
 	log.Trace("reading clusterserviceversion file from the bundle")
 	log.Debug("mounted directory is ", mountedDir)
 	matches, err := filepath.Glob(filepath.Join(mountedDir, "manifests", "*.clusterserviceversion.yaml"))
-
 	if err != nil {
 		log.Error("glob pattern is malformed: ", err)
 		return "", err
@@ -175,7 +173,7 @@ func getCsvFilePathFromBundle(mountedDir string) (string, error) {
 		log.Error("found more than one clusterserviceversion file in the bundle image: ", err)
 		return "", err
 	}
-	log.Debug(fmt.Sprintf("The path to csv file is %s", matches[0]))
+	log.Debugf("The path to csv file is %s", matches[0])
 	return matches[0], nil
 }
 

@@ -24,8 +24,8 @@ var checkOperatorCmd = &cobra.Command{
 	Long:  `This command will run the Certification checks for an Operator bundle image. `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if l, _ := cmd.Flags().GetBool("list-checks"); l {
-			fmt.Println(fmt.Sprintf("\n%s\n%s%s", "The checks that will be executed are the following:", "- ",
-				strings.Join(engine.OperatorPolicy(), "\n- ")))
+			fmt.Printf("\n%s\n%s%s\n", "The checks that will be executed are the following:", "- ",
+				strings.Join(engine.OperatorPolicy(), "\n- "))
 
 			// exiting gracefully instead of retuning, otherwise cobra calls RunE
 			os.Exit(0)
@@ -60,6 +60,7 @@ var checkOperatorCmd = &cobra.Command{
 			EnabledChecks:  engine.OperatorPolicy(),
 			ResponseFormat: DefaultOutputFormat,
 			Bundle:         true,
+			Scratch:        true,
 		}
 
 		engine, err := engine.NewForConfig(cfg)
@@ -77,15 +78,18 @@ var checkOperatorCmd = &cobra.Command{
 		resultsFile, err := os.OpenFile(
 			filepath.Join(artifacts.Path(), resultsFilenameWithExtension(formatter.FileExtension())),
 			os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
-			0600,
+			0o600,
 		)
-
 		if err != nil {
 			return err
 		}
 
 		// also write to stdout
 		resultsOutputTarget := io.MultiWriter(os.Stdout, resultsFile)
+
+		// At this point, we would no longer want usage information printed out
+		// on error, so it doesn't contaminate the output.
+		cmd.SilenceUsage = true
 
 		// execute the checks
 		if err := engine.ExecuteChecks(); err != nil {

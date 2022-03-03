@@ -43,7 +43,6 @@ require (
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-logr/logr v1.2.0 // indirect
-	github.com/go-restruct/restruct v0.0.0-20191227155143-5734170a48a1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -103,3 +102,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.0 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace github.com/knqyf263/go-rpmdb v0.0.0-20201215100354-a9e3110d8ee1 => github.com/opdev/go-rpmdb v0.0.0-20220224224313-40fc34da2676

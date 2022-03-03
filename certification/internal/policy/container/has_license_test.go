@@ -16,21 +16,17 @@ const (
 )
 
 var _ = Describe("HasLicense", func() {
-	var (
-		HasLicense HasLicenseCheck
-	)
+	var HasLicense HasLicenseCheck
 
 	Describe("Checking if licenses can be found", func() {
-		var (
-			imgRef certification.ImageReference
-		)
+		var imgRef certification.ImageReference
 		BeforeEach(func() {
 			var err error
 			tmpDir, err := os.MkdirTemp("", "license-check-*")
 			Expect(err).ToNot(HaveOccurred())
-			err = os.Mkdir(filepath.Join(tmpDir, licenses), 0755)
+			err = os.Mkdir(filepath.Join(tmpDir, licenses), 0o755)
 			Expect(err).ToNot(HaveOccurred())
-			err = os.WriteFile(filepath.Join(tmpDir, licenses, validLicense), []byte("This is a license"), 0644)
+			err = os.WriteFile(filepath.Join(tmpDir, licenses, validLicense), []byte("This is a license"), 0o644)
 			Expect(err).ToNot(HaveOccurred())
 			_, err = os.Create(filepath.Join(tmpDir, licenses, emptyLicense))
 			Expect(err).ToNot(HaveOccurred())

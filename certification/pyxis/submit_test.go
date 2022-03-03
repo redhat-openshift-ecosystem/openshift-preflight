@@ -6,9 +6,7 @@ import (
 )
 
 var _ = Describe("Pyxis Submit", func() {
-	var (
-		pyxisEngine *pyxisEngine
-	)
+	var pyxisEngine *pyxisEngine
 
 	BeforeEach(func() {
 		pyxisEngine = NewPyxisEngine("my-spiffy-api-token", "my-awseome-project-id", fakeHttpClient{})
@@ -16,12 +14,12 @@ var _ = Describe("Pyxis Submit", func() {
 	Context("when a project is submitted", func() {
 		Context("and it is not already In Progress", func() {
 			It("should switch to In Progress", func() {
-				certProject, certImage, err := pyxisEngine.SubmitResults("foo/container")
+				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(&CertProject{}, &CertImage{}, &RPMManifest{}, &TestResults{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(certProject).ToNot(BeNil())
 				Expect(certImage).ToNot(BeNil())
+				Expect(testResults).ToNot(BeNil())
 			})
 		})
 	})
-
 })

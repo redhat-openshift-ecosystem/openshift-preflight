@@ -4,23 +4,27 @@ import (
 	"archive/tar"
 	"bytes"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/crane"
-	log "github.com/sirupsen/logrus"
-
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
-	preflightRuntime "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	log "github.com/sirupsen/logrus"
 )
 
 // CraneEngine implements a certification.CheckEngine, and leverage crane to interact with
@@ -37,18 +41,21 @@ type CraneEngine struct {
 	// IsBundle is an indicator that the asset is a bundle.
 	IsBundle bool
 
+	// IsScratch is an indicator that the asset is a scratch image
+	IsScratch bool
+
 	imageRef certification.ImageReference
 	results  runtime.Results
 }
 
 func (c *CraneEngine) ExecuteChecks() error {
-	log.Info("target image: ", c.Image)
+	log.Debug("target image: ", c.Image)
 
 	// prepare crane runtime options, if necessary
 	options := make([]crane.Option, 0)
 
 	// pull the image and save to fs
-	log.Info("pulling image from target registry")
+	log.Debug("pulling image from target registry")
 	img, err := crane.Pull(c.Image, options...)
 	if err != nil {
 		return fmt.Errorf("%w: %s", errors.ErrGetRemoteContainerFailed, err)
@@ -67,7 +74,7 @@ func (c *CraneEngine) ExecuteChecks() error {
 	}()
 
 	containerFSPath := path.Join(tmpdir, "fs")
-	if err := os.Mkdir(containerFSPath, 0755); err != nil {
+	if err := os.Mkdir(containerFSPath, 0o755); err != nil {
 		return fmt.Errorf("%w: %s: %s", errors.ErrCreateTempDir, containerFSPath, err)
 	}
 
@@ -76,7 +83,7 @@ func (c *CraneEngine) ExecuteChecks() error {
 	r, w := io.Pipe()
 	go func() {
 		defer w.Close()
-		log.Debug("writing container filesystem to output dir", containerFSPath)
+		log.Debugf("writing container filesystem to output dir: %s", containerFSPath)
 		err = crane.Export(img, w)
 		if err != nil {
 			// TODO: Handle this error more effectively. Right now we rely on
@@ -88,9 +95,18 @@ func (c *CraneEngine) ExecuteChecks() error {
 	}()
 
 	log.Debug("extracting container filesystem to ", containerFSPath)
-	err = untar(containerFSPath, r)
-	if err != nil {
+	if err := untar(containerFSPath, r); err != nil {
 		return fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
+	}
+
+	if err := writeCertImage(img); err != nil {
+		return err
+	}
+
+	if !c.IsScratch {
+		if err := writeRPMManifest(containerFSPath); err != nil {
+			return err
+		}
 	}
 
 	// store the image internals in the engine image reference to pass to validations.
@@ -108,16 +124,16 @@ func (c *CraneEngine) ExecuteChecks() error {
 			log.Error("Unable to determine test cluster version: ", err)
 		}
 	} else {
-		log.Info("Container checks do not require a cluster. skipping cluster version check.")
-		c.results.TestedOn = preflightRuntime.UnknownOpenshiftClusterVersion()
+		log.Debug("Container checks do not require a cluster. skipping cluster version check.")
+		c.results.TestedOn = runtime.UnknownOpenshiftClusterVersion()
 	}
 
 	// execute checks
-	log.Info("executing checks")
+	log.Debug("executing checks")
 	for _, check := range c.Checks {
 		c.results.TestedImage = c.Image
 
-		log.Info("running check: ", check.Name())
+		log.Debug("running check: ", check.Name())
 
 		// run the validation
 		checkStartTime := time.Now()
@@ -248,7 +264,7 @@ func untar(dst string, r io.Reader) error {
 		// if its a dir and it doesn't exist create it
 		case tar.TypeDir:
 			if _, err := os.Stat(target); err != nil {
-				if err := os.MkdirAll(target, 0755); err != nil {
+				if err := os.MkdirAll(target, 0o755); err != nil {
 					return err
 				}
 			}
@@ -278,4 +294,191 @@ func untar(dst string, r io.Reader) error {
 			}
 		}
 	}
+}
+
+func writeCertImage(img v1.Image) error {
+	config, err := img.ConfigFile()
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+	}
+
+	manifest, err := img.Manifest()
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+	}
+
+	digest, err := img.Digest()
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+	}
+
+	rawConfig, err := img.RawConfigFile()
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+	}
+
+	size, err := img.Size()
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+	}
+
+	labels := convertLabels(config.Config.Labels)
+	layerSizes := make([]pyxis.Layer, 0, len(config.RootFS.DiffIDs))
+	for _, diffid := range config.RootFS.DiffIDs {
+		layer, err := img.LayerByDiffID(diffid)
+		if err != nil {
+			return err
+		}
+
+		uncompressed, err := layer.Uncompressed()
+		if err != nil {
+			return err
+		}
+		written, err := io.Copy(io.Discard, uncompressed)
+		if err != nil {
+			return err
+		}
+
+		pyxisLayer := pyxis.Layer{
+			LayerId: diffid.String(),
+			Size:    written,
+		}
+		layerSizes = append(layerSizes, pyxisLayer)
+	}
+
+	sumLayersSizeBytes, err := sumLayerSizeBytes(layerSizes)
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+	}
+
+	certImage := pyxis.CertImage{
+		DockerImageDigest: digest.String(),
+		DockerImageID:     manifest.Config.Digest.String(),
+		ImageID:           digest.String(),
+		Architecture:      config.Architecture,
+		ParsedData: &pyxis.ParsedData{
+			Architecture:           config.Architecture,
+			Command:                strings.Join(config.Config.Cmd, " "),
+			Created:                config.Created.String(),
+			DockerVersion:          config.DockerVersion,
+			ImageID:                digest.String(),
+			Labels:                 labels,
+			OS:                     config.OS,
+			Size:                   size,
+			UncompressedLayerSizes: layerSizes,
+		},
+		RawConfig:         string(rawConfig),
+		SumLayerSizeBytes: sumLayersSizeBytes,
+		// This is an assumption that the DiffIDs are in order from base up.
+		// Need more evisdence that this is always the case.
+		UncompressedTopLayerId: config.RootFS.DiffIDs[0].String(),
+	}
+
+	// calling MarshalIndent so the json file written to disk is human-readable when opened
+	certImageJson, err := json.MarshalIndent(certImage, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	fileName, err := artifacts.WriteFile(certification.DefaultCertImageFilename, string(certImageJson))
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrSaveFileFailed, err)
+	}
+
+	log.Tracef("image config written to disk: %s", fileName)
+
+	return nil
+}
+
+func writeRPMManifest(containerFSPath string) error {
+	db, err := rpmdb.Open(filepath.Join(containerFSPath, "var", "lib", "rpm", "Packages"))
+	if err != nil {
+		return err
+	}
+
+	pkgList, err := db.ListPackages()
+	if err != nil {
+		return err
+	}
+
+	// covert rpm struct to pxyis struct
+	rpms := make([]pyxis.RPM, 0, len(pkgList))
+	for _, packageInfo := range pkgList {
+
+		var bgName, endChop, srpmNevra, pgpKeyId string
+
+		// accounting for the fact that not all packages have a source rpm
+		if len(packageInfo.SourceRpm) > 0 {
+			bgName = packageInfo.SourceRpm[0:strings.LastIndex(strings.SplitAfter(packageInfo.SourceRpm, ".")[0], "-")]
+			endChop = strings.TrimPrefix(strings.TrimSuffix(regexp.MustCompile("(-[0-9].*)").FindString(packageInfo.SourceRpm), ".rpm"), "-")
+
+			srpmNevra = fmt.Sprintf("%s-%d:%s", bgName, packageInfo.Epoch, endChop)
+		}
+
+		if len(packageInfo.PGP) > 0 {
+			matches := regexp.MustCompile(".*, Key ID (.*)").FindStringSubmatch(packageInfo.PGP)
+			if matches != nil {
+				pgpKeyId = matches[1]
+			} else {
+				log.Debugf("string did not match the format required: %s", packageInfo.PGP)
+				pgpKeyId = ""
+			}
+		}
+
+		rpm := pyxis.RPM{
+			Architecture: packageInfo.Arch,
+			Gpg:          pgpKeyId,
+			Name:         packageInfo.Name,
+			Nvra:         fmt.Sprintf("%s-%s-%s.%s", packageInfo.Name, packageInfo.Version, packageInfo.Release, packageInfo.Arch),
+			Release:      packageInfo.Release,
+			SrpmName:     bgName,
+			SrpmNevra:    srpmNevra,
+			Summary:      packageInfo.Summary,
+			Version:      packageInfo.Version,
+		}
+
+		rpms = append(rpms, rpm)
+	}
+
+	rpmManifest := pyxis.RPMManifest{
+		RPMS: rpms,
+	}
+
+	// calling MarshalIndent so the json file written to disk is human-readable when opened
+	rpmManifestJson, err := json.MarshalIndent(rpmManifest, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	fileName, err := artifacts.WriteFile(certification.DefaultRPMManifestFilename, string(rpmManifestJson))
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrSaveFileFailed, err)
+	}
+
+	log.Tracef("rpm manifest written to disk: %s", fileName)
+
+	return nil
+}
+
+func sumLayerSizeBytes(layers []pyxis.Layer) (int64, error) {
+	var sum int64
+	for _, layer := range layers {
+		sum += layer.Size
+	}
+
+	return sum, nil
+}
+
+func convertLabels(imageLabels map[string]string) []pyxis.Label {
+	pyxisLabels := make([]pyxis.Label, 0, len(imageLabels))
+	for key, value := range imageLabels {
+		label := pyxis.Label{
+			Name:  key,
+			Value: value,
+		}
+
+		pyxisLabels = append(pyxisLabels, label)
+	}
+
+	return pyxisLabels
 }
