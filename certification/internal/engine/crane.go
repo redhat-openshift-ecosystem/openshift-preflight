@@ -1,6 +1,8 @@
 package engine
 
-import "github.com/google/go-containerregistry/pkg/crane"
+import (
+	"github.com/google/go-containerregistry/pkg/crane"
+)
 
 type craneEngine struct{}
 
@@ -9,8 +11,5 @@ func NewCraneEngine() *craneEngine {
 }
 
 func (c *craneEngine) ListTags(imageURI string) ([]string, error) {
-	// prepare crane runtime options
-	options := make([]crane.Option, 0)
-
-	return crane.ListTags(imageURI, options...)
+	return crane.ListTags(imageURI)
 }
