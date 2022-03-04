@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/json"
+	syserrors "errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -391,7 +392,16 @@ func writeCertImage(img v1.Image) error {
 }
 
 func writeRPMManifest(containerFSPath string) error {
-	db, err := rpmdb.Open(filepath.Join(containerFSPath, "var", "lib", "rpm", "Packages"))
+	// Check for rpmdb.sqlite. If not found, check for Packages
+	rpmdirPath := filepath.Join(containerFSPath, "var", "lib", "rpm")
+	rpmdbPath := filepath.Join(rpmdirPath, "rpmdb.sqlite")
+
+	if _, err := os.Stat(rpmdbPath); syserrors.Is(err, os.ErrNotExist) {
+		// rpmdb.sqlite doesn't exist. Fall back to Packages
+		rpmdbPath = filepath.Join(rpmdirPath, "Packages")
+	}
+
+	db, err := rpmdb.Open(rpmdbPath)
 	if err != nil {
 		return err
 	}
