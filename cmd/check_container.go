@@ -202,7 +202,7 @@ var checkContainerCmd = &cobra.Command{
 			log.Info("Test results have been submitted to Red Hat.")
 			log.Info("These results will be reviewed by Red Hat for final certification.")
 			log.Infof("The container's image id is: %s.", certImage.ImageID)
-			log.Infof("Please check https://connect.redhat.com/projects/%s/overview to monitior the progress.", projectId)
+			log.Infof(fmt.Sprintf("Please check %s to monitior the progress.", buildConnectURL(projectId)))
 		}
 
 		return nil
@@ -228,4 +228,17 @@ func init() {
 	viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
 
 	checkCmd.AddCommand(checkContainerCmd)
+}
+
+func buildConnectURL(projectID string) string {
+	connectURL := fmt.Sprintf("https://connect.redhat.com/projects/%s/overview", projectID)
+	pyxisHost := viper.GetString("pyxis_host")
+	s := strings.Split(pyxisHost, ".")
+
+	if pyxisHost != DefaultPyxisHost && len(s) > 3 {
+		env := s[1]
+		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s/overview", env, projectID)
+	}
+
+	return connectURL
 }
