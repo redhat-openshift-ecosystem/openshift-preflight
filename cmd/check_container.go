@@ -212,7 +212,36 @@ var checkContainerCmd = &cobra.Command{
 				return err
 			}
 
-			_, certImage, _, err = pyxisEngine.SubmitResults(ctx, certProject, certImage, rpmManifest, testResults)
+			logFileName := viper.GetString("logfile")
+
+			logFile, err := os.Open(logFileName)
+			if err != nil {
+				return err
+			}
+			defer logFile.Close()
+
+			logFileBytes, err := io.ReadAll(logFile)
+			if err != nil {
+				return err
+			}
+
+			logFileInfo, err := logFile.Stat()
+			if err != nil {
+				return err
+			}
+
+			logFileArtifact := pyxis.Artifact{
+				CertProject: projectId,
+				Content:     string(logFileBytes),
+				ContentType: http.DetectContentType(logFileBytes),
+				Filename:    logFileName,
+				FileSize:    logFileInfo.Size(),
+			}
+
+			artifacts := make([]pyxis.Artifact, 0, 1)
+			artifacts = append(artifacts, logFileArtifact)
+
+			_, certImage, _, err = pyxisEngine.SubmitResults(ctx, certProject, certImage, rpmManifest, testResults, artifacts)
 			if err != nil {
 				return err
 			}

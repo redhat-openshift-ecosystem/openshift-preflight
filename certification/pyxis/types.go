@@ -1,6 +1,8 @@
 package pyxis
 
-import "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
+import (
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
+)
 
 type CertImage struct {
 	ID                     string       `json:"_id,omitempty"`
@@ -98,4 +100,14 @@ type TestResults struct {
 	Version     string `json:"version,omitempty"`
 	ImageID     string `json:"image_id,omitempty"`
 	formatters.UserResponse
+}
+
+type Artifact struct {
+	ID          string `json:"_id"`
+	CertProject string `json:"cert_project"`
+	Content     string `json:"content"`
+	ContentType string `json:"content_type"`
+	FileSize    int64  `json:"file_size"`
+	Filename    string `json:"filename"`
+	ImageID     string `json:"image_id"`
 }
