@@ -141,6 +141,23 @@ var checkContainerCmd = &cobra.Command{
 		if submit {
 			log.Info("preparing results that will be submitted to Red Hat")
 
+			testResultsJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultTestResultsFilename))
+			if err != nil {
+				return err
+			}
+			defer testResultsJsonFile.Close()
+
+			testResultsBytes, err := io.ReadAll(testResultsJsonFile)
+			if err != nil {
+				return err
+			}
+
+			testResults := new(pyxis.TestResults)
+			err = json.Unmarshal(testResultsBytes, &testResults)
+			if err != nil {
+				return err
+			}
+
 			certImageJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultCertImageFilename))
 			if err != nil {
 				return err
@@ -159,6 +176,7 @@ var checkContainerCmd = &cobra.Command{
 			}
 
 			certImage.ISVPID = certProject.Container.ISVPID
+			certImage.Certified = testResults.Passed
 
 			rpmManifestJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename))
 			if err != nil {
@@ -173,23 +191,6 @@ var checkContainerCmd = &cobra.Command{
 
 			rpmManifest := new(pyxis.RPMManifest)
 			err = json.Unmarshal(rpmManifestBytes, rpmManifest)
-			if err != nil {
-				return err
-			}
-
-			testResultsJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultTestResultsFilename))
-			if err != nil {
-				return err
-			}
-			defer testResultsJsonFile.Close()
-
-			testResultsBytes, err := io.ReadAll(testResultsJsonFile)
-			if err != nil {
-				return err
-			}
-
-			testResults := new(pyxis.TestResults)
-			err = json.Unmarshal(testResultsBytes, &testResults)
 			if err != nil {
 				return err
 			}

@@ -4,7 +4,7 @@ import "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/
 
 type CertImage struct {
 	ID                     string       `json:"_id,omitempty"`
-	Certified              bool         `json:"certified" default:"false"`
+	Certified              bool         `json:"certified"`
 	Deleted                bool         `json:"deleted" default:"false"`
 	DockerImageDigest      string       `json:"docker_image_digest,omitempty"`
 	DockerImageID          string       `json:"docker_image_id,omitempty"`
