@@ -81,8 +81,8 @@ type CertProject struct {
 
 type Container struct {
 	DockerConfigJSON string `json:"docker_config_json"`
-	Type             string `json:"type " default:"Containers"` // conditionally required
-	ISVPID           string `json:"isv_pid,omitempty"`          // required
+	Type             string `json:"type" default:"Containers"` // conditionally required
+	ISVPID           string `json:"isv_pid,omitempty"`         // required
 }
 
 type Layer struct {
