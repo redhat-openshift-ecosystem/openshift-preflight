@@ -2,21 +2,25 @@ package pyxis
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	log "github.com/sirupsen/logrus"
 )
 
-func (p *pyxisEngine) SubmitResults(certProject *CertProject, certImage *CertImage, rpmManifest *RPMManifest, testResults *TestResults) (*CertProject, *CertImage, *TestResults, error) {
+func (p *pyxisEngine) SubmitResults(ctx context.Context, certProject *CertProject, certImage *CertImage, rpmManifest *RPMManifest, testResults *TestResults) (*CertProject, *CertImage, *TestResults, error) {
 	var err error
-	ctx := context.Background()
-	oldProject := *certProject
 
 	if certProject.CertificationStatus == "Started" {
 		certProject.CertificationStatus = "In Progress"
 	}
 
-	if *certProject != oldProject {
+	oldCertProject, err := p.GetProject(ctx)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("%w: %s", err, "could not retrieve project")
+	}
+
+	if *certProject != *oldCertProject {
 		certProject, err = p.updateProject(ctx, certProject)
 		if err != nil {
 			log.Error(err, "could not update project")
