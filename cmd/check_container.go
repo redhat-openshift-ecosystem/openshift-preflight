@@ -44,7 +44,7 @@ var checkContainerCmd = &cobra.Command{
 			return fmt.Errorf("%w: A container image positional argument is required", errors.ErrInsufficientPosArguments)
 		}
 
-		if submit {
+		if submit && !viper.IsSet("dockerConfig") {
 			cmd.MarkFlagRequired("docker-config")
 		}
 
@@ -58,6 +58,8 @@ var checkContainerCmd = &cobra.Command{
 		// so that we can get a more user-friendly error message
 
 		log.Info("certification library version ", version.Version.String())
+
+		ctx := context.Background()
 
 		containerImage := args[0]
 
@@ -75,7 +77,6 @@ var checkContainerCmd = &cobra.Command{
 			projectId = strings.Split(projectId, "-")[1]
 		}
 		apiToken := viper.GetString("pyxis_api_token")
-		ctx := context.Background()
 		pyxisEngine := pyxis.NewPyxisEngine(apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
 		certProject, err := pyxisEngine.GetProject(ctx)
 		if err != nil {
@@ -86,6 +87,21 @@ var checkContainerCmd = &cobra.Command{
 		if certProject.OsContentType == "scratch" {
 			cfg.EnabledChecks = engine.ScratchContainerPolicy()
 			cfg.Scratch = true
+		}
+
+		if submit {
+			dockerConfigJsonFile, err := os.Open(viper.GetString("dockerConfig"))
+			if err != nil {
+				return err
+			}
+			defer dockerConfigJsonFile.Close()
+
+			dockerConfigJsonBytes, err := io.ReadAll(dockerConfigJsonFile)
+			if err != nil {
+				return err
+			}
+
+			certProject.Container.DockerConfigJSON = string(dockerConfigJsonBytes)
 		}
 
 		engine, err := engine.NewForConfig(cfg)
@@ -140,6 +156,7 @@ var checkContainerCmd = &cobra.Command{
 		// submitting results to pxysis if submit flag is set
 		if submit {
 			log.Info("preparing results that will be submitted to Red Hat")
+			log.Tracef("CertProject: %+v", certProject)
 
 			certImageJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultCertImageFilename))
 			if err != nil {
@@ -194,7 +211,7 @@ var checkContainerCmd = &cobra.Command{
 				return err
 			}
 
-			_, certImage, _, err = pyxisEngine.SubmitResults(certProject, certImage, rpmManifest, testResults)
+			_, certImage, _, err = pyxisEngine.SubmitResults(ctx, certProject, certImage, rpmManifest, testResults)
 			if err != nil {
 				return err
 			}
@@ -214,7 +231,7 @@ func init() {
 	viper.BindPFlag("submit", checkContainerCmd.Flags().Lookup("submit"))
 
 	checkContainerCmd.Flags().StringP("docker-config", "d", "", "path to docker config.json file")
-	viper.BindPFlag("docker_config", checkContainerCmd.Flags().Lookup("docker-config"))
+	viper.BindPFlag("dockerConfig", checkContainerCmd.Flags().Lookup("docker-config"))
 
 	checkContainerCmd.Flags().String("pyxis-api-token", "", "API token for Pyxis authentication")
 	checkContainerCmd.MarkFlagRequired("pyxis-api-token")

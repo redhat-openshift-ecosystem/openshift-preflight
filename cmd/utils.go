@@ -10,12 +10,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+var configFileUsed bool
+
 func resultsFilenameWithExtension(ext string) string {
 	return strings.Join([]string{"results", ext}, ".")
 }
 
-// preRunConfig is used by cobra.PreRun in all non-root commands to load all necessary configurations
-func preRunConfig(cmd *cobra.Command, args []string) {
+func initConfig() {
 	// set up ENV var support
 	viper.SetEnvPrefix("pflt")
 	viper.AutomaticEnv()
@@ -25,7 +26,7 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
 
-	configFileUsed := true
+	configFileUsed = true
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			configFileUsed = false
@@ -47,7 +48,10 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 	// Set up pyxis host
 	viper.SetDefault("pyxis_host", DefaultPyxisHost)
 	viper.SetDefault("pyxis_api_token", "")
+}
 
+// preRunConfig is used by cobra.PreRun in all non-root commands to load all necessary configurations
+func preRunConfig(cmd *cobra.Command, args []string) {
 	// set up logging
 	logname := viper.GetString("logfile")
 	logFile, err := os.OpenFile(logname, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
