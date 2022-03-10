@@ -51,6 +51,8 @@ func (p *pyxisEngine) createImage(ctx context.Context, certImage *CertImage) (*C
 		return nil, err
 	}
 
+	log.Debugf("URL is: %s", req.URL)
+
 	resp, err := p.Client.Do(req)
 	if err != nil {
 		log.Error(err)
@@ -63,6 +65,10 @@ func (p *pyxisEngine) createImage(ctx context.Context, certImage *CertImage) (*C
 	if err != nil {
 		log.Error(err)
 		return nil, err
+	}
+
+	if resp.StatusCode == 409 {
+		return nil, errors.Err409StatusCode
 	}
 
 	if !checkStatus(resp.StatusCode) {
@@ -79,17 +85,15 @@ func (p *pyxisEngine) createImage(ctx context.Context, certImage *CertImage) (*C
 	return &newCertImage, nil
 }
 
-func (p *pyxisEngine) createRPMManifest(ctx context.Context, rpmManifest *RPMManifest) (*RPMManifest, error) {
-	b, err := json.Marshal(rpmManifest)
+func (p *pyxisEngine) getImage(ctx context.Context, dockerImageDigest string) (*CertImage, error) {
+	req, err := p.newRequestWithApiToken(ctx, http.MethodGet,
+		getPyxisUrl(fmt.Sprintf("projects/certification/id/%s/images?filter=docker_image_digest==%s", p.ProjectId, dockerImageDigest)), nil)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	req, err := p.newRequestWithApiToken(ctx, http.MethodPost, getPyxisUrl(fmt.Sprintf("images/id/%s/rpm-manifest", rpmManifest.ImageID)), bytes.NewReader(b))
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
+
+	log.Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -106,7 +110,94 @@ func (p *pyxisEngine) createRPMManifest(ctx context.Context, rpmManifest *RPMMan
 	}
 
 	if !checkStatus(resp.StatusCode) {
+		log.Errorf("%s: %s", "received non 200 status code in getImage", string(body))
+		return nil, errors.ErrNon200StatusCode
+	}
+
+	// using an inline struct since this api's response is in a different format
+	data := struct {
+		Data []CertImage `json:"data,omitempty"`
+	}{}
+
+	if err := json.Unmarshal(body, &data); err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return &data.Data[0], nil
+}
+
+func (p *pyxisEngine) createRPMManifest(ctx context.Context, rpmManifest *RPMManifest) (*RPMManifest, error) {
+	b, err := json.Marshal(rpmManifest)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	req, err := p.newRequestWithApiToken(ctx, http.MethodPost, getPyxisUrl(fmt.Sprintf("images/id/%s/rpm-manifest", rpmManifest.ImageID)), bytes.NewReader(b))
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	log.Debugf("URL is: %s", req.URL)
+
+	resp, err := p.Client.Do(req)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	if resp.StatusCode == 409 {
+		return nil, errors.Err409StatusCode
+	}
+
+	if !checkStatus(resp.StatusCode) {
 		log.Errorf("%s: %s", "received non 200 status code in createRPMManifest", string(body))
+		return nil, errors.ErrNon200StatusCode
+	}
+
+	var newRPMManifest RPMManifest
+	if err := json.Unmarshal(body, &newRPMManifest); err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return &newRPMManifest, nil
+}
+
+func (p *pyxisEngine) getRPMManifest(ctx context.Context, imageID string) (*RPMManifest, error) {
+	req, err := p.newRequestWithApiToken(ctx, http.MethodGet, getPyxisUrl(fmt.Sprintf("images/id/%s/rpm-manifest", imageID)), nil)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	log.Debugf("URL is: %s", req.URL)
+
+	resp, err := p.Client.Do(req)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	if !checkStatus(resp.StatusCode) {
+		log.Errorf("%s: %s", "received non 200 status code in getRPMManifest", string(body))
 		return nil, errors.ErrNon200StatusCode
 	}
 
@@ -166,6 +257,8 @@ func (p *pyxisEngine) updateProject(ctx context.Context, certProject *CertProjec
 		log.Error(err)
 		return nil, err
 	}
+
+	log.Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {

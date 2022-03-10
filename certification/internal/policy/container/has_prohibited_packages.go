@@ -1,6 +1,8 @@
 package container
 
 import (
+	syserrors "errors"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -24,7 +26,16 @@ func (p *HasNoProhibitedPackagesCheck) Validate(imgRef certification.ImageRefere
 }
 
 func (p *HasNoProhibitedPackagesCheck) getDataToValidate(dir string) ([]string, error) {
-	db, err := rpmdb.Open(filepath.Join(dir, "var", "lib", "rpm", "Packages"))
+	// Check for rpmdb.sqlite. If not found, check for Packages
+	rpmdirPath := filepath.Join(dir, "var", "lib", "rpm")
+	rpmdbPath := filepath.Join(rpmdirPath, "rpmdb.sqlite")
+
+	if _, err := os.Stat(rpmdbPath); syserrors.Is(err, os.ErrNotExist) {
+		// rpmdb.sqlite doesn't exist. Fall back to Packages
+		rpmdbPath = filepath.Join(rpmdirPath, "Packages")
+	}
+
+	db, err := rpmdb.Open(rpmdbPath)
 	if err != nil {
 		return nil, err
 	}

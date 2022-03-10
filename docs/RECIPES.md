@@ -1,16 +1,16 @@
 # Preflight Usage Examples
 
-Below are detailed examples on how to leverage `preflight` in various
+Below are detailed examples on how to run `preflight` in various
 environments.
 
+## Operator Policy
 These examples are shown using the Operator policy against an operator bundle
-(e.g. `preflight check operator <bundle`>), but the same concepts can be applied
-to the Container policy (give or take a few configuration changes).
+(e.g. `preflight check operator <bundle>`).
 
 You will also need an index image containing your bundle for each of these approaches.
 See [DOCS](BUILDING_AN_INDEX.md)
 
-## As a Binary on Your Workstation
+### As a Binary on Your Workstation
 
 To run `preflight` on your workstation, you'll first need to download and
 [install](../README.md#Installation)
@@ -34,7 +34,7 @@ export PFLT_INDEXIMAGE=registry.example.org/your-namespace/your-index-image:some
 preflight check operator registry.example.org/your-namespace/your-bundle-image:sometag
 ```
 
-## Using Podman (or Docker)
+### Using Podman (or Docker)
 
 Running `preflight` in a Podman or Docker container is very similar to running
 it on your workstation, but you will likely want to leverage a few volume mounts
@@ -66,7 +66,7 @@ $CONTAINER_TOOL run \
   quay.io/opdev/preflight:stable check operator registry.example.org/your-namespace/your-bundle-image:sometag
 ```
 
-## As a Job In OpenShift (or Kubernetes)
+### As a Job In OpenShift (or Kubernetes)
 
 You should be able to run `preflight` as a job in OpenShift without requiring
 additional privileges or security context constraints.
@@ -136,4 +136,39 @@ EOF
 
 ```shell
 oc apply -f preflight.yaml
+```
+
+## Container Policy
+These examples are shown using the Container policy against a container image
+(e.g. `preflight check container <image>`). Container policy only runs as a binary on your workstation. Check the latest
+[release](https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases) for the binary that matches your operating system.
+
+You will also need:
+- Your container image published to a container registry
+  - An example would be `quay.io/repo-name/container-name:version`
+- A Certification Project ID of the project that was set up in Red Hat Partner Connect
+  - This value can be obtained from the Overview page's URL
+    - For the following example Overview URL of `https://connect.redhat.com/projects/1234567890aabbccddeeffgg/overview`
+      - The Certification Project ID would be: `1234567890aabbccddeeffgg`
+- A Partner Connect API Key
+  - An API Key can be created in Red Hat Partner Connect at the following [URL](https://connect.redhat.com/account/api-keys)
+
+### Testing a Container
+Running container policy checks against a container iteratively until all tests pass.
+
+```bash
+preflight check container registry.example.org/your-namespace/your-image:sometag \
+--pyxis-api-token=abcdefghijklmnopqrstuvwxyz123456 \
+--certification-project-id=1234567890a987654321bcde 
+```
+
+### Submitting a Container's Test Results to Red Hat
+Running container policy checks against a container that has passed all tests and results need to be submitted to Red Hat.
+
+```bash
+preflight check container registry.example.org/your-namespace/your-image:sometag \
+--submit \
+--pyxis-api-token=abcdefghijklmnopqrstuvwxyz123456 \
+--certification-project-id=1234567890a987654321bcde \
+--docker-config=/path/to/your/dockerconfig 
 ```
