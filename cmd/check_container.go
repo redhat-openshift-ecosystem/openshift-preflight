@@ -219,8 +219,9 @@ var checkContainerCmd = &cobra.Command{
 
 			log.Info("Test results have been submitted to Red Hat.")
 			log.Info("These results will be reviewed by Red Hat for final certification.")
-			log.Infof("The container's image id is: %s.", certImage.ImageID)
-			log.Infof(fmt.Sprintf("Please check %s to monitior the progress.", buildConnectURL(projectId)))
+			log.Infof("The container's image id is: %s.", certImage.ID)
+			log.Infof("Please check %s to view scan results.", buildScanResultsURL(projectId, certImage.ID))
+			log.Infof(fmt.Sprintf("Please check %s to monitor the progress.", buildOverviewURL(projectId)))
 		}
 
 		return nil
@@ -248,7 +249,7 @@ func init() {
 	checkCmd.AddCommand(checkContainerCmd)
 }
 
-func buildConnectURL(projectID string) string {
+func buildOverviewURL(projectID string) string {
 	connectURL := fmt.Sprintf("https://connect.redhat.com/projects/%s/overview", projectID)
 	pyxisHost := viper.GetString("pyxis_host")
 	s := strings.Split(pyxisHost, ".")
@@ -256,6 +257,19 @@ func buildConnectURL(projectID string) string {
 	if pyxisHost != DefaultPyxisHost && len(s) > 3 {
 		env := s[1]
 		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s/overview", env, projectID)
+	}
+
+	return connectURL
+}
+
+func buildScanResultsURL(projectID string, imageID string) string {
+	connectURL := fmt.Sprintf("https://connect.redhat.com/projects/%s/images/%s/scan-results", projectID, imageID)
+	pyxisHost := viper.GetString("pyxis_host")
+	s := strings.Split(pyxisHost, ".")
+
+	if pyxisHost != DefaultPyxisHost && len(s) > 3 {
+		env := s[1]
+		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s/images/%s/scan-results", env, projectID, imageID)
 	}
 
 	return connectURL
