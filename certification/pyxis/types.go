@@ -19,18 +19,19 @@ type CertImage struct {
 }
 
 type ParsedData struct {
-	Architecture           string  `json:"architecture,omitempty"`
-	Command                string  `json:"command,omitempty"`
-	Comment                string  `json:"comment,omitempty"`
-	Container              string  `json:"container,omitempty"`
-	Created                string  `json:"created,omitempty"`
-	DockerVersion          string  `json:"docker_version,omitempty"`
-	ImageID                string  `json:"image_id,omitempty"`
-	Labels                 []Label `json:"labels,omitempty"` // required
-	OS                     string  `json:"os,omitempty"`
-	Ports                  string  `json:"ports,omitempty"`
-	Size                   int64   `json:"size,omitempty"`
-	UncompressedLayerSizes []Layer `json:"uncompressed_layer_sizes,omitempty"`
+	Architecture           string   `json:"architecture,omitempty"`
+	Command                string   `json:"command,omitempty"`
+	Comment                string   `json:"comment,omitempty"`
+	Container              string   `json:"container,omitempty"`
+	Created                string   `json:"created,omitempty"`
+	DockerVersion          string   `json:"docker_version,omitempty"`
+	ImageID                string   `json:"image_id,omitempty"`
+	Labels                 []Label  `json:"labels,omitempty"` // required
+	Layers                 []string `json:"layers,omitempty"` // required
+	OS                     string   `json:"os,omitempty"`
+	Ports                  string   `json:"ports,omitempty"`
+	Size                   int64    `json:"size,omitempty"`
+	UncompressedLayerSizes []Layer  `json:"uncompressed_layer_sizes,omitempty"`
 }
 
 type Repository struct {
