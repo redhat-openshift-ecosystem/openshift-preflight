@@ -100,11 +100,19 @@ func (c *CraneEngine) ExecuteChecks() error {
 		return fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
 	}
 
+	reference, err := name.ParseReference(c.Image)
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrInvalidImageUri, err)
+	}
+
 	// store the image internals in the engine image reference to pass to validations.
 	c.imageRef = certification.ImageReference{
-		ImageURI:    c.Image,
-		ImageFSPath: containerFSPath,
-		ImageInfo:   img,
+		ImageURI:        c.Image,
+		ImageFSPath:     containerFSPath,
+		ImageInfo:       img,
+		ImageRegistry:   reference.Context().RegistryStr(),
+		ImageRepository: reference.Context().RepositoryStr(),
+		ImageTagOrSha:   reference.Identifier(),
 	}
 
 	if err := writeCertImage(c.imageRef); err != nil {

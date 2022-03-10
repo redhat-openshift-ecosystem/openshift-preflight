@@ -32,4 +32,5 @@ var (
 	ErrSaveFileFailed                  = errors.New("failed to save file to artifacts directory")
 	ErrNon200StatusCode                = errors.New("error calling remote API")
 	Err409StatusCode                   = errors.New("remote API returned conflict")
+	ErrInvalidImageUri                 = errors.New("image uri could not be parsed")
 )
