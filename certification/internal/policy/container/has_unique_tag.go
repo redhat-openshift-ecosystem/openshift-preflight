@@ -1,6 +1,7 @@
 package container
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -19,12 +20,7 @@ type HasUniqueTagCheck struct {
 }
 
 func (p *HasUniqueTagCheck) Validate(imgRef certification.ImageReference) (bool, error) {
-	cleanUri := imgRef.ImageURI
-	badCharIndex := strings.IndexAny(cleanUri, "@:")
-	if badCharIndex > -1 {
-		cleanUri = imgRef.ImageURI[:badCharIndex]
-	}
-	tags, err := p.getDataToValidate(cleanUri)
+	tags, err := p.getDataToValidate(fmt.Sprintf("%s/%s", imgRef.ImageRegistry, imgRef.ImageRepository))
 	if err != nil {
 		return false, err
 	}
