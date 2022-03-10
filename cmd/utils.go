@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -69,4 +70,25 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 	if !configFileUsed {
 		log.Debug("config file not found, proceeding without it")
 	}
+}
+
+func buildConnectURL(projectID string) string {
+	connectURL := fmt.Sprintf("https://connect.redhat.com/projects/%s", projectID)
+	pyxisHost := viper.GetString("pyxis_host")
+	s := strings.Split(pyxisHost, ".")
+
+	if pyxisHost != DefaultPyxisHost && len(s) > 3 {
+		env := s[1]
+		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s", env, projectID)
+	}
+
+	return connectURL
+}
+
+func buildOverviewURL(projectID string) string {
+	return fmt.Sprintf("%s/overview", buildConnectURL(projectID))
+}
+
+func buildScanResultsURL(projectID string, imageID string) string {
+	return fmt.Sprintf("%s/images/%s/scan-results", buildConnectURL(projectID), imageID)
 }
