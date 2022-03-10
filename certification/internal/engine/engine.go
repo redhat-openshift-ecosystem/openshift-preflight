@@ -332,6 +332,7 @@ func writeCertImage(imageRef certification.ImageReference) error {
 
 	labels := convertLabels(config.Config.Labels)
 	layerSizes := make([]pyxis.Layer, 0, len(config.RootFS.DiffIDs))
+	layers := make([]string, 0, len(config.RootFS.DiffIDs))
 	for _, diffid := range config.RootFS.DiffIDs {
 		layer, err := imageRef.ImageInfo.LayerByDiffID(diffid)
 		if err != nil {
@@ -352,6 +353,8 @@ func writeCertImage(imageRef certification.ImageReference) error {
 			Size:    written,
 		}
 		layerSizes = append(layerSizes, pyxisLayer)
+
+		layers = append(layers, diffid.String())
 	}
 
 	sumLayersSizeBytes, err := sumLayerSizeBytes(layerSizes)
@@ -393,6 +396,7 @@ func writeCertImage(imageRef certification.ImageReference) error {
 			DockerVersion:          config.DockerVersion,
 			ImageID:                digest.String(),
 			Labels:                 labels,
+			Layers:                 layers,
 			OS:                     config.OS,
 			Size:                   size,
 			UncompressedLayerSizes: layerSizes,
