@@ -248,29 +248,3 @@ func init() {
 
 	checkCmd.AddCommand(checkContainerCmd)
 }
-
-func buildOverviewURL(projectID string) string {
-	connectURL := fmt.Sprintf("https://connect.redhat.com/projects/%s/overview", projectID)
-	pyxisHost := viper.GetString("pyxis_host")
-	s := strings.Split(pyxisHost, ".")
-
-	if pyxisHost != DefaultPyxisHost && len(s) > 3 {
-		env := s[1]
-		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s/overview", env, projectID)
-	}
-
-	return connectURL
-}
-
-func buildScanResultsURL(projectID string, imageID string) string {
-	connectURL := fmt.Sprintf("https://connect.redhat.com/projects/%s/images/%s/scan-results", projectID, imageID)
-	pyxisHost := viper.GetString("pyxis_host")
-	s := strings.Split(pyxisHost, ".")
-
-	if pyxisHost != DefaultPyxisHost && len(s) > 3 {
-		env := s[1]
-		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s/images/%s/scan-results", env, projectID, imageID)
-	}
-
-	return connectURL
-}
