@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (p *pyxisEngine) SubmitResults(ctx context.Context, certProject *CertProject, certImage *CertImage, rpmManifest *RPMManifest, testResults *TestResults) (*CertProject, *CertImage, *TestResults, error) {
+func (p *pyxisEngine) SubmitResults(ctx context.Context, certProject *CertProject, certImage *CertImage, rpmManifest *RPMManifest, testResults *TestResults, artifacts []Artifact) (*CertProject, *CertImage, *TestResults, error) {
 	var err error
 
 	if certProject.CertificationStatus == "Started" {
@@ -53,6 +53,14 @@ func (p *pyxisEngine) SubmitResults(ctx context.Context, certProject *CertProjec
 		_, err = p.getRPMManifest(ctx, rpmManifest.ImageID)
 		if err != nil {
 			log.Error(err, "could not get rpm manifest")
+			return nil, nil, nil, err
+		}
+	}
+
+	for _, artifact := range artifacts {
+		artifact.ImageID = certImage.ID
+		if _, err := p.createArtifact(ctx, &artifact); err != nil {
+			log.Errorf("%s: could not create artifact: %s", err, artifact.Filename)
 			return nil, nil, nil, err
 		}
 	}

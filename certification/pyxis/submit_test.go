@@ -20,7 +20,7 @@ var _ = Describe("Pyxis Submit", func() {
 	Context("when a project is submitted", func() {
 		Context("and it is not already In Progress", func() {
 			It("should switch to In Progress", func() {
-				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{})
+				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{}, []Artifact{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(certProject).ToNot(BeNil())
 				Expect(certImage).ToNot(BeNil())
@@ -39,7 +39,7 @@ var _ = Describe("Pyxis Submit updateProject 401 Unauthorized", func() {
 	Context("when a project is submitted", func() {
 		Context("and it is not already In Progress", func() {
 			It("should switch to In Progress", func() {
-				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{})
+				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{}, []Artifact{})
 				Expect(err).To(MatchError(fmt.Errorf("%w: %s", errors.New("error calling remote API"), "could not retrieve project")))
 				Expect(certProject).To(BeNil())
 				Expect(certImage).To(BeNil())
@@ -58,7 +58,7 @@ var _ = Describe("Pyxis Submit with createImage 409 Conflict", func() {
 	Context("when a project is submitted", func() {
 		Context("and it is not already In Progress", func() {
 			It("should switch to In Progress", func() {
-				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{}, &CertImage{}, &RPMManifest{}, &TestResults{})
+				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{}, &CertImage{}, &RPMManifest{}, &TestResults{}, []Artifact{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(certProject).ToNot(BeNil())
 				Expect(certImage).ToNot(BeNil())
@@ -77,7 +77,7 @@ var _ = Describe("Pyxis Submit with createImage 401 Unauthorized", func() {
 	Context("when a project is submitted", func() {
 		Context("and it is not already In Progress", func() {
 			It("should switch to In Progress", func() {
-				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{})
+				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{}, []Artifact{})
 				Expect(err).To(MatchError(errors.New("error calling remote API")))
 				Expect(certProject).To(BeNil())
 				Expect(certImage).To(BeNil())
@@ -96,7 +96,7 @@ var _ = Describe("Pyxis Submit with createImage 409 Conflict and getImage 401 Un
 	Context("when a project is submitted", func() {
 		Context("and it is not already In Progress", func() {
 			It("should switch to In Progress", func() {
-				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{})
+				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{}, []Artifact{})
 				Expect(err).To(MatchError(errors.New("error calling remote API")))
 				Expect(certProject).To(BeNil())
 				Expect(certImage).To(BeNil())
@@ -115,7 +115,7 @@ var _ = Describe("Pyxis Submit with createRPMManifest 409 Conflict", func() {
 	Context("when a project is submitted", func() {
 		Context("and it is not already In Progress", func() {
 			It("should switch to In Progress", func() {
-				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{})
+				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{}, []Artifact{})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(certProject).ToNot(BeNil())
 				Expect(certImage).ToNot(BeNil())
@@ -134,7 +134,7 @@ var _ = Describe("Pyxis Submit with createRPMManifest 401 Unauthorized", func() 
 	Context("when a project is submitted", func() {
 		Context("and it is not already In Progress", func() {
 			It("should switch to In Progress", func() {
-				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{})
+				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{}, []Artifact{})
 				Expect(err).To(MatchError(errors.New("error calling remote API")))
 				Expect(certProject).To(BeNil())
 				Expect(certImage).To(BeNil())
@@ -153,7 +153,7 @@ var _ = Describe("Pyxis Submit with createRPMManifest 409 Conflict and getRPMMan
 	Context("when a project is submitted", func() {
 		Context("and it is not already In Progress", func() {
 			It("should switch to In Progress", func() {
-				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{})
+				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{}, []Artifact{})
 				Expect(err).To(MatchError(errors.New("error calling remote API")))
 				Expect(certProject).To(BeNil())
 				Expect(certImage).To(BeNil())
@@ -172,7 +172,7 @@ var _ = Describe("Pyxis Submit with createTestResults 401 Unauthorized", func() 
 	Context("when a project is submitted", func() {
 		Context("and it is not already In Progress", func() {
 			It("should switch to In Progress", func() {
-				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{})
+				certProject, certImage, testResults, err := pyxisEngine.SubmitResults(ctx, &CertProject{CertificationStatus: "Started"}, &CertImage{}, &RPMManifest{}, &TestResults{}, []Artifact{})
 				Expect(err).To(MatchError(errors.New("error calling remote API")))
 				Expect(certProject).To(BeNil())
 				Expect(certImage).To(BeNil())
