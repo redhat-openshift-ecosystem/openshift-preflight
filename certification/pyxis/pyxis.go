@@ -328,7 +328,7 @@ func (p *pyxisEngine) createTestResults(ctx context.Context, testResults *TestRe
 	return &newTestResults, nil
 }
 
-func (p *pyxisEngine) createArtifacts(ctx context.Context, artifact *Artifact) (*Artifact, error) {
+func (p *pyxisEngine) createArtifact(ctx context.Context, artifact *Artifact) (*Artifact, error) {
 	b, err := json.Marshal(artifact)
 	if err != nil {
 		log.Error(err)
@@ -357,7 +357,7 @@ func (p *pyxisEngine) createArtifacts(ctx context.Context, artifact *Artifact) (
 	}
 
 	if !checkStatus(resp.StatusCode) {
-		log.Errorf("%s: %s", "received non 200 status code in createArtifacts", string(body))
+		log.Errorf("%s: %s", "received non 200 status code in createArtifact", string(body))
 		return nil, errors.ErrNon200StatusCode
 	}
 

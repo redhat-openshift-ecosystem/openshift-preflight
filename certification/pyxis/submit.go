@@ -59,8 +59,7 @@ func (p *pyxisEngine) SubmitResults(ctx context.Context, certProject *CertProjec
 
 	for _, artifact := range artifacts {
 		artifact.ImageID = certImage.ID
-		_, err = p.createArtifacts(ctx, &artifact)
-		if err != nil {
+		if _, err := p.createArtifact(ctx, &artifact); err != nil {
 			log.Errorf("%s: could not create artifact: %s", err, artifact.Filename)
 			return nil, nil, nil, err
 		}
