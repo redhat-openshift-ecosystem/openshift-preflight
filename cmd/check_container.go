@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -232,7 +233,7 @@ var checkContainerCmd = &cobra.Command{
 
 			logFileArtifact := pyxis.Artifact{
 				CertProject: projectId,
-				Content:     string(logFileBytes),
+				Content:     base64.StdEncoding.EncodeToString(logFileBytes),
 				ContentType: http.DetectContentType(logFileBytes),
 				Filename:    logFileName,
 				FileSize:    logFileInfo.Size(),
