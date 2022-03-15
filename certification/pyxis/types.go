@@ -1,10 +1,12 @@
 package pyxis
 
-import "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
+import (
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
+)
 
 type CertImage struct {
 	ID                     string       `json:"_id,omitempty"`
-	Certified              bool         `json:"certified" default:"false"`
+	Certified              bool         `json:"certified"`
 	Deleted                bool         `json:"deleted" default:"false"`
 	DockerImageDigest      string       `json:"docker_image_digest,omitempty"`
 	DockerImageID          string       `json:"docker_image_id,omitempty"`
@@ -19,18 +21,19 @@ type CertImage struct {
 }
 
 type ParsedData struct {
-	Architecture           string  `json:"architecture,omitempty"`
-	Command                string  `json:"command,omitempty"`
-	Comment                string  `json:"comment,omitempty"`
-	Container              string  `json:"container,omitempty"`
-	Created                string  `json:"created,omitempty"`
-	DockerVersion          string  `json:"docker_version,omitempty"`
-	ImageID                string  `json:"image_id,omitempty"`
-	Labels                 []Label `json:"labels,omitempty"` // required
-	OS                     string  `json:"os,omitempty"`
-	Ports                  string  `json:"ports,omitempty"`
-	Size                   int64   `json:"size,omitempty"`
-	UncompressedLayerSizes []Layer `json:"uncompressed_layer_sizes,omitempty"`
+	Architecture           string   `json:"architecture,omitempty"`
+	Command                string   `json:"command,omitempty"`
+	Comment                string   `json:"comment,omitempty"`
+	Container              string   `json:"container,omitempty"`
+	Created                string   `json:"created,omitempty"`
+	DockerVersion          string   `json:"docker_version,omitempty"`
+	ImageID                string   `json:"image_id,omitempty"`
+	Labels                 []Label  `json:"labels,omitempty"` // required
+	Layers                 []string `json:"layers,omitempty"` // required
+	OS                     string   `json:"os,omitempty"`
+	Ports                  string   `json:"ports,omitempty"`
+	Size                   int64    `json:"size,omitempty"`
+	UncompressedLayerSizes []Layer  `json:"uncompressed_layer_sizes,omitempty"`
 }
 
 type Repository struct {
@@ -97,4 +100,14 @@ type TestResults struct {
 	Version     string `json:"version,omitempty"`
 	ImageID     string `json:"image_id,omitempty"`
 	formatters.UserResponse
+}
+
+type Artifact struct {
+	ID          string `json:"_id"`
+	CertProject string `json:"cert_project"`
+	Content     string `json:"content"`
+	ContentType string `json:"content_type"`
+	FileSize    int64  `json:"file_size"`
+	Filename    string `json:"filename"`
+	ImageID     string `json:"image_id"`
 }

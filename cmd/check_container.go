@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -158,6 +159,23 @@ var checkContainerCmd = &cobra.Command{
 			log.Info("preparing results that will be submitted to Red Hat")
 			log.Tracef("CertProject: %+v", certProject)
 
+			testResultsJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultTestResultsFilename))
+			if err != nil {
+				return err
+			}
+			defer testResultsJsonFile.Close()
+
+			testResultsBytes, err := io.ReadAll(testResultsJsonFile)
+			if err != nil {
+				return err
+			}
+
+			testResults := new(pyxis.TestResults)
+			err = json.Unmarshal(testResultsBytes, &testResults)
+			if err != nil {
+				return err
+			}
+
 			certImageJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultCertImageFilename))
 			if err != nil {
 				return err
@@ -176,6 +194,7 @@ var checkContainerCmd = &cobra.Command{
 			}
 
 			certImage.ISVPID = certProject.Container.ISVPID
+			certImage.Certified = testResults.Passed
 
 			rpmManifestJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename))
 			if err != nil {
@@ -194,32 +213,45 @@ var checkContainerCmd = &cobra.Command{
 				return err
 			}
 
-			testResultsJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultTestResultsFilename))
+			logFileName := viper.GetString("logfile")
+
+			logFile, err := os.Open(logFileName)
 			if err != nil {
 				return err
 			}
-			defer testResultsJsonFile.Close()
+			defer logFile.Close()
 
-			testResultsBytes, err := io.ReadAll(testResultsJsonFile)
-			if err != nil {
-				return err
-			}
-
-			testResults := new(pyxis.TestResults)
-			err = json.Unmarshal(testResultsBytes, &testResults)
+			logFileBytes, err := io.ReadAll(logFile)
 			if err != nil {
 				return err
 			}
 
-			_, certImage, _, err = pyxisEngine.SubmitResults(ctx, certProject, certImage, rpmManifest, testResults)
+			logFileInfo, err := logFile.Stat()
+			if err != nil {
+				return err
+			}
+
+			logFileArtifact := pyxis.Artifact{
+				CertProject: projectId,
+				Content:     base64.StdEncoding.EncodeToString(logFileBytes),
+				ContentType: http.DetectContentType(logFileBytes),
+				Filename:    logFileName,
+				FileSize:    logFileInfo.Size(),
+			}
+
+			artifacts := make([]pyxis.Artifact, 0, 1)
+			artifacts = append(artifacts, logFileArtifact)
+
+			_, certImage, _, err = pyxisEngine.SubmitResults(ctx, certProject, certImage, rpmManifest, testResults, artifacts)
 			if err != nil {
 				return err
 			}
 
 			log.Info("Test results have been submitted to Red Hat.")
 			log.Info("These results will be reviewed by Red Hat for final certification.")
-			log.Infof("The container's image id is: %s.", certImage.ImageID)
-			log.Infof(fmt.Sprintf("Please check %s to monitior the progress.", buildConnectURL(projectId)))
+			log.Infof("The container's image id is: %s.", certImage.ID)
+			log.Infof("Please check %s to view scan results.", buildScanResultsURL(projectId, certImage.ID))
+			log.Infof(fmt.Sprintf("Please check %s to monitor the progress.", buildOverviewURL(projectId)))
 		}
 
 		return nil
@@ -245,17 +277,4 @@ func init() {
 	viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
 
 	checkCmd.AddCommand(checkContainerCmd)
-}
-
-func buildConnectURL(projectID string) string {
-	connectURL := fmt.Sprintf("https://connect.redhat.com/projects/%s/overview", projectID)
-	pyxisHost := viper.GetString("pyxis_host")
-	s := strings.Split(pyxisHost, ".")
-
-	if pyxisHost != DefaultPyxisHost && len(s) > 3 {
-		env := s[1]
-		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s/overview", env, projectID)
-	}
-
-	return connectURL
 }

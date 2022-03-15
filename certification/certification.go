@@ -1,9 +1,5 @@
 package certification
 
-import (
-	v1 "github.com/google/go-containerregistry/pkg/v1"
-)
-
 // Check as an interface containing all methods necessary
 // to use and identify a given check.
 type Check interface {
@@ -42,10 +38,4 @@ type HelpText struct {
 	// Suggestion is text provided to the user indicating what might need to
 	// change in order to pass a check.
 	Suggestion string `json:"suggestion" xml:"suggestion"`
-}
-
-type ImageReference struct {
-	ImageURI    string
-	ImageFSPath string
-	ImageInfo   v1.Image
 }

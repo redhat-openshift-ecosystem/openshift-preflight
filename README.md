@@ -36,10 +36,11 @@ Usage:
   preflight [command]
 
 Available Commands:
-  certify     Submits check results to Red Hat
-  check       Run checks for an operator or container
-  help        Help about any command
-  support     Submits a support request
+  check          Run checks for an operator or container
+  completion     Generate the autocompletion script for the specified shell
+  help           Help about any command
+  runtime-assets Returns information about assets used at runtime.
+  support        Submits a support request
 
 Flags:
   -h, --help      help for preflight
@@ -51,7 +52,9 @@ Use "preflight [command] --help" for more information about a command.
 To check a container, utilize the `check container` sub-command:
 
 ```text
-preflight check container quay.io/example-namespace/example-container:0.0.1
+preflight check container quay.io/example-namespace/example-container:0.0.1 \
+--pyxis-api-token=abcdefghijklmnopqrstuvwxyz123456 \
+--certification-project-id=1234567890a987654321bcde 
 ```
 
 To check an Operator bundle, utilize the `check Operator` sub-command:

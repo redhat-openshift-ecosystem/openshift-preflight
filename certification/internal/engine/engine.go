@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/json"
-	syserrors "errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -19,10 +18,10 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
-	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	log "github.com/sirupsen/logrus"
@@ -100,11 +99,19 @@ func (c *CraneEngine) ExecuteChecks() error {
 		return fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
 	}
 
+	reference, err := name.ParseReference(c.Image)
+	if err != nil {
+		return fmt.Errorf("%w: %s", errors.ErrInvalidImageUri, err)
+	}
+
 	// store the image internals in the engine image reference to pass to validations.
 	c.imageRef = certification.ImageReference{
-		ImageURI:    c.Image,
-		ImageFSPath: containerFSPath,
-		ImageInfo:   img,
+		ImageURI:        c.Image,
+		ImageFSPath:     containerFSPath,
+		ImageInfo:       img,
+		ImageRegistry:   reference.Context().RegistryStr(),
+		ImageRepository: reference.Context().RepositoryStr(),
+		ImageTagOrSha:   reference.Identifier(),
 	}
 
 	if err := writeCertImage(c.imageRef); err != nil {
@@ -346,6 +353,11 @@ func writeCertImage(imageRef certification.ImageReference) error {
 		layerSizes = append(layerSizes, pyxisLayer)
 	}
 
+	manifestLayers := make([]string, 0, len(manifest.Layers))
+	for _, layer := range manifest.Layers {
+		manifestLayers = append(manifestLayers, layer.Digest.String())
+	}
+
 	sumLayersSizeBytes, err := sumLayerSizeBytes(layerSizes)
 	if err != nil {
 		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
@@ -385,6 +397,7 @@ func writeCertImage(imageRef certification.ImageReference) error {
 			DockerVersion:          config.DockerVersion,
 			ImageID:                digest.String(),
 			Labels:                 labels,
+			Layers:                 manifestLayers,
 			OS:                     config.OS,
 			Size:                   size,
 			UncompressedLayerSizes: layerSizes,
@@ -414,21 +427,7 @@ func writeCertImage(imageRef certification.ImageReference) error {
 }
 
 func writeRPMManifest(containerFSPath string) error {
-	// Check for rpmdb.sqlite. If not found, check for Packages
-	rpmdirPath := filepath.Join(containerFSPath, "var", "lib", "rpm")
-	rpmdbPath := filepath.Join(rpmdirPath, "rpmdb.sqlite")
-
-	if _, err := os.Stat(rpmdbPath); syserrors.Is(err, os.ErrNotExist) {
-		// rpmdb.sqlite doesn't exist. Fall back to Packages
-		rpmdbPath = filepath.Join(rpmdirPath, "Packages")
-	}
-
-	db, err := rpmdb.Open(rpmdbPath)
-	if err != nil {
-		return err
-	}
-
-	pkgList, err := db.ListPackages()
+	pkgList, err := rpm.GetPackageList(containerFSPath)
 	if err != nil {
 		return err
 	}

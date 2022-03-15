@@ -328,6 +328,48 @@ func (p *pyxisEngine) createTestResults(ctx context.Context, testResults *TestRe
 	return &newTestResults, nil
 }
 
+func (p *pyxisEngine) createArtifact(ctx context.Context, artifact *Artifact) (*Artifact, error) {
+	b, err := json.Marshal(artifact)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	req, err := p.newRequestWithApiToken(ctx, http.MethodPost, getPyxisUrl(fmt.Sprintf("projects/certification/id/%s/artifacts", p.ProjectId)), bytes.NewReader(b))
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	log.Debugf("URL is: %s", req.URL)
+
+	resp, err := p.Client.Do(req)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	if !checkStatus(resp.StatusCode) {
+		log.Errorf("%s: %s", "received non 200 status code in createArtifact", string(body))
+		return nil, errors.ErrNon200StatusCode
+	}
+
+	var newArtifact Artifact
+	if err := json.Unmarshal(body, &newArtifact); err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return &newArtifact, nil
+}
+
 func (p *pyxisEngine) newRequestWithApiToken(ctx context.Context, method string, url string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
