@@ -33,4 +33,5 @@ var (
 	ErrNon200StatusCode                = errors.New("error calling remote API")
 	Err409StatusCode                   = errors.New("remote API returned conflict")
 	ErrInvalidImageUri                 = errors.New("image uri could not be parsed")
+	ErrRetrievingLayers                = errors.New("could not get container layers")
 )

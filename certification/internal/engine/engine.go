@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/json"
-	syserrors "errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -19,10 +18,10 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
-	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	log "github.com/sirupsen/logrus"
@@ -426,21 +425,7 @@ func writeCertImage(imageRef certification.ImageReference) error {
 }
 
 func writeRPMManifest(containerFSPath string) error {
-	// Check for rpmdb.sqlite. If not found, check for Packages
-	rpmdirPath := filepath.Join(containerFSPath, "var", "lib", "rpm")
-	rpmdbPath := filepath.Join(rpmdirPath, "rpmdb.sqlite")
-
-	if _, err := os.Stat(rpmdbPath); syserrors.Is(err, os.ErrNotExist) {
-		// rpmdb.sqlite doesn't exist. Fall back to Packages
-		rpmdbPath = filepath.Join(rpmdirPath, "Packages")
-	}
-
-	db, err := rpmdb.Open(rpmdbPath)
-	if err != nil {
-		return err
-	}
-
-	pkgList, err := db.ListPackages()
+	pkgList, err := rpm.GetPackageList(containerFSPath)
 	if err != nil {
 		return err
 	}

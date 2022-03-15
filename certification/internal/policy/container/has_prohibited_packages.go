@@ -1,13 +1,10 @@
 package container
 
 import (
-	syserrors "errors"
-	"os"
-	"path/filepath"
 	"strings"
 
-	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -26,20 +23,7 @@ func (p *HasNoProhibitedPackagesCheck) Validate(imgRef certification.ImageRefere
 }
 
 func (p *HasNoProhibitedPackagesCheck) getDataToValidate(dir string) ([]string, error) {
-	// Check for rpmdb.sqlite. If not found, check for Packages
-	rpmdirPath := filepath.Join(dir, "var", "lib", "rpm")
-	rpmdbPath := filepath.Join(rpmdirPath, "rpmdb.sqlite")
-
-	if _, err := os.Stat(rpmdbPath); syserrors.Is(err, os.ErrNotExist) {
-		// rpmdb.sqlite doesn't exist. Fall back to Packages
-		rpmdbPath = filepath.Join(rpmdirPath, "Packages")
-	}
-
-	db, err := rpmdb.Open(rpmdbPath)
-	if err != nil {
-		return nil, err
-	}
-	pkgList, err := db.ListPackages()
+	pkgList, err := rpm.GetPackageList(dir)
 	if err != nil {
 		return nil, err
 	}

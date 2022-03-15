@@ -90,6 +90,7 @@ var (
 	hasRequiredLabelsCheck certification.Check = &containerpol.HasRequiredLabelsCheck{}
 	runAsRootCheck         certification.Check = &containerpol.RunAsNonRootCheck{}
 	basedOnUbiCheck        certification.Check = &containerpol.BasedOnUBICheck{}
+	hasModifiedFilesCheck  certification.Check = &containerpol.HasModifiedFilesCheck{}
 	// runnableContainerCheck  certification.Check = containerpol.NewRunnableContainerCheck(internal.NewPodmanEngine())
 	// runSystemContainerCheck certification.Check = containerpol.NewRunSystemContainerCheck(internal.NewPodmanEngine())
 )
@@ -110,6 +111,7 @@ var containerPolicy = map[string]certification.Check{
 	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
 	runAsRootCheck.Name():         runAsRootCheck,
 	basedOnUbiCheck.Name():        basedOnUbiCheck,
+	hasModifiedFilesCheck.Name():  hasModifiedFilesCheck,
 	// runnableContainerCheck.Name():  runnableContainerCheck,
 	// runSystemContainerCheck.Name(): runSystemContainerCheck,
 }
