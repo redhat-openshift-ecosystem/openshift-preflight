@@ -16,6 +16,7 @@ vuln.html
 bin
 preflight
 openshift-preflight
+preflight-*
 
 # Config files
 config.yaml
