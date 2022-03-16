@@ -56,6 +56,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.14.2 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
+	github.com/mattn/go-sqlite3 v1.14.12 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
@@ -101,4 +102,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/knqyf263/go-rpmdb v0.0.0-20201215100354-a9e3110d8ee1 => github.com/opdev/go-rpmdb v0.0.0-20220224224313-40fc34da2676
+replace github.com/knqyf263/go-rpmdb => github.com/bcrochet/go-rpmdb v0.0.0-20220316141128-831c1c477c0a
