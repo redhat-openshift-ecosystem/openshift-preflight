@@ -12,8 +12,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// HasLicenseCheck evaluates that the image contains a license definition available at
-// /licenses.
+// HasModifiedFilesCheck evaluates that no files from the base layer have been modified by
+// subsequent layers.
 type HasModifiedFilesCheck struct{}
 
 type packageFilesRef struct {
