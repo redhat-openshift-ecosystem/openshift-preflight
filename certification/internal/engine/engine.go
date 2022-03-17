@@ -365,23 +365,17 @@ func writeCertImage(imageRef certification.ImageReference) error {
 
 	addedDate := time.Now().UTC().Format(time.RFC3339)
 
-	log.Debug("getting tag info for image")
-	tag, err := name.NewTag(imageRef.ImageURI)
-	if err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrParseTagInfoFailed, err)
-	}
-
 	tags := make([]pyxis.Tag, 0, 1)
 	tags = append(tags, pyxis.Tag{
 		AddedDate: addedDate,
-		Name:      tag.TagStr(),
+		Name:      imageRef.ImageTagOrSha,
 	})
 
 	repositories := make([]pyxis.Repository, 0, 1)
 	repositories = append(repositories, pyxis.Repository{
 		PushDate:   addedDate,
-		Registry:   tag.Context().RegistryStr(),
-		Repository: tag.Context().RepositoryStr(),
+		Registry:   imageRef.ImageRegistry,
+		Repository: imageRef.ImageRepository,
 		Tags:       tags,
 	})
 
