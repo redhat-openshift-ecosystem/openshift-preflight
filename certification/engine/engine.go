@@ -3,13 +3,17 @@ package engine
 
 import (
 	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	internal "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/engine"
 	containerpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/container"
 	operatorpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/operator"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/spf13/viper"
 )
 
 // CheckEngine defines the functionality necessary to run all checks for a policy,
@@ -89,8 +93,9 @@ var (
 	hasNoProhibitedCheck   certification.Check = &containerpol.HasNoProhibitedPackagesCheck{}
 	hasRequiredLabelsCheck certification.Check = &containerpol.HasRequiredLabelsCheck{}
 	runAsRootCheck         certification.Check = &containerpol.RunAsNonRootCheck{}
-	basedOnUbiCheck        certification.Check = &containerpol.BasedOnUBICheck{}
 	hasModifiedFilesCheck  certification.Check = &containerpol.HasModifiedFilesCheck{}
+	basedOnUbiCheck        certification.Check = containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisEngine(viper.GetString("pyxis_api_token"),
+		viper.GetString("certification_project_id"), &http.Client{Timeout: 60 * time.Second}))
 	// runnableContainerCheck  certification.Check = containerpol.NewRunnableContainerCheck(internal.NewPodmanEngine())
 	// runSystemContainerCheck certification.Check = containerpol.NewRunSystemContainerCheck(internal.NewPodmanEngine())
 )
