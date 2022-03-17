@@ -242,15 +242,22 @@ var checkContainerCmd = &cobra.Command{
 			artifacts := make([]pyxis.Artifact, 0, 1)
 			artifacts = append(artifacts, logFileArtifact)
 
-			_, certImage, _, err = pyxisEngine.SubmitResults(ctx, certProject, certImage, rpmManifest, testResults, artifacts)
+			certInput := &pyxis.CertificationInput{
+				CertProject: certProject,
+				CertImage:   certImage,
+				RpmManifest: rpmManifest,
+				TestResults: testResults,
+				Artifacts:   artifacts,
+			}
+			certResults, err := pyxisEngine.SubmitResults(ctx, certInput)
 			if err != nil {
 				return err
 			}
 
 			log.Info("Test results have been submitted to Red Hat.")
 			log.Info("These results will be reviewed by Red Hat for final certification.")
-			log.Infof("The container's image id is: %s.", certImage.ID)
-			log.Infof("Please check %s to view scan results.", buildScanResultsURL(projectId, certImage.ID))
+			log.Infof("The container's image id is: %s.", certResults.CertImage.ID)
+			log.Infof("Please check %s to view scan results.", buildScanResultsURL(projectId, certResults.CertImage.ID))
 			log.Infof(fmt.Sprintf("Please check %s to monitor the progress.", buildOverviewURL(projectId)))
 		}
 

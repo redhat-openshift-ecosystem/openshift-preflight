@@ -4,6 +4,20 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 )
 
+type CertificationInput struct {
+	CertProject *CertProject
+	CertImage   *CertImage
+	TestResults *TestResults
+	RpmManifest *RPMManifest
+	Artifacts   []Artifact
+}
+
+type CertificationResults struct {
+	CertProject *CertProject
+	CertImage   *CertImage
+	TestResults *TestResults
+}
+
 type CertImage struct {
 	ID                     string       `json:"_id,omitempty"`
 	Certified              bool         `json:"certified"`
