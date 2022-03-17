@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -60,7 +61,7 @@ var _ = Describe("BundleValidateCheck", func() {
 	Describe("Operator Bundle Validate", func() {
 		Context("When Operator Bundle Validate passes", func() {
 			It("Should pass Validate", func() {
-				ok, err := bundleValidateCheck.Validate(imageRef)
+				ok, err := bundleValidateCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -77,7 +78,7 @@ var _ = Describe("BundleValidateCheck", func() {
 				bundleValidateCheck = *NewValidateOperatorBundleCheck(&fakeEngine)
 			})
 			It("Should not pass Validate", func() {
-				ok, err := bundleValidateCheck.Validate(imageRef)
+				ok, err := bundleValidateCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -90,7 +91,7 @@ var _ = Describe("BundleValidateCheck", func() {
 		})
 		Context("When OperatorSdk throws an error", func() {
 			It("should fail Validate and return an error", func() {
-				ok, err := bundleValidateCheck.Validate(certification.ImageReference{ImageURI: "dummy/image"})
+				ok, err := bundleValidateCheck.Validate(context.TODO(), certification.ImageReference{ImageURI: "dummy/image"})
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

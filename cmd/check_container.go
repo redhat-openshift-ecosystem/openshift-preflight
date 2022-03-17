@@ -137,13 +137,13 @@ var checkContainerCmd = &cobra.Command{
 		cmd.SilenceUsage = true
 
 		// execute the checks
-		if err := engine.ExecuteChecks(); err != nil {
+		if err := engine.ExecuteChecks(ctx); err != nil {
 			return err
 		}
-		results := engine.Results()
+		results := engine.Results(ctx)
 
 		// return results to the user and then close output files
-		formattedResults, err := formatter.Format(results)
+		formattedResults, err := formatter.Format(ctx, results)
 		if err != nil {
 			return err
 		}
@@ -153,7 +153,7 @@ var checkContainerCmd = &cobra.Command{
 			return err
 		}
 
-		if err := writeJunitIfEnabled(results); err != nil {
+		if err := writeJunitIfEnabled(ctx, results); err != nil {
 			return err
 		}
 

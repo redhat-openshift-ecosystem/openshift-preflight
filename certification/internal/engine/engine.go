@@ -3,6 +3,7 @@ package engine
 import (
 	"archive/tar"
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -48,7 +49,7 @@ type CraneEngine struct {
 	results  runtime.Results
 }
 
-func (c *CraneEngine) ExecuteChecks() error {
+func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	log.Debug("target image: ", c.Image)
 
 	// prepare crane runtime options, if necessary
@@ -114,12 +115,12 @@ func (c *CraneEngine) ExecuteChecks() error {
 		ImageTagOrSha:   reference.Identifier(),
 	}
 
-	if err := writeCertImage(c.imageRef); err != nil {
+	if err := writeCertImage(ctx, c.imageRef); err != nil {
 		return err
 	}
 
 	if !c.IsScratch {
-		if err := writeRPMManifest(containerFSPath); err != nil {
+		if err := writeRPMManifest(ctx, containerFSPath); err != nil {
 			return err
 		}
 	}
@@ -144,7 +145,7 @@ func (c *CraneEngine) ExecuteChecks() error {
 
 		// run the validation
 		checkStartTime := time.Now()
-		checkPassed, err := check.Validate(c.imageRef)
+		checkPassed, err := check.Validate(ctx, c.imageRef)
 		checkElapsedTime := time.Since(checkStartTime)
 
 		if err != nil {
@@ -231,7 +232,7 @@ func generateBundleHash(bundlePath string) (string, error) {
 }
 
 // Results will return the results of check execution.
-func (c *CraneEngine) Results() runtime.Results {
+func (c *CraneEngine) Results(ctx context.Context) runtime.Results {
 	return c.results
 }
 
@@ -303,7 +304,7 @@ func untar(dst string, r io.Reader) error {
 	}
 }
 
-func writeCertImage(imageRef certification.ImageReference) error {
+func writeCertImage(ctx context.Context, imageRef certification.ImageReference) error {
 	config, err := imageRef.ImageInfo.ConfigFile()
 	if err != nil {
 		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
@@ -420,8 +421,8 @@ func writeCertImage(imageRef certification.ImageReference) error {
 	return nil
 }
 
-func writeRPMManifest(containerFSPath string) error {
-	pkgList, err := rpm.GetPackageList(containerFSPath)
+func writeRPMManifest(ctx context.Context, containerFSPath string) error {
+	pkgList, err := rpm.GetPackageList(ctx, containerFSPath)
 	if err != nil {
 		return err
 	}

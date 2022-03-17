@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -36,14 +37,14 @@ type packageData struct {
 // check.
 type OperatorPkgNameIsUniqueCheck struct{}
 
-func (p *OperatorPkgNameIsUniqueCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
-	annotations, err := bundle.GetAnnotations(bundleRef.ImageFSPath)
+func (p *OperatorPkgNameIsUniqueCheck) Validate(ctx context.Context, bundleRef certification.ImageReference) (bool, error) {
+	annotations, err := bundle.GetAnnotations(ctx, bundleRef.ImageFSPath)
 	if err != nil {
 		log.Error("unable to get annotations.yaml from the bundle")
 		return false, err
 	}
 
-	packageName, err := p.getPackageName(annotations)
+	packageName, err := p.getPackageName(ctx, annotations)
 	if err != nil {
 		log.Error("unable to extract package name from ClusterServicVersion", err)
 		return false, err
@@ -51,30 +52,30 @@ func (p *OperatorPkgNameIsUniqueCheck) Validate(bundleRef certification.ImageRef
 
 	log.Debugf("operator package name is %s", packageName)
 
-	req, err := p.buildRequest(apiEndpoint, packageName)
+	req, err := p.buildRequest(ctx, apiEndpoint, packageName)
 	if err != nil {
 		log.Error("unable to build API request structure", err)
 		return false, err
 	}
 
-	resp, err := p.queryAPI(http.DefaultClient, req)
+	resp, err := p.queryAPI(ctx, http.DefaultClient, req)
 	if err != nil {
 		log.Error("unable to query package name validation API for uniqueness check", err)
 		return false, err
 	}
 
-	data, err := p.parseAPIResponse(resp)
+	data, err := p.parseAPIResponse(ctx, resp)
 	if err != nil {
 		log.Error("unable to parse response provided by package name validation API", err)
 		return false, err
 	}
 
-	return p.validate(data)
+	return p.validate(ctx, data)
 }
 
 // getPackageName accepts the annotations map and searches for the specified annotation corresponding
 // with the complete bundle name for an operator, which is then returned.
-func (p *OperatorPkgNameIsUniqueCheck) getPackageName(annotations map[string]string) (string, error) {
+func (p *OperatorPkgNameIsUniqueCheck) getPackageName(ctx context.Context, annotations map[string]string) (string, error) {
 	log.Tracef("searching for package key (%s) in bundle", packageKey)
 	log.Trace("bundle data: ", annotations)
 	pkg, found := annotations[packageKey]
@@ -86,7 +87,7 @@ func (p *OperatorPkgNameIsUniqueCheck) getPackageName(annotations map[string]str
 }
 
 // buildRequest builds the http.Request using the input parameters and returns a client.
-func (p *OperatorPkgNameIsUniqueCheck) buildRequest(apiURL, packageName string) (*http.Request, error) {
+func (p *OperatorPkgNameIsUniqueCheck) buildRequest(ctx context.Context, apiURL, packageName string) (*http.Request, error) {
 	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
 		return nil, err
@@ -103,7 +104,7 @@ func (p *OperatorPkgNameIsUniqueCheck) buildRequest(apiURL, packageName string) 
 
 // queryAPI uses the provided client to query the remote API, and returns the response if it
 // response is successful, or an error if the response was unexpected in any way.
-func (p *OperatorPkgNameIsUniqueCheck) queryAPI(client apiClient, request *http.Request) (*http.Response, error) {
+func (p *OperatorPkgNameIsUniqueCheck) queryAPI(ctx context.Context, client apiClient, request *http.Request) (*http.Response, error) {
 	log.Trace("making API request to ", request.URL.String())
 	resp, err := client.Do(request)
 	if err != nil {
@@ -123,7 +124,7 @@ func (p *OperatorPkgNameIsUniqueCheck) queryAPI(client apiClient, request *http.
 
 // parseAPIResponse reads the response and checks the body for the expected contents, and then
 // returns the body content as apiResponseData.
-func (p *OperatorPkgNameIsUniqueCheck) parseAPIResponse(resp *http.Response) (*apiResponseData, error) {
+func (p *OperatorPkgNameIsUniqueCheck) parseAPIResponse(ctx context.Context, resp *http.Response) (*apiResponseData, error) {
 	var data apiResponseData
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
@@ -143,7 +144,7 @@ func (p *OperatorPkgNameIsUniqueCheck) parseAPIResponse(resp *http.Response) (*a
 
 // validate checks the apiResponseData and confirms that the package is unique by confirming that the
 // API returned no packages using the same name.
-func (p *OperatorPkgNameIsUniqueCheck) validate(resp *apiResponseData) (bool, error) {
+func (p *OperatorPkgNameIsUniqueCheck) validate(ctx context.Context, resp *apiResponseData) (bool, error) {
 	// success case - the API returned no entries
 	if len(resp.Data) == 0 {
 		return true, nil

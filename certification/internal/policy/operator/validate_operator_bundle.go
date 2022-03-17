@@ -1,6 +1,8 @@
 package operator
 
 import (
+	"context"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
@@ -21,21 +23,21 @@ func NewValidateOperatorBundleCheck(operatorSdkEngine *cli.OperatorSdkEngine) *V
 
 const ocpVerV1beta1Unsupported = "4.9"
 
-func (p ValidateOperatorBundleCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
-	report, err := p.getDataToValidate(bundleRef.ImageFSPath)
+func (p ValidateOperatorBundleCheck) Validate(ctx context.Context, bundleRef certification.ImageReference) (bool, error) {
+	report, err := p.getDataToValidate(ctx, bundleRef.ImageFSPath)
 	if err != nil {
 		log.Error("Error while executing operator-sdk bundle validate: ", err)
 		return false, err
 	}
 
-	return p.validate(report)
+	return p.validate(ctx, report)
 }
 
-func (p ValidateOperatorBundleCheck) getDataToValidate(imagePath string) (*cli.OperatorSdkBundleValidateReport, error) {
-	return bundle.ValidateBundle(p.OperatorSdkEngine, imagePath)
+func (p ValidateOperatorBundleCheck) getDataToValidate(ctx context.Context, imagePath string) (*cli.OperatorSdkBundleValidateReport, error) {
+	return bundle.ValidateBundle(ctx, p.OperatorSdkEngine, imagePath)
 }
 
-func (p ValidateOperatorBundleCheck) validate(report *cli.OperatorSdkBundleValidateReport) (bool, error) {
+func (p ValidateOperatorBundleCheck) validate(ctx context.Context, report *cli.OperatorSdkBundleValidateReport) (bool, error) {
 	if !report.Passed || len(report.Outputs) > 0 {
 		for _, output := range report.Outputs {
 			var logFn func(...interface{})

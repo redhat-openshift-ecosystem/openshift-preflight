@@ -1,6 +1,7 @@
 package container
 
 import (
+	"context"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -12,18 +13,18 @@ import (
 // which refers to packages that are not redistributable without an appropriate license.
 type HasNoProhibitedPackagesCheck struct{}
 
-func (p *HasNoProhibitedPackagesCheck) Validate(imgRef certification.ImageReference) (bool, error) {
-	pkgList, err := p.getDataToValidate(imgRef.ImageFSPath)
+func (p *HasNoProhibitedPackagesCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
+	pkgList, err := p.getDataToValidate(ctx, imgRef.ImageFSPath)
 	if err != nil {
 		log.Error("unable to get a list of all packages in the image")
 		return false, err
 	}
 
-	return p.validate(pkgList)
+	return p.validate(ctx, pkgList)
 }
 
-func (p *HasNoProhibitedPackagesCheck) getDataToValidate(dir string) ([]string, error) {
-	pkgList, err := rpm.GetPackageList(dir)
+func (p *HasNoProhibitedPackagesCheck) getDataToValidate(ctx context.Context, dir string) ([]string, error) {
+	pkgList, err := rpm.GetPackageList(ctx, dir)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +35,7 @@ func (p *HasNoProhibitedPackagesCheck) getDataToValidate(dir string) ([]string, 
 	return pkgs, nil
 }
 
-func (p *HasNoProhibitedPackagesCheck) validate(pkgList []string) (bool, error) {
+func (p *HasNoProhibitedPackagesCheck) validate(ctx context.Context, pkgList []string) (bool, error) {
 	var prohibitedPackages []string
 	for _, pkg := range pkgList {
 		_, ok := prohibitedPackageList[pkg]

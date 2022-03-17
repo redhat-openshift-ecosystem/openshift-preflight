@@ -1,6 +1,7 @@
 package formatters
 
 import (
+	"context"
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -41,7 +42,7 @@ var _ = Describe("Formatters", func() {
 		Context("with improper arguments", func() {
 			expectedResult := []byte(fmt.Errorf("failed to create a new generic formatter: %w",
 				errors.ErrFormatterNameNotProvided).Error())
-			var fn FormatterFunc = func(runtime.Results) ([]byte, error) {
+			var fn FormatterFunc = func(context.Context, runtime.Results) ([]byte, error) {
 				return expectedResult, nil
 			}
 
@@ -56,7 +57,7 @@ var _ = Describe("Formatters", func() {
 			var expectedResult []byte = []byte("this is a test")
 			var name string = "testFormatter"
 			var extension string = "txt"
-			var fn FormatterFunc = func(runtime.Results) ([]byte, error) {
+			var fn FormatterFunc = func(context.Context, runtime.Results) ([]byte, error) {
 				return expectedResult, nil
 			}
 
@@ -66,7 +67,7 @@ var _ = Describe("Formatters", func() {
 				Expect(formatter).ToNot(BeNil())
 			})
 
-			formattingResult, err := formatter.Format(runtime.Results{})
+			formattingResult, err := formatter.Format(context.TODO(), runtime.Results{})
 			It("should format results as expected", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(formattingResult).To(Equal(expectedResult))

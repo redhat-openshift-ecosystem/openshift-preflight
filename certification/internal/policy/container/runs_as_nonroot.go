@@ -1,6 +1,8 @@
 package container
 
 import (
+	"context"
+
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	log "github.com/sirupsen/logrus"
@@ -10,7 +12,7 @@ import (
 // which correlates to the root user.
 type RunAsNonRootCheck struct{}
 
-func (p *RunAsNonRootCheck) Validate(imgRef certification.ImageReference) (bool, error) {
+func (p *RunAsNonRootCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	user, err := p.getDataToValidate(imgRef.ImageInfo)
 	if err != nil {
 		return false, err

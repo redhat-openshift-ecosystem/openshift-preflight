@@ -1,6 +1,8 @@
 package container
 
 import (
+	"context"
+
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
 	. "github.com/onsi/ginkgo/v2"
@@ -57,7 +59,7 @@ var _ = Describe("HasRequiredLabels", func() {
 	Describe("Checking for required labels", func() {
 		Context("When it has required labels", func() {
 			It("should pass Validate", func() {
-				ok, err := hasRequiredLabelsCheck.Validate(imageRef)
+				ok, err := hasRequiredLabelsCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -70,7 +72,7 @@ var _ = Describe("HasRequiredLabels", func() {
 				imageRef.ImageInfo = &fakeImage
 			})
 			It("should not succeed the check", func() {
-				ok, err := hasRequiredLabelsCheck.Validate(imageRef)
+				ok, err := hasRequiredLabelsCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

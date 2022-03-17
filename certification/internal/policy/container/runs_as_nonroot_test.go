@@ -1,6 +1,8 @@
 package container
 
 import (
+	"context"
+
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
 	. "github.com/onsi/ginkgo/v2"
@@ -48,7 +50,7 @@ var _ = Describe("RunAsNonRoot", func() {
 	Describe("Checking manifest user is not root", func() {
 		Context("When manifest user is not root", func() {
 			It("should pass Validate", func() {
-				ok, err := runAsNonRoot.Validate(imageRef)
+				ok, err := runAsNonRoot.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -63,7 +65,7 @@ var _ = Describe("RunAsNonRoot", func() {
 				imageRef.ImageInfo = &fakeImage
 			})
 			It("should not pass Validate", func() {
-				ok, err := runAsNonRoot.Validate(imageRef)
+				ok, err := runAsNonRoot.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -76,7 +78,7 @@ var _ = Describe("RunAsNonRoot", func() {
 				imageRef.ImageInfo = &fakeImage
 			})
 			It("should not pass Validate", func() {
-				ok, err := runAsNonRoot.Validate(imageRef)
+				ok, err := runAsNonRoot.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -89,7 +91,7 @@ var _ = Describe("RunAsNonRoot", func() {
 				imageRef.ImageInfo = &fakeImage
 			})
 			It("should not pass Validate", func() {
-				ok, err := runAsNonRoot.Validate(imageRef)
+				ok, err := runAsNonRoot.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

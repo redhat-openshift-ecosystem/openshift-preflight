@@ -3,6 +3,7 @@
 package formatters
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
@@ -19,12 +20,12 @@ type ResponseFormatter interface {
 	FileExtension() string
 	// Format takes Results, formats it as needed, and returns the formatted
 	// results ready to write as a byte slice.
-	Format(runtime.Results) (response []byte, formattingError error)
+	Format(context.Context, runtime.Results) (response []byte, formattingError error)
 }
 
 // FormatterFunc describes a function that formats the check validation
 // results.
-type FormatterFunc = func(runtime.Results) (response []byte, formattingError error)
+type FormatterFunc = func(context.Context, runtime.Results) (response []byte, formattingError error)
 
 // NewForConfig returns a new formatter based on the user-provided configuration. It relies
 // on config values which should align with known/supported/built-in formatters.
@@ -73,8 +74,8 @@ func (f *genericFormatter) PrettyName() string {
 }
 
 // Format returns the formatted results as a byte slice.
-func (f *genericFormatter) Format(r runtime.Results) ([]byte, error) {
-	return f.formatterFunc(r)
+func (f *genericFormatter) Format(ctx context.Context, r runtime.Results) ([]byte, error) {
+	return f.formatterFunc(ctx, r)
 }
 
 // FileExtension returns the extension a user might use when formatting

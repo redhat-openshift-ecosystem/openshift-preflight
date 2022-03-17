@@ -2,6 +2,7 @@ package container
 
 import (
 	"archive/tar"
+	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -21,16 +22,16 @@ type packageFilesRef struct {
 	PackageFiles map[string]struct{}
 }
 
-func (p *HasModifiedFilesCheck) Validate(imgRef certification.ImageReference) (bool, error) {
-	packageFiles, err := p.getDataToValidate(imgRef)
+func (p *HasModifiedFilesCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
+	packageFiles, err := p.getDataToValidate(ctx, imgRef)
 	if err != nil {
 		return false, fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
 	}
 	return p.validate(packageFiles)
 }
 
-func (p *HasModifiedFilesCheck) getDataToValidate(imageRef certification.ImageReference) (*packageFilesRef, error) {
-	pkgList, err := rpm.GetPackageList(imageRef.ImageFSPath)
+func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef certification.ImageReference) (*packageFilesRef, error) {
+	pkgList, err := rpm.GetPackageList(ctx, imgRef.ImageFSPath)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +46,7 @@ func (p *HasModifiedFilesCheck) getDataToValidate(imageRef certification.ImageRe
 		}
 	}
 
-	layers, err := imageRef.ImageInfo.Layers()
+	layers, err := imgRef.ImageInfo.Layers()
 	if err != nil {
 		return nil, err
 	}

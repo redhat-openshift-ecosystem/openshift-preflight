@@ -1,6 +1,7 @@
 package rpm
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -8,7 +9,7 @@ import (
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 )
 
-func GetPackageList(basePath string) ([]*rpmdb.PackageInfo, error) {
+func GetPackageList(ctx context.Context, basePath string) ([]*rpmdb.PackageInfo, error) {
 	rpmdirPath := filepath.Join(basePath, "var", "lib", "rpm")
 	rpmdbPath := filepath.Join(rpmdirPath, "rpmdb.sqlite")
 

@@ -2,6 +2,7 @@
 package engine
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -23,9 +24,9 @@ type CheckEngine interface {
 	// store the results. Errors returned by ExecuteChecks should reflect
 	// errors in pre-validation tasks, and not errors in individual check
 	// execution itself.
-	ExecuteChecks() error
+	ExecuteChecks(context.Context) error
 	// Results returns the outcome of executing all checks.
-	Results() runtime.Results
+	Results(context.Context) runtime.Results
 }
 
 func NewForConfig(config runtime.Config) (CheckEngine, error) {

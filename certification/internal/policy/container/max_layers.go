@@ -1,6 +1,7 @@
 package container
 
 import (
+	"context"
 	"fmt"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
@@ -15,8 +16,8 @@ const (
 // UnderLayerMaxCheck ensures that the image has less layers in its assembly than a predefined maximum.
 type MaxLayersCheck struct{}
 
-func (p *MaxLayersCheck) Validate(imageRef certification.ImageReference) (bool, error) {
-	layers, err := p.getDataToValidate(imageRef.ImageInfo)
+func (p *MaxLayersCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
+	layers, err := p.getDataToValidate(imgRef.ImageInfo)
 	if err != nil {
 		return false, err
 	}

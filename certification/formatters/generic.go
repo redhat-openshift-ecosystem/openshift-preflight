@@ -1,6 +1,7 @@
 package formatters
 
 import (
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -15,7 +16,7 @@ var (
 )
 
 // genericJSONFormatter is a FormatterFunc that formats results as JSON
-func genericJSONFormatter(r runtime.Results) ([]byte, error) {
+func genericJSONFormatter(ctx context.Context, r runtime.Results) ([]byte, error) {
 	response := getResponse(r)
 
 	responseJSON, err := jsonMarshalIndent(response, "", "    ")
@@ -33,7 +34,7 @@ func genericJSONFormatter(r runtime.Results) ([]byte, error) {
 }
 
 // genericXMLFormatter is a FormatterFunc that formats results as XML
-func genericXMLFormatter(r runtime.Results) ([]byte, error) {
+func genericXMLFormatter(ctx context.Context, r runtime.Results) ([]byte, error) {
 	response := getResponse(r)
 
 	responseJSON, err := xmlMarshalIndent(response, "", "    ")

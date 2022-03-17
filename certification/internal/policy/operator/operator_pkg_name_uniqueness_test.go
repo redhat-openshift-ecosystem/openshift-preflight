@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -34,7 +35,7 @@ var _ = Describe("OperatorPkgNameIsUniqueCheck", func() {
 				goodMap := map[string]string{key: pkg}
 
 				It("should return the package name and no error", func() {
-					pkgName, err := check.getPackageName(goodMap)
+					pkgName, err := check.getPackageName(context.TODO(), goodMap)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(pkgName).To(Equal(pkg))
 				})
@@ -44,7 +45,7 @@ var _ = Describe("OperatorPkgNameIsUniqueCheck", func() {
 				mapWithoutKey := map[string]string{}
 
 				It("should return an error", func() {
-					_, err := check.getPackageName(mapWithoutKey)
+					_, err := check.getPackageName(context.TODO(), mapWithoutKey)
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -53,7 +54,7 @@ var _ = Describe("OperatorPkgNameIsUniqueCheck", func() {
 				var nilMap map[string]string
 
 				It("should return an error", func() {
-					_, err := check.getPackageName(nilMap)
+					_, err := check.getPackageName(context.TODO(), nilMap)
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -65,7 +66,7 @@ var _ = Describe("OperatorPkgNameIsUniqueCheck", func() {
 			packageName := "my-custom-package"
 
 			It("should accurately reflect the input url and package name in the request data", func() {
-				request, err := check.buildRequest(url, packageName)
+				request, err := check.buildRequest(context.TODO(), url, packageName)
 				Expect(fmt.Sprintf("%s://%s", request.URL.Scheme, request.URL.Host)).To(Equal(url))
 				Expect(request.URL.RawQuery).To(ContainSubstring(packageName))
 				Expect(err).ToNot(HaveOccurred())
@@ -92,13 +93,14 @@ var _ = Describe("OperatorPkgNameIsUniqueCheck", func() {
 				}
 
 				It("should not throw an error when the api responses with a 200 ok", func() {
-					goodResp, goodErr := check.queryAPI(&goodClient, &fakeRequest)
+					ctx := context.TODO()
+					goodResp, goodErr := check.queryAPI(ctx, &goodClient, &fakeRequest)
 					Expect(goodErr).ToNot(HaveOccurred())
 
-					data, err := check.parseAPIResponse(goodResp)
+					data, err := check.parseAPIResponse(ctx, goodResp)
 					Expect(err).ToNot(HaveOccurred())
 
-					isValid, err := check.validate(data)
+					isValid, err := check.validate(ctx, data)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(isValid).To(BeTrue())
 				})
@@ -115,13 +117,14 @@ var _ = Describe("OperatorPkgNameIsUniqueCheck", func() {
 				}
 
 				It("should not throw an error when the api responses with a 200 ok, but should not validate", func() {
-					failResp, failErr := check.queryAPI(&failClient, &fakeRequest)
+					ctx := context.TODO()
+					failResp, failErr := check.queryAPI(ctx, &failClient, &fakeRequest)
 					Expect(failErr).ToNot(HaveOccurred())
 
-					data, err := check.parseAPIResponse(failResp)
+					data, err := check.parseAPIResponse(ctx, failResp)
 					Expect(err).ToNot(HaveOccurred())
 
-					isValid, err := check.validate(data)
+					isValid, err := check.validate(ctx, data)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(isValid).To(BeFalse())
 				})
@@ -136,7 +139,7 @@ var _ = Describe("OperatorPkgNameIsUniqueCheck", func() {
 				}
 
 				It("should throw an error", func() {
-					_, err := check.queryAPI(&errClient, &fakeRequest)
+					_, err := check.queryAPI(context.TODO(), &errClient, &fakeRequest)
 					Expect(err).To(HaveOccurred())
 				})
 			})
