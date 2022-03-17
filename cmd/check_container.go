@@ -76,6 +76,9 @@ var checkContainerCmd = &cobra.Command{
 		}
 		if strings.HasPrefix(projectId, "ospid-") {
 			projectId = strings.Split(projectId, "-")[1]
+			// Since we want the modified version, write it back
+			// to viper so that subsequent calls don't need to check
+			viper.Set("certification_project_id", projectId)
 		}
 		apiToken := viper.GetString("pyxis_api_token")
 		pyxisEngine := pyxis.NewPyxisEngine(apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
