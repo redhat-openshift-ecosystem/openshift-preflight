@@ -1,6 +1,7 @@
 package formatters
 
 import (
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -65,7 +66,7 @@ func TestGenericJSONFormatter(t *testing.T) {
 		}
 
 		// Run the function
-		funcOutput, err := genericJSONFormatter(tc.results)
+		funcOutput, err := genericJSONFormatter(context.TODO(), tc.results)
 
 		if err == nil {
 			// Marshal the response JSON back into an object
@@ -142,7 +143,7 @@ func TestGenericXMLFormatter(t *testing.T) {
 		}
 
 		// Run the function
-		funcOutput, err := genericXMLFormatter(tc.results)
+		funcOutput, err := genericXMLFormatter(context.TODO(), tc.results)
 
 		if err == nil {
 			// Marshal the response XML back into an object

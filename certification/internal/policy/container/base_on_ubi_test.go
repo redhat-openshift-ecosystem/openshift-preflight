@@ -55,7 +55,7 @@ var _ = Describe("BaseOnUBI", func() {
 			})
 			Context("and pyxis returns a match", func() {
 				It("should pass Validate", func() {
-					ok, err := basedOnUbiCheck.Validate(imageRef)
+					ok, err := basedOnUbiCheck.Validate(context.TODO(), imageRef)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(ok).To(BeTrue())
 				})
@@ -68,7 +68,7 @@ var _ = Describe("BaseOnUBI", func() {
 			Context("When the image does not contain a layer hash that is a ubi or ubi derived uncompressed top layer id", func() {
 				Context("and pyxis returns no matches", func() {
 					It("should not pass Validate", func() {
-						ok, err := basedOnUbiCheck.Validate(imageRef)
+						ok, err := basedOnUbiCheck.Validate(context.TODO(), imageRef)
 						Expect(err).ToNot(HaveOccurred())
 						Expect(ok).To(BeFalse())
 					})

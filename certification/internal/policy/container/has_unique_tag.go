@@ -1,6 +1,7 @@
 package container
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -19,7 +20,7 @@ type HasUniqueTagCheck struct {
 	TagLister service.TagLister
 }
 
-func (p *HasUniqueTagCheck) Validate(imgRef certification.ImageReference) (bool, error) {
+func (p *HasUniqueTagCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	tags, err := p.getDataToValidate(fmt.Sprintf("%s/%s", imgRef.ImageRegistry, imgRef.ImageRepository))
 	if err != nil {
 		return false, err

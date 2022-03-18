@@ -1,6 +1,8 @@
 package e2e
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
@@ -28,8 +30,9 @@ var _ = Describe("policy validation", func() {
 			engine, err := engine.NewForConfig(cfg)
 			Expect(err).ToNot(HaveOccurred())
 
-			engine.ExecuteChecks()
-			results := engine.Results()
+			ctx := context.TODO()
+			engine.ExecuteChecks(ctx)
+			results := engine.Results(ctx)
 
 			It("should pass all checks", func() {
 				Expect(len(results.Passed)).To(Equal(len(cfg.EnabledChecks)))
@@ -45,8 +48,9 @@ var _ = Describe("policy validation", func() {
 			engine, err := engine.NewForConfig(cfg)
 			Expect(err).To(BeNil())
 
-			engine.ExecuteChecks()
-			results := engine.Results()
+			ctx := context.TODO()
+			engine.ExecuteChecks(ctx)
+			results := engine.Results(ctx)
 
 			// TODO: Replace this check so that you test for individual check failures
 			It("should not pass any checks", func() {
@@ -72,8 +76,9 @@ var _ = Describe("policy validation", func() {
 			engine, err := engine.NewForConfig(cfg)
 			Expect(err).ToNot(HaveOccurred())
 
-			engine.ExecuteChecks()
-			results := engine.Results()
+			ctx := context.TODO()
+			engine.ExecuteChecks(ctx)
+			results := engine.Results(ctx)
 
 			It("should pass all checks", func() {
 				Expect(len(results.Passed)).To(Equal(len(cfg.EnabledChecks)))
@@ -94,8 +99,9 @@ var _ = Describe("policy validation", func() {
 			engine, err := engine.NewForConfig(cfg)
 			Expect(err).ToNot(HaveOccurred())
 
-			engine.ExecuteChecks()
-			results := engine.Results()
+			ctx := context.TODO()
+			engine.ExecuteChecks(ctx)
+			results := engine.Results(ctx)
 
 			// TODO: Replace this check so that you test for individual check failures
 			It("should fail all checks", func() {

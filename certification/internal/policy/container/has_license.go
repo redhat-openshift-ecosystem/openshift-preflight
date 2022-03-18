@@ -1,6 +1,7 @@
 package container
 
 import (
+	"context"
 	stdliberrors "errors"
 	"io/fs"
 	"os"
@@ -21,18 +22,18 @@ const (
 // /licenses.
 type HasLicenseCheck struct{}
 
-func (p *HasLicenseCheck) Validate(imgRef certification.ImageReference) (bool, error) {
-	licenseFileList, err := p.getDataToValidate(imgRef.ImageFSPath)
+func (p *HasLicenseCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
+	licenseFileList, err := p.getDataToValidate(ctx, imgRef.ImageFSPath)
 	if err != nil {
 		if stdliberrors.Is(err, fs.ErrNotExist) || stdliberrors.Is(err, errors.ErrLicensesNotADir) {
 			return false, nil
 		}
 		return false, err
 	}
-	return p.validate(licenseFileList)
+	return p.validate(ctx, licenseFileList)
 }
 
-func (p *HasLicenseCheck) getDataToValidate(mountedPath string) ([]fs.DirEntry, error) {
+func (p *HasLicenseCheck) getDataToValidate(ctx context.Context, mountedPath string) ([]fs.DirEntry, error) {
 	fullPath := filepath.Join(mountedPath, licensePath)
 	fileinfo, err := os.Stat(fullPath)
 	if err != nil {
@@ -52,7 +53,7 @@ func (p *HasLicenseCheck) getDataToValidate(mountedPath string) ([]fs.DirEntry, 
 	return files, nil
 }
 
-func (p *HasLicenseCheck) validate(licenseFileList []fs.DirEntry) (bool, error) {
+func (p *HasLicenseCheck) validate(ctx context.Context, licenseFileList []fs.DirEntry) (bool, error) {
 	nonZeroLength := false
 	for _, f := range licenseFileList {
 		info, err := f.Info()

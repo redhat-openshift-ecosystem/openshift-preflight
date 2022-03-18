@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"context"
 	"os"
 	"path"
 	"path/filepath"
@@ -18,7 +19,7 @@ const ocpVerV1beta1Unsupported = "4.9"
 // versionsKey is the OpenShift versions in annotations.yaml that lists the versions allowed for an operator
 const versionsKey = "com.redhat.openshift.versions"
 
-func ValidateBundle(engine cli.OperatorSdkEngine, imagePath string) (*cli.OperatorSdkBundleValidateReport, error) {
+func ValidateBundle(ctx context.Context, engine cli.OperatorSdkEngine, imagePath string) (*cli.OperatorSdkBundleValidateReport, error) {
 	selector := []string{"community", "operatorhub"}
 	opts := cli.OperatorSdkBundleValidateOptions{
 		Selector:        selector,
@@ -27,7 +28,7 @@ func ValidateBundle(engine cli.OperatorSdkEngine, imagePath string) (*cli.Operat
 		OutputFormat:    "json-alpha1",
 	}
 
-	annotations, err := GetAnnotations(imagePath)
+	annotations, err := GetAnnotations(ctx, imagePath)
 	if err != nil {
 		log.Error("unable to get annotations.yaml from the bundle")
 		return nil, err
@@ -117,7 +118,7 @@ func cleanStringToGetTheVersionToParse(value string) string {
 	return value
 }
 
-func GetAnnotations(mountedDir string) (map[string]string, error) {
+func GetAnnotations(ctx context.Context, mountedDir string) (map[string]string, error) {
 	log.Trace("reading annotations file from the bundle")
 	log.Debug("mounted directory is ", mountedDir)
 	annotationsFilePath := path.Join(mountedDir, "metadata", "annotations.yaml")
@@ -128,7 +129,7 @@ func GetAnnotations(mountedDir string) (map[string]string, error) {
 		return nil, err
 	}
 
-	annotations, err := ExtractAnnotationsBytes(fileContents)
+	annotations, err := ExtractAnnotationsBytes(ctx, fileContents)
 	if err != nil {
 		log.Error("metadata/annotations.yaml found but is malformed")
 		return nil, err
@@ -139,7 +140,7 @@ func GetAnnotations(mountedDir string) (map[string]string, error) {
 
 // extractAnnotationsBytes reads the annotation data read from a file and returns the expected format for that yaml
 // represented as a map[string]string.
-func ExtractAnnotationsBytes(annotationBytes []byte) (map[string]string, error) {
+func ExtractAnnotationsBytes(ctx context.Context, annotationBytes []byte) (map[string]string, error) {
 	type metadata struct {
 		Annotations map[string]string
 	}
@@ -177,7 +178,7 @@ func getCsvFilePathFromBundle(mountedDir string) (string, error) {
 	return matches[0], nil
 }
 
-func GetSupportedInstalledModes(mountedDir string) (map[string]bool, error) {
+func GetSupportedInstalledModes(ctx context.Context, mountedDir string) (map[string]bool, error) {
 	csvFilepath, err := getCsvFilePathFromBundle(mountedDir)
 	if err != nil {
 		return nil, err

@@ -1,6 +1,8 @@
 package container
 
 import (
+	"context"
+
 	"github.com/containers/podman/v3/libpod/define"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
@@ -19,7 +21,7 @@ func NewRunnableContainerCheck(podmanEngine *cli.PodmanEngine) *RunnableContaine
 	}
 }
 
-func (p *RunnableContainerCheck) Validate(imgRef certification.ImageReference) (bool, error) {
+func (p *RunnableContainerCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	runOptions := &cli.PodmanCreateOption{
 		Cmd: []string{"sleep", checkContainerTimeout.String()},
 	}

@@ -24,16 +24,16 @@ func NewBasedOnUbiCheck(layerHashChecker layerHashChecker) *BasedOnUBICheck {
 	return &BasedOnUBICheck{LayerHashCheckEngine: layerHashChecker}
 }
 
-func (p *BasedOnUBICheck) Validate(imgRef certification.ImageReference) (bool, error) {
-	layerHashes, err := p.getImageLayers(imgRef.ImageInfo)
+func (p *BasedOnUBICheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
+	layerHashes, err := p.getImageLayers(ctx, imgRef.ImageInfo)
 	if err != nil {
 		return false, err
 	}
 
-	return p.validate(layerHashes)
+	return p.validate(ctx, layerHashes)
 }
 
-func (p *BasedOnUBICheck) getImageLayers(image cranev1.Image) ([]cranev1.Hash, error) {
+func (p *BasedOnUBICheck) getImageLayers(ctx context.Context, image cranev1.Image) ([]cranev1.Hash, error) {
 	configFile, err := image.ConfigFile()
 	if err != nil {
 		return nil, err
@@ -53,8 +53,7 @@ func (p *BasedOnUBICheck) checkRedHatLayers(ctx context.Context, layerHashes []c
 	return false, nil
 }
 
-func (p *BasedOnUBICheck) validate(layerHashes []cranev1.Hash) (bool, error) {
-	ctx := context.Background()
+func (p *BasedOnUBICheck) validate(ctx context.Context, layerHashes []cranev1.Hash) (bool, error) {
 	hasUBIHash, err := p.checkRedHatLayers(ctx, layerHashes)
 	if err != nil {
 		log.Error("Unable to verify layer hashes", err)
