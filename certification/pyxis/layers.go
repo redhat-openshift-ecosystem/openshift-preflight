@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
@@ -18,13 +19,14 @@ func (p *pyxisEngine) CheckRedHatLayers(ctx context.Context, layerHashes []crane
 	for _, layer := range layerHashes {
 		layerIds = append(layerIds, layer.String())
 	}
-
 	log.Tracef("the layerIds passed to pyxis are %s", layerIds)
+
+	pyxisQuery := url.QueryEscape(fmt.Sprintf("repositories.registry=in=(registry.access.redhat.com) and uncompressed_top_layer_id=in=(%s)", strings.Join(layerIds, ",")))
 
 	req, err := p.newRequestWithApiToken(
 		ctx,
 		http.MethodGet,
-		getPyxisUrl(fmt.Sprintf("filter=repositories.registry=eq=(registry.access.redhat.com) and uncompressed_top_layer_id=in=(%s)", strings.Join(layerIds, ","))),
+		fmt.Sprintf("%s?filter=%s", getPyxisUrl("images"), pyxisQuery),
 		nil,
 	)
 	if err != nil {
@@ -43,14 +45,14 @@ func (p *pyxisEngine) CheckRedHatLayers(ctx context.Context, layerHashes []crane
 		log.Error("Unexpected Status Code", err)
 		return nil, errors.New(err)
 	}
-
 	defer resp.Body.Close()
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
+
+	log.Tracef("query response from pyxis %s", string(body))
 
 	type imageList struct {
 		Images []CertImage `json:"data"`
