@@ -50,6 +50,7 @@ func (p *BasedOnUBICheck) checkRedHatLayers(ctx context.Context, layerHashes []c
 	if certImages != nil && len(certImages) >= 1 {
 		return true, nil
 	}
+	log.Error("No matching layer ids found in pyxis db. Please verify if the image is based on a recent UBI image")
 	return false, nil
 }
 
