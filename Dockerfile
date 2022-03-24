@@ -55,6 +55,6 @@ RUN curl --fail -Lo /usr/local/bin/operator-sdk https://github.com/operator-fram
 COPY LICENSE /licenses/LICENSE
 
 USER 65532:65532
-
+WORKDIR /home/nonroot
 ENTRYPOINT ["/usr/local/bin/preflight"]
 CMD ["--help"]
