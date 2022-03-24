@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"context"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
@@ -23,7 +25,7 @@ func init() {
 	rootCmd.AddCommand(checkCmd)
 }
 
-func writeJunitIfEnabled(results runtime.Results) error {
+func writeJunitIfEnabled(ctx context.Context, results runtime.Results) error {
 	if !viper.GetBool("junit") {
 		return nil
 	}
@@ -35,7 +37,7 @@ func writeJunitIfEnabled(results runtime.Results) error {
 	if err != nil {
 		return err
 	}
-	junitResults, err := junitformatter.Format(results)
+	junitResults, err := junitformatter.Format(ctx, results)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package container
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -21,7 +22,7 @@ func NewRunSystemContainerCheck(podmanEngine *cli.PodmanEngine) *RunSystemContai
 	}
 }
 
-func (p *RunSystemContainerCheck) Validate(imgRef certification.ImageReference) (bool, error) {
+func (p *RunSystemContainerCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	containerName := "podman-test"
 
 	runOptions := &cli.PodmanCreateOption{

@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -30,7 +31,7 @@ var _ = Describe("BundleValidateCheck", func() {
 				data := []byte("annotations:\n foo: bar")
 
 				It("should properly marshal to a map[string]string", func() {
-					annotations, err := ExtractAnnotationsBytes(data)
+					annotations, err := ExtractAnnotationsBytes(context.TODO(), data)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(annotations["foo"]).To(Equal("bar"))
 				})
@@ -40,7 +41,7 @@ var _ = Describe("BundleValidateCheck", func() {
 				data := []byte{}
 
 				It("should return an error", func() {
-					_, err := ExtractAnnotationsBytes(data)
+					_, err := ExtractAnnotationsBytes(context.TODO(), data)
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -49,7 +50,7 @@ var _ = Describe("BundleValidateCheck", func() {
 				data := []byte(`malformed`)
 
 				It("should return an error", func() {
-					_, err := ExtractAnnotationsBytes(data)
+					_, err := ExtractAnnotationsBytes(context.TODO(), data)
 					Expect(err).To(HaveOccurred())
 				})
 			})

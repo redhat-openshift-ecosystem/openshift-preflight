@@ -1,8 +1,10 @@
 package certification
 
+import "context"
+
 // ValidatorFunc describes a function that, when executed, will check that an
 // artifact (e.g. operator bundle) complies with a given check.
-type ValidatorFunc = func(ImageReference) (bool, error)
+type ValidatorFunc = func(context.Context, ImageReference) (bool, error)
 
 type genericCheckDefinition struct {
 	name        string
@@ -15,8 +17,8 @@ func (pd *genericCheckDefinition) Name() string {
 	return pd.name
 }
 
-func (pd *genericCheckDefinition) Validate(imgRef ImageReference) (bool, error) {
-	return pd.validatorFn(imgRef)
+func (pd *genericCheckDefinition) Validate(ctx context.Context, imgRef ImageReference) (bool, error) {
+	return pd.validatorFn(ctx, imgRef)
 }
 
 func (pd *genericCheckDefinition) Metadata() Metadata {

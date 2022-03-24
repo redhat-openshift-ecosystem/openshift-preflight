@@ -1,6 +1,8 @@
 package container
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -22,7 +24,7 @@ var _ = Describe("HasNoProhibitedPackages", func() {
 	Describe("Checking if it has an prohibited packages", func() {
 		Context("When there are no prohibited packages found", func() {
 			It("should pass validate", func() {
-				ok, err := HasNoProhibitedPackages.validate(pkgList)
+				ok, err := HasNoProhibitedPackages.validate(context.TODO(), pkgList)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -33,7 +35,7 @@ var _ = Describe("HasNoProhibitedPackages", func() {
 				pkgs = append(pkgList, "grub")
 			})
 			It("should not pass Validate", func() {
-				ok, err := HasNoProhibitedPackages.validate(pkgs)
+				ok, err := HasNoProhibitedPackages.validate(context.TODO(), pkgs)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -44,7 +46,7 @@ var _ = Describe("HasNoProhibitedPackages", func() {
 				pkgs = append(pkgList, "kpatch2121")
 			})
 			It("should not pass Validate", func() {
-				ok, err := HasNoProhibitedPackages.validate(pkgs)
+				ok, err := HasNoProhibitedPackages.validate(context.TODO(), pkgs)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

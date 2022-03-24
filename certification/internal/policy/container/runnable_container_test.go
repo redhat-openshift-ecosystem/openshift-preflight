@@ -1,6 +1,8 @@
 package container
 
 import (
+	"context"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -24,7 +26,7 @@ var _ = Describe("RunnableContainerCheck", func() {
 			It("should pass Validate", func() {
 				engine = GoodPodmanEngine{}
 				runnableContainerCheck = *NewRunnableContainerCheck(&engine)
-				ok, err := runnableContainerCheck.Validate(imageRef)
+				ok, err := runnableContainerCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -33,7 +35,7 @@ var _ = Describe("RunnableContainerCheck", func() {
 			It("should not pass Validate", func() {
 				engine = BadPodmanEngine{}
 				runnableContainerCheck = *NewRunnableContainerCheck(&engine)
-				ok, err := runnableContainerCheck.Validate(imageRef)
+				ok, err := runnableContainerCheck.Validate(context.TODO(), imageRef)
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

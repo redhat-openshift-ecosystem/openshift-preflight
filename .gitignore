@@ -16,6 +16,7 @@ vuln.html
 bin
 preflight
 openshift-preflight
+preflight-*
 
 # Config files
 config.yaml
@@ -23,18 +24,14 @@ config.yaml
 # Log files
 *.log
 results.json
-
-# Test binary, build with `go test -c`
-*.test
+cert-image.json
+rpm-manifest.json
 
 # Testing dirs
 /artifacts
 
 # But we don't want to ignore the artifacts package
 !/certification/artifacts
-
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
 
 # editor and IDE paraphernalia
 .idea

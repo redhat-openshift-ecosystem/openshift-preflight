@@ -76,6 +76,9 @@ var checkContainerCmd = &cobra.Command{
 		}
 		if strings.HasPrefix(projectId, "ospid-") {
 			projectId = strings.Split(projectId, "-")[1]
+			// Since we want the modified version, write it back
+			// to viper so that subsequent calls don't need to check
+			viper.Set("certification_project_id", projectId)
 		}
 		apiToken := viper.GetString("pyxis_api_token")
 		pyxisEngine := pyxis.NewPyxisEngine(apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
@@ -134,13 +137,13 @@ var checkContainerCmd = &cobra.Command{
 		cmd.SilenceUsage = true
 
 		// execute the checks
-		if err := engine.ExecuteChecks(); err != nil {
+		if err := engine.ExecuteChecks(ctx); err != nil {
 			return err
 		}
-		results := engine.Results()
+		results := engine.Results(ctx)
 
 		// return results to the user and then close output files
-		formattedResults, err := formatter.Format(results)
+		formattedResults, err := formatter.Format(ctx, results)
 		if err != nil {
 			return err
 		}
@@ -150,7 +153,7 @@ var checkContainerCmd = &cobra.Command{
 			return err
 		}
 
-		if err := writeJunitIfEnabled(results); err != nil {
+		if err := writeJunitIfEnabled(ctx, results); err != nil {
 			return err
 		}
 
@@ -242,15 +245,22 @@ var checkContainerCmd = &cobra.Command{
 			artifacts := make([]pyxis.Artifact, 0, 1)
 			artifacts = append(artifacts, logFileArtifact)
 
-			_, certImage, _, err = pyxisEngine.SubmitResults(ctx, certProject, certImage, rpmManifest, testResults, artifacts)
+			certInput := &pyxis.CertificationInput{
+				CertProject: certProject,
+				CertImage:   certImage,
+				RpmManifest: rpmManifest,
+				TestResults: testResults,
+				Artifacts:   artifacts,
+			}
+			certResults, err := pyxisEngine.SubmitResults(ctx, certInput)
 			if err != nil {
 				return err
 			}
 
 			log.Info("Test results have been submitted to Red Hat.")
 			log.Info("These results will be reviewed by Red Hat for final certification.")
-			log.Infof("The container's image id is: %s.", certImage.ID)
-			log.Infof("Please check %s to view scan results.", buildScanResultsURL(projectId, certImage.ID))
+			log.Infof("The container's image id is: %s.", certResults.CertImage.ID)
+			log.Infof("Please check %s to view scan results.", buildScanResultsURL(projectId, certResults.CertImage.ID))
 			log.Infof(fmt.Sprintf("Please check %s to monitor the progress.", buildOverviewURL(projectId)))
 		}
 

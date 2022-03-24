@@ -53,10 +53,8 @@ func NewDeployableByOlmCheck(openshiftEngine *cli.OpenshiftEngine, operatorSdkEn
 	}
 }
 
-func (p *DeployableByOlmCheck) Validate(bundleRef certification.ImageReference) (bool, error) {
-	ctx := context.Background()
-
-	if report, err := bundle.ValidateBundle(p.OperatorSdkEngine, bundleRef.ImageFSPath); err != nil || !report.Passed {
+func (p *DeployableByOlmCheck) Validate(ctx context.Context, bundleRef certification.ImageReference) (bool, error) {
+	if report, err := bundle.ValidateBundle(ctx, p.OperatorSdkEngine, bundleRef.ImageFSPath); err != nil || !report.Passed {
 		return false, err
 	}
 
@@ -67,7 +65,7 @@ func (p *DeployableByOlmCheck) Validate(bundleRef certification.ImageReference) 
 	}
 
 	// retrieve the required data
-	operatorData, err := p.operatorMetadata(bundleRef)
+	operatorData, err := p.operatorMetadata(ctx, bundleRef)
 	if err != nil {
 		return false, err
 	}
@@ -138,9 +136,9 @@ func checkImageSource(operatorImages []string) bool {
 	return allApproved
 }
 
-func (p *DeployableByOlmCheck) operatorMetadata(bundleRef certification.ImageReference) (*OperatorData, error) {
+func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef certification.ImageReference) (*OperatorData, error) {
 	// retrieve the operator metadata from bundle image
-	annotations, err := bundle.GetAnnotations(bundleRef.ImageFSPath)
+	annotations, err := bundle.GetAnnotations(ctx, bundleRef.ImageFSPath)
 	if err != nil {
 		log.Error("unable to get annotations.yaml from the bundle")
 		return nil, err
@@ -164,7 +162,7 @@ func (p *DeployableByOlmCheck) operatorMetadata(bundleRef certification.ImageRef
 		return nil, err
 	}
 
-	installedModes, err := bundle.GetSupportedInstalledModes(bundleRef.ImageFSPath)
+	installedModes, err := bundle.GetSupportedInstalledModes(ctx, bundleRef.ImageFSPath)
 	if err != nil {
 		log.Error("unable to extract operator install modes from ClusterServicVersion: ", err)
 		return nil, err

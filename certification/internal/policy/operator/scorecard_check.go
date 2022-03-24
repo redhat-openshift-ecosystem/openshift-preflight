@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -14,7 +15,7 @@ type scorecardCheck struct {
 	OperatorSdkEngine cli.OperatorSdkEngine
 }
 
-func (p *scorecardCheck) validate(items []cli.OperatorSdkScorecardItem) (bool, error) {
+func (p *scorecardCheck) validate(ctx context.Context, items []cli.OperatorSdkScorecardItem) (bool, error) {
 	foundTestFailed := false
 
 	if len(items) == 0 {
@@ -31,7 +32,7 @@ func (p *scorecardCheck) validate(items []cli.OperatorSdkScorecardItem) (bool, e
 	return !foundTestFailed, nil
 }
 
-func (p *scorecardCheck) getDataToValidate(bundleImage string, selector []string, resultFile string) (*cli.OperatorSdkScorecardReport, error) {
+func (p *scorecardCheck) getDataToValidate(ctx context.Context, bundleImage string, selector []string, resultFile string) (*cli.OperatorSdkScorecardReport, error) {
 	namespace := viper.GetString("namespace")
 	serviceAccount := viper.GetString("serviceaccount")
 	waitTime := viper.GetString("scorecard_wait_time")

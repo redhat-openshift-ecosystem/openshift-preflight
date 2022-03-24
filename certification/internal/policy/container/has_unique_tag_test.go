@@ -1,6 +1,8 @@
 package container
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -28,7 +30,7 @@ var _ = Describe("UniqueTag", func() {
 				hasUniqueTagCheck = *NewHasUniqueTagCheck(&fakeTagLister{Tags: validImageTags()})
 			})
 			It("should pass Validate", func() {
-				ok, err := hasUniqueTagCheck.Validate(certification.ImageReference{ImageRegistry: "index.docker.io", ImageRepository: "dummy/image"})
+				ok, err := hasUniqueTagCheck.Validate(context.TODO(), certification.ImageReference{ImageRegistry: "index.docker.io", ImageRepository: "dummy/image"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -38,7 +40,7 @@ var _ = Describe("UniqueTag", func() {
 				hasUniqueTagCheck = *NewHasUniqueTagCheck(&fakeTagLister{Tags: invalidImageTags()})
 			})
 			It("should not pass Validate", func() {
-				ok, err := hasUniqueTagCheck.Validate(certification.ImageReference{ImageRegistry: "index.docker.io", ImageRepository: "dummy/other-image"})
+				ok, err := hasUniqueTagCheck.Validate(context.TODO(), certification.ImageReference{ImageRegistry: "index.docker.io", ImageRepository: "dummy/other-image"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

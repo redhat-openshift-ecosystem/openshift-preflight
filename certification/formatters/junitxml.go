@@ -1,6 +1,7 @@
 package formatters
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"time"
@@ -50,7 +51,7 @@ type JUnitFailure struct {
 	Contents string `xml:",chardata"`
 }
 
-func junitXMLFormatter(r runtime.Results) ([]byte, error) {
+func junitXMLFormatter(ctx context.Context, r runtime.Results) ([]byte, error) {
 	response := getResponse(r)
 	suites := JUnitTestSuites{}
 	testsuite := JUnitTestSuite{

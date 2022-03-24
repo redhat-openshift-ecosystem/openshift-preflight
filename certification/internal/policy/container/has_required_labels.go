@@ -1,6 +1,8 @@
 package container
 
 import (
+	"context"
+
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	log "github.com/sirupsen/logrus"
@@ -12,7 +14,7 @@ var requiredLabels = []string{"name", "vendor", "version", "release", "summary",
 // labels are present on the image asset as it exists in its current container registry.
 type HasRequiredLabelsCheck struct{}
 
-func (p *HasRequiredLabelsCheck) Validate(imgRef certification.ImageReference) (bool, error) {
+func (p *HasRequiredLabelsCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	labels, err := p.getDataForValidate(imgRef.ImageInfo)
 	if err != nil {
 		return false, err

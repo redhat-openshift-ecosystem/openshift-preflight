@@ -1,6 +1,7 @@
 package container
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -34,7 +35,7 @@ var _ = Describe("HasLicense", func() {
 		})
 		Context("When license(s) are found", func() {
 			It("Should pass Validate", func() {
-				ok, err := HasLicense.Validate(imgRef)
+				ok, err := HasLicense.Validate(context.TODO(), imgRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -44,7 +45,7 @@ var _ = Describe("HasLicense", func() {
 				imgRef.ImageFSPath = "/invalid"
 			})
 			It("Should not pass Validate", func() {
-				ok, err := HasLicense.Validate(imgRef)
+				ok, err := HasLicense.Validate(context.TODO(), imgRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -55,7 +56,7 @@ var _ = Describe("HasLicense", func() {
 				os.Remove(filepath.Join(imgRef.ImageFSPath, licenses, emptyLicense))
 			})
 			It("Should not pass Validate", func() {
-				ok, err := HasLicense.Validate(imgRef)
+				ok, err := HasLicense.Validate(context.TODO(), imgRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -65,7 +66,7 @@ var _ = Describe("HasLicense", func() {
 				os.Remove(filepath.Join(imgRef.ImageFSPath, licenses, validLicense))
 			})
 			It("Should not pass Validate", func() {
-				ok, err := HasLicense.Validate(imgRef)
+				ok, err := HasLicense.Validate(context.TODO(), imgRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

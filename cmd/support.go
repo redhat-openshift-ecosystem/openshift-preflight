@@ -20,6 +20,8 @@ const (
 	certProjectTypeParam = "cert_project_type"
 	certProjectIDParam   = "cert_project_id"
 	pullRequestURLParam  = "pull_request_url"
+	operatorBundleImage  = "Operator Bundle Image"
+	containerImage       = "Container Image"
 )
 
 var supportCmd = &cobra.Command{
@@ -31,7 +33,7 @@ var supportCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		certProjectTypeLabel := promptui.Select{
 			Label: "Select a Certification Project Type",
-			Items: []string{"Container Image", "Operator Bundle Image"},
+			Items: []string{containerImage, operatorBundleImage},
 		}
 
 		_, certProjectTypeValue, err := certProjectTypeLabel.Run()
@@ -77,39 +79,43 @@ var supportCmd = &cobra.Command{
 
 		log.Debugf("certification project id: %s", certProjectIDValue)
 
-		pullRequestURLLabel := promptui.Prompt{
-			Label: "Please Enter Your Pull Request URL",
-
-			// validate makes sure that the url entered has a valid scheme, host and path to the pull request
-			Validate: func(s string) error {
-				_, err := url.ParseRequestURI(s)
-				if err != nil {
-					return errors.ErrPullRequestURL
-				}
-
-				url, err := url.Parse(s)
-				if err != nil || url.Scheme == "" || url.Host == "" || url.Path == "" {
-					return errors.ErrPullRequestURL
-				}
-
-				return nil
-			},
-		}
-
-		pullRequestURLValue, err := pullRequestURLLabel.Run()
-		if err != nil {
-			return errors.ErrSupportCmdPromptFailed
-		}
-
-		log.Debugf("pull request url: %s", pullRequestURLValue)
-
 		// building and encoding query params
 		queryParams := url.Values{}
 		queryParams.Add(typeParam, typeValue)
 		queryParams.Add(sourceParam, sourceValue)
 		queryParams.Add(certProjectTypeParam, certProjectTypeValue)
 		queryParams.Add(certProjectIDParam, certProjectIDValue)
-		queryParams.Add(pullRequestURLParam, pullRequestURLValue)
+
+		// checking project type to see if we need to add additional query params
+		if certProjectTypeValue == operatorBundleImage {
+			pullRequestURLLabel := promptui.Prompt{
+				Label: "Please Enter Your Pull Request URL",
+
+				// validate makes sure that the url entered has a valid scheme, host and path to the pull request
+				Validate: func(s string) error {
+					_, err := url.ParseRequestURI(s)
+					if err != nil {
+						return errors.ErrPullRequestURL
+					}
+
+					url, err := url.Parse(s)
+					if err != nil || url.Scheme == "" || url.Host == "" || url.Path == "" {
+						return errors.ErrPullRequestURL
+					}
+
+					return nil
+				},
+			}
+
+			pullRequestURLValue, err := pullRequestURLLabel.Run()
+			if err != nil {
+				return errors.ErrSupportCmdPromptFailed
+			}
+
+			log.Debugf("pull request url: %s", pullRequestURLValue)
+
+			queryParams.Add(pullRequestURLParam, pullRequestURLValue)
+		}
 
 		fmt.Printf("Create a support ticket by: \n"+
 			"\t1. Copying URL: %s\n"+

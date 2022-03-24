@@ -1,6 +1,8 @@
 package container
 
 import (
+	"context"
+
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
 	. "github.com/onsi/ginkgo/v2"
@@ -40,7 +42,7 @@ var _ = Describe("LessThanMaxLayers", func() {
 	Describe("Checking for less than max layers", func() {
 		Context("When it has fewer layers than max", func() {
 			It("should pass Validate", func() {
-				ok, err := maxLayersCheck.Validate(imgRef)
+				ok, err := maxLayersCheck.Validate(context.TODO(), imgRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -53,7 +55,7 @@ var _ = Describe("LessThanMaxLayers", func() {
 				imgRef.ImageInfo = &fakeImage
 			})
 			It("should not succeed the check", func() {
-				ok, err := maxLayersCheck.Validate(imgRef)
+				ok, err := maxLayersCheck.Validate(context.TODO(), imgRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"time"
@@ -107,7 +108,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should pass Validate", func() {
-				ok, err := deployableByOLMCheck.Validate(imageRef)
+				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -118,7 +119,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should fail Validate", func() {
-				ok, err := deployableByOLMCheck.Validate(imageRef)
+				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -130,7 +131,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should pass Validate", func() {
-				ok, err := deployableByOLMCheck.Validate(imageRef)
+				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -143,7 +144,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should pass Validate", func() {
-				ok, err := deployableByOLMCheck.Validate(imageRef)
+				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -157,7 +158,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should pass Validate", func() {
-				ok, err := deployableByOLMCheck.Validate(imageRef)
+				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -170,7 +171,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should pass Validate", func() {
-				ok, err := deployableByOLMCheck.Validate(imageRef)
+				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
