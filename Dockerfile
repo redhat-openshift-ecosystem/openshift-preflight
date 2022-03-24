@@ -51,5 +51,8 @@ RUN curl --fail -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${O
 RUN curl --fail -Lo /usr/local/bin/operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk_linux_${ARCH} \
     && chmod 755 /usr/local/bin/operator-sdk
 
+#copy license
+COPY LICENSE /licenses/LICENSE
+
 ENTRYPOINT ["/usr/local/bin/preflight"]
 CMD ["--help"]
