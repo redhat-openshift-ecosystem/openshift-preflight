@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
+
+	pfErrors "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 )
 
 func GetPackageList(ctx context.Context, basePath string) ([]*rpmdb.PackageInfo, error) {
@@ -16,6 +18,12 @@ func GetPackageList(ctx context.Context, basePath string) ([]*rpmdb.PackageInfo,
 	if _, err := os.Stat(rpmdbPath); errors.Is(err, os.ErrNotExist) {
 		// rpmdb.sqlite doesn't exist. Fall back to Packages
 		rpmdbPath = filepath.Join(rpmdirPath, "Packages")
+
+		// if the fall back path does not exist - this probably isn't a RHEL or UBI based image
+		if _, err := os.Stat(rpmdbPath); errors.Is(err, os.ErrNotExist) {
+			return nil, pfErrors.ErrNotSupportedBaseImage
+		}
+
 	}
 
 	db, err := rpmdb.Open(rpmdbPath)
