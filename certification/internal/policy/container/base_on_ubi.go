@@ -46,6 +46,7 @@ func (p *BasedOnUBICheck) checkRedHatLayers(ctx context.Context, layerHashes []c
 	certImages, err := p.LayerHashCheckEngine.CheckRedHatLayers(ctx, layerHashes)
 	if err != nil {
 		log.Error("Error when querying pyxis for uncompressed top layer ids", err)
+		return false, err
 	}
 	if certImages != nil && len(certImages) >= 1 {
 		return true, nil
@@ -58,6 +59,7 @@ func (p *BasedOnUBICheck) validate(ctx context.Context, layerHashes []cranev1.Ha
 	hasUBIHash, err := p.checkRedHatLayers(ctx, layerHashes)
 	if err != nil {
 		log.Error("Unable to verify layer hashes", err)
+		return false, err
 	}
 	if hasUBIHash {
 		return true, nil
