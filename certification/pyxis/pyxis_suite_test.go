@@ -1,15 +1,16 @@
 package pyxis
 
 import (
-	"bytes"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2/dsl/core"
 	. "github.com/onsi/gomega"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 func TestPyxis(t *testing.T) {
@@ -20,230 +21,101 @@ func TestPyxis(t *testing.T) {
 func init() {
 	log.SetFormatter(&log.TextFormatter{})
 	log.SetLevel(log.TraceLevel)
+	viper.SetEnvPrefix("pflt")
+	viper.AutomaticEnv()
 }
 
-type fakeHttpClient struct{}
-
-func (fhc fakeHttpClient) Do(req *http.Request) (*http.Response, error) {
-	var results string
-
-	switch {
-	case strings.Contains(req.URL.Path, "test-results"):
-		results = `{"image": "quay.io/awesome/image:latest", "passed": false}`
-	case strings.Contains(req.URL.Path, "certification"):
-		results = `{"certification_status":"Started","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-
-		if req.Method == http.MethodPatch {
-			results = `{"certification_status":"In Progress","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-		}
-	case strings.Contains(req.URL.Path, "rpm-manifest"):
-		results = `{"object_type": "containerImageRPMManifest"}`
-	case strings.Contains(req.URL.Path, "images"):
-		results = `{"certified":false,"deleted":false,"image_id":"123456789abc"}`
-	}
-
-	return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewReader([]byte(results)))}, nil
+type localRoundTripper struct {
+	handler http.Handler
 }
 
-type fakeHttpCertProjectUnauthorizedClient struct{}
-
-func (fhc fakeHttpCertProjectUnauthorizedClient) Do(req *http.Request) (*http.Response, error) {
-	var results string
-
-	switch {
-	case strings.Contains(req.URL.Path, "certification"):
-		results = `{}`
-	}
-
-	return &http.Response{StatusCode: http.StatusUnauthorized, Body: io.NopCloser(bytes.NewReader([]byte(results)))}, nil
+func (l localRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	w := httptest.NewRecorder()
+	l.handler.ServeHTTP(w, req)
+	return w.Result(), nil
 }
 
-type fakeHttpCreateImageConflictClient struct{}
-
-func (fhc fakeHttpCreateImageConflictClient) Do(req *http.Request) (*http.Response, error) {
-	var results string
-	statusCode := http.StatusOK
-
-	switch {
-	case strings.Contains(req.URL.Path, "test-results"):
-		results = `{"image": "quay.io/awesome/image:latest", "passed": false}`
-	case strings.Contains(req.URL.RawQuery, "filter=docker_image_digest=="):
-		results = `{"data":[{"certified":false,"deleted":false,"image_id":"123456789abc"}]}`
-	case strings.Contains(req.URL.Path, "certification"):
-		results = `{"certification_status":"Started","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-
-		if req.Method == http.MethodPatch {
-			results = `{"certification_status":"In Progress","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-		}
-	case strings.Contains(req.URL.Path, "rpm-manifest"):
-		results = `{"object_type": "containerImageRPMManifest"}`
-	case strings.Contains(req.URL.Path, "images"):
-		results = ``
-		statusCode = http.StatusConflict
+func mustWrite(w io.Writer, s string) {
+	_, err := io.WriteString(w, s)
+	if err != nil {
+		panic(err)
 	}
-
-	return &http.Response{StatusCode: statusCode, Body: io.NopCloser(bytes.NewReader([]byte(results)))}, nil
 }
 
-type fakeHttpCreateImageUnauthorizedClient struct{}
+type (
+	pyxisProjectHandler     struct{}
+	pyxisImageHandler       struct{}
+	pyxisRPMManifestHandler struct{}
+	pyxisTestResultsHandler struct{}
+)
 
-func (fhc fakeHttpCreateImageUnauthorizedClient) Do(req *http.Request) (*http.Response, error) {
-	var results string
-	statusCode := http.StatusOK
-
-	switch {
-	case strings.Contains(req.URL.Path, "certification"):
-		results = `{"certification_status":"Started","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-
-		if req.Method == http.MethodPatch {
-			results = `{"certification_status":"In Progress","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-		}
-	case strings.Contains(req.URL.Path, "images"):
-		results = `{}`
-		statusCode = http.StatusUnauthorized
+func (p *pyxisProjectHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
+	log.Trace("In the Project ServeHTTP")
+	response.Header().Set("Content-Type", "application/json")
+	if request.Body != nil {
+		defer request.Body.Close()
 	}
-
-	return &http.Response{StatusCode: statusCode, Body: io.NopCloser(bytes.NewReader([]byte(results)))}, nil
+	switch {
+	case request.Header["X-Api-Key"][0] == "my-bad-project-api-token":
+		response.WriteHeader(401)
+	case request.Method == http.MethodPost:
+		body, err := io.ReadAll(request.Body)
+		if err != nil {
+			response.WriteHeader(400)
+		}
+		mustWrite(response, string(body))
+	default:
+		mustWrite(response, `{"_id":"deadb33f","certification_status":"Started","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`)
+	}
+	return
 }
 
-type fakeHttpCreateImageConflictAndUnauthorizedClient struct{}
-
-func (fhc fakeHttpCreateImageConflictAndUnauthorizedClient) Do(req *http.Request) (*http.Response, error) {
-	var results string
-	statusCode := http.StatusOK
-
-	switch {
-	case strings.Contains(req.URL.Path, "test-results"):
-		results = `{"image": "quay.io/awesome/image:latest", "passed": false}`
-	case strings.Contains(req.URL.RawQuery, "filter=docker_image_digest=="):
-		results = ``
-		statusCode = http.StatusUnauthorized
-	case strings.Contains(req.URL.Path, "certification"):
-		results = `{"certification_status":"Started","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-
-		if req.Method == http.MethodPatch {
-			results = `{"certification_status":"In Progress","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-		}
-	case strings.Contains(req.URL.Path, "rpm-manifest"):
-		results = `{"object_type": "containerImageRPMManifest"}`
-	case strings.Contains(req.URL.Path, "images"):
-		results = ``
-		statusCode = http.StatusConflict
+func (p *pyxisImageHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
+	log.Trace("In the Image ServeHTTP")
+	response.Header().Set("Content-Type", "application/json")
+	if request.Body != nil {
+		defer request.Body.Close()
 	}
-
-	return &http.Response{StatusCode: statusCode, Body: io.NopCloser(bytes.NewReader([]byte(results)))}, nil
+	switch {
+	case strings.Contains(request.URL.Path, "my-image-409-project-id") && request.Method == http.MethodPost:
+		response.WriteHeader(409)
+	case request.Header["X-Api-Key"][0] == "my-bad-image-api-token":
+		response.WriteHeader(401)
+	default:
+		mustWrite(response, `{"_id":"blah","certified":false,"deleted":false,"image_id":"123456789abc"}`)
+	}
+	return
 }
 
-type fakeHttpCreateRPMManifestConflictClient struct{}
-
-func (fhc fakeHttpCreateRPMManifestConflictClient) Do(req *http.Request) (*http.Response, error) {
-	var results string
-	statusCode := http.StatusOK
-
-	switch {
-	case strings.Contains(req.URL.Path, "test-results"):
-		results = `{"image": "quay.io/awesome/image:latest", "passed": false}`
-	case strings.Contains(req.URL.Path, "certification"):
-		results = `{"certification_status":"Started","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-
-		if req.Method == http.MethodPatch {
-			results = `{"certification_status":"In Progress","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-		}
-	case strings.Contains(req.URL.Path, "rpm-manifest"):
-		if req.Method == http.MethodPost {
-			results = `{}`
-			statusCode = http.StatusConflict
-		}
-
-		if req.Method == http.MethodGet {
-			results = `{"object_type": "containerImageRPMManifest"}`
-		}
-	case strings.Contains(req.URL.Path, "images"):
-		results = `{"certified":false,"deleted":false,"image_id":"123456789abc"}`
-
+func (p *pyxisRPMManifestHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
+	log.Trace("In the RPM Manifest ServeHTTP")
+	response.Header().Set("Content-Type", "application/json")
+	if request.Body != nil {
+		defer request.Body.Close()
 	}
-
-	return &http.Response{StatusCode: statusCode, Body: io.NopCloser(bytes.NewReader([]byte(results)))}, nil
+	switch {
+	case strings.Contains(request.URL.Path, "my-manifest-409-project-id") && request.Method == http.MethodPost:
+		response.WriteHeader(409)
+		mustWrite(response, `{"_id":"foo"}`)
+	case request.Header["X-Api-Key"][0] == "my-bad-rpmmanifest-api-token":
+		response.WriteHeader(401)
+	default:
+		mustWrite(response, `{"_id":"blah"}`)
+	}
+	return
 }
 
-type fakeHttpCreateRPMManifestConflictAndUnauthorizedClient struct{}
-
-func (fhc fakeHttpCreateRPMManifestConflictAndUnauthorizedClient) Do(req *http.Request) (*http.Response, error) {
-	var results string
-	statusCode := http.StatusOK
-
-	switch {
-	case strings.Contains(req.URL.Path, "test-results"):
-		results = `{"image": "quay.io/awesome/image:latest", "passed": false}`
-	case strings.Contains(req.URL.Path, "certification"):
-		results = `{"certification_status":"Started","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-
-		if req.Method == http.MethodPatch {
-			results = `{"certification_status":"In Progress","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-		}
-	case strings.Contains(req.URL.Path, "rpm-manifest"):
-		if req.Method == http.MethodPost {
-			results = `{}`
-			statusCode = http.StatusConflict
-		}
-
-		if req.Method == http.MethodGet {
-			results = `{}`
-			statusCode = http.StatusUnauthorized
-		}
-	case strings.Contains(req.URL.Path, "images"):
-		results = `{"certified":false,"deleted":false,"image_id":"123456789abc"}`
+func (p *pyxisTestResultsHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
+	log.Trace("In the Results ServeHTTP")
+	response.Header().Set("Content-Type", "application/json")
+	if request.Body != nil {
+		defer request.Body.Close()
 	}
-
-	return &http.Response{StatusCode: statusCode, Body: io.NopCloser(bytes.NewReader([]byte(results)))}, nil
-}
-
-type fakeHttpCreateRPMManifestUnauthorizedClient struct{}
-
-func (fhc fakeHttpCreateRPMManifestUnauthorizedClient) Do(req *http.Request) (*http.Response, error) {
-	var results string
-	statusCode := http.StatusOK
-
 	switch {
-	case strings.Contains(req.URL.Path, "test-results"):
-		results = `{"image": "quay.io/awesome/image:latest", "passed": false}`
-	case strings.Contains(req.URL.Path, "certification"):
-		results = `{"certification_status":"Started","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-
-		if req.Method == http.MethodPatch {
-			results = `{"certification_status":"In Progress","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-		}
-	case strings.Contains(req.URL.Path, "rpm-manifest"):
-		results = `{}`
-		statusCode = http.StatusUnauthorized
-	case strings.Contains(req.URL.Path, "images"):
-		results = `{"certified":false,"deleted":false,"image_id":"123456789abc"}`
+	case request.Header["X-Api-Key"][0] == "my-bad-testresults-api-token":
+		response.WriteHeader(401)
+	default:
+		mustWrite(response, `{"image":"quay.io/awesome/image:latest","passed": true}`)
 	}
-
-	return &http.Response{StatusCode: statusCode, Body: io.NopCloser(bytes.NewReader([]byte(results)))}, nil
-}
-
-type fakeHttpCreateTestResultsUnauthorizedClient struct{}
-
-func (fhc fakeHttpCreateTestResultsUnauthorizedClient) Do(req *http.Request) (*http.Response, error) {
-	var results string
-	statusCode := http.StatusOK
-
-	switch {
-	case strings.Contains(req.URL.Path, "test-results"):
-		results = `{}`
-		statusCode = http.StatusUnauthorized
-	case strings.Contains(req.URL.Path, "certification"):
-		results = `{"certification_status":"Started","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-
-		if req.Method == http.MethodPatch {
-			results = `{"certification_status":"In Progress","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`
-		}
-	case strings.Contains(req.URL.Path, "rpm-manifest"):
-		results = `{"object_type": "containerImageRPMManifest"}`
-	case strings.Contains(req.URL.Path, "images"):
-		results = `{"certified":false,"deleted":false,"image_id":"123456789abc"}`
-	}
-
-	return &http.Response{StatusCode: statusCode, Body: io.NopCloser(bytes.NewReader([]byte(results)))}, nil
+	return
 }
