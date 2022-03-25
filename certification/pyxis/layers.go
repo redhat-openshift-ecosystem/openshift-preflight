@@ -34,6 +34,7 @@ func (p *pyxisEngine) CheckRedHatLayers(ctx context.Context, layerHashes []crane
 		return nil, err
 	}
 
+	log.Tracef("URL is %s", req.URL)
 	resp, err := p.Client.Do(req)
 	if err != nil {
 		log.Error(err)
