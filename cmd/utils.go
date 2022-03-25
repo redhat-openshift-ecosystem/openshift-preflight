@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -47,7 +48,7 @@ func initConfig() {
 	viper.SetDefault("scorecard_wait_time", DefaultScorecardWaitTime)
 
 	// Set up pyxis host
-	viper.SetDefault("pyxis_host", DefaultPyxisHost)
+	viper.SetDefault("pyxis_host", certification.DefaultPyxisHost)
 	viper.SetDefault("pyxis_api_token", "")
 }
 
@@ -77,7 +78,7 @@ func buildConnectURL(projectID string) string {
 	pyxisHost := viper.GetString("pyxis_host")
 	s := strings.Split(pyxisHost, ".")
 
-	if pyxisHost != DefaultPyxisHost && len(s) > 3 {
+	if pyxisHost != certification.DefaultPyxisHost && len(s) > 3 {
 		env := s[1]
 		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s", env, projectID)
 	}

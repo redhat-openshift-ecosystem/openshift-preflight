@@ -98,7 +98,7 @@ var (
 
 	// Since the Pyxis data for checking UBI is only correct in prod, force the use of external prod
 	basedOnUbiCheck certification.Check = containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisEngine(
-		"catalog.redhat.com/api/containers",
+		certification.DefaultPyxisHost,
 		viper.GetString("pyxis_api_token"),
 		viper.GetString("certification_project_id"),
 		&http.Client{Timeout: 60 * time.Second}))

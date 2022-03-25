@@ -8,5 +8,4 @@ var (
 	DefaultNamespace         = "default"
 	DefaultServiceAccount    = "default"
 	DefaultScorecardWaitTime = "240"
-	DefaultPyxisHost         = "catalog.redhat.com/api/containers"
 )
