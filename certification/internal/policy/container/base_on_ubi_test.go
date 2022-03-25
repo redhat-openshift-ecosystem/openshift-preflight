@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"net/http"
 	"os"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
@@ -31,6 +32,12 @@ type fakeLayerHashCheckerNoMatch struct{}
 func (flhc *fakeLayerHashCheckerNoMatch) CheckRedHatLayers(ctx context.Context, layers []cranev1.Hash) ([]pyxis.CertImage, error) {
 	var matchingImages []pyxis.CertImage
 	return matchingImages, nil
+}
+
+type fakeLayerHashCheckerTimeout struct{}
+
+func (flhc *fakeLayerHashCheckerTimeout) CheckRedHatLayers(ctx context.Context, layers []cranev1.Hash) ([]pyxis.CertImage, error) {
+	return nil, http.ErrHandlerTimeout
 }
 
 var _ = Describe("BaseOnUBI", func() {
@@ -73,6 +80,16 @@ var _ = Describe("BaseOnUBI", func() {
 						Expect(ok).To(BeFalse())
 					})
 				})
+			})
+		})
+		Context("When the pyxis call times out", func() {
+			JustBeforeEach(func() {
+				basedOnUbiCheck.LayerHashCheckEngine = &fakeLayerHashCheckerTimeout{}
+			})
+			It("should return an error", func() {
+				ok, err := basedOnUbiCheck.Validate(context.TODO(), imageRef)
+				Expect(err).To(HaveOccurred())
+				Expect(ok).To(BeFalse())
 			})
 		})
 	})

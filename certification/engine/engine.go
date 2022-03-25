@@ -95,8 +95,13 @@ var (
 	hasRequiredLabelsCheck certification.Check = &containerpol.HasRequiredLabelsCheck{}
 	runAsRootCheck         certification.Check = &containerpol.RunAsNonRootCheck{}
 	hasModifiedFilesCheck  certification.Check = &containerpol.HasModifiedFilesCheck{}
-	basedOnUbiCheck        certification.Check = containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisEngine(viper.GetString("pyxis_api_token"),
-		viper.GetString("certification_project_id"), &http.Client{Timeout: 60 * time.Second}))
+
+	// Since the Pyxis data for checking UBI is only correct in prod, force the use of external prod
+	basedOnUbiCheck certification.Check = containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisEngine(
+		"catalog.redhat.com/api/containers",
+		viper.GetString("pyxis_api_token"),
+		viper.GetString("certification_project_id"),
+		&http.Client{Timeout: 60 * time.Second}))
 	// runnableContainerCheck  certification.Check = containerpol.NewRunnableContainerCheck(internal.NewPodmanEngine())
 	// runSystemContainerCheck certification.Check = containerpol.NewRunSystemContainerCheck(internal.NewPodmanEngine())
 )
