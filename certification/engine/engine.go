@@ -97,7 +97,7 @@ var (
 	hasModifiedFilesCheck  certification.Check = &containerpol.HasModifiedFilesCheck{}
 
 	// Since the Pyxis data for checking UBI is only correct in prod, force the use of external prod
-	basedOnUbiCheck certification.Check = containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisEngine(
+	basedOnUbiCheck certification.Check = containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisClient(
 		certification.DefaultPyxisHost,
 		viper.GetString("pyxis_api_token"),
 		viper.GetString("certification_project_id"),

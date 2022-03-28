@@ -14,7 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (p *pyxisEngine) CheckRedHatLayers(ctx context.Context, layerHashes []cranev1.Hash) ([]CertImage, error) {
+func (p *pyxisClient) CheckRedHatLayers(ctx context.Context, layerHashes []cranev1.Hash) ([]CertImage, error) {
 	layerIds := make([]string, 0, len(layerHashes))
 	for _, layer := range layerHashes {
 		layerIds = append(layerIds, layer.String())
