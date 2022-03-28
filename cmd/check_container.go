@@ -55,13 +55,8 @@ var checkContainerCmd = &cobra.Command{
 	Example: fmt.Sprintf("  %s", "preflight check container quay.io/repo-name/container-name:version"),
 	PreRun:  preRunConfig,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Expect exactly one positional arg. Check here instead of using builtin Args key
-		// so that we can get a more user-friendly error message
-
 		log.Info("certification library version ", version.Version.String())
-
 		ctx := context.Background()
-
 		containerImage := args[0]
 
 		cfg := runtime.Config{
