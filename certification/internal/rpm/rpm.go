@@ -10,6 +10,9 @@ import (
 	preflightErrors "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 )
 
+// GetPackageList returns the list of packages in the rpm database from either
+// /var/lib/rpm/rpmdb.sqlite, or /var/lib/rpm/Packages if the former does not exist.
+// If neither exists, this returns an error.
 func GetPackageList(ctx context.Context, basePath string) ([]*rpmdb.PackageInfo, error) {
 	rpmdirPath := filepath.Join(basePath, "var", "lib", "rpm")
 	rpmdbPath := filepath.Join(rpmdirPath, "rpmdb.sqlite")
