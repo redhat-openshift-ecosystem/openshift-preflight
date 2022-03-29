@@ -28,7 +28,14 @@ var _ = Describe("Pyxis Submit", func() {
 			It("should switch to In Progress", func() {
 				certResults, err := pyxisEngine.SubmitResults(ctx, &CertificationInput{
 					CertProject: &CertProject{CertificationStatus: "Started"},
-					CertImage:   &CertImage{},
+					CertImage: &CertImage{
+						Repositories: []Repository{
+							{
+								Registry:   "my.registry",
+								Repository: "my/repo",
+							},
+						},
+					},
 					RpmManifest: &RPMManifest{},
 					TestResults: &TestResults{},
 					Artifacts:   []Artifact{},
@@ -51,7 +58,14 @@ var _ = Describe("Pyxis Submit", func() {
 				It("should get an unauthorized", func() {
 					certResults, err := pyxisEngine.SubmitResults(ctx, &CertificationInput{
 						CertProject: &CertProject{CertificationStatus: "Started"},
-						CertImage:   &CertImage{},
+						CertImage: &CertImage{
+							Repositories: []Repository{
+								{
+									Registry:   "my.registry",
+									Repository: "my/repo",
+								},
+							},
+						},
 						RpmManifest: &RPMManifest{},
 						TestResults: &TestResults{},
 						Artifacts:   []Artifact{},
@@ -72,7 +86,14 @@ var _ = Describe("Pyxis Submit", func() {
 				It("should get a conflict and handle it", func() {
 					certResults, err := pyxisEngine.SubmitResults(ctx, &CertificationInput{
 						CertProject: &CertProject{},
-						CertImage:   &CertImage{},
+						CertImage: &CertImage{
+							Repositories: []Repository{
+								{
+									Registry:   "my.registry",
+									Repository: "my/repo",
+								},
+							},
+						},
 						RpmManifest: &RPMManifest{},
 						TestResults: &TestResults{},
 						Artifacts:   []Artifact{},
@@ -96,7 +117,14 @@ var _ = Describe("Pyxis Submit", func() {
 				It("should get an unauthorized result", func() {
 					certResults, err := pyxisEngine.SubmitResults(ctx, &CertificationInput{
 						CertProject: &CertProject{CertificationStatus: "Started"},
-						CertImage:   &CertImage{},
+						CertImage: &CertImage{
+							Repositories: []Repository{
+								{
+									Registry:   "my.registry",
+									Repository: "my/repo",
+								},
+							},
+						},
 						RpmManifest: &RPMManifest{},
 						TestResults: &TestResults{},
 						Artifacts:   []Artifact{},
@@ -117,7 +145,14 @@ var _ = Describe("Pyxis Submit", func() {
 				It("should error", func() {
 					certResults, err := pyxisEngine.SubmitResults(ctx, &CertificationInput{
 						CertProject: &CertProject{CertificationStatus: "Started"},
-						CertImage:   &CertImage{},
+						CertImage: &CertImage{
+							Repositories: []Repository{
+								{
+									Registry:   "my.registry",
+									Repository: "my/repo",
+								},
+							},
+						},
 						RpmManifest: &RPMManifest{},
 						TestResults: &TestResults{},
 						Artifacts:   []Artifact{},
@@ -138,7 +173,14 @@ var _ = Describe("Pyxis Submit", func() {
 				It("should retry and return success", func() {
 					certResults, err := pyxisEngine.SubmitResults(ctx, &CertificationInput{
 						CertProject: &CertProject{},
-						CertImage:   &CertImage{},
+						CertImage: &CertImage{
+							Repositories: []Repository{
+								{
+									Registry:   "my.registry",
+									Repository: "my/repo",
+								},
+							},
+						},
 						RpmManifest: &RPMManifest{},
 						TestResults: &TestResults{},
 						Artifacts:   []Artifact{},
@@ -162,7 +204,14 @@ var _ = Describe("Pyxis Submit", func() {
 				It("should error", func() {
 					certResults, err := pyxisEngine.SubmitResults(ctx, &CertificationInput{
 						CertProject: &CertProject{CertificationStatus: "Started"},
-						CertImage:   &CertImage{},
+						CertImage: &CertImage{
+							Repositories: []Repository{
+								{
+									Registry:   "my.registry",
+									Repository: "my/repo",
+								},
+							},
+						},
 						RpmManifest: &RPMManifest{},
 						TestResults: &TestResults{},
 						Artifacts:   []Artifact{},
@@ -183,7 +232,14 @@ var _ = Describe("Pyxis Submit", func() {
 				It("should error", func() {
 					certResults, err := pyxisEngine.SubmitResults(ctx, &CertificationInput{
 						CertProject: &CertProject{CertificationStatus: "Started"},
-						CertImage:   &CertImage{},
+						CertImage: &CertImage{
+							Repositories: []Repository{
+								{
+									Registry:   "my.registry",
+									Repository: "my/repo",
+								},
+							},
+						},
 						RpmManifest: &RPMManifest{},
 						TestResults: &TestResults{},
 						Artifacts:   []Artifact{},
@@ -204,7 +260,14 @@ var _ = Describe("Pyxis Submit", func() {
 				It("should error", func() {
 					certResults, err := pyxisEngine.SubmitResults(ctx, &CertificationInput{
 						CertProject: &CertProject{CertificationStatus: "Started"},
-						CertImage:   &CertImage{},
+						CertImage: &CertImage{
+							Repositories: []Repository{
+								{
+									Registry:   "my.registry",
+									Repository: "my/repo",
+								},
+							},
+						},
 						RpmManifest: &RPMManifest{},
 						TestResults: &TestResults{},
 						Artifacts:   []Artifact{},

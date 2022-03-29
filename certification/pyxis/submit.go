@@ -12,10 +12,17 @@ func (p *pyxisEngine) SubmitResults(ctx context.Context, certInput *Certificatio
 	var err error
 
 	certProject := certInput.CertProject
+	certImage := certInput.CertImage
 
 	if certProject.CertificationStatus == "Started" {
 		certProject.CertificationStatus = "In Progress"
 	}
+
+	if len(certImage.Repositories) == 0 {
+		return nil, errors.ErrInvalidCertImage
+	}
+	certProject.Container.Registry = certImage.Repositories[0].Registry
+	certProject.Container.Repository = certImage.Repositories[0].Repository
 
 	oldCertProject, err := p.GetProject(ctx)
 	if err != nil {
@@ -30,7 +37,6 @@ func (p *pyxisEngine) SubmitResults(ctx context.Context, certInput *Certificatio
 		}
 	}
 
-	certImage := certInput.CertImage
 	dockerImageDigest := certImage.DockerImageDigest
 
 	certImage, err = p.createImage(ctx, certImage)

@@ -100,6 +100,8 @@ type Container struct {
 	DockerConfigJSON string `json:"docker_config_json"`
 	Type             string `json:"type" default:"Containers"` // conditionally required
 	ISVPID           string `json:"isv_pid,omitempty"`         // required
+	Registry         string `json:"registry,omitempty"`
+	Repository       string `json:"repository,omitempty"`
 }
 
 type Layer struct {
