@@ -81,8 +81,8 @@ var checkContainerCmd = &cobra.Command{
 			viper.Set("certification_project_id", projectId)
 		}
 		apiToken := viper.GetString("pyxis_api_token")
-		pyxisEngine := pyxis.NewPyxisEngine(viper.GetString("pyxis_host"), apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
-		certProject, err := pyxisEngine.GetProject(ctx)
+		pyxisClient := pyxis.NewPyxisClient(viper.GetString("pyxis_host"), apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
+		certProject, err := pyxisClient.GetProject(ctx)
 		if err != nil {
 			log.Error(err, "could not retrieve project")
 			return err
@@ -252,7 +252,7 @@ var checkContainerCmd = &cobra.Command{
 				TestResults: testResults,
 				Artifacts:   artifacts,
 			}
-			certResults, err := pyxisEngine.SubmitResults(ctx, certInput)
+			certResults, err := pyxisClient.SubmitResults(ctx, certInput)
 			if err != nil {
 				return err
 			}

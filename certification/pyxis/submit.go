@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (p *pyxisEngine) SubmitResults(ctx context.Context, certInput *CertificationInput) (*CertificationResults, error) {
+func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *CertificationInput) (*CertificationResults, error) {
 	var err error
 
 	certProject := certInput.CertProject

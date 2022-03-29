@@ -20,19 +20,19 @@ type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-type pyxisEngine struct {
+type pyxisClient struct {
 	ApiToken  string
 	ProjectId string
 	Client    HTTPClient
 	PyxisHost string
 }
 
-func (p *pyxisEngine) getPyxisUrl(path string) string {
+func (p *pyxisClient) getPyxisUrl(path string) string {
 	return fmt.Sprintf("https://%s/%s/%s", p.PyxisHost, apiVersion, path)
 }
 
-func NewPyxisEngine(pyxisHost string, apiToken string, projectId string, httpClient HTTPClient) *pyxisEngine {
-	return &pyxisEngine{
+func NewPyxisClient(pyxisHost string, apiToken string, projectId string, httpClient HTTPClient) *pyxisClient {
+	return &pyxisClient{
 		ApiToken:  apiToken,
 		ProjectId: projectId,
 		Client:    httpClient,
@@ -40,7 +40,7 @@ func NewPyxisEngine(pyxisHost string, apiToken string, projectId string, httpCli
 	}
 }
 
-func (p *pyxisEngine) createImage(ctx context.Context, certImage *CertImage) (*CertImage, error) {
+func (p *pyxisClient) createImage(ctx context.Context, certImage *CertImage) (*CertImage, error) {
 	b, err := json.Marshal(certImage)
 	if err != nil {
 		log.Error(err)
@@ -86,7 +86,7 @@ func (p *pyxisEngine) createImage(ctx context.Context, certImage *CertImage) (*C
 	return &newCertImage, nil
 }
 
-func (p *pyxisEngine) getImage(ctx context.Context, dockerImageDigest string) (*CertImage, error) {
+func (p *pyxisClient) getImage(ctx context.Context, dockerImageDigest string) (*CertImage, error) {
 	req, err := p.newRequestWithApiToken(ctx, http.MethodGet,
 		p.getPyxisUrl(fmt.Sprintf("projects/certification/id/%s/images?filter=docker_image_digest==%s", p.ProjectId, dockerImageDigest)), nil)
 	if err != nil {
@@ -128,7 +128,7 @@ func (p *pyxisEngine) getImage(ctx context.Context, dockerImageDigest string) (*
 	return &data.Data[0], nil
 }
 
-func (p *pyxisEngine) createRPMManifest(ctx context.Context, rpmManifest *RPMManifest) (*RPMManifest, error) {
+func (p *pyxisClient) createRPMManifest(ctx context.Context, rpmManifest *RPMManifest) (*RPMManifest, error) {
 	b, err := json.Marshal(rpmManifest)
 	if err != nil {
 		log.Error(err)
@@ -174,7 +174,7 @@ func (p *pyxisEngine) createRPMManifest(ctx context.Context, rpmManifest *RPMMan
 	return &newRPMManifest, nil
 }
 
-func (p *pyxisEngine) getRPMManifest(ctx context.Context, imageID string) (*RPMManifest, error) {
+func (p *pyxisClient) getRPMManifest(ctx context.Context, imageID string) (*RPMManifest, error) {
 	req, err := p.newRequestWithApiToken(ctx, http.MethodGet, p.getPyxisUrl(fmt.Sprintf("images/id/%s/rpm-manifest", imageID)), nil)
 	if err != nil {
 		log.Error(err)
@@ -211,7 +211,7 @@ func (p *pyxisEngine) getRPMManifest(ctx context.Context, imageID string) (*RPMM
 	return &newRPMManifest, nil
 }
 
-func (p *pyxisEngine) GetProject(ctx context.Context) (*CertProject, error) {
+func (p *pyxisClient) GetProject(ctx context.Context) (*CertProject, error) {
 	req, err := p.newRequestWithApiToken(ctx, http.MethodGet, p.getPyxisUrl(fmt.Sprintf("projects/certification/id/%s", p.ProjectId)), nil)
 	if err != nil {
 		log.Error(err)
@@ -247,7 +247,7 @@ func (p *pyxisEngine) GetProject(ctx context.Context) (*CertProject, error) {
 	return &certProject, nil
 }
 
-func (p *pyxisEngine) updateProject(ctx context.Context, certProject *CertProject) (*CertProject, error) {
+func (p *pyxisClient) updateProject(ctx context.Context, certProject *CertProject) (*CertProject, error) {
 	b, err := json.Marshal(certProject)
 	if err != nil {
 		log.Error(err)
@@ -289,7 +289,7 @@ func (p *pyxisEngine) updateProject(ctx context.Context, certProject *CertProjec
 	return &newCertProject, nil
 }
 
-func (p *pyxisEngine) createTestResults(ctx context.Context, testResults *TestResults) (*TestResults, error) {
+func (p *pyxisClient) createTestResults(ctx context.Context, testResults *TestResults) (*TestResults, error) {
 	b, err := json.Marshal(testResults)
 	if err != nil {
 		log.Error(err)
@@ -329,7 +329,7 @@ func (p *pyxisEngine) createTestResults(ctx context.Context, testResults *TestRe
 	return &newTestResults, nil
 }
 
-func (p *pyxisEngine) createArtifact(ctx context.Context, artifact *Artifact) (*Artifact, error) {
+func (p *pyxisClient) createArtifact(ctx context.Context, artifact *Artifact) (*Artifact, error) {
 	b, err := json.Marshal(artifact)
 	if err != nil {
 		log.Error(err)
@@ -371,7 +371,7 @@ func (p *pyxisEngine) createArtifact(ctx context.Context, artifact *Artifact) (*
 	return &newArtifact, nil
 }
 
-func (p *pyxisEngine) newRequestWithApiToken(ctx context.Context, method string, url string, body io.Reader) (*http.Request, error) {
+func (p *pyxisClient) newRequestWithApiToken(ctx context.Context, method string, url string, body io.Reader) (*http.Request, error) {
 	req, err := p.newRequest(ctx, method, url, body)
 	if err != nil {
 		return nil, err
@@ -382,7 +382,7 @@ func (p *pyxisEngine) newRequestWithApiToken(ctx context.Context, method string,
 	return req, nil
 }
 
-func (p *pyxisEngine) newRequest(ctx context.Context, method string, url string, body io.Reader) (*http.Request, error) {
+func (p *pyxisClient) newRequest(ctx context.Context, method string, url string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, err
