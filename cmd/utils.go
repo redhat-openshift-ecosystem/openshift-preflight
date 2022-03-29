@@ -93,3 +93,11 @@ func buildOverviewURL(projectID string) string {
 func buildScanResultsURL(projectID string, imageID string) string {
 	return fmt.Sprintf("%s/images/%s/scan-results", buildConnectURL(projectID), imageID)
 }
+
+func convertPassedOverall(passedOverall bool) string {
+	if passedOverall {
+		return "PASSED"
+	}
+
+	return "FAILED"
+}

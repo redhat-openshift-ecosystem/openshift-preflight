@@ -259,6 +259,8 @@ var checkContainerCmd = &cobra.Command{
 			log.Infof(fmt.Sprintf("Please check %s to monitor the progress.", buildOverviewURL(projectId)))
 		}
 
+		log.Infof("Preflight result: %s", convertPassedOverall(results.PassedOverall))
+
 		return nil
 	},
 }
