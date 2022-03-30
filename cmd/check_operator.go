@@ -115,6 +115,8 @@ var checkOperatorCmd = &cobra.Command{
 			return err
 		}
 
+		log.Infof("Preflight result: %s", convertPassedOverall(results.PassedOverall))
+
 		return nil
 	},
 }
