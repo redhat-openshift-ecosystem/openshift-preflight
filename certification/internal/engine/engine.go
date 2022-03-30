@@ -421,6 +421,11 @@ func writeCertImage(ctx context.Context, imageRef certification.ImageReference) 
 	return nil
 }
 
+func getBgName(srcrpm string) string {
+	parts := strings.Split(srcrpm, "-")
+	return strings.Join(parts[0:len(parts)-2], "-")
+}
+
 func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 	pkgList, err := rpm.GetPackageList(ctx, containerFSPath)
 	if err != nil {
@@ -435,7 +440,7 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 
 		// accounting for the fact that not all packages have a source rpm
 		if len(packageInfo.SourceRpm) > 0 {
-			bgName = packageInfo.SourceRpm[0:strings.LastIndex(strings.SplitAfter(packageInfo.SourceRpm, ".")[0], "-")]
+			bgName = getBgName(packageInfo.SourceRpm)
 			endChop = strings.TrimPrefix(strings.TrimSuffix(regexp.MustCompile("(-[0-9].*)").FindString(packageInfo.SourceRpm), ".rpm"), "-")
 
 			srpmNevra = fmt.Sprintf("%s-%d:%s", bgName, packageInfo.Epoch, endChop)
