@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/cache"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
@@ -73,6 +74,13 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 			log.Error("unable to clean up tmpdir", tmpdir, err)
 		}
 	}()
+
+	imageTarPath := path.Join(tmpdir, "cache")
+	if err := os.Mkdir(imageTarPath, 0o755); err != nil {
+		return fmt.Errorf("%w: %s: %s", errors.ErrCreateTempDir, imageTarPath, err)
+	}
+
+	img = cache.Image(img, cache.NewFilesystemCache(imageTarPath))
 
 	containerFSPath := path.Join(tmpdir, "fs")
 	if err := os.Mkdir(containerFSPath, 0o755); err != nil {
