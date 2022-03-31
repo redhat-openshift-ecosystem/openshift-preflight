@@ -32,16 +32,18 @@ func (p *RunAsNonRootCheck) getDataToValidate(image cranev1.Image) (string, erro
 
 func (p *RunAsNonRootCheck) validate(user string) (bool, error) {
 	if user == "" {
-		log.Debug("detected empty user. Presumed to be running as root")
+		log.Info("detected empty USER. Presumed to be running as root")
+		log.Info("USER value must be provided and be a non-root value for this check to pass")
 		return false, nil
 	}
 
 	if user == "0" || user == "root" {
-		log.Debugf("detected user specified as root: %s", user)
+		log.Infof("detected USER specified as root: %s", user)
+		log.Info("USER other than root is required for this check to pass")
 		return false, nil
 	}
 
-	log.Debug("User specified that was not root")
+	log.Infof("USER %s specified that is non-root", user)
 	return true, nil
 }
 
