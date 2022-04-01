@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
-	preflightErrors "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 )
 
 // GetPackageList returns the list of packages in the rpm database from either
@@ -23,7 +22,7 @@ func GetPackageList(ctx context.Context, basePath string) ([]*rpmdb.PackageInfo,
 
 		// if the fall back path does not exist - this probably isn't a RHEL or UBI based image
 		if _, err := os.Stat(rpmdbPath); errors.Is(err, os.ErrNotExist) {
-			return nil, preflightErrors.ErrNotSupportedBaseImage
+			return nil, err
 		}
 	}
 

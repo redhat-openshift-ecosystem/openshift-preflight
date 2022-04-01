@@ -34,7 +34,6 @@ var (
 	Err409StatusCode                   = errors.New("remote API returned conflict")
 	ErrInvalidImageUri                 = errors.New("image uri could not be parsed")
 	ErrRetrievingLayers                = errors.New("could not get container layers")
-	ErrNotSupportedBaseImage           = errors.New("unsupported image. only RHEL/UBI or scratch base images are supported")
 	ErrInvalidCertImage                = errors.New("certImage has not been properly populated")
 	ErrWriteImageTarball               = errors.New("could not write image tarball to path")
 )
