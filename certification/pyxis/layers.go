@@ -2,68 +2,60 @@ package pyxis
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
-	"strings"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/hasura/go-graphql-client"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	log "github.com/sirupsen/logrus"
 )
 
 func (p *pyxisClient) CheckRedHatLayers(ctx context.Context, layerHashes []cranev1.Hash) ([]CertImage, error) {
-	layerIds := make([]string, 0, len(layerHashes))
+	layerIds := make([]graphql.String, 0, len(layerHashes))
 	for _, layer := range layerHashes {
-		layerIds = append(layerIds, layer.String())
+		layerIds = append(layerIds, graphql.String(layer.String()))
 	}
-	log.Tracef("the layerIds passed to pyxis are %s", layerIds)
 
-	pyxisQuery := url.QueryEscape(fmt.Sprintf("repositories.registry==registry.access.redhat.com and uncompressed_top_layer_id=in=(%s)", strings.Join(layerIds, ",")))
+	var query struct {
+		FindImages struct {
+			ContainerImage []struct {
+				UncompressedTopLayerId graphql.String `graphql:"uncompressed_top_layer_id"`
+				ID                     graphql.String `graphql:"_id"`
+			} `graphql:"data"`
+			Error struct {
+				Status graphql.Int    `graphql:"status"`
+				Detail graphql.String `graphql:"detail"`
+			} `graphql:"error"`
+			Total graphql.Int
+			Page  graphql.Int
+		} `graphql:"find_images(filter: {and:[{repositories:{registry:{in:$registries}}}{uncompressed_top_layer_id:{in:$contImageLayers}}]})"`
+	}
 
-	req, err := p.newRequest(
-		ctx,
-		http.MethodGet,
-		fmt.Sprintf("%s?filter=%s", p.getPyxisUrl("images"), pyxisQuery),
-		nil,
-	)
+	variables := map[string]interface{}{
+		"contImageLayers": layerIds,
+		"registries":      []graphql.String{"registry.access.redhat.com"},
+	}
+
+	httpClient, ok := p.Client.(*http.Client)
+	if !ok {
+		return nil, errors.ErrInvalidHttpClient
+	}
+	client := graphql.NewClient(p.getPyxisGraphqlUrl(), httpClient).WithDebug(true)
+
+	err := client.Query(ctx, &query, variables)
 	if err != nil {
-		log.Error(err)
+		log.Error(fmt.Errorf("%w: %s", errors.ErrInvalidGraphqlQuery, err))
 		return nil, err
 	}
 
-	log.Tracef("URL is %s", req.URL)
-	resp, err := p.Client.Do(req)
-	if err != nil {
-		log.Error(err)
-		return nil, err
+	images := make([]CertImage, 0, len(query.FindImages.ContainerImage))
+	for _, image := range query.FindImages.ContainerImage {
+		images = append(images, CertImage{
+			ID:                     string(image.ID),
+			UncompressedTopLayerId: string(image.UncompressedTopLayerId),
+		})
 	}
 
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	if !checkStatus(resp.StatusCode) {
-		log.Errorf("%s: %s", "received non 200 status code in CheckRedHatLayers", string(body))
-		return nil, errors.ErrNon200StatusCode
-	}
-
-	log.Tracef("query response from pyxis %s", string(body))
-
-	type imageList struct {
-		Images []CertImage `json:"data"`
-	}
-
-	var images imageList
-	if err := json.Unmarshal(body, &images); err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	return images.Images, nil
+	return images, nil
 }

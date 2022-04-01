@@ -43,10 +43,11 @@ func mustWrite(w io.Writer, s string) {
 }
 
 type (
-	pyxisProjectHandler     struct{}
-	pyxisImageHandler       struct{}
-	pyxisRPMManifestHandler struct{}
-	pyxisTestResultsHandler struct{}
+	pyxisProjectHandler      struct{}
+	pyxisImageHandler        struct{}
+	pyxisRPMManifestHandler  struct{}
+	pyxisTestResultsHandler  struct{}
+	pyxisGraphqlLayerHandler struct{}
 )
 
 func (p *pyxisProjectHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
@@ -117,5 +118,15 @@ func (p *pyxisTestResultsHandler) ServeHTTP(response http.ResponseWriter, reques
 	default:
 		mustWrite(response, `{"image":"quay.io/awesome/image:latest","passed": true}`)
 	}
+	return
+}
+
+func (p *pyxisGraphqlLayerHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
+	log.Trace("In the graphql ServeHTTP")
+	response.Header().Set("Content-Type", "application/json")
+	if request.Body != nil {
+		defer request.Body.Close()
+	}
+	mustWrite(response, `{"data":{"find_images":{"error":null,"total":1,"page":0,"data":[{"uncompressed_top_layer_id":"good_top_layer","_id":"deadb33f"}]}}}`)
 	return
 }
