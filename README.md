@@ -98,7 +98,7 @@ the following:
 
 ```shell
 ln -sf ${XDG_RUNTIME_DIR}/containers/auth.json ${XDG_RUNTIME_DIR}/containers/config.json
-DOCKER_CONFIG=${XDG_RUNTIME_DIR}/containers
+DOCKER_CONFIG=${XDG_RUNTIME_DIR}/containers/config.json
 ```
 
 ## Installation
