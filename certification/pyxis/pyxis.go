@@ -31,6 +31,10 @@ func (p *pyxisClient) getPyxisUrl(path string) string {
 	return fmt.Sprintf("https://%s/%s/%s", p.PyxisHost, apiVersion, path)
 }
 
+func (p *pyxisClient) getPyxisGraphqlUrl() string {
+	return fmt.Sprintf("https://%s/graphql/", p.PyxisHost)
+}
+
 func NewPyxisClient(pyxisHost string, apiToken string, projectId string, httpClient HTTPClient) *pyxisClient {
 	return &pyxisClient{
 		ApiToken:  apiToken,

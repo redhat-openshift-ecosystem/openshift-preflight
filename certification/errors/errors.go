@@ -37,4 +37,6 @@ var (
 	ErrNotSupportedBaseImage           = errors.New("unsupported image. only RHEL/UBI or scratch base images are supported")
 	ErrInvalidCertImage                = errors.New("certImage has not been properly populated")
 	ErrWriteImageTarball               = errors.New("could not write image tarball to path")
+	ErrInvalidGraphqlQuery             = errors.New("could not marshal GraphQL query")
+	ErrInvalidHttpClient               = errors.New("client could not be used as http.Client")
 )

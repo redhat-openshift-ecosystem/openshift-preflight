@@ -10,9 +10,9 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var ctx = context.Background()
-
 var _ = Describe("Pyxis Submit", func() {
+	ctx := context.Background()
+
 	var pyxisClient *pyxisClient
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/projects/certification/id/", &pyxisProjectHandler{})
