@@ -279,7 +279,7 @@ func init() {
 	checkContainerCmd.Flags().String("pyxis-host", certification.DefaultPyxisHost, "Host to use for Pyxis submissions.")
 	viper.BindPFlag("pyxis_host", checkContainerCmd.Flags().Lookup("pyxis-host"))
 
-	checkContainerCmd.Flags().String("certification-project-id", "", "Certification Project ID from conenct.redhat.com. Should be supplied without the ospid- prefix.")
+	checkContainerCmd.Flags().String("certification-project-id", "", "Certification Project ID from connect.redhat.com. Should be supplied without the ospid- prefix.")
 	checkContainerCmd.MarkFlagRequired("certification-project-id")
 	viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
 
