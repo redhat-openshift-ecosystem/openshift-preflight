@@ -12,7 +12,7 @@ ARCHITECTURES=amd64 arm64 ppc64le s390x
 .PHONY: build
 build:
 	go build -o $(BINARY) -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG)" main.go
-	@ls | grep preflight
+	@ls | grep -e '^preflight$$' &> /dev/null
 
 .PHONY: build-multi-arch
 build-multi-arch: $(addprefix build-linux-,$(ARCHITECTURES))
