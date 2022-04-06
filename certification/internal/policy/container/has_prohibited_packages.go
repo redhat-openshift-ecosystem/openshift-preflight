@@ -2,9 +2,11 @@ package container
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
 	log "github.com/sirupsen/logrus"
 )
@@ -26,7 +28,7 @@ func (p *HasNoProhibitedPackagesCheck) Validate(ctx context.Context, imgRef cert
 func (p *HasNoProhibitedPackagesCheck) getDataToValidate(ctx context.Context, dir string) ([]string, error) {
 	pkgList, err := rpm.GetPackageList(ctx, dir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %s", errors.ErrRPMPackageList, err)
 	}
 	pkgs := make([]string, 0, len(pkgList))
 	for _, pkg := range pkgList {

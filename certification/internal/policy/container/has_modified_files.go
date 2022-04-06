@@ -30,7 +30,7 @@ type packageFilesRef struct {
 func (p *HasModifiedFilesCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	packageFiles, err := p.getDataToValidate(ctx, imgRef)
 	if err != nil {
-		return false, fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
+		return false, fmt.Errorf("%w: %s", errors.ErrDetectingModifiedFiles, err)
 	}
 	return p.validate(packageFiles)
 }
@@ -43,7 +43,7 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 	// rpm, dnf, yum, etc. being installed in the image.
 	pkgList, err := rpm.GetPackageList(ctx, imgRef.ImageFSPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %s", errors.ErrRPMPackageList, err)
 	}
 
 	// Get the files put in place on the filesystem by the
@@ -73,7 +73,7 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 	for _, layer := range layers {
 		r, err := layer.Uncompressed()
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
+			return nil, fmt.Errorf("%w: %s", errors.ErrExtractingLayer, err)
 		}
 		pathChan := make(chan string)
 
