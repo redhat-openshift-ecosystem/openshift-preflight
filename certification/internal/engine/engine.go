@@ -437,7 +437,7 @@ func getBgName(srcrpm string) string {
 func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 	pkgList, err := rpm.GetPackageList(ctx, containerFSPath)
 	if err != nil {
-		return err
+		log.Error("could not get rpm list, continuing without it")
 	}
 
 	// covert rpm struct to pxyis struct
@@ -464,7 +464,7 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 			}
 		}
 
-		rpm := pyxis.RPM{
+		pyxisRPM := pyxis.RPM{
 			Architecture: packageInfo.Arch,
 			Gpg:          pgpKeyId,
 			Name:         packageInfo.Name,
@@ -476,7 +476,7 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 			Version:      packageInfo.Version,
 		}
 
-		rpms = append(rpms, rpm)
+		rpms = append(rpms, pyxisRPM)
 	}
 
 	rpmManifest := pyxis.RPMManifest{
