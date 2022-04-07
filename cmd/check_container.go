@@ -152,81 +152,87 @@ var checkContainerCmd = &cobra.Command{
 			return err
 		}
 
-		// submitting results to pxysis if submit flag is set
+		// assemble artifacts and submit results to pyxis if user provided the submit flag.
 		if submit {
 			log.Info("preparing results that will be submitted to Red Hat")
-			log.Tracef("CertProject: %+v", certProject)
+			log.Tracef("CertProject: %+v", certProject) // TODO() This depends on Pyxis calls made outside of this block.
 
-			testResultsJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultTestResultsFilename))
+			// The engine writes the certified image config to disk in a Pyxis-specific format.
+			// Include that data in our submission.
+			certImageFilepath := path.Join(artifacts.Path(), certification.DefaultCertImageFilename)
+			log.Tracef("Loading certImage data from path %s", certImageFilepath)
+			certImageBytes, err := os.ReadFile(certImageFilepath)
 			if err != nil {
-				return err
-			}
-			defer testResultsJsonFile.Close()
-
-			testResultsBytes, err := io.ReadAll(testResultsJsonFile)
-			if err != nil {
-				return err
-			}
-
-			testResults := new(pyxis.TestResults)
-			err = json.Unmarshal(testResultsBytes, &testResults)
-			if err != nil {
-				return err
+				return fmt.Errorf(
+					"%w: unable to read file from disk to include in submission: %s: %s",
+					errors.ErrSubmittingToPyxis,
+					certImageFilepath,
+					err,
+				)
 			}
 
-			certImageJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultCertImageFilename))
-			if err != nil {
-				return err
-			}
-			defer certImageJsonFile.Close()
-
-			certImageBytes, err := io.ReadAll(certImageJsonFile)
-			if err != nil {
-				return err
-			}
-
-			certImage := new(pyxis.CertImage)
+			var certImage pyxis.CertImage
 			err = json.Unmarshal(certImageBytes, &certImage)
 			if err != nil {
-				return err
+				return fmt.Errorf(
+					"%w: data for the %s appears to be malformed: %s",
+					errors.ErrSubmittingToPyxis,
+					"certImage",
+					err,
+				)
 			}
 
-			certImage.ISVPID = certProject.Container.ISVPID
+			// The certification engine also writes the rpmManifest for images not based on scratch.
+			// Include that data in our submission.
+			rpmManifestFilepath := path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename)
+			log.Tracef("Loading RPM manifest data from path %s", rpmManifestFilepath)
+			rpmManifestBytes, err := os.ReadFile(rpmManifestFilepath)
+			if err != nil {
+				return fmt.Errorf(
+					"%w: unable to read file from disk to include in submission: %s: %s",
+					errors.ErrSubmittingToPyxis,
+					rpmManifestFilepath,
+					err,
+				)
+			}
+
+			var rpmManifest pyxis.RPMManifest
+			err = json.Unmarshal(rpmManifestBytes, &rpmManifest)
+			if err != nil {
+				return fmt.Errorf(
+					"%w: data for the %s appears to be malformed: %s",
+					errors.ErrSubmittingToPyxis,
+					"rpm manifest",
+					err,
+				)
+			}
+
+			// Include Preflight's test results in our submission. pyxis.TestResults embeds them.
+			var testResults pyxis.TestResults
+			err = json.Unmarshal(formattedResults, &testResults)
+			if err != nil {
+				return fmt.Errorf(
+					"%w: data for the %s appears to be malformed: %s",
+					errors.ErrSubmittingToPyxis,
+					"preflight results.json",
+					err,
+				)
+			}
+
+			// Populate the certImage with missing values as a result of this execution.
+			certImage.ISVPID = certProject.Container.ISVPID // NOTE: certProject depends on Pyxis calls made outside this block.
 			certImage.Certified = testResults.Passed
 
-			rpmManifestJsonFile, err := os.Open(path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename))
-			if err != nil {
-				return err
-			}
-			defer rpmManifestJsonFile.Close()
-
-			rpmManifestBytes, err := io.ReadAll(rpmManifestJsonFile)
-			if err != nil {
-				return err
-			}
-
-			rpmManifest := new(pyxis.RPMManifest)
-			err = json.Unmarshal(rpmManifestBytes, rpmManifest)
-			if err != nil {
-				return err
-			}
-
+			// Send the preflight logfile as an artifact in our submission.
 			logFileName := viper.GetString("logfile")
-
-			logFile, err := os.Open(logFileName)
+			logFileBytes, logFileSize, err := readFileAndGetSize(logFileName)
 			if err != nil {
-				return err
-			}
-			defer logFile.Close()
-
-			logFileBytes, err := io.ReadAll(logFile)
-			if err != nil {
-				return err
-			}
-
-			logFileInfo, err := logFile.Stat()
-			if err != nil {
-				return err
+				return fmt.Errorf(
+					"%w: unable to read file from disk to include in submission %s: %s",
+					errors.ErrSubmittingToPyxis,
+					logFileName,
+					err,
+				)
 			}
 
 			logFileArtifact := pyxis.Artifact{
@@ -234,29 +240,32 @@ var checkContainerCmd = &cobra.Command{
 				Content:     base64.StdEncoding.EncodeToString(logFileBytes),
 				ContentType: http.DetectContentType(logFileBytes),
 				Filename:    logFileName,
-				FileSize:    logFileInfo.Size(),
+				FileSize:    logFileSize,
 			}
 
-			artifacts := make([]pyxis.Artifact, 0, 1)
-			artifacts = append(artifacts, logFileArtifact)
+			// additional artifacts to send to Pyxis.
+			artifacts := []pyxis.Artifact{logFileArtifact}
 
+			// assemble all of the components into the expected POST input format.
+			// and submit the results.
 			certInput := &pyxis.CertificationInput{
 				CertProject: certProject,
-				CertImage:   certImage,
-				RpmManifest: rpmManifest,
-				TestResults: testResults,
+				CertImage:   &certImage,
+				RpmManifest: &rpmManifest,
+				TestResults: &testResults,
 				Artifacts:   artifacts,
 			}
-			certResults, err := pyxisClient.SubmitResults(ctx, certInput)
+
+			certResults, err := pyxisClient.SubmitResults(ctx, certInput) // TODO() This pyxisClient is established outside of this block.
 			if err != nil {
-				return err
+				return fmt.Errorf("%w: %s", errors.ErrSubmittingToPyxis, err)
 			}
 
 			log.Info("Test results have been submitted to Red Hat.")
 			log.Info("These results will be reviewed by Red Hat for final certification.")
 			log.Infof("The container's image id is: %s.", certResults.CertImage.ID)
 			log.Infof("Please check %s to view scan results.", buildScanResultsURL(projectId, certResults.CertImage.ID))
-			log.Infof(fmt.Sprintf("Please check %s to monitor the progress.", buildOverviewURL(projectId)))
+			log.Infof("Please check %s to monitor the progress.", buildOverviewURL(projectId))
 		}
 
 		log.Infof("Preflight result: %s", convertPassedOverall(results.PassedOverall))

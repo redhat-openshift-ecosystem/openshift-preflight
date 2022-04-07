@@ -312,6 +312,8 @@ func untar(dst string, r io.Reader) error {
 	}
 }
 
+// writeCertImage takes imageRef and writes it to disk as JSON representing a pyxis.CertImage
+// struct. The file is written at path certification.DefaultCertImageFilename.
 func writeCertImage(ctx context.Context, imageRef certification.ImageReference) error {
 	config, err := imageRef.ImageInfo.ConfigFile()
 	if err != nil {
