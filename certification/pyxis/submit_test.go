@@ -26,7 +26,7 @@ var _ = Describe("Pyxis Submit", func() {
 		})
 		Context("and it is not already In Progress", func() {
 			It("should switch to In Progress", func() {
-				certResults, err := pyxisClient.SubmitResults(ctx, &CertificationInput{
+				certResults, err := pyxisClient.SubmitResults(ctx, &certificationInput{
 					CertProject: &CertProject{CertificationStatus: "Started"},
 					CertImage: &CertImage{
 						Repositories: []Repository{
@@ -56,7 +56,7 @@ var _ = Describe("Pyxis Submit", func() {
 		Context("when a project is submitted", func() {
 			Context("and the client sends a bad token", func() {
 				It("should get an unauthorized", func() {
-					certResults, err := pyxisClient.SubmitResults(ctx, &CertificationInput{
+					certResults, err := pyxisClient.SubmitResults(ctx, &certificationInput{
 						CertProject: &CertProject{CertificationStatus: "Started"},
 						CertImage: &CertImage{
 							Repositories: []Repository{
@@ -84,7 +84,7 @@ var _ = Describe("Pyxis Submit", func() {
 		Context("when a project is submitted", func() {
 			Context("and the image already exists", func() {
 				It("should get a conflict and handle it", func() {
-					certResults, err := pyxisClient.SubmitResults(ctx, &CertificationInput{
+					certResults, err := pyxisClient.SubmitResults(ctx, &certificationInput{
 						CertProject: &CertProject{},
 						CertImage: &CertImage{
 							Repositories: []Repository{
@@ -115,7 +115,7 @@ var _ = Describe("Pyxis Submit", func() {
 		Context("when a project is submitted", func() {
 			Context("and the api token is invalid", func() {
 				It("should get an unauthorized result", func() {
-					certResults, err := pyxisClient.SubmitResults(ctx, &CertificationInput{
+					certResults, err := pyxisClient.SubmitResults(ctx, &certificationInput{
 						CertProject: &CertProject{CertificationStatus: "Started"},
 						CertImage: &CertImage{
 							Repositories: []Repository{
@@ -143,7 +143,7 @@ var _ = Describe("Pyxis Submit", func() {
 		Context("when a project is submitted", func() {
 			Context("and a bad token is sent to getImage and createImage is in conflict", func() {
 				It("should error", func() {
-					certResults, err := pyxisClient.SubmitResults(ctx, &CertificationInput{
+					certResults, err := pyxisClient.SubmitResults(ctx, &certificationInput{
 						CertProject: &CertProject{CertificationStatus: "Started"},
 						CertImage: &CertImage{
 							Repositories: []Repository{
@@ -171,7 +171,7 @@ var _ = Describe("Pyxis Submit", func() {
 		Context("when a project is submitted", func() {
 			Context("and the RPM manifest already exists", func() {
 				It("should retry and return success", func() {
-					certResults, err := pyxisClient.SubmitResults(ctx, &CertificationInput{
+					certResults, err := pyxisClient.SubmitResults(ctx, &certificationInput{
 						CertProject: &CertProject{},
 						CertImage: &CertImage{
 							Repositories: []Repository{
@@ -202,7 +202,7 @@ var _ = Describe("Pyxis Submit", func() {
 		Context("when a project is submitted", func() {
 			Context("and a bad token is sent to createRPMManifest", func() {
 				It("should error", func() {
-					certResults, err := pyxisClient.SubmitResults(ctx, &CertificationInput{
+					certResults, err := pyxisClient.SubmitResults(ctx, &certificationInput{
 						CertProject: &CertProject{CertificationStatus: "Started"},
 						CertImage: &CertImage{
 							Repositories: []Repository{
@@ -230,7 +230,7 @@ var _ = Describe("Pyxis Submit", func() {
 		Context("when a project is submitted", func() {
 			Context("and a bad token is sent to getRPMManifest and createRPMManifest is in conflict", func() {
 				It("should error", func() {
-					certResults, err := pyxisClient.SubmitResults(ctx, &CertificationInput{
+					certResults, err := pyxisClient.SubmitResults(ctx, &certificationInput{
 						CertProject: &CertProject{CertificationStatus: "Started"},
 						CertImage: &CertImage{
 							Repositories: []Repository{
@@ -258,7 +258,7 @@ var _ = Describe("Pyxis Submit", func() {
 		Context("when a project is submitted", func() {
 			Context("and a bad api token is sent to createTestResults", func() {
 				It("should error", func() {
-					certResults, err := pyxisClient.SubmitResults(ctx, &CertificationInput{
+					certResults, err := pyxisClient.SubmitResults(ctx, &certificationInput{
 						CertProject: &CertProject{CertificationStatus: "Started"},
 						CertImage: &CertImage{
 							Repositories: []Repository{

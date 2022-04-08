@@ -101,25 +101,3 @@ func convertPassedOverall(passedOverall bool) string {
 
 	return "FAILED"
 }
-
-// readFileAndGetSize opens and reads the entire file, and also
-// returns the filesize.
-func readFileAndGetSize(path string) ([]byte, int64, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return []byte{}, 0, err
-	}
-	defer file.Close()
-
-	fileBytes, err := io.ReadAll(file)
-	if err != nil {
-		return []byte{}, 0, err
-	}
-
-	info, err := file.Stat() // Pyxis needs the file size
-	if err != nil {
-		return []byte{}, 0, err
-	}
-
-	return fileBytes, info.Size(), nil
-}
