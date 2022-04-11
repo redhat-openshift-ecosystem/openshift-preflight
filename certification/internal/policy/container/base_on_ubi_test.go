@@ -21,7 +21,7 @@ func ConfigFile() (*cranev1.ConfigFile, error) {
 
 type fakeLayerHashChecker struct{}
 
-func (flhc *fakeLayerHashChecker) CheckRedHatLayers(ctx context.Context, layers []cranev1.Hash) ([]pyxis.CertImage, error) {
+func (flhc *fakeLayerHashChecker) CertifiedImagesContainingLayers(ctx context.Context, layers []cranev1.Hash) ([]pyxis.CertImage, error) {
 	var matchingImages []pyxis.CertImage
 	matchingImages = append(matchingImages, pyxis.CertImage{})
 	return matchingImages, nil
@@ -29,14 +29,14 @@ func (flhc *fakeLayerHashChecker) CheckRedHatLayers(ctx context.Context, layers 
 
 type fakeLayerHashCheckerNoMatch struct{}
 
-func (flhc *fakeLayerHashCheckerNoMatch) CheckRedHatLayers(ctx context.Context, layers []cranev1.Hash) ([]pyxis.CertImage, error) {
+func (flhc *fakeLayerHashCheckerNoMatch) CertifiedImagesContainingLayers(ctx context.Context, layers []cranev1.Hash) ([]pyxis.CertImage, error) {
 	var matchingImages []pyxis.CertImage
 	return matchingImages, nil
 }
 
 type fakeLayerHashCheckerTimeout struct{}
 
-func (flhc *fakeLayerHashCheckerTimeout) CheckRedHatLayers(ctx context.Context, layers []cranev1.Hash) ([]pyxis.CertImage, error) {
+func (flhc *fakeLayerHashCheckerTimeout) CertifiedImagesContainingLayers(ctx context.Context, layers []cranev1.Hash) ([]pyxis.CertImage, error) {
 	return nil, http.ErrHandlerTimeout
 }
 

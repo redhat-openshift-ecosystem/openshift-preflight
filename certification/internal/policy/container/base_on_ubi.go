@@ -9,15 +9,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// BasedOnUBICheck evaluates if the provided image is based on the Red Hat Universal Base Image
-// by inspecting the contents of the `/etc/os-release` and identifying if the ID is `rhel` and the
-// Name value is `Red Hat Enterprise Linux`
+// BasedOnUBICheck evaluates if the provided image is based on the Red Hat Universal Base Image.
 type BasedOnUBICheck struct {
 	LayerHashCheckEngine layerHashChecker
 }
 
 type layerHashChecker interface {
-	CheckRedHatLayers(ctx context.Context, layerHashes []cranev1.Hash) ([]pyxis.CertImage, error)
+	CertifiedImagesContainingLayers(ctx context.Context, uncompressedLayerHashes []cranev1.Hash) ([]pyxis.CertImage, error)
 }
 
 func NewBasedOnUbiCheck(layerHashChecker layerHashChecker) *BasedOnUBICheck {
@@ -33,6 +31,7 @@ func (p *BasedOnUBICheck) Validate(ctx context.Context, imgRef certification.Ima
 	return p.validate(ctx, layerHashes)
 }
 
+// getImageLayers returns the root filesystem DiffIDs of the image.
 func (p *BasedOnUBICheck) getImageLayers(ctx context.Context, image cranev1.Image) ([]cranev1.Hash, error) {
 	configFile, err := image.ConfigFile()
 	if err != nil {
@@ -42,13 +41,15 @@ func (p *BasedOnUBICheck) getImageLayers(ctx context.Context, image cranev1.Imag
 	return configFile.RootFS.DiffIDs, nil
 }
 
-func (p *BasedOnUBICheck) checkRedHatLayers(ctx context.Context, layerHashes []cranev1.Hash) (bool, error) {
-	certImages, err := p.LayerHashCheckEngine.CheckRedHatLayers(ctx, layerHashes)
+// certifiedImagesFound checks to make sure images exist in Red Hat Pyxis containing the uncompressed
+// top layer IDs of the image under test.
+func (p *BasedOnUBICheck) certifiedImagesFound(ctx context.Context, layerHashes []cranev1.Hash) (bool, error) {
+	certImages, err := p.LayerHashCheckEngine.CertifiedImagesContainingLayers(ctx, layerHashes)
 	if err != nil {
 		log.Error("Error when querying pyxis for uncompressed top layer ids", err)
 		return false, err
 	}
-	if certImages != nil && len(certImages) >= 1 {
+	if len(certImages) >= 1 {
 		return true, nil
 	}
 	log.Error("No matching layer ids found in pyxis db. Please verify if the image is based on a recent UBI image")
@@ -56,7 +57,7 @@ func (p *BasedOnUBICheck) checkRedHatLayers(ctx context.Context, layerHashes []c
 }
 
 func (p *BasedOnUBICheck) validate(ctx context.Context, layerHashes []cranev1.Hash) (bool, error) {
-	hasUBIHash, err := p.checkRedHatLayers(ctx, layerHashes)
+	hasUBIHash, err := p.certifiedImagesFound(ctx, layerHashes)
 	if err != nil {
 		log.Error("Unable to verify layer hashes", err)
 		return false, err
