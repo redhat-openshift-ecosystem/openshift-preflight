@@ -45,8 +45,18 @@ var checkContainerCmd = &cobra.Command{
 			return fmt.Errorf("%w: A container image positional argument is required", errors.ErrInsufficientPosArguments)
 		}
 
-		if submit && !viper.IsSet("dockerConfig") {
-			cmd.MarkFlagRequired("docker-config")
+		if submit {
+			if !viper.IsSet("dockerConfig") {
+				cmd.MarkFlagRequired("docker-config")
+			}
+
+			if !viper.IsSet("certification_project_id") {
+				cmd.MarkFlagRequired("certification-project-id")
+			}
+
+			if !viper.IsSet("pyxis_api_token") {
+				cmd.MarkFlagRequired("pyxis-api-token")
+			}
 		}
 
 		return nil
@@ -66,41 +76,25 @@ var checkContainerCmd = &cobra.Command{
 		}
 
 		projectId := viper.GetString("certification_project_id")
-		if projectId == "" {
-			return errors.ErrEmptyProjectID
-		}
-		if strings.HasPrefix(projectId, "ospid-") {
-			projectId = strings.Split(projectId, "-")[1]
-			// Since we want the modified version, write it back
-			// to viper so that subsequent calls don't need to check
-			viper.Set("certification_project_id", projectId)
-		}
-		apiToken := viper.GetString("pyxis_api_token")
-		pyxisClient := pyxis.NewPyxisClient(viper.GetString("pyxis_host"), apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
-		certProject, err := pyxisClient.GetProject(ctx)
-		if err != nil {
-			log.Error(err, "could not retrieve project")
-			return err
-		}
-		log.Debugf("Certification project name is: %s", certProject.Name)
-		if certProject.Container.OsContentType == "scratch" {
-			cfg.EnabledChecks = engine.ScratchContainerPolicy()
-			cfg.Scratch = true
-		}
-
-		if submit {
-			dockerConfigJsonFile, err := os.Open(viper.GetString("dockerConfig"))
+		if projectId != "" {
+			if strings.HasPrefix(projectId, "ospid-") {
+				projectId = strings.Split(projectId, "-")[1]
+				// Since we want the modified version, write it back
+				// to viper so that subsequent calls don't need to check
+				viper.Set("certification_project_id", projectId)
+			}
+			apiToken := viper.GetString("pyxis_api_token")
+			pyxisClient := pyxis.NewPyxisClient(viper.GetString("pyxis_host"), apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
+			certProject, err := pyxisClient.GetProject(ctx)
 			if err != nil {
+				log.Error(fmt.Errorf("%w: %s", errors.ErrRetrievingProject, err))
 				return err
 			}
-			defer dockerConfigJsonFile.Close()
-
-			dockerConfigJsonBytes, err := io.ReadAll(dockerConfigJsonFile)
-			if err != nil {
-				return err
+			log.Debugf("Certification project name is: %s", certProject.Name)
+			if certProject.Container.OsContentType == "scratch" {
+				cfg.EnabledChecks = engine.ScratchContainerPolicy()
+				cfg.Scratch = true
 			}
-
-			certProject.Container.DockerConfigJSON = string(dockerConfigJsonBytes)
 		}
 
 		engine, err := engine.NewForConfig(cfg)
@@ -155,7 +149,30 @@ var checkContainerCmd = &cobra.Command{
 		// assemble artifacts and submit results to pyxis if user provided the submit flag.
 		if submit {
 			log.Info("preparing results that will be submitted to Red Hat")
-			log.Tracef("CertProject: %+v", certProject) // TODO() This depends on Pyxis calls made outside of this block.
+
+			if projectId == "" {
+				return errors.ErrEmptyProjectID
+			}
+			apiToken := viper.GetString("pyxis_api_token")
+			pyxisClient := pyxis.NewPyxisClient(viper.GetString("pyxis_host"), apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
+			certProject, err := pyxisClient.GetProject(ctx)
+			if err != nil {
+				log.Error(fmt.Errorf("%w: %s", errors.ErrRetrievingProject, err))
+				return err
+			}
+			log.Tracef("CertProject: %+v", certProject)
+
+			dockerConfigJsonFile, err := os.Open(viper.GetString("dockerConfig"))
+			if err != nil {
+				return err
+			}
+			defer dockerConfigJsonFile.Close()
+
+			dockerConfigJsonBytes, err := io.ReadAll(dockerConfigJsonFile)
+			if err != nil {
+				return err
+			}
+			certProject.Container.DockerConfigJSON = string(dockerConfigJsonBytes)
 
 			// The engine writes the certified image config to disk in a Pyxis-specific format.
 			// Include that data in our submission.
@@ -220,7 +237,7 @@ var checkContainerCmd = &cobra.Command{
 			}
 
 			// Populate the certImage with missing values as a result of this execution.
-			certImage.ISVPID = certProject.Container.ISVPID // NOTE: certProject depends on Pyxis calls made outside this block.
+			certImage.ISVPID = certProject.Container.ISVPID
 			certImage.Certified = testResults.Passed
 
 			// Send the preflight logfile as an artifact in our submission.
@@ -282,14 +299,12 @@ func init() {
 	viper.BindPFlag("dockerConfig", checkContainerCmd.Flags().Lookup("docker-config"))
 
 	checkContainerCmd.Flags().String("pyxis-api-token", "", "API token for Pyxis authentication")
-	checkContainerCmd.MarkFlagRequired("pyxis-api-token")
 	viper.BindPFlag("pyxis_api_token", checkContainerCmd.Flags().Lookup("pyxis-api-token"))
 
 	checkContainerCmd.Flags().String("pyxis-host", certification.DefaultPyxisHost, "Host to use for Pyxis submissions.")
 	viper.BindPFlag("pyxis_host", checkContainerCmd.Flags().Lookup("pyxis-host"))
 
 	checkContainerCmd.Flags().String("certification-project-id", "", "Certification Project ID from connect.redhat.com. Should be supplied without the ospid- prefix.")
-	checkContainerCmd.MarkFlagRequired("certification-project-id")
 	viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
 
 	checkCmd.AddCommand(checkContainerCmd)
