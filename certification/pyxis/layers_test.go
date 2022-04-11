@@ -21,7 +21,7 @@ var _ = Describe("Pyxis CheckRedHatLayers", func() {
 		})
 		Context("and a layer is a known good layer", func() {
 			It("should be a good layer", func() {
-				certImages, err := pyxisClient.CheckRedHatLayers(ctx, []cranev1.Hash{{}})
+				certImages, err := pyxisClient.CertifiedImagesContainingLayers(ctx, []cranev1.Hash{{}})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(certImages).ToNot(BeNil())
 				Expect(certImages).ToNot(BeZero())
