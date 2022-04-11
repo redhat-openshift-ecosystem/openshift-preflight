@@ -73,7 +73,7 @@ func (p *pyxisClient) createImage(ctx context.Context, certImage *CertImage) (*C
 	}
 
 	if resp.StatusCode == 409 {
-		return nil, errors.Err409StatusCode
+		return nil, errors.ErrPyxis409StatusCode
 	}
 
 	if !checkStatus(resp.StatusCode) {
@@ -161,7 +161,7 @@ func (p *pyxisClient) createRPMManifest(ctx context.Context, rpmManifest *RPMMan
 	}
 
 	if resp.StatusCode == 409 {
-		return nil, errors.Err409StatusCode
+		return nil, errors.ErrPyxis409StatusCode
 	}
 
 	if !checkStatus(resp.StatusCode) {
