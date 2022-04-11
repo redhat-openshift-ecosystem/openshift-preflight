@@ -439,7 +439,7 @@ func getBgName(srcrpm string) string {
 func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 	pkgList, err := rpm.GetPackageList(ctx, containerFSPath)
 	if err != nil {
-		log.Error("could not get rpm list, continuing without it")
+		log.Error(fmt.Errorf("%w: continuing without it", errors.ErrRPMPackageList))
 	}
 
 	// covert rpm struct to pxyis struct

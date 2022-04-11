@@ -39,4 +39,7 @@ var (
 	ErrInvalidGraphqlQuery             = errors.New("could not marshal GraphQL query")
 	ErrInvalidHttpClient               = errors.New("client could not be used as http.Client")
 	ErrSubmittingToPyxis               = errors.New("unable to submit results to Red Hat")
+	ErrRPMPackageList                  = errors.New("could not get rpm list")
+	ErrExtractingLayer                 = errors.New("could not extract layer")
+	ErrDetectingModifiedFiles          = errors.New("error detecting modified files")
 )
