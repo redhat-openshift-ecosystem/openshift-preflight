@@ -37,7 +37,7 @@ jobs:
         archs: ${{ matrix.architecture }}
         build-args: |
           quay_expiration=1w
-          release_tag=${{ env.RELEASE_TAG }}-alpha+${{ github.sha }}
+          release_tag=${{ env.RELEASE_TAG }}+${{ github.sha }}
           ARCH=${{ matrix.architecture }}
         dockerfiles: |
           ./Dockerfile
