@@ -62,7 +62,7 @@ func (p *HasNoProhibitedPackagesCheck) validate(ctx context.Context, pkgList []s
 }
 
 func (p *HasNoProhibitedPackagesCheck) Name() string {
-	return "HasNoProhibitedPackagesMounted"
+	return "HasNoProhibitedPackages"
 }
 
 func (p *HasNoProhibitedPackagesCheck) Metadata() certification.Metadata {
