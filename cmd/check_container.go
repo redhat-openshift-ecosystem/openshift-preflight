@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -150,11 +148,16 @@ var checkContainerCmd = &cobra.Command{
 		if submit {
 			log.Info("preparing results that will be submitted to Red Hat")
 
+			// you must provide a project ID in order to submit.
 			if projectId == "" {
 				return errors.ErrEmptyProjectID
 			}
+
+			// establish a pyxis client.
 			apiToken := viper.GetString("pyxis_api_token")
 			pyxisClient := pyxis.NewPyxisClient(viper.GetString("pyxis_host"), apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
+
+			// get the project info from pyxis
 			certProject, err := pyxisClient.GetProject(ctx)
 			if err != nil {
 				log.Error(fmt.Errorf("%w: %s", errors.ErrRetrievingProject, err))
@@ -162,6 +165,7 @@ var checkContainerCmd = &cobra.Command{
 			}
 			log.Tracef("CertProject: %+v", certProject)
 
+			// read the provided docker config
 			dockerConfigJsonFile, err := os.Open(viper.GetString("dockerConfig"))
 			if err != nil {
 				return err
@@ -172,108 +176,39 @@ var checkContainerCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
+
 			certProject.Container.DockerConfigJSON = string(dockerConfigJsonBytes)
 
-			// The engine writes the certified image config to disk in a Pyxis-specific format.
-			// Include that data in our submission.
-			certImageFilepath := path.Join(artifacts.Path(), certification.DefaultCertImageFilename)
-			log.Tracef("Loading certImage data from path %s", certImageFilepath)
-			certImageBytes, err := os.ReadFile(certImageFilepath)
+			// prepare submission
+			submission, err := pyxis.NewCertificationInput(certProject)
 			if err != nil {
 				return fmt.Errorf(
-					"%w: unable to read file from disk to include in submission: %s: %s",
+					"%w: could not build submission with required assets: %s",
 					errors.ErrSubmittingToPyxis,
-					certImageFilepath,
 					err,
 				)
 			}
 
-			var certImage pyxis.CertImage
-			err = json.Unmarshal(certImageBytes, &certImage)
+			submission.
+				// The engine writes the certified image config to disk in a Pyxis-specific format.
+				WithCertImageFromFile(path.Join(artifacts.Path(), certification.DefaultCertImageFilename)).
+				// Include Preflight's test results in our submission. pyxis.TestResults embeds them.
+				WithPreflightResultsFromFile(path.Join(artifacts.Path(), certification.DefaultTestResultsFilename)).
+				// The certification engine writes the rpmManifest for images not based on scratch.
+				WithRPMManifestFromFile(path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename)).
+				// Include the preflight execution log file.
+				WithArtifactFromFile(viper.GetString("logfile"))
+
+			input, err := submission.Finalize()
 			if err != nil {
 				return fmt.Errorf(
-					"%w: data for the %s appears to be malformed: %s",
+					"%w: unable to finalize data that would be sent to pyxis %s",
 					errors.ErrSubmittingToPyxis,
-					"certImage",
 					err,
 				)
 			}
 
-			// The certification engine also writes the rpmManifest for images not based on scratch.
-			// Include that data in our submission.
-			rpmManifestFilepath := path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename)
-			log.Tracef("Loading RPM manifest data from path %s", rpmManifestFilepath)
-			rpmManifestBytes, err := os.ReadFile(rpmManifestFilepath)
-			if err != nil {
-				return fmt.Errorf(
-					"%w: unable to read file from disk to include in submission: %s: %s",
-					errors.ErrSubmittingToPyxis,
-					rpmManifestFilepath,
-					err,
-				)
-			}
-
-			var rpmManifest pyxis.RPMManifest
-			err = json.Unmarshal(rpmManifestBytes, &rpmManifest)
-			if err != nil {
-				return fmt.Errorf(
-					"%w: data for the %s appears to be malformed: %s",
-					errors.ErrSubmittingToPyxis,
-					"rpm manifest",
-					err,
-				)
-			}
-
-			// Include Preflight's test results in our submission. pyxis.TestResults embeds them.
-			var testResults pyxis.TestResults
-			err = json.Unmarshal(formattedResults, &testResults)
-			if err != nil {
-				return fmt.Errorf(
-					"%w: data for the %s appears to be malformed: %s",
-					errors.ErrSubmittingToPyxis,
-					"preflight results.json",
-					err,
-				)
-			}
-
-			// Populate the certImage with missing values as a result of this execution.
-			certImage.ISVPID = certProject.Container.ISVPID
-			certImage.Certified = testResults.Passed
-
-			// Send the preflight logfile as an artifact in our submission.
-			logFileName := viper.GetString("logfile")
-			logFileBytes, logFileSize, err := readFileAndGetSize(logFileName)
-			if err != nil {
-				return fmt.Errorf(
-					"%w: unable to read file from disk to include in submission %s: %s",
-					errors.ErrSubmittingToPyxis,
-					logFileName,
-					err,
-				)
-			}
-
-			logFileArtifact := pyxis.Artifact{
-				CertProject: projectId,
-				Content:     base64.StdEncoding.EncodeToString(logFileBytes),
-				ContentType: http.DetectContentType(logFileBytes),
-				Filename:    logFileName,
-				FileSize:    logFileSize,
-			}
-
-			// additional artifacts to send to Pyxis.
-			artifacts := []pyxis.Artifact{logFileArtifact}
-
-			// assemble all of the components into the expected POST input format.
-			// and submit the results.
-			certInput := &pyxis.CertificationInput{
-				CertProject: certProject,
-				CertImage:   &certImage,
-				RpmManifest: &rpmManifest,
-				TestResults: &testResults,
-				Artifacts:   artifacts,
-			}
-
-			certResults, err := pyxisClient.SubmitResults(ctx, certInput) // TODO() This pyxisClient is established outside of this block.
+			certResults, err := pyxisClient.SubmitResults(ctx, input)
 			if err != nil {
 				return fmt.Errorf("%w: %s", errors.ErrSubmittingToPyxis, err)
 			}
