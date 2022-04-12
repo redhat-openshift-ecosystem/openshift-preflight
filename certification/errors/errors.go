@@ -42,4 +42,5 @@ var (
 	ErrRPMPackageList                  = errors.New("could not get rpm list")
 	ErrExtractingLayer                 = errors.New("could not extract layer")
 	ErrDetectingModifiedFiles          = errors.New("error detecting modified files")
+	ErrRetrievingProject               = errors.New("could not retrieve project")
 )

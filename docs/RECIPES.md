@@ -150,16 +150,16 @@ You will also need:
   - This value can be obtained from the Overview page's URL
     - For the following example Overview URL of `https://connect.redhat.com/projects/1234567890aabbccddeeffgg/overview`
       - The Certification Project ID would be: `1234567890aabbccddeeffgg`
+  - Required for submit
 - A Partner Connect API Key
   - An API Key can be created in Red Hat Partner Connect at the following [URL](https://connect.redhat.com/account/api-keys)
+  - Required for submit
 
 ### Testing a Container
 Running container policy checks against a container iteratively until all tests pass.
 
 ```bash
-preflight check container registry.example.org/your-namespace/your-image:sometag \
---pyxis-api-token=abcdefghijklmnopqrstuvwxyz123456 \
---certification-project-id=1234567890a987654321bcde 
+preflight check container registry.example.org/your-namespace/your-image:sometag
 ```
 
 ### Submitting a Container's Test Results to Red Hat
