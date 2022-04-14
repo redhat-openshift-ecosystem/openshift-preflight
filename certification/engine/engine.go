@@ -137,6 +137,18 @@ var scratchContainerPolicy = map[string]certification.Check{
 	// runSystemContainerCheck.Name(): runSystemContainerCheck,
 }
 
+var rootExceptionContainerPolicy = map[string]certification.Check{
+	hasLicenseCheck.Name():        hasLicenseCheck,
+	hasUniqueTagCheck.Name():      hasUniqueTagCheck,
+	maxLayersCheck.Name():         maxLayersCheck,
+	hasNoProhibitedCheck.Name():   hasNoProhibitedCheck,
+	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
+	basedOnUbiCheck.Name():        basedOnUbiCheck,
+	hasModifiedFilesCheck.Name():  hasModifiedFilesCheck,
+	// runnableContainerCheck.Name():  runnableContainerCheck,
+	// runSystemContainerCheck.Name(): runSystemContainerCheck,
+}
+
 func makeCheckList(checkMap map[string]certification.Check) []string {
 	checks := make([]string, 0, len(checkMap))
 
@@ -157,4 +169,8 @@ func ContainerPolicy() []string {
 
 func ScratchContainerPolicy() []string {
 	return makeCheckList(scratchContainerPolicy)
+}
+
+func RootExceptionContainerPolicy() []string {
+	return makeCheckList(rootExceptionContainerPolicy)
 }

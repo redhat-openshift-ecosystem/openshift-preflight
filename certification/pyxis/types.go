@@ -102,6 +102,7 @@ type Container struct {
 	Registry         string `json:"registry,omitempty"`
 	Repository       string `json:"repository,omitempty"`
 	OsContentType    string `json:"os_content_type,omitempty"`
+	Privileged       bool   `json:"privileged,omitempty"`
 }
 
 type Layer struct {
