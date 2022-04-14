@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path"
@@ -105,20 +104,7 @@ func (b *certificationInputBuilder) WithRPMManifestFromFile(filepath string) *ce
 // in the submission. Multiple calls to this will append artifacts. Errors are logged,
 // but will not halt execution.
 func (b *certificationInputBuilder) WithArtifactFromFile(filepath string) *certificationInputBuilder {
-	file, err := os.Open(filepath)
-	if err != nil {
-		log.Error(err)
-		return b
-	}
-	defer file.Close()
-
-	bytes, err := io.ReadAll(file)
-	if err != nil {
-		log.Error(err)
-		return b
-	}
-
-	info, err := file.Stat()
+	bytes, err := os.ReadFile(filepath)
 	if err != nil {
 		log.Error(err)
 		return b
@@ -129,7 +115,7 @@ func (b *certificationInputBuilder) WithArtifactFromFile(filepath string) *certi
 		Content:     base64.StdEncoding.EncodeToString(bytes),
 		ContentType: http.DetectContentType(bytes),
 		Filename:    path.Base(filepath),
-		FileSize:    info.Size(),
+		FileSize:    int64(len(bytes)),
 	}
 
 	b.Artifacts = append(b.Artifacts, newArtifact)
@@ -137,9 +123,7 @@ func (b *certificationInputBuilder) WithArtifactFromFile(filepath string) *certi
 	return b
 }
 
-// storeRPMManifest reads the manifest from disk at path and stores it in
-// the CertificationInput as an RPMManifest struct.
-func (b *certificationInputBuilder) storeRPMManifest(filepath string) error {
+func readAndUnmarshal(filepath string, submission interface{}) error {
 	bytes, err := os.ReadFile(filepath)
 	if err != nil {
 		return fmt.Errorf(
@@ -150,15 +134,26 @@ func (b *certificationInputBuilder) storeRPMManifest(filepath string) error {
 		)
 	}
 
-	var manifest RPMManifest
-	err = json.Unmarshal(bytes, &manifest)
+	err = json.Unmarshal(bytes, &submission)
 	if err != nil {
 		return fmt.Errorf(
-			"%w: data for the %s appears to be malformed: %s",
+			"%w: data for %T appears to be malformed: %s",
 			errors.ErrSubmittingToPyxis,
-			"rpm manifest",
+			submission,
 			err,
 		)
+	}
+
+	return nil
+}
+
+// storeRPMManifest reads the manifest from disk at path and stores it in
+// the CertificationInput as an RPMManifest struct.
+func (b *certificationInputBuilder) storeRPMManifest(filepath string) error {
+	var manifest RPMManifest
+	err := readAndUnmarshal(filepath, &manifest)
+	if err != nil {
+		return err
 	}
 
 	b.RpmManifest = &manifest
@@ -168,25 +163,10 @@ func (b *certificationInputBuilder) storeRPMManifest(filepath string) error {
 // storePreflightResults reads the results from disk at path and stores it in
 // the CertificationInput as TestResults.
 func (b *certificationInputBuilder) storePreflightResults(filepath string) error {
-	bytes, err := os.ReadFile(filepath)
-	if err != nil {
-		return fmt.Errorf(
-			"%w: unable to read file from disk to include in submission: %s: %s",
-			errors.ErrSubmittingToPyxis,
-			filepath,
-			err,
-		)
-	}
-
 	var testResults TestResults
-	err = json.Unmarshal(bytes, &testResults)
+	err := readAndUnmarshal(filepath, &testResults)
 	if err != nil {
-		return fmt.Errorf(
-			"%w: data for the %s appears to be malformed: %s",
-			errors.ErrSubmittingToPyxis,
-			"preflight results.json",
-			err,
-		)
+		return err
 	}
 
 	b.TestResults = &testResults
@@ -196,25 +176,10 @@ func (b *certificationInputBuilder) storePreflightResults(filepath string) error
 // storeCertImage reads the image from disk at path and stores it in
 // the CertificationInput as a CertImage
 func (b *certificationInputBuilder) storeCertImage(filepath string) error {
-	bytes, err := os.ReadFile(filepath)
-	if err != nil {
-		return fmt.Errorf(
-			"%w: unable to read file from disk to include in submission: %s: %s",
-			errors.ErrSubmittingToPyxis,
-			filepath,
-			err,
-		)
-	}
-
 	var image CertImage
-	err = json.Unmarshal(bytes, &image)
+	err := readAndUnmarshal(filepath, &image)
 	if err != nil {
-		return fmt.Errorf(
-			"%w: data for the %s appears to be malformed: %s",
-			errors.ErrSubmittingToPyxis,
-			"certImage",
-			err,
-		)
+		return err
 	}
 
 	b.CertImage = &image
