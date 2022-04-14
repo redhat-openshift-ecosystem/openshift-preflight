@@ -230,16 +230,16 @@ func init() {
 	checkContainerCmd.Flags().BoolVarP(&submit, "submit", "s", false, "submit check container results to red hat")
 	viper.BindPFlag("submit", checkContainerCmd.Flags().Lookup("submit"))
 
-	checkContainerCmd.Flags().StringP("docker-config", "d", "", "path to docker config.json file")
+	checkContainerCmd.Flags().StringP("docker-config", "d", "", "path to docker config.json file (env: PFLT_DOCKERCONFIG)")
 	viper.BindPFlag("dockerConfig", checkContainerCmd.Flags().Lookup("docker-config"))
 
-	checkContainerCmd.Flags().String("pyxis-api-token", "", "API token for Pyxis authentication")
+	checkContainerCmd.Flags().String("pyxis-api-token", "", "API token for Pyxis authentication (env: PFLT_PYXIS_API_TOKEN)")
 	viper.BindPFlag("pyxis_api_token", checkContainerCmd.Flags().Lookup("pyxis-api-token"))
 
-	checkContainerCmd.Flags().String("pyxis-host", certification.DefaultPyxisHost, "Host to use for Pyxis submissions.")
+	checkContainerCmd.Flags().String("pyxis-host", certification.DefaultPyxisHost, fmt.Sprintf("Host to use for Pyxis submissions\n(env: PFLT_PYXIS_HOST)"))
 	viper.BindPFlag("pyxis_host", checkContainerCmd.Flags().Lookup("pyxis-host"))
 
-	checkContainerCmd.Flags().String("certification-project-id", "", "Certification Project ID from connect.redhat.com. Should be supplied without the ospid- prefix.")
+	checkContainerCmd.Flags().String("certification-project-id", "", fmt.Sprintf("Certification Project ID from connect.redhat.com.\nShould be supplied without the ospid- prefix.\n(env: PFLT_CERTIFICATION_PROJECT_ID)"))
 	viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
 
 	checkCmd.AddCommand(checkContainerCmd)
