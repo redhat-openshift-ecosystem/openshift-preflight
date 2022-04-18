@@ -73,6 +73,8 @@ var checkContainerCmd = &cobra.Command{
 			ResponseFormat: DefaultOutputFormat,
 		}
 
+		pyxisHost := pyxisHostLookup(viper.GetString("pyxis_env"), viper.GetString("pyxis_host"))
+
 		projectId := viper.GetString("certification_project_id")
 		if projectId != "" {
 			if strings.HasPrefix(projectId, "ospid-") {
@@ -82,7 +84,7 @@ var checkContainerCmd = &cobra.Command{
 				viper.Set("certification_project_id", projectId)
 			}
 			apiToken := viper.GetString("pyxis_api_token")
-			pyxisClient := pyxis.NewPyxisClient(viper.GetString("pyxis_host"), apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
+			pyxisClient := pyxis.NewPyxisClient(pyxisHost, apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
 			certProject, err := pyxisClient.GetProject(ctx)
 			if err != nil {
 				log.Error(fmt.Errorf("%w: %s", errors.ErrRetrievingProject, err))
@@ -226,6 +228,24 @@ var checkContainerCmd = &cobra.Command{
 	},
 }
 
+func pyxisHostLookup(pyxisEnv, hostOverride string) string {
+	envs := map[string]string{
+		"prod":  "catalog.redhat.com/api/containers",
+		"uat":   "catalog.uat.redhat.com/api/containers",
+		"qa":    "catalog.qa.redhat.com/api/containers",
+		"stage": "catalog.stage.redhat.com/api/containers",
+	}
+	if hostOverride != "" {
+		return hostOverride
+	}
+
+	pyxisHost, ok := envs[pyxisEnv]
+	if !ok {
+		pyxisHost = envs["prod"]
+	}
+	return pyxisHost
+}
+
 func init() {
 	checkContainerCmd.Flags().BoolVarP(&submit, "submit", "s", false, "submit check container results to red hat")
 	viper.BindPFlag("submit", checkContainerCmd.Flags().Lookup("submit"))
@@ -236,8 +256,11 @@ func init() {
 	checkContainerCmd.Flags().String("pyxis-api-token", "", "API token for Pyxis authentication (env: PFLT_PYXIS_API_TOKEN)")
 	viper.BindPFlag("pyxis_api_token", checkContainerCmd.Flags().Lookup("pyxis-api-token"))
 
-	checkContainerCmd.Flags().String("pyxis-host", certification.DefaultPyxisHost, fmt.Sprintf("Host to use for Pyxis submissions\n(env: PFLT_PYXIS_HOST)"))
+	checkContainerCmd.Flags().String("pyxis-host", "", fmt.Sprintf("Host to use for Pyxis submissions.\nThis will override Pyxis Env.\nOnly set this if you know what you are doing.\nIf you do set it, it should include just the host, and the URI path.\n(env: PFLT_PYXIS_HOST)"))
 	viper.BindPFlag("pyxis_host", checkContainerCmd.Flags().Lookup("pyxis-host"))
+
+	checkContainerCmd.Flags().String("pyxis-env", certification.DefaultPyxisEnv, "Env to use for Pyxis submissions.")
+	viper.BindPFlag("pyxis_env", checkContainerCmd.Flags().Lookup("pyxis-env"))
 
 	checkContainerCmd.Flags().String("certification-project-id", "", fmt.Sprintf("Certification Project ID from connect.redhat.com.\nShould be supplied without the ospid- prefix.\n(env: PFLT_CERTIFICATION_PROJECT_ID)"))
 	viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
