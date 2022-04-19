@@ -168,13 +168,7 @@ var checkContainerCmd = &cobra.Command{
 			log.Tracef("CertProject: %+v", certProject)
 
 			// read the provided docker config
-			dockerConfigJsonFile, err := os.Open(viper.GetString("dockerConfig"))
-			if err != nil {
-				return err
-			}
-			defer dockerConfigJsonFile.Close()
-
-			dockerConfigJsonBytes, err := io.ReadAll(dockerConfigJsonFile)
+			dockerConfigJsonBytes, err := os.ReadFile(viper.GetString("dockerConfig"))
 			if err != nil {
 				return err
 			}
