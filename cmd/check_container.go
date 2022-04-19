@@ -95,6 +95,11 @@ var checkContainerCmd = &cobra.Command{
 				cfg.EnabledChecks = engine.ScratchContainerPolicy()
 				cfg.Scratch = true
 			}
+
+			// if a partner sets `Host Level Access` in connect to `Privileged`, enable RootExceptionContainerPolicy checks
+			if certProject.Container.Privileged {
+				cfg.EnabledChecks = engine.RootExceptionContainerPolicy()
+			}
 		}
 
 		engine, err := engine.NewForConfig(cfg)
