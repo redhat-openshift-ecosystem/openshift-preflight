@@ -162,7 +162,7 @@ var checkContainerCmd = &cobra.Command{
 
 			// establish a pyxis client.
 			apiToken := viper.GetString("pyxis_api_token")
-			pyxisClient := pyxis.NewPyxisClient(viper.GetString("pyxis_host"), apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
+			pyxisClient := pyxis.NewPyxisClient(pyxisHost, apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
 
 			// get the project info from pyxis
 			certProject, err := pyxisClient.GetProject(ctx)
