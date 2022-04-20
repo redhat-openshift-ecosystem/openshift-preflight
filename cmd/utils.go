@@ -46,10 +46,6 @@ func initConfig() {
 
 	// Set up scorecard wait time default
 	viper.SetDefault("scorecard_wait_time", DefaultScorecardWaitTime)
-
-	// Set up pyxis host
-	viper.SetDefault("pyxis_host", certification.DefaultPyxisHost)
-	viper.SetDefault("pyxis_api_token", "")
 }
 
 // preRunConfig is used by cobra.PreRun in all non-root commands to load all necessary configurations
