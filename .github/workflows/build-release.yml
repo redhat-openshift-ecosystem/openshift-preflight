@@ -1,12 +1,10 @@
 name: Build Release
 
 on:
+  release:
+    types:
+      - published
   push:
-    tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
-      - '[0-9]+.[0-9]+.[0-9]+-alpha[0-9]+'
-      - '[0-9]+.[0-9]+.[0-9]+-beta[0-9]+'
-      - '[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
     branches: [ ghactions ]
 
 env:
@@ -68,3 +66,14 @@ jobs:
       registry: ${{ secrets.IMAGE_REGISTRY }}
       user: ${{ secrets.REGISTRY_USER }}
       password: ${{ secrets.REGISTRY_PASSWORD }}
+
+  extract-assets:
+    needs: build-release
+    uses: ./.github/workflows/release-artifacts.yml
+
+    with:
+      name: ${{ needs.build-release.outputs.imageName }}
+      tag: ${{ needs.build-release.outputs.imageVersion }}
+    secrets:
+      registry: ${{ secrets.IMAGE_REGISTRY }}
+      token: ${{ secrets.GITHUB_TOKEN }}
