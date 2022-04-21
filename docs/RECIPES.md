@@ -55,6 +55,7 @@ CONTAINER_TOOL=podman
 $CONTAINER_TOOL run \
   -it \
   --rm \
+  --security-opt=label=disable \
   --env KUBECONFIG=/kubeconfig \
   --env PFLT_LOGLEVEL=trace \
   --env PFLT_INDEXIMAGE=registry.example.org/your-namespace/your-index-image:sometag \
@@ -62,7 +63,7 @@ $CONTAINER_TOOL run \
   --env PFLT_CHANNEL=beta \
   --env PFLT_LOGFILE=/artifacts/preflight.log \
   -v /some/path/on/your/host/artifacts:/artifacts \
-  -v /some/path/on/your/host/kubeconfig:/kubeconfig \
+  -v /some/path/on/your/host/kubeconfig:/kubeconfig:ro \
   quay.io/opdev/preflight:stable check operator registry.example.org/your-namespace/your-bundle-image:sometag
 ```
 
@@ -171,4 +172,33 @@ preflight check container registry.example.org/your-namespace/your-image:sometag
 --pyxis-api-token=abcdefghijklmnopqrstuvwxyz123456 \
 --certification-project-id=1234567890a987654321bcde \
 --docker-config=/path/to/your/dockerconfig 
+```
+
+### Using Podman on a RHEL host
+
+Here, we explicitly set the location in the container where we would like
+artifacts and logfiles to be written by using the `PFLT_ARTIFACTS` and
+`PFLT_LOGFILE` environment variables. Then we bind host volumes to these
+locations so that the data will be preserved when the container completes (the
+container will be deleted after completion due to the `--rm` flag). We also make
+the assumption that the user would like to submit results to Red Hat; meaning `PFLT_CERTIFICATION_PROJECT_ID`,
+`PFLT_PYXIS_API_TOKEN` and `PFLT_DOCKERCONFIG` need to be provided. **Note:** The docker config
+provided to the `PFLT_DOCKERCONFIG` environment should be from the following command:
+`podman login --username [USERNAME] --password [PASSWORD] --authfile ./temp-authfile.json [REGISTRY]`
+
+```bash
+CONTAINER_TOOL=podman
+$CONTAINER_TOOL run \
+  -it \
+  --rm \
+  --security-opt=label=disable \
+  --env PFLT_LOGLEVEL=trace \
+  --env PFLT_ARTIFACTS=/artifacts \
+  --env PFLT_LOGFILE=/artifacts/preflight.log \
+  --env PFLT_CERTIFICATION_PROJECT_ID=1234567890a987654321bcde \
+  --env PFLT_PYXIS_API_TOKEN=abcdefghijklmnopqrstuvwxyz123456 \
+  --env PFLT_DOCKERCONFIG=/temp-authfile.json \
+  -v /some/path/on/your/host/artifacts:/artifacts \
+  -v ./temp-authfile.json:/temp-authfile.json:ro \
+  quay.io/opdev/preflight:stable check container registry.example.org/your-namespace/your-bundle-image:sometag --submit
 ```
