@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -71,12 +70,9 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 
 func buildConnectURL(projectID string) string {
 	connectURL := fmt.Sprintf("https://connect.redhat.com/projects/%s", projectID)
-	pyxisHost := viper.GetString("pyxis_host")
-	s := strings.Split(pyxisHost, ".")
 
-	if pyxisHost != certification.DefaultPyxisHost && len(s) > 3 {
-		env := s[1]
-		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s", env, projectID)
+	if viper.GetString("pyxis_env") != "prod" {
+		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s", viper.GetString("pyxis_env"), projectID)
 	}
 
 	return connectURL
