@@ -55,6 +55,9 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 
 	// prepare crane runtime options, if necessary
 	options := make([]crane.Option, 0)
+	
+	// add an insecure registry option for pulling
+	options = append(options, crane.Insecure)
 
 	// pull the image and save to fs
 	log.Debug("pulling image from target registry")
