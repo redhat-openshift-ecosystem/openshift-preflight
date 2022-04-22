@@ -48,8 +48,8 @@ func (p *HasUniqueTagCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checking if container has a tag other than 'latest', so that the image can be uniquely identified.",
 		Level:            "best",
-		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
-		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		KnowledgeBaseURL: certDocumentationURL,
+		CheckURL:         certDocumentationURL,
 	}
 }
 

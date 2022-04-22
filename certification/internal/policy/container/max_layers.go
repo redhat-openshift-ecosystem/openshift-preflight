@@ -42,8 +42,8 @@ func (p *MaxLayersCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      fmt.Sprintf("Checking if container has less than %d layers.  Too many layers within the container images can degrade container performance.", acceptableLayerMax),
 		Level:            "better",
-		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
-		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		KnowledgeBaseURL: certDocumentationURL,
+		CheckURL:         certDocumentationURL,
 	}
 }
 
