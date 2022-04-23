@@ -68,8 +68,8 @@ func (p *RunSystemContainerCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checking if a container can run as a systemd service",
 		Level:            "best",
-		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
-		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		KnowledgeBaseURL: certDocumentationURL,
+		CheckURL:         certDocumentationURL,
 	}
 }
 

@@ -157,8 +157,8 @@ func (p HasModifiedFilesCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checks that no files installed via RPM in the base Red Hat layer have been modified",
 		Level:            "best",
-		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
-		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		KnowledgeBaseURL: certDocumentationURL,
+		CheckURL:         certDocumentationURL,
 	}
 }
 

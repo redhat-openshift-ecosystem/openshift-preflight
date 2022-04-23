@@ -76,8 +76,8 @@ func (p *BasedOnUBICheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checking if the container's base image is based upon the Red Hat Universal Base Image (UBI)",
 		Level:            "best",
-		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide", // Placeholder
-		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		KnowledgeBaseURL: certDocumentationURL,
+		CheckURL:         certDocumentationURL,
 	}
 }
 
