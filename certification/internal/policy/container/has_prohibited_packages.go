@@ -69,8 +69,8 @@ func (p *HasNoProhibitedPackagesCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checks to ensure that the image in use does not include prohibited packages, such as Red Hat Enterprise Linux (RHEL) kernel packages.",
 		Level:            "best",
-		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
-		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		KnowledgeBaseURL: certDocumentationURL,
+		CheckURL:         certDocumentationURL,
 	}
 }
 

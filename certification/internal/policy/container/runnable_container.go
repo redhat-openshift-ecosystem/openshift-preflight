@@ -56,8 +56,8 @@ func (p *RunnableContainerCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checking if container runs within a pre-configured timeframe",
 		Level:            "best",
-		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
-		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		KnowledgeBaseURL: certDocumentationURL,
+		CheckURL:         certDocumentationURL,
 	}
 }
 

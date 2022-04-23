@@ -77,8 +77,8 @@ func (p *HasLicenseCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checking if terms and conditions applicable to the software including open source licensing information are present. The license must be at /licenses",
 		Level:            "best",
-		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
-		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		KnowledgeBaseURL: certDocumentationURL,
+		CheckURL:         certDocumentationURL,
 	}
 }
 
