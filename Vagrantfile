@@ -1,6 +1,7 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "generic/fedora35"
   config.vm.synced_folder ".", "/home/vagrant/preflight"
+  config.vm.network :forwarded_port, guest: 22, host: 2322, id: "ssh"
   config.vm.provision "shell", inline: <<-SHELL
     dnf -y update
    
