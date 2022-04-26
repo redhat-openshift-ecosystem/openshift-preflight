@@ -39,4 +39,5 @@ is called.
 |--|--|--|--|--|
 |`PFLT_PYXIS_HOST`|env|The Pyxis host to connect to. Must contain any additional path information leading up to the API version|optional|catalog.redhat.com/api/containers|
 |`PFLT_PYXIS_API_TOKEN`|env|The API Token to be used when connecting to Pyxis. Used for authenticated calls only.|optional?|-|
+|`PFLT_CERTIFICATION_PROJECT_ID`|env|Certification Project ID from connect.redhat.com. Should be supplied without the ospid- prefix.|optional?|-|
 |`PFLT_DOCKERCONFIG`|env|The full path to a dockerconfigjson file, that has access to the container under test.|required|-|
