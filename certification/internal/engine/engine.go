@@ -23,6 +23,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/authn"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
@@ -54,7 +55,10 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	log.Debug("target image: ", c.Image)
 
 	// prepare crane runtime options, if necessary
-	options := make([]crane.Option, 0)
+	options := []crane.Option{
+		crane.WithContext(ctx),
+		crane.WithAuthFromKeychain(authn.PreflightKeychain),
+	}
 
 	// pull the image and save to fs
 	log.Debug("pulling image from target registry")
