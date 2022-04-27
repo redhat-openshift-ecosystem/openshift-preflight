@@ -1,6 +1,6 @@
 .DEFAULT_GOAL:=help
 
-BINARY=preflight
+BINARY?=preflight
 IMAGE_BUILDER?=podman
 IMAGE_REPO?=quay.io/opdev
 VERSION=$(shell git rev-parse HEAD)

@@ -1,35 +1,50 @@
 name: Create Release Artifacts
 
 on:
-  release:
-    types:
-      - created
-
+  workflow_call:
+    inputs:
+      name:
+        required: true
+        type: string
+      tag:
+        required: true
+        type: string
+    secrets:
+      registry:
+        required: true
+      token:
+        required: true
+        
 jobs:
-  build-binaries:
+  release-assets-matrix:
+    name: Release Matrix
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [ linux ]
+        architecture:
+          - amd64
+          - arm64
+          - ppc64le
+          - s390x
     steps:
-
-    - name: code checkout
-      uses: actions/checkout@v2
-
-    - name: Set Env Tags
-      run: echo RELEASE_TAG=$(echo $GITHUB_REF | cut -d '/' -f 3) >> $GITHUB_ENV
-
-    - name: Install system deps
-      run: 'sudo apt update && sudo apt install -y libgpgme-dev libbtrfs-dev libdevmapper-dev'
-
-    - name: Set up Go
-      uses: actions/setup-go@v2
+    - name: Extract executable
+      uses: shrink/actions-docker-extract@v1
+      id: extract
       with:
-        go-version: 1.17
-    
-    - name: Build Multi-arch binaries
-      id: build-multi-arch-binaries
-      run: make build-multi-arch
+        image: ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}-${{ matrix.platform }}-${{ matrix.architecture }}
+        path: /usr/local/bin/preflight
+
+    - name: Rename the binary
+      uses: canastro/copy-file-action@master
+      with:
+        source: ${{ steps.extract.outputs.destination }}/preflight
+        target: ${{ steps.extract.outputs.destination }}/preflight-${{ matrix.platform }}-${{ matrix.architecture }}
 
     - name: Upload binaries to the release
       uses: AButler/upload-release-assets@v2.0
+      id: upload-release-asset
       with:
-        files: "preflight*"
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        files: ${{ steps.extract.outputs.destination }}/preflight-${{ matrix.platform }}-${{ matrix.architecture }}
+        repo-token: ${{ secrets.token }}
+        release-tag: ${{ inputs.tag }}
