@@ -17,7 +17,7 @@ type fakeTagLister struct {
 	Tags []string
 }
 
-func (ftl *fakeTagLister) ListTags(imageUri string) ([]string, error) {
+func (ftl *fakeTagLister) ListTags(ctx context.Context, imageUri string) ([]string, error) {
 	return ftl.Tags, nil
 }
 

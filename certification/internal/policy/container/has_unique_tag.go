@@ -21,15 +21,15 @@ type HasUniqueTagCheck struct {
 }
 
 func (p *HasUniqueTagCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
-	tags, err := p.getDataToValidate(fmt.Sprintf("%s/%s", imgRef.ImageRegistry, imgRef.ImageRepository))
+	tags, err := p.getDataToValidate(ctx, fmt.Sprintf("%s/%s", imgRef.ImageRegistry, imgRef.ImageRepository))
 	if err != nil {
 		return false, err
 	}
 	return p.validate(tags)
 }
 
-func (p *HasUniqueTagCheck) getDataToValidate(image string) ([]string, error) {
-	return p.TagLister.ListTags(image)
+func (p *HasUniqueTagCheck) getDataToValidate(ctx context.Context, image string) ([]string, error) {
+	return p.TagLister.ListTags(ctx, image)
 }
 
 func (p *HasUniqueTagCheck) validate(tags []string) (bool, error) {

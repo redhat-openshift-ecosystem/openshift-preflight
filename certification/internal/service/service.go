@@ -1,5 +1,7 @@
 package service
 
+import "context"
+
 type TagLister interface {
-	ListTags(imageURI string) ([]string, error)
+	ListTags(ctx context.Context, imageURI string) ([]string, error)
 }

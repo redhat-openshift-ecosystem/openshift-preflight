@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -14,7 +15,7 @@ var runtimeAssetsCmd = &cobra.Command{
 	Long:   `This command will return information on all runtime assets used by preflight. Useful for preparing a disconnected environment intending to utilize preflight.`,
 	PreRun: preRunConfig,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		assets := runtime.Assets()
+		assets := runtime.Assets(context.Background())
 
 		assetsJSON, err := json.MarshalIndent(assets, "", "    ")
 		if err != nil {

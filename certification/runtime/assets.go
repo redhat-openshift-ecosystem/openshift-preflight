@@ -1,10 +1,12 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/authn"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -20,12 +22,17 @@ var images = map[string]string{
 
 // imageList takes the images mapping and represents them using just
 // the image URIs.
-func imageList() []string {
+func imageList(ctx context.Context) []string {
+	options := []crane.Option{
+		crane.WithContext(ctx),
+		crane.WithAuthFromKeychain(authn.PreflightKeychain),
+	}
+
 	imageList := make([]string, 0, len(images))
 
 	for _, image := range images {
 		base := strings.Split(image, ":")[0]
-		digest, err := crane.Digest(image)
+		digest, err := crane.Digest(image, options...)
 		if err != nil {
 			log.Error(err)
 			// Skip this entry
@@ -38,9 +45,9 @@ func imageList() []string {
 }
 
 // Assets returns a full collection of assets used in Preflight.
-func Assets() AssetData {
+func Assets(ctx context.Context) AssetData {
 	return AssetData{
-		Images: imageList(),
+		Images: imageList(ctx),
 	}
 }
 
