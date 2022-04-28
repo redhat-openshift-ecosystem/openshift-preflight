@@ -198,7 +198,9 @@ $CONTAINER_TOOL run \
   --env PFLT_CERTIFICATION_PROJECT_ID=1234567890a987654321bcde \
   --env PFLT_PYXIS_API_TOKEN=abcdefghijklmnopqrstuvwxyz123456 \
   --env PFLT_DOCKERCONFIG=/temp-authfile.json \
+  --env DOCKER_CONFIG=/tmp/docker \
   -v /some/path/on/your/host/artifacts:/artifacts \
   -v ./temp-authfile.json:/temp-authfile.json:ro \
+  -v ./temp-authfile.json:/tmp/docker/config.json:ro \
   quay.io/opdev/preflight:stable check container registry.example.org/your-namespace/your-bundle-image:sometag --submit
 ```

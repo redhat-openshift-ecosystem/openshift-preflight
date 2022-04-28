@@ -51,8 +51,8 @@ func (p *HasRequiredLabelsCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
 		Description:      "Checking if the required labels (name, vendor, version, release, summary, description) are present in the container metadata.",
 		Level:            "good",
-		KnowledgeBaseURL: "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
-		CheckURL:         "https://connect.redhat.com/zones/containers/container-certification-policy-guide",
+		KnowledgeBaseURL: certDocumentationURL,
+		CheckURL:         certDocumentationURL,
 	}
 }
 
