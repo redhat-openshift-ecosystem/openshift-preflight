@@ -77,3 +77,16 @@ jobs:
     secrets:
       registry: ${{ secrets.IMAGE_REGISTRY }}
       token: ${{ secrets.GITHUB_TOKEN }}
+
+  copy-to-rhisv:
+    needs: [build-release, build-multiarch]
+    uses: ./.github/workflows/copy-to-rhisv.yml
+    with:
+      sourceImageName: ${{ needs.build-release.outputs.imageName }}
+      sourceImageTag: ${{ needs.build-release.outputs.imageVersion }}
+      destImageName: preflight-test
+    secrets:
+      sourceImageRegistry: ${{ secrets.IMAGE_REGISTRY }}
+      destImageRegistry: ${{ secrets.RHISV_IMAGE_REGISTRY }}
+      destRegistryUser: ${{ secrets.RHISV_REGISTRY_USER }}
+      destRegistryPassword: ${{ secrets.RHISV_REGISTRY_PASSWORD }}
