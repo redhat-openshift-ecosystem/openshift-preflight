@@ -33,7 +33,7 @@ fmt: gofumpt
 
 .PHONY: tidy
 tidy:
-	go mod tidy
+	go mod tidy -compat=1.17
 	git diff --exit-code
 
 .PHONY: image-build
