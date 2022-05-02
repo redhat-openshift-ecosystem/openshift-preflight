@@ -44,10 +44,6 @@ var checkContainerCmd = &cobra.Command{
 		}
 
 		if submit {
-			if !viper.IsSet("dockerConfig") {
-				cmd.MarkFlagRequired("docker-config")
-			}
-
 			if !viper.IsSet("certification_project_id") {
 				cmd.MarkFlagRequired("certification-project-id")
 			}
@@ -248,9 +244,6 @@ func pyxisHostLookup(pyxisEnv, hostOverride string) string {
 func init() {
 	checkContainerCmd.Flags().BoolVarP(&submit, "submit", "s", false, "submit check container results to red hat")
 	viper.BindPFlag("submit", checkContainerCmd.Flags().Lookup("submit"))
-
-	checkContainerCmd.Flags().StringP("docker-config", "d", "", "path to docker config.json file (env: PFLT_DOCKERCONFIG)")
-	viper.BindPFlag("dockerConfig", checkContainerCmd.Flags().Lookup("docker-config"))
 
 	checkContainerCmd.Flags().String("pyxis-api-token", "", "API token for Pyxis authentication (env: PFLT_PYXIS_API_TOKEN)")
 	viper.BindPFlag("pyxis_api_token", checkContainerCmd.Flags().Lookup("pyxis-api-token"))
