@@ -353,15 +353,16 @@ func (p *DeployableByOlmCheck) isCSVReady(ctx context.Context, operatorData Oper
 	csvChannel := make(chan string)
 
 	var wg sync.WaitGroup
-	go func() {
-		wg.Wait()
-		close(csvChannel)
-	}()
 
 	for _, CsvNamespace := range CsvNamespaces {
 		wg.Add(1)
 		go watch(ctx, p.OpenshiftEngine, &wg, operatorData.InstalledCsv, CsvNamespace, csvTimeout, csvChannel, csvStatusSucceeded)
 	}
+
+	go func() {
+		wg.Wait()
+		close(csvChannel)
+	}()
 
 	for msg := range csvChannel {
 		if strings.Contains(msg, errorPrefix) {
@@ -393,13 +394,14 @@ func (p *DeployableByOlmCheck) installedCSV(ctx context.Context, operatorData Op
 	installedCSVChannel := make(chan string)
 
 	var wg sync.WaitGroup
+	// query API server for the installed CSV field of the created subscription
+	wg.Add(1)
+	go watch(ctx, p.OpenshiftEngine, &wg, operatorData.App, operatorData.InstallNamespace, subscriptionTimeout, installedCSVChannel, subscriptionCsvIsInstalled)
+
 	go func() {
 		wg.Wait()
 		close(installedCSVChannel)
 	}()
-	// query API server for the installed CSV field of the created subscription
-	wg.Add(1)
-	go watch(ctx, p.OpenshiftEngine, &wg, operatorData.App, operatorData.InstallNamespace, subscriptionTimeout, installedCSVChannel, subscriptionCsvIsInstalled)
 
 	installedCsv := ""
 	for msg := range installedCSVChannel {

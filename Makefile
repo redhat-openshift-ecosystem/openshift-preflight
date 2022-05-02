@@ -48,6 +48,10 @@ image-push:
 test:
 	go test -v $$(go list ./... | grep -v e2e)
 
+.PHONY: cover
+cover:
+	go test -v $$(go list ./... | grep -v e2e) -race -cover -coverprofile=coverage.out
+
 .PHONY: vet
 vet:
 	go vet ./...
