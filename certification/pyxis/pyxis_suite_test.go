@@ -59,6 +59,15 @@ func (p *pyxisProjectHandler) ServeHTTP(response http.ResponseWriter, request *h
 	switch {
 	case request.Header["X-Api-Key"][0] == "my-bad-project-api-token":
 		response.WriteHeader(401)
+	case request.Header["X-Api-Key"][0] == "my-update-project-api-token":
+		if request.Method == http.MethodGet {
+			mustWrite(response, `{"_id":"deadb33f","certification_status":"Started","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`)
+			break
+		}
+
+		response.WriteHeader(500)
+	case request.Header["X-Api-Key"][0] == "my-index-docker-io-project-api-token":
+		mustWrite(response, `{"_id":"deadb33f","certification_status":"Started","name":"My Index Docker IO Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers","registry":"docker.io", "repository":"my/repo"}}`)
 	case request.Method == http.MethodPost:
 		body, err := io.ReadAll(request.Body)
 		if err != nil {
