@@ -23,7 +23,7 @@ func init() {
 	checkCmd.PersistentFlags().BoolP("list-checks", "l", false, "lists all the checks run for a given check")
 
 	checkCmd.PersistentFlags().StringP("docker-config", "d", "", "path to docker config.json file (env: PFLT_DOCKERCONFIG)")
-	viper.BindPFlag("dockerConfig", checkCmd.Flags().Lookup("docker-config"))
+	viper.BindPFlag("dockerConfig", checkCmd.PersistentFlags().Lookup("docker-config"))
 
 	rootCmd.AddCommand(checkCmd)
 }
