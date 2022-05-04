@@ -96,7 +96,7 @@ type CertProject struct {
 }
 
 type Container struct {
-	DockerConfigJSON string `json:"docker_config_json"`
+	DockerConfigJSON string `json:"docker_config_json,omitempty"`
 	Type             string `json:"type" default:"Containers"` // conditionally required
 	ISVPID           string `json:"isv_pid,omitempty"`         // required
 	Registry         string `json:"registry,omitempty"`

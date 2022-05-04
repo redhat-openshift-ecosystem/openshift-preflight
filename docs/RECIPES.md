@@ -155,6 +155,10 @@ You will also need:
 - A Partner Connect API Key
   - An API Key can be created in Red Hat Partner Connect at the following [URL](https://connect.redhat.com/account/api-keys)
   - Required for submit
+- A Docker Auth file, can be specified multiple ways
+  - If PFLT_DOCKERCONFIG envvar is set, or --docker-config is passed on the command line, this will be used to pull images.
+    If also submitting, the file specified will be sent to Red Hat. If the image under test is on a public registry, there is
+    no need to pass this parameter.
 
 ### Testing a Container
 Running container policy checks against a container iteratively until all tests pass.
@@ -198,9 +202,7 @@ $CONTAINER_TOOL run \
   --env PFLT_CERTIFICATION_PROJECT_ID=1234567890a987654321bcde \
   --env PFLT_PYXIS_API_TOKEN=abcdefghijklmnopqrstuvwxyz123456 \
   --env PFLT_DOCKERCONFIG=/temp-authfile.json \
-  --env DOCKER_CONFIG=/tmp/docker \
   -v /some/path/on/your/host/artifacts:/artifacts \
   -v ./temp-authfile.json:/temp-authfile.json:ro \
-  -v ./temp-authfile.json:/tmp/docker/config.json:ro \
   quay.io/opdev/preflight:stable check container registry.example.org/your-namespace/your-bundle-image:sometag --submit
 ```
