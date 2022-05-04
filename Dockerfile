@@ -3,7 +3,6 @@ ARG release_tag=0.0.0
 ARG ARCH=amd64
 ARG OS=linux
 
-# golang:1.16 image created 2021-06-24T00:31:06.02014601Z 
 FROM docker.io/golang:1.17 AS builder
 ARG quay_expiration
 ARG release_tag
@@ -18,8 +17,22 @@ RUN make build RELEASE_TAG=${release_tag}
 # ubi8:latest
 FROM registry.access.redhat.com/ubi8/ubi:latest
 ARG quay_expiration
+ARG release_tag
+ARG preflight_commit
 ARG ARCH
 ARG OS
+
+# Metadata
+LABEL name="Preflight" \
+      vendor="Red Hat, Inc." \
+      maintainer="Red Hat OpenShift Ecosystem" \
+      version="1" \
+      summary="Provides the OpenShift Preflight certification tool." \
+      description="Preflight runs certification checks against containers and Operators." \
+      url="https://github.com/redhat-openshift-ecosystem/openshift-preflight" \
+      release=${release_tag} \
+      vcs-ref=${preflight_commit}
+
 
 # Define that tags should expire after 1 week. This should not apply to versioned releases.
 LABEL quay.expires-after=${quay_expiration}

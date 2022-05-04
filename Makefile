@@ -38,7 +38,7 @@ tidy:
 
 .PHONY: image-build
 image-build:
-	$(IMAGE_BUILDER) build -t $(IMAGE_REPO)/preflight:$(VERSION) .
+	$(IMAGE_BUILDER) build --build-arg release_tag=$(RELEASE_TAG) --build-arg preflight_commit=$(VERSION) -t $(IMAGE_REPO)/preflight:$(VERSION) .
 
 .PHONY: image-push
 image-push:
