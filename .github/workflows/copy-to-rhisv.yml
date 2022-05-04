@@ -1,0 +1,56 @@
+name: Mirror images to RHISV Quay Org
+
+on:
+  workflow_call:
+    inputs:
+      sourceImageName:
+        required: true
+        type: string
+      sourceImageTag:
+        required: true
+        type: string
+      destImageName:
+        required: true
+        type: string
+    secrets:
+      sourceImageRegistry:
+        required: true
+      destImageRegistry:
+        required: true
+      destRegistryUser:
+        required: true
+      destRegistryPassword:
+        required: true
+
+jobs:
+  mirror-images-to-rhisv:
+    name: Mirror Images
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+
+    - name: Install Skopeo
+      run: |
+        sudo apt-get update && sudo apt-get install libgpgme-dev libdevmapper-dev libbtrfs-dev -y
+        go install github.com/containers/skopeo/cmd/skopeo@v1.7.0
+        skopeo -v
+
+    - name: Podman Login
+      uses: redhat-actions/podman-login@v1
+      with:
+        registry: ${{ secrets.destImageRegistry }}
+        username: ${{ secrets.destRegistryUser }}
+        password: ${{ secrets.destRegistryPassword }}
+
+    - name: Copy Images from Source to Dest
+      id: skopeo-copy-image
+      run: |
+        skopeo -v
+        skopeo copy --all --preserve-digests docker://${{ secrets.sourceImageRegistry }}/${{ inputs.sourceImageName }}:${{ inputs.sourceImageTag }}-linux-amd64 docker://${{ secrets.destImageRegistry }}/${{ inputs.destImageName }}:${{ inputs.sourceImageTag }}-linux-amd64
+        skopeo copy --all --preserve-digests docker://${{ secrets.sourceImageRegistry }}/${{ inputs.sourceImageName }}:${{ inputs.sourceImageTag }}-linux-ppc64le docker://${{ secrets.destImageRegistry }}/${{ inputs.destImageName }}:${{ inputs.sourceImageTag }}-linux-ppc64le
+        skopeo copy --all --preserve-digests docker://${{ secrets.sourceImageRegistry }}/${{ inputs.sourceImageName }}:${{ inputs.sourceImageTag }}-linux-arm64 docker://${{ secrets.destImageRegistry }}/${{ inputs.destImageName }}:${{ inputs.sourceImageTag }}-linux-arm64
+        skopeo copy --all --preserve-digests docker://${{ secrets.sourceImageRegistry }}/${{ inputs.sourceImageName }}:${{ inputs.sourceImageTag }}-linux-s390x docker://${{ secrets.destImageRegistry }}/${{ inputs.destImageName }}:${{ inputs.sourceImageTag }}-linux-s390x
+        skopeo copy --all --preserve-digests docker://${{ secrets.sourceImageRegistry }}/${{ inputs.sourceImageName }}:${{ inputs.sourceImageTag }} docker://${{ secrets.destImageRegistry }}/${{ inputs.destImageName }}:${{ inputs.sourceImageTag }}
