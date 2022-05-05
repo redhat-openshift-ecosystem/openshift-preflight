@@ -72,7 +72,6 @@ func (b *certificationInputBuilder) Finalize() (*certificationInput, error) {
 func (b *certificationInputBuilder) WithCertImageFromFile(filepath string) *certificationInputBuilder {
 	if err := b.storeCertImage(filepath); err != nil {
 		log.Error(err)
-		return b
 	}
 
 	return b
@@ -83,7 +82,6 @@ func (b *certificationInputBuilder) WithCertImageFromFile(filepath string) *cert
 func (b *certificationInputBuilder) WithPreflightResultsFromFile(filepath string) *certificationInputBuilder {
 	if err := b.storePreflightResults(filepath); err != nil {
 		log.Error(err)
-		return b
 	}
 
 	return b
@@ -94,7 +92,6 @@ func (b *certificationInputBuilder) WithPreflightResultsFromFile(filepath string
 func (b *certificationInputBuilder) WithRPMManifestFromFile(filepath string) *certificationInputBuilder {
 	if err := b.storeRPMManifest(filepath); err != nil {
 		log.Error(err)
-		return b
 	}
 
 	return b
