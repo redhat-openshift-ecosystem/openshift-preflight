@@ -65,15 +65,14 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 
 	// Create the image, or get it if it already exists.
 	certImage, err = p.createImage(ctx, certImage)
-	if err != nil && err != errors.ErrPyxis409StatusCode {
-		log.Error(err, "could not create image")
-		return nil, err
-	}
-
-	if err != nil && err == errors.ErrPyxis409StatusCode {
+	if err != nil {
+		if err != errors.ErrPyxis409StatusCode {
+			log.Error(fmt.Errorf("%w: could not create image", err))
+			return nil, err
+		}
 		certImage, err = p.getImage(ctx, originalImageDigest)
 		if err != nil {
-			log.Error(err, "could not get image")
+			log.Error(fmt.Errorf("%w: could not get image", err))
 			return nil, err
 		}
 	}
@@ -82,14 +81,14 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 	rpmManifest := certInput.RpmManifest
 	rpmManifest.ImageID = certImage.ID
 	_, err = p.createRPMManifest(ctx, rpmManifest)
-	if err != nil && err != errors.ErrPyxis409StatusCode {
-		log.Error(err, "could not create rpm manifest")
-		return nil, err
-	}
-	if err != nil && err == errors.ErrPyxis409StatusCode {
+	if err != nil {
+		if err != errors.ErrPyxis409StatusCode {
+			log.Error(fmt.Errorf("%w: could not create rpm manifest", err))
+			return nil, err
+		}
 		_, err = p.getRPMManifest(ctx, rpmManifest.ImageID)
 		if err != nil {
-			log.Error(err, "could not get rpm manifest")
+			log.Error(fmt.Errorf("%w: could not get rpm manifest", err))
 			return nil, err
 		}
 	}
@@ -99,7 +98,7 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 	for _, artifact := range artifacts {
 		artifact.ImageID = certImage.ID
 		if _, err := p.createArtifact(ctx, &artifact); err != nil {
-			log.Errorf("%s: could not create artifact: %s", err, artifact.Filename)
+			log.Error(fmt.Errorf("%w: could not create artifact: %s", err, artifact.Filename))
 			return nil, err
 		}
 	}
@@ -109,7 +108,7 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 	testResults.ImageID = certImage.ID
 	testResults, err = p.createTestResults(ctx, testResults)
 	if err != nil {
-		log.Error(err, "could not create test results")
+		log.Error(fmt.Errorf("%w: could not create test results", err))
 		return nil, err
 	}
 

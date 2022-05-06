@@ -1,10 +1,10 @@
 package pyxis
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2/dsl/core"
@@ -50,6 +50,11 @@ type (
 	pyxisGraphqlLayerHandler struct{}
 )
 
+// For each of these ServeHTTP methods, there is a main switch statement that controls what response will
+// be sent back. Most are switched on the API Key that is provided. Depending on the request.Method, it
+// will determine whether to send back an error, or a valid response. This can probably be improved a bit
+// to dedupe. Acknowledged that it is a bit fragile. -bpc
+
 func (p *pyxisProjectHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
 	log.Trace("In the Project ServeHTTP")
 	response.Header().Set("Content-Type", "application/json")
@@ -57,21 +62,18 @@ func (p *pyxisProjectHandler) ServeHTTP(response http.ResponseWriter, request *h
 		defer request.Body.Close()
 	}
 	switch {
+	case request.Method == http.MethodGet && request.Header["X-Api-Key"][0] == "my-401-project-api-token":
+		response.WriteHeader(http.StatusUnauthorized)
 	case request.Header["X-Api-Key"][0] == "my-bad-project-api-token":
-		response.WriteHeader(401)
-	case request.Header["X-Api-Key"][0] == "my-update-project-api-token":
-		if request.Method == http.MethodGet {
-			mustWrite(response, `{"_id":"deadb33f","certification_status":"Started","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`)
-			break
-		}
-
-		response.WriteHeader(500)
+		response.WriteHeader(http.StatusUnauthorized)
 	case request.Header["X-Api-Key"][0] == "my-index-docker-io-project-api-token":
 		mustWrite(response, `{"_id":"deadb33f","certification_status":"Started","name":"My Index Docker IO Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers","registry":"docker.io", "repository":"my/repo"}}`)
+	case request.Method == http.MethodPatch && request.Header["X-Api-Key"][0] == "my-error-project-api-token":
+		response.WriteHeader(http.StatusInternalServerError)
 	case request.Method == http.MethodPost:
 		body, err := io.ReadAll(request.Body)
 		if err != nil {
-			response.WriteHeader(400)
+			response.WriteHeader(http.StatusBadRequest)
 		}
 		mustWrite(response, string(body))
 	default:
@@ -86,13 +88,26 @@ func (p *pyxisImageHandler) ServeHTTP(response http.ResponseWriter, request *htt
 	if request.Body != nil {
 		defer request.Body.Close()
 	}
+	responseString := `{"_id":"blah","certified":false,"deleted":false,"image_id":"123456789abc"}`
+	log.Tracef("Method: %s", request.Method)
 	switch {
-	case strings.Contains(request.URL.Path, "my-image-409-project-id") && request.Method == http.MethodPost:
-		response.WriteHeader(409)
+	case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-image-409-api-token":
+		response.WriteHeader(http.StatusConflict)
+	case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-bad-401-image-api-token":
+		response.WriteHeader(http.StatusConflict)
+	case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-bad-image-api-token":
+		response.WriteHeader(http.StatusConflict)
+	case request.Method == http.MethodGet && request.Header["X-Api-Key"][0] == "my-bad-401-image-api-token":
+		log.Trace("get with 401")
+		response.WriteHeader(http.StatusUnauthorized)
 	case request.Header["X-Api-Key"][0] == "my-bad-image-api-token":
-		response.WriteHeader(401)
+		response.WriteHeader(http.StatusUnauthorized)
+	case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-bad-500-image-api-token":
+		response.WriteHeader(http.StatusInternalServerError)
+	case request.Method == http.MethodPost:
+		mustWrite(response, responseString)
 	default:
-		mustWrite(response, `{"_id":"blah","certified":false,"deleted":false,"image_id":"123456789abc"}`)
+		mustWrite(response, fmt.Sprintf(`{"data":[%s]}`, responseString))
 	}
 	return
 }
@@ -104,11 +119,15 @@ func (p *pyxisRPMManifestHandler) ServeHTTP(response http.ResponseWriter, reques
 		defer request.Body.Close()
 	}
 	switch {
-	case strings.Contains(request.URL.Path, "my-manifest-409-project-id") && request.Method == http.MethodPost:
-		response.WriteHeader(409)
+	case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-bad-rpmmanifest-409-api-token":
+		response.WriteHeader(http.StatusConflict)
 		mustWrite(response, `{"_id":"foo"}`)
+	case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-bad-rpmmanifest-401-api-token":
+		response.WriteHeader(http.StatusConflict)
+	case request.Method == http.MethodGet && request.Header["X-Api-Key"][0] == "my-bad-rpmmanifest-401-api-token":
+		response.WriteHeader(http.StatusUnauthorized)
 	case request.Header["X-Api-Key"][0] == "my-bad-rpmmanifest-api-token":
-		response.WriteHeader(401)
+		response.WriteHeader(http.StatusUnauthorized)
 	default:
 		mustWrite(response, `{"_id":"blah"}`)
 	}
@@ -123,7 +142,7 @@ func (p *pyxisTestResultsHandler) ServeHTTP(response http.ResponseWriter, reques
 	}
 	switch {
 	case request.Header["X-Api-Key"][0] == "my-bad-testresults-api-token":
-		response.WriteHeader(401)
+		response.WriteHeader(http.StatusUnauthorized)
 	default:
 		mustWrite(response, `{"image":"quay.io/awesome/image:latest","passed": true}`)
 	}
