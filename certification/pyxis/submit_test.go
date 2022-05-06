@@ -49,7 +49,83 @@ var _ = Describe("Pyxis Submit", func() {
 		})
 	})
 
-	Context("updateProject 401 Unauthorized", func() {
+	Context("when a project is submitted with an empty registry", func() {
+		BeforeEach(func() {
+			pyxisClient = NewPyxisClient("my.pyxis.host/api", "my-spiffy-api-token", "my-awesome-project-id", &http.Client{Transport: localRoundTripper{handler: mux}})
+		})
+		Context("and it is not already In Progress", func() {
+			It("should get invalid cert image error", func() {
+				certResults, err := pyxisClient.SubmitResults(ctx, &certificationInput{
+					CertProject: &CertProject{CertificationStatus: "Started"},
+					CertImage:   &CertImage{},
+					RpmManifest: &RPMManifest{},
+					TestResults: &TestResults{},
+					Artifacts:   []Artifact{},
+				})
+				Expect(err).To(MatchError(errors.New("certImage has not been properly populated")))
+				Expect(certResults).To(BeNil())
+			})
+		})
+	})
+
+	Context("when an index.docker.io project is submitted", func() {
+		BeforeEach(func() {
+			pyxisClient = NewPyxisClient("my.pyxis.host/api", "my-index-docker-io-project-api-token", "my-index-docker-io-project-api-token", &http.Client{Transport: localRoundTripper{handler: mux}})
+		})
+		Context("and it is not already In Progress", func() {
+			It("should switch to In Progress and certResults.CertProject.Container.Registry should equal 'docker.io'", func() {
+				certResults, err := pyxisClient.SubmitResults(ctx, &certificationInput{
+					CertProject: &CertProject{CertificationStatus: "Started"},
+					CertImage: &CertImage{
+						Repositories: []Repository{
+							{
+								Registry:   "index.docker.io",
+								Repository: "my/repo",
+							},
+						},
+					},
+					RpmManifest: &RPMManifest{},
+					TestResults: &TestResults{},
+					Artifacts:   []Artifact{},
+				})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(certResults).ToNot(BeNil())
+				Expect(certResults.CertProject.Container.Registry).Should(Equal(defaultRegistryAlias))
+				Expect(certResults.CertImage).ToNot(BeNil())
+				Expect(certResults.TestResults).ToNot(BeNil())
+			})
+		})
+	})
+
+	Context("updateProject 500 Internal Error", func() {
+		BeforeEach(func() {
+			pyxisClient = NewPyxisClient("my.pyxis.host/api", "my-update-project-api-token", "my-awesome-project-id", &http.Client{Transport: localRoundTripper{handler: mux}})
+		})
+		Context("when a project is submitted", func() {
+			Context("and the client sends an update token", func() {
+				It("GetProject should succeed and updateProject should 500 Internal Error", func() {
+					certResults, err := pyxisClient.SubmitResults(ctx, &certificationInput{
+						CertProject: &CertProject{CertificationStatus: "Started"},
+						CertImage: &CertImage{
+							Repositories: []Repository{
+								{
+									Registry:   "my.registry",
+									Repository: "my/repo",
+								},
+							},
+						},
+						RpmManifest: &RPMManifest{},
+						TestResults: &TestResults{},
+						Artifacts:   []Artifact{},
+					})
+					Expect(err).To(MatchError(errors.New("error calling remote API")))
+					Expect(certResults).To(BeNil())
+				})
+			})
+		})
+	})
+
+	Context("GetProject 401 Unauthorized", func() {
 		BeforeEach(func() {
 			pyxisClient = NewPyxisClient("my.pyxis.host/api", "my-bad-project-api-token", "my-awesome-project-id", &http.Client{Transport: localRoundTripper{handler: mux}})
 		})
