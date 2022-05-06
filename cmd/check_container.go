@@ -248,13 +248,15 @@ func init() {
 	checkContainerCmd.Flags().String("pyxis-api-token", "", "API token for Pyxis authentication (env: PFLT_PYXIS_API_TOKEN)")
 	viper.BindPFlag("pyxis_api_token", checkContainerCmd.Flags().Lookup("pyxis-api-token"))
 
-	checkContainerCmd.Flags().String("pyxis-host", "", fmt.Sprintf("Host to use for Pyxis submissions.\nThis will override Pyxis Env.\nOnly set this if you know what you are doing.\nIf you do set it, it should include just the host, and the URI path.\n(env: PFLT_PYXIS_HOST)"))
+	checkContainerCmd.Flags().String("pyxis-host", "", fmt.Sprintf("Host to use for Pyxis submissions. This will override Pyxis Env. Only set this if you know what you are doing.\n"+
+		"If you do set it, it should include just the host, and the URI path. (env: PFLT_PYXIS_HOST)"))
 	viper.BindPFlag("pyxis_host", checkContainerCmd.Flags().Lookup("pyxis-host"))
 
 	checkContainerCmd.Flags().String("pyxis-env", certification.DefaultPyxisEnv, "Env to use for Pyxis submissions.")
 	viper.BindPFlag("pyxis_env", checkContainerCmd.Flags().Lookup("pyxis-env"))
 
-	checkContainerCmd.Flags().String("certification-project-id", "", fmt.Sprintf("Certification Project ID from connect.redhat.com.\nShould be supplied without the ospid- prefix.\n(env: PFLT_CERTIFICATION_PROJECT_ID)"))
+	checkContainerCmd.Flags().String("certification-project-id", "", fmt.Sprintf("Certification Project ID from connect.redhat.com/projects/{certification-project-id}/overview\n"+
+		"URL paramater. This value may differ from the PID on the overview page. (env: PFLT_CERTIFICATION_PROJECT_ID)"))
 	viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
 
 	checkCmd.AddCommand(checkContainerCmd)
