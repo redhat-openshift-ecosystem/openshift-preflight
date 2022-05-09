@@ -60,7 +60,7 @@ func (p *pyxisClient) createImage(ctx context.Context, certImage *CertImage) (*C
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
-		log.Error(err)
+		log.Error(fmt.Errorf("%w: cannot create image", err))
 		return nil, err
 	}
 
@@ -72,7 +72,7 @@ func (p *pyxisClient) createImage(ctx context.Context, certImage *CertImage) (*C
 		return nil, err
 	}
 
-	if resp.StatusCode == 409 {
+	if resp.StatusCode == http.StatusConflict {
 		return nil, errors.ErrPyxis409StatusCode
 	}
 
@@ -121,7 +121,7 @@ func (p *pyxisClient) getImage(ctx context.Context, dockerImageDigest string) (*
 
 	// using an inline struct since this api's response is in a different format
 	data := struct {
-		Data []CertImage `json:"data,omitempty"`
+		Data []CertImage `json:"data"`
 	}{}
 
 	if err := json.Unmarshal(body, &data); err != nil {
