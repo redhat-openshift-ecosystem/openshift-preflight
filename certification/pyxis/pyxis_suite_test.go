@@ -1,6 +1,7 @@
 package pyxis
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -157,4 +158,11 @@ func (p *pyxisGraphqlLayerHandler) ServeHTTP(response http.ResponseWriter, reque
 	}
 	mustWrite(response, `{"data":{"find_images":{"error":null,"total":1,"page":0,"data":[{"uncompressed_top_layer_id":"good_top_layer","_id":"deadb33f"}]}}}`)
 	return
+}
+
+// In order to test some negative paths, this io.Reader will just throw an error
+type errReader int
+
+func (errReader) Read(p []byte) (n int, err error) {
+	return 0, errors.New("test error")
 }

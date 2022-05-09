@@ -186,15 +186,51 @@ var checkContainerCmd = &cobra.Command{
 				)
 			}
 
+			certImage, err := os.Open(path.Join(artifacts.Path(), certification.DefaultCertImageFilename))
+			defer certImage.Close()
+			if err != nil {
+				return fmt.Errorf(
+					"%w: could not open file for submission: %s",
+					err,
+					certification.DefaultCertImageFilename,
+				)
+			}
+			preflightResults, err := os.Open(path.Join(artifacts.Path(), certification.DefaultTestResultsFilename))
+			defer preflightResults.Close()
+			if err != nil {
+				return fmt.Errorf(
+					"%w: could not open file for submission: %s",
+					err,
+					certification.DefaultTestResultsFilename,
+				)
+			}
+			rpmManifest, err := os.Open(path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename))
+			defer rpmManifest.Close()
+			if err != nil {
+				return fmt.Errorf(
+					"%w: could not open file for submission: %s",
+					err,
+					certification.DefaultRPMManifestFilename,
+				)
+			}
+			logfile, err := os.Open(viper.GetString("logfile"))
+			defer logfile.Close()
+			if err != nil {
+				return fmt.Errorf(
+					"%w: could not open file for submission: %s",
+					err,
+					viper.GetString("logfile"),
+				)
+			}
 			submission.
 				// The engine writes the certified image config to disk in a Pyxis-specific format.
-				WithCertImageFromFile(path.Join(artifacts.Path(), certification.DefaultCertImageFilename)).
+				WithCertImage(certImage).
 				// Include Preflight's test results in our submission. pyxis.TestResults embeds them.
-				WithPreflightResultsFromFile(path.Join(artifacts.Path(), certification.DefaultTestResultsFilename)).
+				WithPreflightResults(preflightResults).
 				// The certification engine writes the rpmManifest for images not based on scratch.
-				WithRPMManifestFromFile(path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename)).
+				WithRPMManifest(rpmManifest).
 				// Include the preflight execution log file.
-				WithArtifactFromFile(viper.GetString("logfile"))
+				WithArtifact(logfile, filepath.Base(viper.GetString("logfile")))
 
 			input, err := submission.Finalize()
 			if err != nil {
