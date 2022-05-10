@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -38,7 +40,14 @@ type packageData struct {
 type OperatorPkgNameIsUniqueCheck struct{}
 
 func (p *OperatorPkgNameIsUniqueCheck) Validate(ctx context.Context, bundleRef certification.ImageReference) (bool, error) {
-	annotations, err := bundle.GetAnnotations(ctx, bundleRef.ImageFSPath)
+	// retrieve the operator metadata from bundle image
+	annotationsFileName := filepath.Join(bundleRef.ImageFSPath, "metadata", "annotations.yaml")
+	annotationsFile, err := os.Open(annotationsFileName)
+	if err != nil {
+		log.Error(fmt.Errorf("%w: could not open annotations.yaml", err))
+		return false, err
+	}
+	annotations, err := bundle.GetAnnotations(ctx, annotationsFile)
 	if err != nil {
 		log.Error("unable to get annotations.yaml from the bundle")
 		return false, err
