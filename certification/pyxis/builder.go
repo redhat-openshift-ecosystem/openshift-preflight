@@ -4,9 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
-	"os"
-	"path"
 
 	log "github.com/sirupsen/logrus"
 
@@ -67,41 +66,43 @@ func (b *certificationInputBuilder) Finalize() (*certificationInput, error) {
 	return &b.certificationInput, nil
 }
 
-// WithCertImageFromFile adds a pyxis.CertImage from a file on disk to the CertificationInput.
+// WithCertImage adds a pyxis.CertImage from the passed io.Reader to the CertificationInput.
 // Errors are logged, but will not halt execution.
-func (b *certificationInputBuilder) WithCertImageFromFile(filepath string) *certificationInputBuilder {
-	if err := b.storeCertImage(filepath); err != nil {
+func (b *certificationInputBuilder) WithCertImage(r io.Reader) *certificationInputBuilder {
+	if err := b.storeCertImage(r); err != nil {
 		log.Error(err)
 	}
 
 	return b
 }
 
-// WithPreflightResultsFromFile adds formatters.UserResponse from a file on disk to the CertificationInput.
+// WithPreflightResults adds formatters.UserResponse from the passed io.Reader to the CertificationInput.
 // Errors are logged, but will not halt execution.
-func (b *certificationInputBuilder) WithPreflightResultsFromFile(filepath string) *certificationInputBuilder {
-	if err := b.storePreflightResults(filepath); err != nil {
+func (b *certificationInputBuilder) WithPreflightResults(r io.Reader) *certificationInputBuilder {
+	if err := b.storePreflightResults(r); err != nil {
 		log.Error(err)
 	}
 
 	return b
 }
 
-// WithPreflightResultsFromFile adds the pyxis.RPMManifest from a file on disk to the CertificationInput.
+// WithRPMManifest adds the pyxis.RPMManifest from the passed io.Reader to the CertificationInput.
 // Errors are logged, but will not halt execution.
-func (b *certificationInputBuilder) WithRPMManifestFromFile(filepath string) *certificationInputBuilder {
-	if err := b.storeRPMManifest(filepath); err != nil {
+func (b *certificationInputBuilder) WithRPMManifest(r io.Reader) *certificationInputBuilder {
+	if err := b.storeRPMManifest(r); err != nil {
 		log.Error(err)
 	}
 
 	return b
 }
 
-// WithArtifactFromFile reads a file at path and binds it as an artifact to include
+// WithArtifact reads from the io.Reader and binds it as an artifact to include
 // in the submission. Multiple calls to this will append artifacts. Errors are logged,
-// but will not halt execution.
-func (b *certificationInputBuilder) WithArtifactFromFile(filepath string) *certificationInputBuilder {
-	bytes, err := os.ReadFile(filepath)
+// but will not halt execution. The filename parameter will be used as the Filename
+// field in the Artifact struct. It will be sent as is. It should prepresent only the
+// base filename.
+func (b *certificationInputBuilder) WithArtifact(r io.Reader, filename string) *certificationInputBuilder {
+	bts, err := io.ReadAll(r)
 	if err != nil {
 		log.Error(err)
 		return b
@@ -109,10 +110,10 @@ func (b *certificationInputBuilder) WithArtifactFromFile(filepath string) *certi
 
 	newArtifact := Artifact{
 		CertProject: b.CertProject.ID,
-		Content:     base64.StdEncoding.EncodeToString(bytes),
-		ContentType: http.DetectContentType(bytes),
-		Filename:    path.Base(filepath),
-		FileSize:    int64(len(bytes)),
+		Content:     base64.StdEncoding.EncodeToString(bts),
+		ContentType: http.DetectContentType(bts),
+		Filename:    filename,
+		FileSize:    int64(len(bts)),
 	}
 
 	b.Artifacts = append(b.Artifacts, newArtifact)
@@ -120,15 +121,10 @@ func (b *certificationInputBuilder) WithArtifactFromFile(filepath string) *certi
 	return b
 }
 
-func readAndUnmarshal(filepath string, submission interface{}) error {
-	bytes, err := os.ReadFile(filepath)
+func readAndUnmarshal(r io.Reader, submission interface{}) error {
+	bytes, err := io.ReadAll(r)
 	if err != nil {
-		return fmt.Errorf(
-			"%w: unable to read file from disk to include in submission: %s: %s",
-			errors.ErrSubmittingToPyxis,
-			filepath,
-			err,
-		)
+		return err
 	}
 
 	err = json.Unmarshal(bytes, &submission)
@@ -146,9 +142,9 @@ func readAndUnmarshal(filepath string, submission interface{}) error {
 
 // storeRPMManifest reads the manifest from disk at path and stores it in
 // the CertificationInput as an RPMManifest struct.
-func (b *certificationInputBuilder) storeRPMManifest(filepath string) error {
+func (b *certificationInputBuilder) storeRPMManifest(r io.Reader) error {
 	var manifest RPMManifest
-	err := readAndUnmarshal(filepath, &manifest)
+	err := readAndUnmarshal(r, &manifest)
 	if err != nil {
 		return err
 	}
@@ -159,9 +155,9 @@ func (b *certificationInputBuilder) storeRPMManifest(filepath string) error {
 
 // storePreflightResults reads the results from disk at path and stores it in
 // the CertificationInput as TestResults.
-func (b *certificationInputBuilder) storePreflightResults(filepath string) error {
+func (b *certificationInputBuilder) storePreflightResults(r io.Reader) error {
 	var testResults TestResults
-	err := readAndUnmarshal(filepath, &testResults)
+	err := readAndUnmarshal(r, &testResults)
 	if err != nil {
 		return err
 	}
@@ -172,9 +168,9 @@ func (b *certificationInputBuilder) storePreflightResults(filepath string) error
 
 // storeCertImage reads the image from disk at path and stores it in
 // the CertificationInput as a CertImage
-func (b *certificationInputBuilder) storeCertImage(filepath string) error {
+func (b *certificationInputBuilder) storeCertImage(r io.Reader) error {
 	var image CertImage
-	err := readAndUnmarshal(filepath, &image)
+	err := readAndUnmarshal(r, &image)
 	if err != nil {
 		return err
 	}

@@ -1,10 +1,10 @@
 package pyxis
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path"
-	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2/dsl/core"
 	. "github.com/onsi/gomega"
@@ -25,31 +25,6 @@ var _ = Describe("Pyxis Builder tests", func() {
 	AfterEach(func() {
 		err := os.RemoveAll(tmpdir)
 		Expect(err).ToNot(HaveOccurred())
-	})
-
-	Context("When reading a file with ReadFile", func() {
-		It("should be the same size as file.Stat().Size()", func() {
-			f := filepath.Join(tmpdir, "test.txt")
-			os.WriteFile(f, []byte("\tHello world!\n"), 0o0755)
-
-			file, err := os.Open(f)
-			Expect(err).ToNot(HaveOccurred())
-
-			info, err := file.Stat()
-			Expect(err).ToNot(HaveOccurred())
-
-			fileBytes, err := os.ReadFile(f)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(int64(len(fileBytes))).To(Equal(info.Size()))
-		})
-	})
-
-	Context("When reading and storing files from disk", func() {
-		f := filepath.Join(tmpdir, "does-not-exist")
-		It("should fail when the file does not exist", func() {
-			err := readAndUnmarshal(f, nil)
-			Expect(err).To(HaveOccurred())
-		})
 	})
 
 	Context("When preparing a new input builder", func() {
@@ -93,14 +68,7 @@ var _ = Describe("Pyxis Builder tests", func() {
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("should fail to bind a certimage from a file that does not exist", func() {
-				f := filepath.Join(tmpdir, "does-not-exist")
-				builder.WithCertImageFromFile(f)
-				Expect(builder.CertImage).To(BeNil())
-			})
-
-			It("should allow binding a valid cert image read from a file", func() {
-				f := filepath.Join(tmpdir, "certimage")
+			It("should allow binding a valid cert image", func() {
 				certimg := CertImage{
 					ID:                     "foo",
 					Certified:              false,
@@ -118,21 +86,30 @@ var _ = Describe("Pyxis Builder tests", func() {
 				}
 				bts, err := json.Marshal(certimg)
 				Expect(err).ToNot(HaveOccurred())
-				os.WriteFile(f, bts, 0o0755)
 
-				err = builder.storeCertImage(f)
-				Expect(err).ToNot(HaveOccurred())
+				origBuilder := *builder
+				builder = builder.WithCertImage(bytes.NewBuffer(bts))
+				Expect(*builder).To(Not(Equal(origBuilder)))
 
 				Expect(builder.CertImage.ID).To(Equal(certimg.ID))
 			})
 
-			It("should not bind an invalid cert image from file", func() {
-				f := filepath.Join(tmpdir, "certimage.invalid ")
-				err := os.WriteFile(f, []byte("\tHello world!\n"), 0o0755)
-				Expect(err).ToNot(HaveOccurred())
+			It("should not bind with an invalid io.Reader", func() {
+				origBuilder := *builder
+				builder = builder.WithCertImage(errReader(0))
+				Expect(*builder).To(Equal(origBuilder))
+			})
 
-				err = builder.storeCertImage(f)
-				Expect(err).To(HaveOccurred())
+			It("should not bind an invalid cert image", func() {
+				origBuilder := *builder
+				builder = builder.WithCertImage(bytes.NewBufferString("\tHello world!\n"))
+				Expect(*builder).To(Equal(origBuilder))
+			})
+
+			It("should not bind an empty cert image", func() {
+				origBuilder := *builder
+				builder = builder.WithCertImage(bytes.NewBufferString(""))
+				Expect(*builder).To(Equal(origBuilder))
 			})
 
 			It("should fail to finalize with no test results", func() {
@@ -140,14 +117,7 @@ var _ = Describe("Pyxis Builder tests", func() {
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("should fail to bind a preflight result from a file that does not exist", func() {
-				f := filepath.Join(tmpdir, "does-not-exist")
-				builder.WithPreflightResultsFromFile(f)
-				Expect(builder.TestResults).To(BeNil())
-			})
-
 			It("should allow binding a valid preflight result read from a file", func() {
-				f := filepath.Join(tmpdir, "results")
 				results := TestResults{
 					ID:          "foo",
 					CertProject: "",
@@ -163,22 +133,19 @@ var _ = Describe("Pyxis Builder tests", func() {
 				}
 				bts, err := json.Marshal(results)
 				Expect(err).ToNot(HaveOccurred())
-				os.WriteFile(f, bts, 0o0755)
 
-				err = builder.storePreflightResults(f)
-				Expect(err).ToNot(HaveOccurred())
+				origBuilder := *builder
+				builder = builder.WithPreflightResults(bytes.NewBuffer(bts))
+				Expect(*builder).To(Not(Equal(origBuilder)))
 
 				Expect(builder.TestResults.ID).To(Equal(results.ID))
 				Expect(builder.TestResults.UserResponse.Image).To(Equal(results.UserResponse.Image))
 			})
 
 			It("should not bind an invalid preflight results from file", func() {
-				f := filepath.Join(tmpdir, "results.invalid ")
-				err := os.WriteFile(f, []byte("\tHello world!\n"), 0o0755)
-				Expect(err).ToNot(HaveOccurred())
-
-				err = builder.storePreflightResults(f)
-				Expect(err).To(HaveOccurred())
+				origBuilder := *builder
+				builder = builder.WithPreflightResults(bytes.NewBufferString("\tHello world!\n"))
+				Expect(*builder).To(Equal(origBuilder))
 			})
 
 			It("should fail to finalize with no rpm manifest", func() {
@@ -186,14 +153,7 @@ var _ = Describe("Pyxis Builder tests", func() {
 				Expect(err).To(HaveOccurred())
 			})
 
-			It("should fail to bind a rpm manifest from a file that does not exist", func() {
-				f := filepath.Join(tmpdir, "does-not-exist")
-				builder.WithRPMManifestFromFile(f)
-				Expect(builder.RpmManifest).To(BeNil())
-			})
-
 			It("should allow binding a valid rpmmanifest read from a file", func() {
-				f := filepath.Join(tmpdir, "rpmmanfest")
 				rpmmanifest := RPMManifest{
 					ID:      "foo",
 					ImageID: "bar",
@@ -211,10 +171,10 @@ var _ = Describe("Pyxis Builder tests", func() {
 				}
 				bts, err := json.Marshal(rpmmanifest)
 				Expect(err).ToNot(HaveOccurred())
-				os.WriteFile(f, bts, 0o0755)
 
-				err = builder.storeRPMManifest(f)
-				Expect(err).ToNot(HaveOccurred())
+				origBuilder := *builder
+				builder = builder.WithRPMManifest(bytes.NewBuffer(bts))
+				Expect(*builder).To(Not(Equal(origBuilder)))
 
 				Expect(builder.RpmManifest.ID).To(Equal(rpmmanifest.ID))
 				Expect(builder.RpmManifest.ImageID).To(Equal(rpmmanifest.ImageID))
@@ -222,12 +182,9 @@ var _ = Describe("Pyxis Builder tests", func() {
 			})
 
 			It("should not bind an invalid rpm manifest from file", func() {
-				f := filepath.Join(tmpdir, "rpmmanifest.invalid")
-				err := os.WriteFile(f, []byte("\tHello world!\n"), 0o0755)
-				Expect(err).ToNot(HaveOccurred())
-
-				err = builder.storeRPMManifest(f)
-				Expect(err).To(HaveOccurred())
+				origBuilder := *builder
+				builder = builder.WithRPMManifest(bytes.NewBufferString("\tHello world!\n"))
+				Expect(*builder).To(Equal(origBuilder))
 			})
 
 			It("should finalize successfully with no artifacts", func() {
@@ -237,23 +194,20 @@ var _ = Describe("Pyxis Builder tests", func() {
 				Expect(len(fbuilder.Artifacts)).To(BeZero())
 			})
 
-			It("should fail to bind an artifact from a file that does not exist", func() {
-				f := filepath.Join(tmpdir, "does-not-exist")
-				builder.WithArtifactFromFile(f)
-				Expect(len(builder.Artifacts)).To(BeZero())
-			})
-
 			It("should bind an arbitrary test file as an artifact", func() {
-				f := filepath.Join(tmpdir, "artifact")
-				data := []byte("\tartifact contents\n")
-				err := os.WriteFile(f, data, 0o0755)
-				Expect(err).ToNot(HaveOccurred())
-
-				builder.WithArtifactFromFile(f)
+				f := "artifact.log"
+				data := "\tartifact contents\n"
+				builder.WithArtifact(bytes.NewBufferString(data), f)
 
 				Expect(len(builder.Artifacts)).To(Equal(1))
 				Expect(builder.Artifacts[0].Filename).To(Equal(path.Base(f)))
 				Expect(int64(len(data))).To(Equal(builder.Artifacts[0].FileSize))
+			})
+
+			It("should not bind an artifact with a bad Reader", func() {
+				origBuilder := *builder
+				builder = builder.WithArtifact(errReader(0), "bad-reader.txt")
+				Expect(*builder).To(Equal(origBuilder))
 			})
 		})
 	})
