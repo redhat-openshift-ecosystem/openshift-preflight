@@ -43,4 +43,5 @@ var (
 	ErrExtractingLayer                 = errors.New("could not extract layer")
 	ErrDetectingModifiedFiles          = errors.New("error detecting modified files")
 	ErrRetrievingProject               = errors.New("could not retrieve project")
+	ErrTooManyCSVs                     = errors.New("more than one CSV file detected in bundle")
 )

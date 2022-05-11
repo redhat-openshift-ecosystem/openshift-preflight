@@ -2,8 +2,9 @@ package bundle
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -28,7 +29,16 @@ func ValidateBundle(ctx context.Context, engine cli.OperatorSdkEngine, imagePath
 		OutputFormat:    "json-alpha1",
 	}
 
-	annotations, err := GetAnnotations(ctx, imagePath)
+	log.Trace("reading annotations file from the bundle")
+	log.Debug("mounted directory is ", imagePath)
+	// retrieve the operator metadata from bundle image
+	annotationsFileName := filepath.Join(imagePath, "metadata", "annotations.yaml")
+	annotationsFile, err := os.Open(annotationsFileName)
+	if err != nil {
+		log.Error(fmt.Errorf("%w: could not open annotations.yaml", err))
+		return nil, err
+	}
+	annotations, err := GetAnnotations(ctx, annotationsFile)
 	if err != nil {
 		log.Error("unable to get annotations.yaml from the bundle")
 		return nil, err
@@ -118,12 +128,10 @@ func cleanStringToGetTheVersionToParse(value string) string {
 	return value
 }
 
-func GetAnnotations(ctx context.Context, mountedDir string) (map[string]string, error) {
-	log.Trace("reading annotations file from the bundle")
-	log.Debug("mounted directory is ", mountedDir)
-	annotationsFilePath := path.Join(mountedDir, "metadata", "annotations.yaml")
-
-	fileContents, err := os.ReadFile(annotationsFilePath)
+// GetAnnotations accepts a context, and an io.Reader that is expected to provide
+// the annotations.yaml, and parses the annotations from there
+func GetAnnotations(ctx context.Context, r io.Reader) (map[string]string, error) {
+	fileContents, err := io.ReadAll(r)
 	if err != nil {
 		log.Error("fail to read metadata/annotation.yaml file in bundle")
 		return nil, err
@@ -158,42 +166,36 @@ func ExtractAnnotationsBytes(ctx context.Context, annotationBytes []byte) (map[s
 	return bundleMeta.Annotations, nil
 }
 
-func getCsvFilePathFromBundle(mountedDir string) (string, error) {
+func GetCsvFilePathFromBundle(mountedDir string) (string, error) {
 	log.Trace("reading clusterserviceversion file from the bundle")
 	log.Debug("mounted directory is ", mountedDir)
 	matches, err := filepath.Glob(filepath.Join(mountedDir, "manifests", "*.clusterserviceversion.yaml"))
 	if err != nil {
-		log.Error("glob pattern is malformed: ", err)
+		log.Error(fmt.Errorf("%w: glob pattern is malformed", err))
 		return "", err
 	}
 	if len(matches) == 0 {
-		log.Error("unable to find clusterserviceversion file in the bundle image: ", err)
-		return "", err
+		log.Error("unable to find clusterserviceversion file in the bundle image")
+		return "", os.ErrNotExist
 	}
 	if len(matches) > 1 {
-		log.Error("found more than one clusterserviceversion file in the bundle image: ", err)
-		return "", err
+		log.Error("found more than one clusterserviceversion file in the bundle image")
+		return "", errors.ErrTooManyCSVs
 	}
 	log.Debugf("The path to csv file is %s", matches[0])
 	return matches[0], nil
 }
 
-func GetSupportedInstalledModes(ctx context.Context, mountedDir string) (map[string]bool, error) {
-	csvFilepath, err := getCsvFilePathFromBundle(mountedDir)
-	if err != nil {
-		return nil, err
-	}
-
-	csvFileReader, err := os.ReadFile(csvFilepath)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
+func GetSupportedInstallModes(ctx context.Context, csvReader io.Reader) (map[string]bool, error) {
 	var csv ClusterServiceVersion
-	err = yaml.Unmarshal(csvFileReader, &csv)
+	bts, err := io.ReadAll(csvReader)
 	if err != nil {
-		log.Error(err)
+		log.Error(fmt.Errorf("%w: could not get CSV from reader", err))
+		return nil, err
+	}
+	err = yaml.Unmarshal(bts, &csv)
+	if err != nil {
+		log.Error(fmt.Errorf("%w: malformed CSV detected", err))
 		return nil, err
 	}
 

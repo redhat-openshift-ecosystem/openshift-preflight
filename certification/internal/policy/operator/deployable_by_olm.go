@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -138,7 +139,13 @@ func checkImageSource(operatorImages []string) bool {
 
 func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef certification.ImageReference) (*OperatorData, error) {
 	// retrieve the operator metadata from bundle image
-	annotations, err := bundle.GetAnnotations(ctx, bundleRef.ImageFSPath)
+	annotationsFileName := filepath.Join(bundleRef.ImageFSPath, "metadata", "annotations.yaml")
+	annotationsFile, err := os.Open(annotationsFileName)
+	if err != nil {
+		log.Error(fmt.Errorf("%w: could not open annotations.yaml", err))
+		return nil, err
+	}
+	annotations, err := bundle.GetAnnotations(ctx, annotationsFile)
 	if err != nil {
 		log.Error("unable to get annotations.yaml from the bundle")
 		return nil, err
@@ -162,9 +169,20 @@ func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef c
 		return nil, err
 	}
 
-	installedModes, err := bundle.GetSupportedInstalledModes(ctx, bundleRef.ImageFSPath)
+	csvFilepath, err := bundle.GetCsvFilePathFromBundle(bundleRef.ImageFSPath)
 	if err != nil {
-		log.Error("unable to extract operator install modes from ClusterServicVersion: ", err)
+		return nil, err
+	}
+
+	csvFileReader, err := os.Open(csvFilepath)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	installModes, err := bundle.GetSupportedInstallModes(ctx, csvFileReader)
+	if err != nil {
+		log.Error(fmt.Errorf("%w: unable to extract operator install modes from ClusterServicVersion", err))
 		return nil, err
 	}
 
@@ -175,7 +193,7 @@ func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef c
 		App:              packageName,
 		InstallNamespace: packageName,
 		TargetNamespace:  packageName + "-target",
-		InstallModes:     installedModes,
+		InstallModes:     installModes,
 	}, nil
 }
 
