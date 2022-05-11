@@ -1,9 +1,111 @@
 package engine
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http/httptest"
+	"net/url"
+	"os"
+
+	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/registry"
+	"github.com/google/go-containerregistry/pkg/v1/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/spf13/viper"
 )
+
+var _ = Describe("Execute Checks tests", func() {
+	var src string
+	var engine CraneEngine
+	BeforeEach(func() {
+		// Set up a fake registry.
+		s := httptest.NewServer(registry.New())
+		DeferCleanup(func() {
+			s.Close()
+		})
+		u, err := url.Parse(s.URL)
+		Expect(err).ToNot(HaveOccurred())
+
+		src = fmt.Sprintf("%s/test/crane", u.Host)
+
+		// Expected values.
+		img, err := random.Image(1024, 5)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = crane.Push(img, src)
+		Expect(err).ToNot(HaveOccurred())
+
+		tmpDir, err := os.MkdirTemp("", "preflight-engine-test-*")
+		DeferCleanup(os.RemoveAll, tmpDir)
+		viper.Set("artifacts", tmpDir)
+
+		goodCheck := certification.NewGenericCheck(
+			"testcheck",
+			func(context.Context, certification.ImageReference) (bool, error) {
+				return true, nil
+			},
+			certification.Metadata{},
+			certification.HelpText{},
+		)
+
+		errorCheck := certification.NewGenericCheck(
+			"errorCheck",
+			func(context.Context, certification.ImageReference) (bool, error) {
+				return false, errors.New("errorCheck")
+			},
+			certification.Metadata{},
+			certification.HelpText{},
+		)
+
+		failedCheck := certification.NewGenericCheck(
+			"failedCheck",
+			func(context.Context, certification.ImageReference) (bool, error) {
+				return false, nil
+			},
+			certification.Metadata{},
+			certification.HelpText{},
+		)
+
+		engine = CraneEngine{
+			Image: src,
+			Checks: []certification.Check{
+				goodCheck,
+				errorCheck,
+				failedCheck,
+			},
+			IsBundle:  false,
+			IsScratch: false,
+		}
+	})
+	Context("Run the checks", func() {
+		It("should succeed", func() {
+			err := engine.ExecuteChecks(context.TODO())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(engine.results.Passed).To(HaveLen(1))
+			Expect(engine.results.Failed).To(HaveLen(1))
+			Expect(engine.results.Errors).To(HaveLen(1))
+			Expect(engine.results.CertificationHash).To(BeEmpty())
+		})
+		Context("it is a bundle", func() {
+			It("should succeed and generate a bundle hash", func() {
+				engine.IsBundle = true
+				err := engine.ExecuteChecks(context.TODO())
+				Expect(err).ToNot(HaveOccurred())
+				Expect(engine.results.CertificationHash).ToNot(BeEmpty())
+			})
+		})
+		Context("the image is invalid", func() {
+			It("should throw a crane error on pull", func() {
+				engine.Image = "does.not/exist/anywhere:ever"
+				err := engine.ExecuteChecks(context.TODO())
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
+})
 
 var _ = Describe("Source RPM name function", func() {
 	Context("With a source rpm name", func() {

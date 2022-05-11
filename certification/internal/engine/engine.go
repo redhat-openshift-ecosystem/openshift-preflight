@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/crane"
@@ -93,6 +94,8 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 
 	// export/flatten, and extract
 	log.Debug("exporting and flattening image")
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	r, w := io.Pipe()
 	go func() {
 		defer w.Close()
@@ -105,12 +108,14 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 			// an error, which requires watching multiple error streams.
 			log.Error("unable to export and flatten container filesystem:", err)
 		}
+		wg.Done()
 	}()
 
 	log.Debug("extracting container filesystem to ", containerFSPath)
 	if err := untar(containerFSPath, r); err != nil {
 		return fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
 	}
+	wg.Wait()
 
 	reference, err := name.ParseReference(c.Image)
 	if err != nil {
