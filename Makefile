@@ -46,11 +46,16 @@ image-push:
 
 .PHONY: test
 test:
-	go test -v $$(go list ./... | grep -v e2e)
+	go test -v $$(go list ./... | grep -v e2e) \
+	-ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo"
 
 .PHONY: cover
 cover:
-	go test -v $$(go list ./... | grep -v e2e) -race -cover -coverprofile=coverage.out
+	go test -v \
+	 -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo" \
+	 $$(go list ./... | grep -v e2e) \
+	 -race \
+	 -cover -coverprofile=coverage.out
 
 .PHONY: vet
 vet:
