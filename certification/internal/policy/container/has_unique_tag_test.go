@@ -2,45 +2,57 @@ package container
 
 import (
 	"context"
+	"fmt"
+	"net/http/httptest"
+	"net/url"
 
+	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/registry"
+	"github.com/google/go-containerregistry/pkg/v1/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 )
 
-// podmanEngine is a package-level variable. In some tests, we
-// override it with a "happy path" engine, that returns good data.
-// In the unhappy path, we override it with an engine that returns
-// nothing but errors.
-
-type fakeTagLister struct {
-	Tags []string
-}
-
-func (ftl *fakeTagLister) ListTags(ctx context.Context, imageUri string) ([]string, error) {
-	return ftl.Tags, nil
-}
-
 var _ = Describe("UniqueTag", func() {
-	var hasUniqueTagCheck HasUniqueTagCheck
+	var hasUniqueTagCheck hasUniqueTagCheck = *NewHasUniqueTagCheck()
+	var src, dst, host string
 
+	BeforeEach(func() {
+		// Set up a fake registry.
+		s := httptest.NewServer(registry.New())
+		DeferCleanup(func() {
+			s.Close()
+		})
+		u, err := url.Parse(s.URL)
+		Expect(err).ToNot(HaveOccurred())
+		src = fmt.Sprintf("%s/test/preflight", u.Host)
+		dst = fmt.Sprintf("%s/test/tags", u.Host)
+		host = u.Host
+
+		img, err := random.Image(1024, 5)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = crane.Push(img, src)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = crane.Copy(src, dst)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = crane.Tag(dst, "unique-tag")
+		Expect(err).ToNot(HaveOccurred())
+	})
 	Describe("Checking for unique tags", func() {
 		Context("When it has tags other than latest", func() {
-			BeforeEach(func() {
-				hasUniqueTagCheck = *NewHasUniqueTagCheck(&fakeTagLister{Tags: validImageTags()})
-			})
 			It("should pass Validate", func() {
-				ok, err := hasUniqueTagCheck.Validate(context.TODO(), certification.ImageReference{ImageRegistry: "index.docker.io", ImageRepository: "dummy/image"})
+				ok, err := hasUniqueTagCheck.Validate(context.TODO(), certification.ImageReference{ImageRegistry: host, ImageRepository: "test/tags"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
 		})
 		Context("When it has only latest tag", func() {
-			BeforeEach(func() {
-				hasUniqueTagCheck = *NewHasUniqueTagCheck(&fakeTagLister{Tags: invalidImageTags()})
-			})
 			It("should not pass Validate", func() {
-				ok, err := hasUniqueTagCheck.Validate(context.TODO(), certification.ImageReference{ImageRegistry: "index.docker.io", ImageRepository: "dummy/other-image"})
+				ok, err := hasUniqueTagCheck.Validate(context.TODO(), certification.ImageReference{ImageRegistry: host, ImageRepository: "test/preflight"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

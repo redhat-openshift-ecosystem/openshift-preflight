@@ -89,7 +89,7 @@ var (
 // Container checks
 var (
 	hasLicenseCheck        certification.Check = &containerpol.HasLicenseCheck{}
-	hasUniqueTagCheck      certification.Check = containerpol.NewHasUniqueTagCheck(internal.NewCraneEngine())
+	hasUniqueTagCheck      certification.Check = containerpol.NewHasUniqueTagCheck()
 	maxLayersCheck         certification.Check = &containerpol.MaxLayersCheck{}
 	hasNoProhibitedCheck   certification.Check = &containerpol.HasNoProhibitedPackagesCheck{}
 	hasRequiredLabelsCheck certification.Check = &containerpol.HasRequiredLabelsCheck{}
