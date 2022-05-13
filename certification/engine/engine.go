@@ -82,7 +82,7 @@ var (
 	// operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgNameIsUniqueCheck{}
 	scorecardBasicSpecCheck certification.Check = operatorpol.NewScorecardBasicSpecCheck(internal.NewOperatorSdkEngine())
 	scorecardOlmSuiteCheck  certification.Check = operatorpol.NewScorecardOlmSuiteCheck(internal.NewOperatorSdkEngine())
-	deployableByOlmCheck    certification.Check = operatorpol.NewDeployableByOlmCheck(internal.NewOpenshiftEngine(), internal.NewOperatorSdkEngine())
+	deployableByOlmCheck    certification.Check = operatorpol.NewDeployableByOlmCheck(internal.NewOperatorSdkEngine())
 	validateOperatorBundle  certification.Check = operatorpol.NewValidateOperatorBundleCheck(internal.NewOperatorSdkEngine())
 )
 

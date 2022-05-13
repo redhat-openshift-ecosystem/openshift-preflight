@@ -20,7 +20,7 @@ const ocpVerV1beta1Unsupported = "4.9"
 // versionsKey is the OpenShift versions in annotations.yaml that lists the versions allowed for an operator
 const versionsKey = "com.redhat.openshift.versions"
 
-func ValidateBundle(ctx context.Context, engine cli.OperatorSdkEngine, imagePath string) (*cli.OperatorSdkBundleValidateReport, error) {
+func Validate(ctx context.Context, engine cli.OperatorSdkEngine, imagePath string) (*cli.OperatorSdkBundleValidateReport, error) {
 	selector := []string{"community", "operatorhub"}
 	opts := cli.OperatorSdkBundleValidateOptions{
 		Selector:        selector,
@@ -30,7 +30,7 @@ func ValidateBundle(ctx context.Context, engine cli.OperatorSdkEngine, imagePath
 	}
 
 	log.Trace("reading annotations file from the bundle")
-	log.Debug("mounted directory is ", imagePath)
+	log.Debug("image extraction directory is ", imagePath)
 	// retrieve the operator metadata from bundle image
 	annotationsFileName := filepath.Join(imagePath, "metadata", "annotations.yaml")
 	annotationsFile, err := os.Open(annotationsFileName)

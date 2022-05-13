@@ -6,9 +6,19 @@ import (
 	"path/filepath"
 	"time"
 
-	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
+	imagestreamv1 "github.com/openshift/api/image/v1"
+	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
+	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	crclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 )
@@ -16,10 +26,10 @@ import (
 var _ = Describe("DeployableByOLMCheck", func() {
 	var (
 		deployableByOLMCheck DeployableByOlmCheck
-		engine               cli.OpenshiftEngine
 		fakeEngine           cli.OperatorSdkEngine
 		imageRef             certification.ImageReference
 		tmpDockerDir         string
+		client               crclient.Client
 	)
 	const (
 		metadataDir            = "metadata"
@@ -40,7 +50,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
   }
 }`
 
-		csv = `
+		csvStr = `
     spec:
       installModes:
         - supported: false
@@ -62,28 +72,24 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		tmpDir, err := os.MkdirTemp("", "bundle-metadata-*")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = os.Mkdir(filepath.Join(tmpDir, metadataDir), 0o755)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = os.WriteFile(filepath.Join(tmpDir, metadataDir, annotationFilename), []byte(annotations), 0o644)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(os.Mkdir(filepath.Join(tmpDir, metadataDir), 0o755)).To(Succeed())
+		Expect(os.WriteFile(filepath.Join(tmpDir, metadataDir, annotationFilename), []byte(annotations), 0o644)).To(Succeed())
 
 		// mock csv file
-		err = os.Mkdir(filepath.Join(tmpDir, manifestDir), 0o755)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = os.WriteFile(filepath.Join(tmpDir, manifestDir, csvFilename), []byte(csv), 0o644)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(os.Mkdir(filepath.Join(tmpDir, manifestDir), 0o755)).To(Succeed())
+		Expect(os.WriteFile(filepath.Join(tmpDir, manifestDir, csvFilename), []byte(csvStr), 0o644)).To(Succeed())
 
 		// mock docker config file
 		tmpDockerDir, err = os.MkdirTemp("", "docker-config-*")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = os.Mkdir(filepath.Join(tmpDockerDir, registryConfigDir), 0o755)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = os.WriteFile(filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename), []byte(registryAuthToken), 0o644)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(os.Mkdir(filepath.Join(tmpDockerDir, registryConfigDir), 0o755)).To(Succeed())
+		Expect(os.WriteFile(filepath.Join(
+			tmpDockerDir,
+			registryConfigDir,
+			registryConfigFilename),
+			[]byte(registryAuthToken),
+			0o644)).To(Succeed())
 
 		fakeImage := fakecranev1.FakeImage{}
 		imageRef.ImageInfo = &fakeImage
@@ -97,16 +103,27 @@ var _ = Describe("DeployableByOLMCheck", func() {
 			OperatorSdkBVReport: report,
 		}
 
+		now := metav1.Now()
+		og.Status.LastUpdated = &now
+		deployableByOLMCheck = *NewDeployableByOlmCheck(&fakeEngine)
+		scheme := apiruntime.NewScheme()
+		Expect(operatorv1.AddToScheme(scheme)).To(Succeed())
+		Expect(operatorv1alpha1.AddToScheme(scheme)).To(Succeed())
+		Expect(imagestreamv1.AddToScheme(scheme)).To(Succeed())
+		Expect(rbacv1.AddToScheme(scheme)).To(Succeed())
+		client = fake.NewClientBuilder().
+			WithScheme(scheme).
+			WithObjects(&csv, &csvDefault, &csvMarketplace, &ns, &secret, &sub, &og).
+			WithLists(&pods, &isList).
+			Build()
+		deployableByOLMCheck.client = client
+
 		// set env var for index image
 		os.Setenv("PFLT_INDEXIMAGE", "test_indeximage")
 		os.Setenv("PFLT_ARTIFACTS", tmpDir)
 	})
 	Describe("When deploying an operator using OLM", func() {
 		Context("When CSV has been created successfully", func() {
-			BeforeEach(func() {
-				engine = FakeOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
-			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
@@ -115,8 +132,13 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		})
 		Context("When installedCSV field of Subscription is not set", func() {
 			BeforeEach(func() {
-				engine = BadOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
+				badSub := sub
+				Expect(client.Get(context.TODO(), crclient.ObjectKey{
+					Name:      "testPackage",
+					Namespace: "testPackage",
+				}, &badSub)).To(Succeed())
+				badSub.Status.InstalledCSV = ""
+				Expect(client.Update(context.TODO(), &badSub, &crclient.UpdateOptions{})).To(Succeed())
 			})
 			It("Should fail Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
@@ -127,21 +149,19 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		Context("When index image is in a custom namespace and CSV has been created successfully", func() {
 			BeforeEach(func() {
 				os.Setenv("PFLT_INDEXIMAGE", "image-registry.openshift-image-registry.svc/namespace/indeximage:v0.0.0")
-				engine = FakeOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
+			AfterEach(func() {
+				os.Unsetenv("PFTL_INDEXIMAGE")
+			})
 		})
 		Context("When index image is in a private registry and CSV has been created successfully", func() {
 			BeforeEach(func() {
 				os.Setenv("PFLT_DOCKERCONFIG", filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename))
-
-				engine = FakeOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
@@ -153,10 +173,6 @@ var _ = Describe("DeployableByOLMCheck", func() {
 			})
 		})
 		Context("When the only supported install mode is AllNamespaces", func() {
-			BeforeEach(func() {
-				engine = FakeOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
-			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
@@ -166,9 +182,6 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		Context("When the non-default channel is being tested", func() {
 			BeforeEach(func() {
 				os.Setenv("PFLT_CHANNEL", "non-default-channel")
-
-				engine = FakeOpenshiftEngine{}
-				deployableByOLMCheck = *NewDeployableByOlmCheck(&engine, &fakeEngine)
 			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
