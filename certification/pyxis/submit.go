@@ -27,12 +27,15 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 	// the project back to "In Process" and there would still be nothing that preflight need to update on the project.
 	if certProject.CertificationStatus == "Started" {
 		certProject.CertificationStatus = "In Progress"
+	}
 
-		// You must have an existing repository.
-		if len(certImage.Repositories) == 0 {
-			return nil, errors.ErrInvalidCertImage
-		}
+	// You must have an existing repository.
+	if len(certImage.Repositories) == 0 {
+		return nil, errors.ErrInvalidCertImage
+	}
 
+	// Set this project's metadata to match the image that we're certifying.
+	if certProject.Container.Registry == "" {
 		// Setting registry to the value we get from certImage from crane and then normalizing
 		// index.docker.io to docker.io so project info shows properly in the Red Hat Catalog
 		registry := certImage.Repositories[0].Registry
@@ -40,23 +43,20 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 			registry = defaultRegistryAlias
 		}
 
-		// Set this project's metadata to match the image that we're certifying.
 		certProject.Container.Registry = registry
+	}
+
+	if certProject.Container.Repository == "" {
 		certProject.Container.Repository = certImage.Repositories[0].Repository
+	}
 
-		// Compare the original
-		oldCertProject, err := p.GetProject(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("%w: %s", err, "could not retrieve project")
-		}
-
-		if *certProject != *oldCertProject {
-			certProject, err = p.updateProject(ctx, certProject)
-			if err != nil {
-				log.Error(err, "could not update project")
-				return nil, err
-			}
-		}
+	// always update the project no matter the status to ensure the dockerconfig preflight used to pull the image
+	// is the dockerfile that resides on the project and other backend processes ie clair use the same file
+	// Note: users no longer have the ability to update their project's dockerconfig in connect
+	certProject, err = p.updateProject(ctx, certProject)
+	if err != nil {
+		log.Error(err, "could not update project")
+		return nil, err
 	}
 
 	// store the original digest so that we can pull the image later
