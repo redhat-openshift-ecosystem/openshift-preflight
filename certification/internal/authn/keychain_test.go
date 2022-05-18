@@ -17,7 +17,6 @@ package authn
 import (
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -41,7 +40,7 @@ func setupConfigDir(t *testing.T) string {
 	tmpdir := os.Getenv("TEST_TMPDIR")
 	if tmpdir == "" {
 		var err error
-		tmpdir, err = ioutil.TempDir("", "keychain_test")
+		tmpdir, err = os.MkdirTemp("", "keychain_test")
 		if err != nil {
 			t.Fatalf("creating temp dir: %v", err)
 		}
@@ -58,7 +57,7 @@ func setupConfigDir(t *testing.T) string {
 func setupConfigFile(t *testing.T, content string) string {
 	cd := setupConfigDir(t)
 	p := filepath.Join(cd, "config.json")
-	if err := ioutil.WriteFile(p, []byte(content), 0o600); err != nil {
+	if err := os.WriteFile(p, []byte(content), 0o600); err != nil {
 		t.Fatalf("write %q: %v", p, err)
 	}
 	os.Setenv("PFLT_DOCKERCONFIG", p)
