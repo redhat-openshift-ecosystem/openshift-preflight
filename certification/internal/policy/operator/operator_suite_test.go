@@ -1,20 +1,18 @@
 package operator
 
 import (
-	"context"
 	"errors"
 	"testing"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	imagestreamv1 "github.com/openshift/api/image/v1"
 	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -65,429 +63,136 @@ func (bose BadOperatorSdkEngine) BundleValidate(bundleImage string, opts cli.Ope
 	return &operatorSdkReport, errors.New("the Operator Sdk Bundle Validate has failed")
 }
 
-type FakeOpenshiftEngine struct{}
-
-func (foe FakeOpenshiftEngine) CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
-	return &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-ns",
+var pod1 = corev1.Pod{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "pod1",
+		Namespace: "testns",
+	},
+	Spec: corev1.PodSpec{
+		Containers: []corev1.Container{
+			{
+				Name:  "cont1",
+				Image: "my.container/image/1:latest",
+			},
+			{
+				Name:  "cont2",
+				Image: "my.container/image/2:3",
+			},
 		},
-	}, nil
+	},
 }
 
-func (foe FakeOpenshiftEngine) DeleteNamespace(ctx context.Context, name string) error {
-	return nil
+var pod2 = corev1.Pod{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "pod2",
+		Namespace: "testns",
+	},
+	Spec: corev1.PodSpec{
+		Containers: []corev1.Container{
+			{
+				Name:  "cont3",
+				Image: "my.container/image/my3:4",
+			},
+			{
+				Name:  "cont2",
+				Image: "my.container/image/2:3",
+			},
+		},
+	},
 }
 
-func (foe FakeOpenshiftEngine) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
-	return &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-ns",
-		},
-	}, nil
+var pods = corev1.PodList{
+	Items: []corev1.Pod{
+		pod1,
+		pod2,
+	},
 }
 
-func (foe FakeOpenshiftEngine) CreateSecret(ctx context.Context, name string, content map[string]string, secretType corev1.SecretType, namespace string) (*corev1.Secret, error) {
-	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-image-secret",
-			Namespace: "test-ns",
-		},
-		Type:       "kubernetes.io/dockerconfigjson",
-		StringData: map[string]string{".dockerconfigjson": "secretData"},
-	}, nil
+var csv = operatorv1alpha1.ClusterServiceVersion{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "csv-v0.0.0",
+		Namespace: "testPackage-target",
+	},
+	Spec: operatorv1alpha1.ClusterServiceVersionSpec{},
+	Status: operatorv1alpha1.ClusterServiceVersionStatus{
+		Phase: operatorv1alpha1.CSVPhaseSucceeded,
+	},
 }
 
-func (foe FakeOpenshiftEngine) DeleteSecret(ctx context.Context, name, namespace string) error {
-	return nil
+var csvDefault = operatorv1alpha1.ClusterServiceVersion{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "csv-v0.0.0",
+		Namespace: "default",
+	},
+	Spec: operatorv1alpha1.ClusterServiceVersionSpec{},
+	Status: operatorv1alpha1.ClusterServiceVersionStatus{
+		Phase: operatorv1alpha1.CSVPhaseSucceeded,
+	},
 }
 
-func (foe FakeOpenshiftEngine) GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error) {
-	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-image-secret",
-			Namespace: "test-ns",
-		},
-		Type:       "kubernetes.io/dockerconfigjson",
-		StringData: map[string]string{".dockerconfigjson": "secretData"},
-	}, nil
+var csvMarketplace = operatorv1alpha1.ClusterServiceVersion{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "csv-v0.0.0",
+		Namespace: "openshift-marketplace",
+	},
+	Spec: operatorv1alpha1.ClusterServiceVersionSpec{},
+	Status: operatorv1alpha1.ClusterServiceVersionStatus{
+		Phase: operatorv1alpha1.CSVPhaseSucceeded,
+	},
 }
 
-func (foe FakeOpenshiftEngine) CreateOperatorGroup(ctx context.Context, data cli.OperatorGroupData, namespace string) (*operatorv1.OperatorGroup, error) {
-	return &operatorv1.OperatorGroup{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-og",
-			Namespace: "test-ns",
-		},
-		Spec: operatorv1.OperatorGroupSpec{
-			TargetNamespaces: []string{"test-ns"},
-		},
-	}, nil
+var ns = corev1.Namespace{
+	ObjectMeta: metav1.ObjectMeta{
+		Name: "test-ns",
+	},
 }
 
-func (foe FakeOpenshiftEngine) DeleteOperatorGroup(ctx context.Context, name, namespace string) error {
-	return nil
-}
-
-func (foe FakeOpenshiftEngine) GetOperatorGroup(ctx context.Context, name, namespace string) (*operatorv1.OperatorGroup, error) {
-	return &operatorv1.OperatorGroup{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-og",
-			Namespace: "test-ns",
-		},
-		Spec: operatorv1.OperatorGroupSpec{
-			TargetNamespaces: []string{"test-ns"},
-		},
-		Status: operatorv1.OperatorGroupStatus{
-			LastUpdated: &metav1.Time{Time: time.Now()},
-		},
-	}, nil
-}
-
-func (foe FakeOpenshiftEngine) CreateRoleBinding(ctx context.Context, data cli.RoleBindingData, namespace string) (*rbacv1.RoleBinding, error) {
-	subjectsObj := make([]rbacv1.Subject, 1)
-
-	subjectsObj[0] = rbacv1.Subject{
-		Kind:      "ServiceAccount",
-		Name:      "test-sa",
+var secret = corev1.Secret{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "pull-image-secret",
 		Namespace: "test-ns",
-	}
-	return &rbacv1.RoleBinding{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "RoleBinding",
-			APIVersion: "rbac.authorization.k8s.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-rolebinding",
-			Namespace: "a namespace",
-		},
-		Subjects: subjectsObj,
-		RoleRef: rbacv1.RoleRef{
-			Kind:     "ClusterRole",
-			APIGroup: "rbac.authorization.k8s.io",
-			Name:     "a role",
-		},
-	}, nil
+	},
+	Type:       "kubernetes.io/dockerconfigjson",
+	StringData: map[string]string{".dockerconfigjson": "secretData"},
 }
 
-func (foe FakeOpenshiftEngine) GetRoleBinding(ctx context.Context, name, namespace string) (*rbacv1.RoleBinding, error) {
-	subjectsObj := make([]rbacv1.Subject, 1)
-
-	subjectsObj[0] = rbacv1.Subject{
-		Kind:      "ServiceAccount",
-		Name:      "test-sa",
-		Namespace: "test-ns",
-	}
-	return &rbacv1.RoleBinding{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "RoleBinding",
-			APIVersion: "rbac.authorization.k8s.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-rolebinding",
-			Namespace: "a namespace",
-		},
-		Subjects: subjectsObj,
-		RoleRef: rbacv1.RoleRef{
-			Kind:     "ClusterRole",
-			APIGroup: "rbac.authorization.k8s.io",
-			Name:     "a role",
-		},
-	}, nil
+var sub = operatorv1alpha1.Subscription{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "testPackage",
+		Namespace: "testPackage",
+	},
+	Status: operatorv1alpha1.SubscriptionStatus{
+		InstalledCSV: "csv-v0.0.0",
+	},
 }
 
-func (foe FakeOpenshiftEngine) DeleteRoleBinding(ctx context.Context, name, namespace string) error {
-	return nil
+var og = operatorv1.OperatorGroup{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "testPackage",
+		Namespace: "testPackage",
+	},
+	Status: operatorv1.OperatorGroupStatus{
+		LastUpdated: nil,
+	},
 }
 
-func (foe FakeOpenshiftEngine) CreateCatalogSource(ctx context.Context, data cli.CatalogSourceData, namespace string) (*operatorv1alpha1.CatalogSource, error) {
-	return &operatorv1alpha1.CatalogSource{
-		Spec: operatorv1alpha1.CatalogSourceSpec{
-			SourceType: operatorv1alpha1.SourceTypeGrpc,
-			Image:      "indexImageUri",
+var isList = imagestreamv1.ImageStreamList{
+	Items: []imagestreamv1.ImageStream{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "imagestream1",
+				Namespace: "testns",
+			},
+			Spec: imagestreamv1.ImageStreamSpec{
+				Tags: []imagestreamv1.TagReference{
+					{
+						From: &corev1.ObjectReference{
+							Name: "stream1",
+							Kind: "DockerImage",
+						},
+					},
+				},
+			},
 		},
-	}, nil
-}
-
-func (foe FakeOpenshiftEngine) DeleteCatalogSource(ctx context.Context, name, namespace string) error {
-	return nil
-}
-
-func (foe FakeOpenshiftEngine) GetCatalogSource(ctx context.Context, name, namespace string) (*operatorv1alpha1.CatalogSource, error) {
-	return &operatorv1alpha1.CatalogSource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-cs",
-			Namespace: "test-ns",
-		},
-		Spec: operatorv1alpha1.CatalogSourceSpec{
-			SourceType: operatorv1alpha1.SourceTypeGrpc,
-			Image:      "indexImageUri",
-		},
-	}, nil
-}
-
-func (foe FakeOpenshiftEngine) CreateSubscription(ctx context.Context, data cli.SubscriptionData, namespace string) (*operatorv1alpha1.Subscription, error) {
-	return &operatorv1alpha1.Subscription{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-sub",
-			Namespace: "test-ns",
-		},
-		Spec: &operatorv1alpha1.SubscriptionSpec{
-			CatalogSource:          "test-cs",
-			CatalogSourceNamespace: "openshift-marketplace",
-			Channel:                "stable",
-			Package:                "test-operator",
-		},
-		Status: operatorv1alpha1.SubscriptionStatus{
-			InstalledCSV: "csv-v0.0.0",
-		},
-	}, nil
-}
-
-func (foe FakeOpenshiftEngine) DeleteSubscription(ctx context.Context, name, namespace string) error {
-	return nil
-}
-
-func (foe FakeOpenshiftEngine) GetSubscription(ctx context.Context, name, namespace string) (*operatorv1alpha1.Subscription, error) {
-	return &operatorv1alpha1.Subscription{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-sub",
-			Namespace: "test-ns",
-		},
-		Spec: &operatorv1alpha1.SubscriptionSpec{
-			CatalogSource:          "test-cs",
-			CatalogSourceNamespace: "openshift-marketplace",
-			Channel:                "stable",
-			Package:                "test-operator",
-		},
-		Status: operatorv1alpha1.SubscriptionStatus{
-			InstalledCSV: "csv-v0.0.0",
-		},
-	}, nil
-}
-
-func (foe FakeOpenshiftEngine) GetCSV(ctx context.Context, name, namespace string) (*operatorv1alpha1.ClusterServiceVersion, error) {
-	return &operatorv1alpha1.ClusterServiceVersion{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "csv-v0.0.0",
-			Namespace: "test-ns",
-		},
-		Spec: operatorv1alpha1.ClusterServiceVersionSpec{},
-		Status: operatorv1alpha1.ClusterServiceVersionStatus{
-			Phase: operatorv1alpha1.CSVPhaseSucceeded,
-		},
-	}, nil
-}
-
-func (foe FakeOpenshiftEngine) GetImages(ctx context.Context) (map[string]struct{}, error) {
-	return map[string]struct{}{}, nil
-}
-
-type BadOpenshiftEngine struct{}
-
-func (foe BadOpenshiftEngine) CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
-	return &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-ns",
-		},
-	}, nil
-}
-
-func (foe BadOpenshiftEngine) DeleteNamespace(ctx context.Context, name string) error {
-	return nil
-}
-
-func (foe BadOpenshiftEngine) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
-	return &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-ns",
-		},
-	}, nil
-}
-
-func (foe BadOpenshiftEngine) CreateSecret(ctx context.Context, name string, content map[string]string, secretType corev1.SecretType, namespace string) (*corev1.Secret, error) {
-	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-image-secret",
-			Namespace: "test-ns",
-		},
-		Type:       "kubernetes.io/dockerconfigjson",
-		StringData: map[string]string{".dockerconfigjson": "secretData"},
-	}, nil
-}
-
-func (foe BadOpenshiftEngine) DeleteSecret(ctx context.Context, name, namespace string) error {
-	return nil
-}
-
-func (foe BadOpenshiftEngine) GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error) {
-	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-image-secret",
-			Namespace: "test-ns",
-		},
-		Type:       "kubernetes.io/dockerconfigjson",
-		StringData: map[string]string{".dockerconfigjson": "secretData"},
-	}, nil
-}
-
-func (foe BadOpenshiftEngine) CreateOperatorGroup(ctx context.Context, data cli.OperatorGroupData, namespace string) (*operatorv1.OperatorGroup, error) {
-	return &operatorv1.OperatorGroup{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-og",
-			Namespace: "test-ns",
-		},
-		Spec: operatorv1.OperatorGroupSpec{
-			TargetNamespaces: []string{"test-ns"},
-		},
-	}, nil
-}
-
-func (foe BadOpenshiftEngine) DeleteOperatorGroup(ctx context.Context, name, namespace string) error {
-	return nil
-}
-
-func (foe BadOpenshiftEngine) GetOperatorGroup(ctx context.Context, name, namespace string) (*operatorv1.OperatorGroup, error) {
-	return &operatorv1.OperatorGroup{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-og",
-			Namespace: "test-ns",
-		},
-		Spec: operatorv1.OperatorGroupSpec{
-			TargetNamespaces: []string{"test-ns"},
-		},
-		Status: operatorv1.OperatorGroupStatus{
-			LastUpdated: &metav1.Time{Time: time.Now()},
-		},
-	}, nil
-}
-
-func (foe BadOpenshiftEngine) CreateCatalogSource(ctx context.Context, data cli.CatalogSourceData, namespace string) (*operatorv1alpha1.CatalogSource, error) {
-	return &operatorv1alpha1.CatalogSource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-cs",
-			Namespace: "test-ns",
-		},
-		Spec: operatorv1alpha1.CatalogSourceSpec{
-			SourceType: operatorv1alpha1.SourceTypeGrpc,
-			Image:      "indexImageUri",
-		},
-	}, nil
-}
-
-func (foe BadOpenshiftEngine) DeleteCatalogSource(ctx context.Context, name, namespace string) error {
-	return nil
-}
-
-func (foe BadOpenshiftEngine) GetCatalogSource(ctx context.Context, name, namespace string) (*operatorv1alpha1.CatalogSource, error) {
-	return &operatorv1alpha1.CatalogSource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-cs",
-			Namespace: "test-ns",
-		},
-		Spec: operatorv1alpha1.CatalogSourceSpec{
-			SourceType: operatorv1alpha1.SourceTypeGrpc,
-			Image:      "indexImageUri",
-		},
-	}, nil
-}
-
-func (foe BadOpenshiftEngine) CreateSubscription(ctx context.Context, data cli.SubscriptionData, namespace string) (*operatorv1alpha1.Subscription, error) {
-	return &operatorv1alpha1.Subscription{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-sub",
-			Namespace: "test-ns",
-		},
-		Spec: &operatorv1alpha1.SubscriptionSpec{
-			CatalogSource:          "test-cs",
-			CatalogSourceNamespace: "openshift-marketplace",
-			Channel:                "stable",
-			Package:                "test-operator",
-		},
-		Status: operatorv1alpha1.SubscriptionStatus{},
-	}, nil
-}
-
-func (foe BadOpenshiftEngine) DeleteSubscription(ctx context.Context, name, namespace string) error {
-	return nil
-}
-
-func (foe BadOpenshiftEngine) GetSubscription(ctx context.Context, name, namespace string) (*operatorv1alpha1.Subscription, error) {
-	return &operatorv1alpha1.Subscription{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-sub",
-			Namespace: "test-ns",
-		},
-		Spec: &operatorv1alpha1.SubscriptionSpec{
-			CatalogSource:          "test-cs",
-			CatalogSourceNamespace: "openshift-marketplace",
-			Channel:                "stable",
-			Package:                "test-operator",
-		},
-		Status: operatorv1alpha1.SubscriptionStatus{},
-	}, nil
-}
-
-func (foe BadOpenshiftEngine) GetCSV(ctx context.Context, name, namespace string) (*operatorv1alpha1.ClusterServiceVersion, error) {
-	return nil, nil
-}
-
-func (foe BadOpenshiftEngine) GetImages(ctx context.Context) (map[string]struct{}, error) {
-	return nil, nil
-}
-
-func (foe BadOpenshiftEngine) CreateRoleBinding(ctx context.Context, data cli.RoleBindingData, namespace string) (*rbacv1.RoleBinding, error) {
-	subjectsObj := make([]rbacv1.Subject, 1)
-
-	subjectsObj[0] = rbacv1.Subject{
-		Kind:      "ServiceAccount",
-		Name:      "test-sa",
-		Namespace: "test-ns",
-	}
-	return &rbacv1.RoleBinding{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "RoleBinding",
-			APIVersion: "rbac.authorization.k8s.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-rolebinding",
-			Namespace: "a namespace",
-		},
-		Subjects: subjectsObj,
-		RoleRef: rbacv1.RoleRef{
-			Kind:     "ClusterRole",
-			APIGroup: "rbac.authorization.k8s.io",
-			Name:     "a role",
-		},
-	}, nil
-}
-
-func (foe BadOpenshiftEngine) GetRoleBinding(ctx context.Context, name, namespace string) (*rbacv1.RoleBinding, error) {
-	subjectsObj := make([]rbacv1.Subject, 1)
-
-	subjectsObj[0] = rbacv1.Subject{
-		Kind:      "ServiceAccount",
-		Name:      "test-sa",
-		Namespace: "test-ns",
-	}
-	return &rbacv1.RoleBinding{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "RoleBinding",
-			APIVersion: "rbac.authorization.k8s.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-rolebinding",
-			Namespace: "a namespace",
-		},
-		Subjects: subjectsObj,
-		RoleRef: rbacv1.RoleRef{
-			Kind:     "ClusterRole",
-			APIGroup: "rbac.authorization.k8s.io",
-			Name:     "a role",
-		},
-	}, nil
-}
-
-func (foe BadOpenshiftEngine) DeleteRoleBinding(ctx context.Context, name, namespace string) error {
-	return nil
+	},
 }

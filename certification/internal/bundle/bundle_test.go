@@ -56,7 +56,7 @@ var _ = Describe("BundleValidateCheck", func() {
 
 		Context("the annotations file is valid", func() {
 			It("should pass", func() {
-				report, err := ValidateBundle(context.Background(), fakeEngine, imageRef.ImageFSPath)
+				report, err := Validate(context.Background(), fakeEngine, imageRef.ImageFSPath)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(report).ToNot(BeNil())
 			})
@@ -68,7 +68,7 @@ var _ = Describe("BundleValidateCheck", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should error", func() {
-				report, err := ValidateBundle(context.Background(), fakeEngine, imageRef.ImageFSPath)
+				report, err := Validate(context.Background(), fakeEngine, imageRef.ImageFSPath)
 				Expect(err).To(HaveOccurred())
 				Expect(report).To(BeNil())
 			})
@@ -80,7 +80,7 @@ var _ = Describe("BundleValidateCheck", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should error", func() {
-				report, err := ValidateBundle(context.Background(), fakeEngine, imageRef.ImageFSPath)
+				report, err := Validate(context.Background(), fakeEngine, imageRef.ImageFSPath)
 				Expect(err).To(HaveOccurred())
 				Expect(report).To(BeNil())
 			})
@@ -92,7 +92,7 @@ var _ = Describe("BundleValidateCheck", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should fail gracefully", func() {
-				report, err := ValidateBundle(context.Background(), fakeEngine, imageRef.ImageFSPath)
+				report, err := Validate(context.Background(), fakeEngine, imageRef.ImageFSPath)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(report).ToNot(BeNil())
 			})

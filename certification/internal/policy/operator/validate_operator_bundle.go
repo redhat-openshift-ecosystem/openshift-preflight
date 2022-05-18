@@ -34,7 +34,7 @@ func (p ValidateOperatorBundleCheck) Validate(ctx context.Context, bundleRef cer
 }
 
 func (p ValidateOperatorBundleCheck) getDataToValidate(ctx context.Context, imagePath string) (*cli.OperatorSdkBundleValidateReport, error) {
-	return bundle.ValidateBundle(ctx, p.OperatorSdkEngine, imagePath)
+	return bundle.Validate(ctx, p.OperatorSdkEngine, imagePath)
 }
 
 func (p ValidateOperatorBundleCheck) validate(ctx context.Context, report *cli.OperatorSdkBundleValidateReport) (bool, error) {
