@@ -27,6 +27,9 @@ func init() {
 		"due to the rate limit imposed for unauthenticated requests. (env: PFLT_DOCKERCONFIG)")
 	viper.BindPFlag("dockerConfig", checkCmd.PersistentFlags().Lookup("docker-config"))
 
+	checkCmd.PersistentFlags().String("artifacts", "", "Where check-specific artifacts will be written. (env: PFLT_ARTIFACTS)")
+	viper.BindPFlag("artifacts", checkCmd.PersistentFlags().Lookup("artifacts"))
+
 	rootCmd.AddCommand(checkCmd)
 }
 
