@@ -25,6 +25,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/authn"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/openshift"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
@@ -144,7 +145,7 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 
 	if c.IsBundle {
 		// Record test cluster version
-		c.results.TestedOn, err = GetOpenshiftClusterVersion()
+		c.results.TestedOn, err = openshift.GetOpenshiftClusterVersion()
 		if err != nil {
 			log.Error("Unable to determine test cluster version: ", err)
 		}

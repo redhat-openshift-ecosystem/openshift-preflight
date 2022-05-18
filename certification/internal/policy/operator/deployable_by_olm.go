@@ -10,12 +10,10 @@ import (
 	"sync"
 	"time"
 
-	imagestreamv1 "github.com/openshift/api/image/v1"
 	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
@@ -28,7 +26,7 @@ import (
 	pflterr "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/engine"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/openshift"
 
 	log "github.com/sirupsen/logrus"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -48,7 +46,7 @@ type operatorData struct {
 
 type DeployableByOlmCheck struct {
 	OperatorSdkEngine cli.OperatorSdkEngine
-	openshiftEngine   cli.OpenshiftEngine
+	openshiftClient   openshift.Client
 	client            crclient.Client
 	csvReady          bool
 	validImages       bool
@@ -59,10 +57,10 @@ func (p *DeployableByOlmCheck) initClient() error {
 		return nil
 	}
 	scheme := apiruntime.NewScheme()
-	operatorv1.AddToScheme(scheme)
-	operatorv1alpha1.AddToScheme(scheme)
-	imagestreamv1.AddToScheme(scheme)
-	rbacv1.AddToScheme(scheme)
+	if err := openshift.AddSchemes(scheme); err != nil {
+		log.Error(fmt.Errorf("%w: could not add new schemes to client", err))
+		return err
+	}
 	kubeconfig, err := ctrl.GetConfig()
 	if err != nil {
 		log.Error("could not get kubeconfig")
@@ -82,8 +80,8 @@ func (p *DeployableByOlmCheck) initClient() error {
 }
 
 func (p *DeployableByOlmCheck) initOpenShifeEngine() error {
-	if p.openshiftEngine == nil {
-		p.openshiftEngine = *engine.NewOpenshiftEngine(p.client)
+	if p.openshiftClient == nil {
+		p.openshiftClient = openshift.NewClient(p.client)
 	}
 	return nil
 }
@@ -240,11 +238,11 @@ func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef c
 }
 
 func (p *DeployableByOlmCheck) setUp(ctx context.Context, operatorData *operatorData) error {
-	if _, err := p.openshiftEngine.CreateNamespace(ctx, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
+	if _, err := p.openshiftClient.CreateNamespace(ctx, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
 		return err
 	}
 
-	if _, err := p.openshiftEngine.CreateNamespace(ctx, operatorData.TargetNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
+	if _, err := p.openshiftClient.CreateNamespace(ctx, operatorData.TargetNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
 		return err
 	}
 
@@ -255,7 +253,7 @@ func (p *DeployableByOlmCheck) setUp(ctx context.Context, operatorData *operator
 			return err
 		}
 		data := map[string]string{".dockerconfigjson": string(content)}
-		if _, err := p.openshiftEngine.CreateSecret(ctx, secretName, data, corev1.SecretTypeDockerConfigJson, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
+		if _, err := p.openshiftClient.CreateSecret(ctx, secretName, data, corev1.SecretTypeDockerConfigJson, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
 			return err
 		}
 	} else {
@@ -284,7 +282,7 @@ func (p *DeployableByOlmCheck) setUp(ctx context.Context, operatorData *operator
 		}
 	}
 
-	if _, err := p.openshiftEngine.CreateCatalogSource(ctx, cli.CatalogSourceData{Name: operatorData.App, Image: operatorData.CatalogImage, Secrets: []string{secretName}}, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
+	if _, err := p.openshiftClient.CreateCatalogSource(ctx, openshift.CatalogSourceData{Name: operatorData.App, Image: operatorData.CatalogImage, Secrets: []string{secretName}}, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
 		return err
 	}
 
@@ -292,24 +290,24 @@ func (p *DeployableByOlmCheck) setUp(ctx context.Context, operatorData *operator
 	if err != nil {
 		return err
 	}
-	if _, err := p.openshiftEngine.CreateOperatorGroup(ctx, operatorGroupData, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
+	if _, err := p.openshiftClient.CreateOperatorGroup(ctx, operatorGroupData, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
 		return err
 	}
 
-	subscriptionData := cli.SubscriptionData{
+	subscriptionData := openshift.SubscriptionData{
 		Name:                   operatorData.App,
 		Channel:                operatorData.Channel,
 		CatalogSource:          operatorData.App,
 		CatalogSourceNamespace: operatorData.InstallNamespace,
 		Package:                operatorData.PackageName,
 	}
-	if _, err := p.openshiftEngine.CreateSubscription(ctx, subscriptionData, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
+	if _, err := p.openshiftClient.CreateSubscription(ctx, subscriptionData, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
 		return err
 	}
 	return nil
 }
 
-func (p *DeployableByOlmCheck) generateOperatorGroupData(operatorData *operatorData) (cli.OperatorGroupData, error) {
+func (p *DeployableByOlmCheck) generateOperatorGroupData(operatorData *operatorData) (openshift.OperatorGroupData, error) {
 	var installMode string
 	for i := 0; i < len(prioritizedInstallModes); i++ {
 		if _, ok := operatorData.InstallModes[prioritizedInstallModes[i]]; ok {
@@ -333,27 +331,27 @@ func (p *DeployableByOlmCheck) generateOperatorGroupData(operatorData *operatorD
 	}
 	log.Debugf("The OperatorGroup's TargetNamespaces is %s", targetNamespaces)
 	operatorData.CsvNamespaces = targetNamespaces
-	return cli.OperatorGroupData{Name: operatorData.App, TargetNamespaces: targetNamespaces}, nil
+	return openshift.OperatorGroupData{Name: operatorData.App, TargetNamespaces: targetNamespaces}, nil
 }
 
 func (p *DeployableByOlmCheck) grantRegistryPermissionToServiceAccount(ctx context.Context, serviceAccount, serviceAccountNamespace, indexImageNamespace string) error {
 	for _, role := range []string{registryViewerRole, imagePullerRole} {
-		roleBindingData := cli.RoleBindingData{
+		roleBindingData := openshift.RoleBindingData{
 			Name:      fmt.Sprintf("%s:%s:%s", serviceAccount, serviceAccountNamespace, role),
 			Subjects:  []string{serviceAccount},
 			Role:      role,
 			Namespace: serviceAccountNamespace,
 		}
-		if _, err := p.openshiftEngine.CreateRoleBinding(ctx, roleBindingData, indexImageNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
+		if _, err := p.openshiftClient.CreateRoleBinding(ctx, roleBindingData, indexImageNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
 			return err
 		}
 	}
 	return nil
 }
 
-type watchFunc func(ctx context.Context, engine cli.OpenshiftEngine, name, namespace string) (string, bool, error)
+type watchFunc func(ctx context.Context, client openshift.Client, name, namespace string) (string, bool, error)
 
-func watch(ctx context.Context, engine cli.OpenshiftEngine, wg *sync.WaitGroup, name, namespace string, timeout time.Duration, channel chan string, fn watchFunc) {
+func watch(ctx context.Context, client openshift.Client, wg *sync.WaitGroup, name, namespace string, timeout time.Duration, channel chan string, fn watchFunc) {
 	defer wg.Done()
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -361,7 +359,7 @@ func watch(ctx context.Context, engine cli.OpenshiftEngine, wg *sync.WaitGroup, 
 
 	for {
 		log.Debugf("Waiting for object %s/%s to become ready...", namespace, name)
-		obj, done, err := fn(ctx, engine, name, namespace)
+		obj, done, err := fn(ctx, client, name, namespace)
 		if err != nil {
 			// Something bad happened. Get out of town
 			log.Errorf("could not retrieve the object %s/%s: %s", namespace, name, err)
@@ -386,8 +384,8 @@ func watch(ctx context.Context, engine cli.OpenshiftEngine, wg *sync.WaitGroup, 
 	}
 }
 
-func csvStatusSucceeded(ctx context.Context, engine cli.OpenshiftEngine, name, namespace string) (string, bool, error) {
-	csv, err := engine.GetCSV(ctx, name, namespace)
+func csvStatusSucceeded(ctx context.Context, client openshift.Client, name, namespace string) (string, bool, error) {
+	csv, err := client.GetCSV(ctx, name, namespace)
 	if err != nil && !k8serr.IsNotFound(err) {
 		// This is not a normal error. Get out of town
 		log.Errorf("failed to fetch the csv %s from namespace %s: %s", name, namespace, err)
@@ -416,7 +414,7 @@ func (p *DeployableByOlmCheck) isCSVReady(ctx context.Context, operatorData oper
 
 	for _, CsvNamespace := range CsvNamespaces {
 		wg.Add(1)
-		go watch(ctx, p.openshiftEngine, &wg, operatorData.InstalledCsv, CsvNamespace, csvTimeout, csvChannel, csvStatusSucceeded)
+		go watch(ctx, p.openshiftClient, &wg, operatorData.InstalledCsv, CsvNamespace, csvTimeout, csvChannel, csvStatusSucceeded)
 	}
 
 	go func() {
@@ -435,8 +433,8 @@ func (p *DeployableByOlmCheck) isCSVReady(ctx context.Context, operatorData oper
 	return true, nil
 }
 
-func subscriptionCsvIsInstalled(ctx context.Context, engine cli.OpenshiftEngine, name, namespace string) (string, bool, error) {
-	sub, err := engine.GetSubscription(ctx, name, namespace)
+func subscriptionCsvIsInstalled(ctx context.Context, client openshift.Client, name, namespace string) (string, bool, error) {
+	sub, err := client.GetSubscription(ctx, name, namespace)
 	if err != nil && !k8serr.IsNotFound(err) {
 		log.Errorf("failed to fetch the subscription %s from namespace %s: %s", name, namespace, err)
 		return "", false, err
@@ -456,7 +454,7 @@ func (p *DeployableByOlmCheck) installedCSV(ctx context.Context, operatorData op
 	var wg sync.WaitGroup
 	// query API server for the installed CSV field of the created subscription
 	wg.Add(1)
-	go watch(ctx, p.openshiftEngine, &wg, operatorData.App, operatorData.InstallNamespace, subscriptionTimeout, installedCSVChannel, subscriptionCsvIsInstalled)
+	go watch(ctx, p.openshiftClient, &wg, operatorData.App, operatorData.InstallNamespace, subscriptionTimeout, installedCSVChannel, subscriptionCsvIsInstalled)
 
 	go func() {
 		wg.Wait()
@@ -477,35 +475,35 @@ func (p *DeployableByOlmCheck) installedCSV(ctx context.Context, operatorData op
 func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData operatorData) {
 	log.Debug("Dumping data in artifacts/ directory")
 
-	subs, err := p.openshiftEngine.GetSubscription(ctx, operatorData.App, operatorData.InstallNamespace)
+	subs, err := p.openshiftClient.GetSubscription(ctx, operatorData.App, operatorData.InstallNamespace)
 	if err != nil {
 		log.Warn("unable to retrieve the subscription")
 	} else {
 		p.writeToFile(subs)
 	}
 
-	cs, err := p.openshiftEngine.GetCatalogSource(ctx, operatorData.App, operatorData.InstallNamespace)
+	cs, err := p.openshiftClient.GetCatalogSource(ctx, operatorData.App, operatorData.InstallNamespace)
 	if err != nil {
 		log.Warn("unable to retrieve the catalogsource")
 	} else {
 		p.writeToFile(cs)
 	}
 
-	og, err := p.openshiftEngine.GetOperatorGroup(ctx, operatorData.App, operatorData.InstallNamespace)
+	og, err := p.openshiftClient.GetOperatorGroup(ctx, operatorData.App, operatorData.InstallNamespace)
 	if err != nil {
 		log.Warn("unable to retrieve the operatorgroup")
 	} else {
 		p.writeToFile(og)
 	}
 
-	installNamespace, err := p.openshiftEngine.GetNamespace(ctx, operatorData.InstallNamespace)
+	installNamespace, err := p.openshiftClient.GetNamespace(ctx, operatorData.InstallNamespace)
 	if err != nil {
 		log.Warn("unable to retrieve the install namespace")
 	} else {
 		p.writeToFile(installNamespace)
 	}
 
-	targetNamespace, err := p.openshiftEngine.GetNamespace(ctx, operatorData.TargetNamespace)
+	targetNamespace, err := p.openshiftClient.GetNamespace(ctx, operatorData.TargetNamespace)
 	if err != nil {
 		log.Warn("unable to retrieve the target namespace")
 	} else {
@@ -513,27 +511,27 @@ func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData operato
 	}
 
 	log.Trace("Deleting the resources created by DeployableByOLM Check")
-	p.openshiftEngine.DeleteSubscription(ctx, operatorData.App, operatorData.InstallNamespace)
-	p.openshiftEngine.DeleteCatalogSource(ctx, operatorData.App, operatorData.InstallNamespace)
-	p.openshiftEngine.DeleteOperatorGroup(ctx, operatorData.App, operatorData.InstallNamespace)
-	p.openshiftEngine.DeleteSecret(ctx, secretName, operatorData.InstallNamespace)
+	p.openshiftClient.DeleteSubscription(ctx, operatorData.App, operatorData.InstallNamespace)
+	p.openshiftClient.DeleteCatalogSource(ctx, operatorData.App, operatorData.InstallNamespace)
+	p.openshiftClient.DeleteOperatorGroup(ctx, operatorData.App, operatorData.InstallNamespace)
+	p.openshiftClient.DeleteSecret(ctx, secretName, operatorData.InstallNamespace)
 
 	if strings.Contains(operatorData.CatalogImage, imageRegistryService) {
 		indexImageNamespace := strings.Split(operatorData.CatalogImage, "/")[1]
 		operatorServiceAccount := operatorData.App
 		operatorNamespace := operatorData.InstallNamespace
 		// remove pipeline-related rolebindings
-		p.openshiftEngine.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", pipelineServiceAccount, operatorNamespace, registryViewerRole), indexImageNamespace)
-		p.openshiftEngine.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", pipelineServiceAccount, operatorNamespace, imagePullerRole), indexImageNamespace)
+		p.openshiftClient.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", pipelineServiceAccount, operatorNamespace, registryViewerRole), indexImageNamespace)
+		p.openshiftClient.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", pipelineServiceAccount, operatorNamespace, imagePullerRole), indexImageNamespace)
 		// remove rolebindings required for the default OperatorHub catalog sources
-		p.openshiftEngine.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", operatorServiceAccount, openshiftMarketplaceNamespace, registryViewerRole), indexImageNamespace)
-		p.openshiftEngine.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", operatorServiceAccount, openshiftMarketplaceNamespace, imagePullerRole), indexImageNamespace)
+		p.openshiftClient.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", operatorServiceAccount, openshiftMarketplaceNamespace, registryViewerRole), indexImageNamespace)
+		p.openshiftClient.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", operatorServiceAccount, openshiftMarketplaceNamespace, imagePullerRole), indexImageNamespace)
 		// remove rolebindings required for custom catalog sources
-		p.openshiftEngine.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", operatorServiceAccount, operatorNamespace, registryViewerRole), indexImageNamespace)
-		p.openshiftEngine.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", operatorServiceAccount, operatorNamespace, imagePullerRole), indexImageNamespace)
+		p.openshiftClient.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", operatorServiceAccount, operatorNamespace, registryViewerRole), indexImageNamespace)
+		p.openshiftClient.DeleteRoleBinding(ctx, fmt.Sprintf("%s:%s:%s", operatorServiceAccount, operatorNamespace, imagePullerRole), indexImageNamespace)
 	}
-	p.openshiftEngine.DeleteNamespace(ctx, operatorData.InstallNamespace)
-	p.openshiftEngine.DeleteNamespace(ctx, operatorData.TargetNamespace)
+	p.openshiftClient.DeleteNamespace(ctx, operatorData.InstallNamespace)
+	p.openshiftClient.DeleteNamespace(ctx, operatorData.TargetNamespace)
 }
 
 func (p *DeployableByOlmCheck) writeToFile(data interface{}) error {
@@ -592,7 +590,7 @@ func (p *DeployableByOlmCheck) readFileAsByteArray(filename string) ([]byte, err
 }
 
 func (p *DeployableByOlmCheck) getImages(ctx context.Context) (map[string]struct{}, error) {
-	return p.openshiftEngine.GetImages(ctx)
+	return p.openshiftClient.GetImages(ctx)
 }
 
 func (p *DeployableByOlmCheck) Name() string {
