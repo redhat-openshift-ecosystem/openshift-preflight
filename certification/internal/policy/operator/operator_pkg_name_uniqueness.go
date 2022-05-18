@@ -55,7 +55,7 @@ func (p *OperatorPkgNameIsUniqueCheck) Validate(ctx context.Context, bundleRef c
 
 	packageName, err := p.getPackageName(ctx, annotations)
 	if err != nil {
-		log.Error("unable to extract package name from ClusterServicVersion", err)
+		log.Error("unable to extract package name from ClusterServiceVersion", err)
 		return false, err
 	}
 

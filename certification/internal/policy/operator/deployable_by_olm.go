@@ -182,7 +182,7 @@ func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef c
 
 	installModes, err := bundle.GetSupportedInstallModes(ctx, csvFileReader)
 	if err != nil {
-		log.Error(fmt.Errorf("%w: unable to extract operator install modes from ClusterServicVersion", err))
+		log.Error(fmt.Errorf("%w: unable to extract operator install modes from ClusterServiceVersion", err))
 		return nil, err
 	}
 
