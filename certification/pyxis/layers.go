@@ -7,8 +7,6 @@ import (
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/hasura/go-graphql-client"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 // CertifiedImagesContainingLayers takes uncompressedLayerHashes and queries to a Red Hat Pyxis,
@@ -46,14 +44,13 @@ func (p *pyxisClient) CertifiedImagesContainingLayers(ctx context.Context, uncom
 	// make our query
 	httpClient, ok := p.Client.(*http.Client)
 	if !ok {
-		return nil, errors.ErrInvalidHttpClient
+		return nil, fmt.Errorf("client could not be used as http.Client")
 	}
 	client := graphql.NewClient(p.getPyxisGraphqlUrl(), httpClient).WithDebug(true)
 
 	err := client.Query(ctx, &query, variables)
 	if err != nil {
-		log.Error(fmt.Errorf("%w: %s", errors.ErrInvalidGraphqlQuery, err))
-		return nil, err
+		return nil, fmt.Errorf("error while executing layers query: %v", err)
 	}
 
 	images := make([]CertImage, 0, len(query.FindImages.ContainerImage))

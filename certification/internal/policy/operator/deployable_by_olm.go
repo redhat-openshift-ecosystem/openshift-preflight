@@ -23,7 +23,6 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	pflterr "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/openshift"
@@ -424,7 +423,7 @@ func (p *DeployableByOlmCheck) isCSVReady(ctx context.Context, operatorData oper
 
 	for msg := range csvChannel {
 		if strings.Contains(msg, errorPrefix) {
-			return false, fmt.Errorf("%w: %s", pflterr.ErrK8sAPICallFailed, msg)
+			return false, fmt.Errorf("%w: %s", ErrK8sAPICallFailed, msg)
 		}
 		if len(msg) == 0 {
 			return false, nil
@@ -464,7 +463,7 @@ func (p *DeployableByOlmCheck) installedCSV(ctx context.Context, operatorData op
 	installedCsv := ""
 	for msg := range installedCSVChannel {
 		if strings.Contains(msg, errorPrefix) {
-			return "", fmt.Errorf("%w: %s", pflterr.ErrK8sAPICallFailed, msg)
+			return "", fmt.Errorf("%w: %s", ErrK8sAPICallFailed, msg)
 		}
 		installedCsv = msg
 	}
@@ -558,7 +557,7 @@ func (p *DeployableByOlmCheck) writeToFile(data interface{}) error {
 		version = "v1"
 		kind = "Namespace"
 	default:
-		return pflterr.ErrUnsupportedGoType
+		return ErrUnsupportedGoType
 	}
 	u.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   group,

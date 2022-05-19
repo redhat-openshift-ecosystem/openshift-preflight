@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -47,12 +46,10 @@ func NewPyxisClient(pyxisHost string, apiToken string, projectId string, httpCli
 func (p *pyxisClient) createImage(ctx context.Context, certImage *CertImage) (*CertImage, error) {
 	b, err := json.Marshal(certImage)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not marshal certImage: %w", err)
 	}
 	req, err := p.newRequestWithApiToken(ctx, http.MethodPost, p.getPyxisUrl("images"), bytes.NewReader(b))
 	if err != nil {
-		log.Error(err)
 		return nil, err
 	}
 
@@ -60,31 +57,30 @@ func (p *pyxisClient) createImage(ctx context.Context, certImage *CertImage) (*C
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
-		log.Error(fmt.Errorf("%w: cannot create image", err))
-		return nil, err
+		return nil, fmt.Errorf("cannot create image in pyxis: %w", err)
 	}
 
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not read body: %w", err)
 	}
 
 	if resp.StatusCode == http.StatusConflict {
-		return nil, errors.ErrPyxis409StatusCode
+		return nil, ErrPyxis409StatusCode
 	}
 
-	if !checkStatus(resp.StatusCode) {
-		log.Errorf("%s: %s", "received non 200 status code in createImage", string(body))
-		return nil, errors.ErrNon200StatusCode
+	if ok := checkStatus(resp.StatusCode); !ok {
+		return nil, fmt.Errorf(
+			"status code: %d: body: %s",
+			resp.StatusCode,
+			string(body))
 	}
 
 	var newCertImage CertImage
 	if err := json.Unmarshal(body, &newCertImage); err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not unmarshal body: %s: %w", string(body), err)
 	}
 
 	return &newCertImage, nil
@@ -94,29 +90,28 @@ func (p *pyxisClient) getImage(ctx context.Context, dockerImageDigest string) (*
 	req, err := p.newRequestWithApiToken(ctx, http.MethodGet,
 		p.getPyxisUrl(fmt.Sprintf("projects/certification/id/%s/images?filter=docker_image_digest==%s", p.ProjectId, dockerImageDigest)), nil)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
 	log.Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not get image from pyxis: %w", err)
 	}
 
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not read body: %w", err)
 	}
 
-	if !checkStatus(resp.StatusCode) {
-		log.Errorf("%s: %s", "received non 200 status code in getImage", string(body))
-		return nil, errors.ErrNon200StatusCode
+	if ok := checkStatus(resp.StatusCode); !ok {
+		return nil, fmt.Errorf(
+			"status code: %d: body: %s",
+			resp.StatusCode,
+			string(body))
 	}
 
 	// using an inline struct since this api's response is in a different format
@@ -125,8 +120,7 @@ func (p *pyxisClient) getImage(ctx context.Context, dockerImageDigest string) (*
 	}{}
 
 	if err := json.Unmarshal(body, &data); err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not unmarshal body: %s: %w", string(body), err)
 	}
 
 	return &data.Data[0], nil
@@ -135,44 +129,41 @@ func (p *pyxisClient) getImage(ctx context.Context, dockerImageDigest string) (*
 func (p *pyxisClient) createRPMManifest(ctx context.Context, rpmManifest *RPMManifest) (*RPMManifest, error) {
 	b, err := json.Marshal(rpmManifest)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not marshal rpm manifest: %w", err)
 	}
 	req, err := p.newRequestWithApiToken(ctx, http.MethodPost, p.getPyxisUrl(fmt.Sprintf("images/id/%s/rpm-manifest", rpmManifest.ImageID)), bytes.NewReader(b))
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
 	log.Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not create rpm manifest in pyxis: %w", err)
 	}
 
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not read body: %w", err)
 	}
 
 	if resp.StatusCode == 409 {
-		return nil, errors.ErrPyxis409StatusCode
+		return nil, ErrPyxis409StatusCode
 	}
 
-	if !checkStatus(resp.StatusCode) {
-		log.Errorf("%s: %s", "received non 200 status code in createRPMManifest", string(body))
-		return nil, errors.ErrNon200StatusCode
+	if ok := checkStatus(resp.StatusCode); !ok {
+		return nil, fmt.Errorf(
+			"status code: %d: body: %s",
+			resp.StatusCode,
+			string(body))
 	}
 
 	var newRPMManifest RPMManifest
 	if err := json.Unmarshal(body, &newRPMManifest); err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not unmarshal body: %s: %w", string(body), err)
 	}
 
 	return &newRPMManifest, nil
@@ -181,35 +172,33 @@ func (p *pyxisClient) createRPMManifest(ctx context.Context, rpmManifest *RPMMan
 func (p *pyxisClient) getRPMManifest(ctx context.Context, imageID string) (*RPMManifest, error) {
 	req, err := p.newRequestWithApiToken(ctx, http.MethodGet, p.getPyxisUrl(fmt.Sprintf("images/id/%s/rpm-manifest", imageID)), nil)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
 	log.Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not get rpm manifest from pyxis: %w", err)
 	}
 
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not read body: %w", err)
 	}
 
-	if !checkStatus(resp.StatusCode) {
-		log.Errorf("%s: %s", "received non 200 status code in getRPMManifest", string(body))
-		return nil, errors.ErrNon200StatusCode
+	if ok := checkStatus(resp.StatusCode); !ok {
+		return nil, fmt.Errorf(
+			"status code: %d: body: %s",
+			resp.StatusCode,
+			string(body))
 	}
 
 	var newRPMManifest RPMManifest
 	if err := json.Unmarshal(body, &newRPMManifest); err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not unmarshal body: %s: %w", string(body), err)
 	}
 
 	return &newRPMManifest, nil
@@ -218,34 +207,32 @@ func (p *pyxisClient) getRPMManifest(ctx context.Context, imageID string) (*RPMM
 func (p *pyxisClient) GetProject(ctx context.Context) (*CertProject, error) {
 	req, err := p.newRequestWithApiToken(ctx, http.MethodGet, p.getPyxisUrl(fmt.Sprintf("projects/certification/id/%s", p.ProjectId)), nil)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not create new request: %v", err)
 	}
 	log.Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
-		log.Error(err, "client.Do failed")
-		return nil, err
+		return nil, fmt.Errorf("could not get project from pyxis: %v", err)
 	}
 
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(err, "readall failed")
-		return nil, err
+		return nil, fmt.Errorf("could not read body: %v", err)
 	}
 
-	if !checkStatus(resp.StatusCode) {
-		log.Errorf("%s: %s", "received non 200 status code in GetProject", string(body))
-		return nil, errors.ErrNon200StatusCode
+	if ok := checkStatus(resp.StatusCode); !ok {
+		return nil, fmt.Errorf(
+			"status code: %d: body: %s",
+			resp.StatusCode,
+			string(body))
 	}
 
 	var certProject CertProject
 	if err := json.Unmarshal(body, &certProject); err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not unmarshal body: %s: %v", string(body), err)
 	}
 
 	return &certProject, nil
@@ -254,40 +241,37 @@ func (p *pyxisClient) GetProject(ctx context.Context) (*CertProject, error) {
 func (p *pyxisClient) updateProject(ctx context.Context, certProject *CertProject) (*CertProject, error) {
 	b, err := json.Marshal(certProject)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not marshal certProject: %w", err)
 	}
 	req, err := p.newRequestWithApiToken(ctx, http.MethodPatch, p.getPyxisUrl(fmt.Sprintf("projects/certification/id/%s", p.ProjectId)), bytes.NewReader(b))
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
 	log.Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not update project in pyxis: %w", err)
 	}
 
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not read body: %w", err)
 	}
 
-	if !checkStatus(resp.StatusCode) {
-		log.Errorf("%s: %s", "received non 200 status code in updateProject", string(body))
-		return nil, errors.ErrNon200StatusCode
+	if ok := checkStatus(resp.StatusCode); !ok {
+		return nil, fmt.Errorf(
+			"status code: %d: body: %s",
+			resp.StatusCode,
+			string(body))
 	}
 
 	var newCertProject CertProject
 	if err := json.Unmarshal(body, &newCertProject); err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not unmarshal body: %s: %w", string(body), err)
 	}
 
 	return &newCertProject, nil
@@ -296,38 +280,35 @@ func (p *pyxisClient) updateProject(ctx context.Context, certProject *CertProjec
 func (p *pyxisClient) createTestResults(ctx context.Context, testResults *TestResults) (*TestResults, error) {
 	b, err := json.Marshal(testResults)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not marshal test results: %w", err)
 	}
 	req, err := p.newRequestWithApiToken(ctx, http.MethodPost, p.getPyxisUrl(fmt.Sprintf("projects/certification/id/%s/test-results", p.ProjectId)), bytes.NewReader(b))
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not create test results in pyxis: %w", err)
 	}
 
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not read body: %w", err)
 	}
 
-	if !checkStatus(resp.StatusCode) {
-		log.Errorf("%s: %s", "received non 200 status code in createTestResults", string(body))
-		return nil, errors.ErrNon200StatusCode
+	if ok := checkStatus(resp.StatusCode); !ok {
+		return nil, fmt.Errorf(
+			"status code: %d: body: %s",
+			resp.StatusCode,
+			string(body))
 	}
 
 	newTestResults := TestResults{}
 	if err := json.Unmarshal(body, &newTestResults); err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not unmarshal body: %s: %w", string(body), err)
 	}
 
 	return &newTestResults, nil
@@ -336,40 +317,37 @@ func (p *pyxisClient) createTestResults(ctx context.Context, testResults *TestRe
 func (p *pyxisClient) createArtifact(ctx context.Context, artifact *Artifact) (*Artifact, error) {
 	b, err := json.Marshal(artifact)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not marshal artifact: %w", err)
 	}
 	req, err := p.newRequestWithApiToken(ctx, http.MethodPost, p.getPyxisUrl(fmt.Sprintf("projects/certification/id/%s/artifacts", p.ProjectId)), bytes.NewReader(b))
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
 	log.Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not create artifact in pyxis: %w", err)
 	}
 
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not read body: %w", err)
 	}
 
-	if !checkStatus(resp.StatusCode) {
-		log.Errorf("%s: %s", "received non 200 status code in createArtifact", string(body))
-		return nil, errors.ErrNon200StatusCode
+	if ok := checkStatus(resp.StatusCode); !ok {
+		return nil, fmt.Errorf(
+			"status code: %d: body: %s",
+			resp.StatusCode,
+			string(body))
 	}
 
 	var newArtifact Artifact
 	if err := json.Unmarshal(body, &newArtifact); err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("could not unmarshal body: %s: %w", string(body), err)
 	}
 
 	return &newArtifact, nil
@@ -401,5 +379,5 @@ func (p *pyxisClient) newRequest(ctx context.Context, method string, url string,
 
 // checkStatus is used to check for a 2xx status code
 func checkStatus(statusCode int) bool {
-	return statusCode >= 200 && statusCode < 300
+	return statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices
 }

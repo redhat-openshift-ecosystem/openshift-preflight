@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	internal "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/engine"
 	containerpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/container"
 	operatorpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/operator"
@@ -32,7 +31,7 @@ type CheckEngine interface {
 func NewForConfig(config runtime.Config) (CheckEngine, error) {
 	if len(config.EnabledChecks) == 0 {
 		// refuse to run if the user has not specified any checks
-		return nil, errors.ErrNoChecksEnabled
+		return nil, ErrNoChecksEnabled
 	}
 
 	checks := make([]certification.Check, 0, len(config.EnabledChecks))
@@ -40,7 +39,7 @@ func NewForConfig(config runtime.Config) (CheckEngine, error) {
 		check := queryChecks(checkString)
 		if check == nil {
 			err := fmt.Errorf("%w: %s",
-				errors.ErrRequestedCheckNotFound,
+				ErrRequestedCheckNotFound,
 				checkString)
 			return nil, err
 		}

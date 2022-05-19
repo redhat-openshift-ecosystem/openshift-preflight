@@ -1,6 +1,7 @@
 package artifacts
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,7 +27,7 @@ func createArtifactsDir(artifactsDir string) (string, error) {
 	if !strings.HasPrefix(artifactsDir, "/") {
 		currentDir, err := os.Getwd()
 		if err != nil {
-			log.Error("unable to get current directory: ", err)
+			log.Error(fmt.Errorf("unable to get current directory: %w", err))
 			return "", err
 		}
 
@@ -35,7 +36,7 @@ func createArtifactsDir(artifactsDir string) (string, error) {
 
 	err := os.MkdirAll(artifactsDir, 0o777)
 	if err != nil {
-		log.Error("unable to create artifactsDir: ", err)
+		log.Error(fmt.Errorf("unable to create artifactsDir: %w", err))
 		return "", err
 	}
 	return artifactsDir, nil
@@ -46,7 +47,7 @@ func Path() string {
 	artifactDir := viper.GetString("artifacts")
 	artifactDir, err := createArtifactsDir(artifactDir)
 	if err != nil {
-		log.Fatal("could not retrieve artifact path")
+		log.Fatal(fmt.Errorf("could not retrieve artifact path: %w", err))
 		// Fatal does an os.Exit
 	}
 	return filepath.Join(artifactDir)

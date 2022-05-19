@@ -23,7 +23,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/cache"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/authn"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/openshift"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
@@ -66,13 +65,13 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	log.Debug("pulling image from target registry")
 	img, err := crane.Pull(c.Image, options...)
 	if err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrGetRemoteContainerFailed, err)
+		return fmt.Errorf("%w: %s", ErrGetRemoteContainerFailed, err)
 	}
 
 	// create tmpdir to receive extracted fs
 	tmpdir, err := os.MkdirTemp(os.TempDir(), "preflight-*")
 	if err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrCreateTempDir, err)
+		return fmt.Errorf("%w: %s", ErrCreateTempDir, err)
 	}
 	log.Debug("temporary directory is ", tmpdir)
 	defer func() {
@@ -83,14 +82,14 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 
 	imageTarPath := path.Join(tmpdir, "cache")
 	if err := os.Mkdir(imageTarPath, 0o755); err != nil {
-		return fmt.Errorf("%w: %s: %s", errors.ErrCreateTempDir, imageTarPath, err)
+		return fmt.Errorf("%w: %s: %s", ErrCreateTempDir, imageTarPath, err)
 	}
 
 	img = cache.Image(img, cache.NewFilesystemCache(imageTarPath))
 
 	containerFSPath := path.Join(tmpdir, "fs")
 	if err := os.Mkdir(containerFSPath, 0o755); err != nil {
-		return fmt.Errorf("%w: %s: %s", errors.ErrCreateTempDir, containerFSPath, err)
+		return fmt.Errorf("%w: %s: %s", ErrCreateTempDir, containerFSPath, err)
 	}
 
 	// export/flatten, and extract
@@ -114,13 +113,13 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 
 	log.Debug("extracting container filesystem to ", containerFSPath)
 	if err := untar(containerFSPath, r); err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
+		return fmt.Errorf("%w: %s", ErrExtractingTarball, err)
 	}
 	wg.Wait()
 
 	reference, err := name.ParseReference(c.Image)
 	if err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrInvalidImageUri, err)
+		return fmt.Errorf("%w: %s", ErrInvalidImageUri, err)
 	}
 
 	// store the image internals in the engine image reference to pass to validations.
@@ -327,27 +326,27 @@ func untar(dst string, r io.Reader) error {
 func writeCertImage(ctx context.Context, imageRef certification.ImageReference) error {
 	config, err := imageRef.ImageInfo.ConfigFile()
 	if err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+		return fmt.Errorf("%w: %s", ErrImageInspectFailed, err)
 	}
 
 	manifest, err := imageRef.ImageInfo.Manifest()
 	if err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+		return fmt.Errorf("%w: %s", ErrImageInspectFailed, err)
 	}
 
 	digest, err := imageRef.ImageInfo.Digest()
 	if err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+		return fmt.Errorf("%w: %s", ErrImageInspectFailed, err)
 	}
 
 	rawConfig, err := imageRef.ImageInfo.RawConfigFile()
 	if err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+		return fmt.Errorf("%w: %s", ErrImageInspectFailed, err)
 	}
 
 	size, err := imageRef.ImageInfo.Size()
 	if err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+		return fmt.Errorf("%w: %s", ErrImageInspectFailed, err)
 	}
 
 	labels := convertLabels(config.Config.Labels)
@@ -381,7 +380,7 @@ func writeCertImage(ctx context.Context, imageRef certification.ImageReference) 
 
 	sumLayersSizeBytes, err := sumLayerSizeBytes(layerSizes)
 	if err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrImageInspectFailed, err)
+		return fmt.Errorf("%w: %s", ErrImageInspectFailed, err)
 	}
 
 	addedDate := time.Now().UTC().Format(time.RFC3339)
@@ -433,7 +432,7 @@ func writeCertImage(ctx context.Context, imageRef certification.ImageReference) 
 
 	fileName, err := artifacts.WriteFile(certification.DefaultCertImageFilename, string(certImageJson))
 	if err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrSaveFileFailed, err)
+		return fmt.Errorf("%w: %s", ErrSaveFileFailed, err)
 	}
 
 	log.Tracef("image config written to disk: %s", fileName)
@@ -449,7 +448,7 @@ func getBgName(srcrpm string) string {
 func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 	pkgList, err := rpm.GetPackageList(ctx, containerFSPath)
 	if err != nil {
-		log.Error(fmt.Errorf("%w: continuing without it", errors.ErrRPMPackageList))
+		log.Error(fmt.Errorf("%w: continuing without it", ErrRPMPackageList))
 	}
 
 	// covert rpm struct to pxyis struct
@@ -503,7 +502,7 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 
 	fileName, err := artifacts.WriteFile(certification.DefaultRPMManifestFilename, string(rpmManifestJson))
 	if err != nil {
-		return fmt.Errorf("%w: %s", errors.ErrSaveFileFailed, err)
+		return fmt.Errorf("%w: %s", ErrSaveFileFailed, err)
 	}
 
 	log.Tracef("rpm manifest written to disk: %s", fileName)

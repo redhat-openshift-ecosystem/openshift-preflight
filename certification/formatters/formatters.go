@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
@@ -35,7 +34,7 @@ func NewForConfig(cfg runtime.Config) (ResponseFormatter, error) {
 		return nil, fmt.Errorf(
 			"failed to create a new formatter from config \"%s\": %w",
 			cfg.ResponseFormat,
-			errors.ErrRequestedFormatterNotFound,
+			ErrRequestedFormatterNotFound,
 		)
 	}
 
@@ -47,7 +46,7 @@ func New(name, extension string, fn FormatterFunc) (ResponseFormatter, error) {
 	if len(name) == 0 {
 		return nil, fmt.Errorf(
 			"failed to create a new generic formatter: %w",
-			errors.ErrFormatterNameNotProvided,
+			ErrFormatterNameNotProvided,
 		)
 	}
 

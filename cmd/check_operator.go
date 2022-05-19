@@ -10,7 +10,6 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
@@ -33,7 +32,7 @@ var checkOperatorCmd = &cobra.Command{
 		}
 
 		if len(args) != 1 {
-			return fmt.Errorf("%w: An operator image positional argument is required", errors.ErrInsufficientPosArguments)
+			return fmt.Errorf("%w: An operator image positional argument is required", ErrInsufficientPosArguments)
 		}
 		return nil
 	},
@@ -51,11 +50,11 @@ var checkOperatorCmd = &cobra.Command{
 		operatorImage := args[0]
 
 		if _, ok := os.LookupEnv("KUBECONFIG"); !ok {
-			return errors.ErrNoKubeconfig
+			return ErrNoKubeconfig
 		}
 
 		if catalogImage := viper.GetString("indexImage"); len(catalogImage) == 0 {
-			return errors.ErrIndexImageUndefined
+			return ErrIndexImageUndefined
 		}
 
 		cfg := runtime.Config{

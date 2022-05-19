@@ -2,11 +2,10 @@ package pyxis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 var defaultRegistryAlias = "docker.io"
@@ -31,7 +30,7 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 
 	// You must have an existing repository.
 	if len(certImage.Repositories) == 0 {
-		return nil, errors.ErrInvalidCertImage
+		return nil, fmt.Errorf("certImage has not been properly populated")
 	}
 
 	// Set this project's metadata to match the image that we're certifying.
@@ -55,8 +54,7 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 	// Note: users no longer have the ability to update their project's dockerconfig in connect
 	certProject, err = p.updateProject(ctx, certProject)
 	if err != nil {
-		log.Error(err, "could not update project")
-		return nil, err
+		return nil, fmt.Errorf("could not update project: %v", err)
 	}
 
 	// store the original digest so that we can pull the image later
@@ -66,14 +64,12 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 	// Create the image, or get it if it already exists.
 	certImage, err = p.createImage(ctx, certImage)
 	if err != nil {
-		if err != errors.ErrPyxis409StatusCode {
-			log.Error(fmt.Errorf("%w: could not create image", err))
-			return nil, err
+		if !errors.Is(err, ErrPyxis409StatusCode) {
+			return nil, fmt.Errorf("could not create image: %v", err)
 		}
 		certImage, err = p.getImage(ctx, originalImageDigest)
 		if err != nil {
-			log.Error(fmt.Errorf("%w: could not get image", err))
-			return nil, err
+			return nil, fmt.Errorf("could not get image: %v", err)
 		}
 	}
 
@@ -82,14 +78,12 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 	rpmManifest.ImageID = certImage.ID
 	_, err = p.createRPMManifest(ctx, rpmManifest)
 	if err != nil {
-		if err != errors.ErrPyxis409StatusCode {
-			log.Error(fmt.Errorf("%w: could not create rpm manifest", err))
-			return nil, err
+		if !errors.Is(err, ErrPyxis409StatusCode) {
+			return nil, fmt.Errorf("could not create rpm manifest: %v", err)
 		}
 		_, err = p.getRPMManifest(ctx, rpmManifest.ImageID)
 		if err != nil {
-			log.Error(fmt.Errorf("%w: could not get rpm manifest", err))
-			return nil, err
+			return nil, fmt.Errorf("could not get rpm manifest: %v", err)
 		}
 	}
 
@@ -98,8 +92,7 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 	for _, artifact := range artifacts {
 		artifact.ImageID = certImage.ID
 		if _, err := p.createArtifact(ctx, &artifact); err != nil {
-			log.Error(fmt.Errorf("%w: could not create artifact: %s", err, artifact.Filename))
-			return nil, err
+			return nil, fmt.Errorf("could not create artifact: %s: %v", artifact.Filename, err)
 		}
 	}
 
@@ -108,8 +101,7 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 	testResults.ImageID = certImage.ID
 	testResults, err = p.createTestResults(ctx, testResults)
 	if err != nil {
-		log.Error(fmt.Errorf("%w: could not create test results", err))
-		return nil, err
+		return nil, fmt.Errorf("could not create test results: %v", err)
 	}
 
 	// Return the results with up-to-date information.

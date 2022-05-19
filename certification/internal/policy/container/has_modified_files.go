@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
 	log "github.com/sirupsen/logrus"
 )
@@ -30,7 +29,7 @@ type packageFilesRef struct {
 func (p *HasModifiedFilesCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	packageFiles, err := p.getDataToValidate(ctx, imgRef)
 	if err != nil {
-		return false, fmt.Errorf("%w: %s", errors.ErrDetectingModifiedFiles, err)
+		return false, fmt.Errorf("%w: %s", ErrDetectingModifiedFiles, err)
 	}
 	return p.validate(packageFiles)
 }
@@ -43,7 +42,7 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 	// rpm, dnf, yum, etc. being installed in the image.
 	pkgList, err := rpm.GetPackageList(ctx, imgRef.ImageFSPath)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", errors.ErrRPMPackageList, err)
+		return nil, fmt.Errorf("could not get rpm list: %w", err)
 	}
 
 	// Get the files put in place on the filesystem by the
@@ -73,7 +72,7 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 	for _, layer := range layers {
 		r, err := layer.Uncompressed()
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", errors.ErrExtractingLayer, err)
+			return nil, fmt.Errorf("%w: %s", ErrExtractingLayer, err)
 		}
 		pathChan := make(chan string)
 
@@ -90,7 +89,7 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 		// add paths to the pathChan
 		err = untar(pathChan, r)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", errors.ErrExtractingTarball, err)
+			return nil, fmt.Errorf("failed to extract tarball: %w", err)
 		}
 	}
 
