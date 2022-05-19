@@ -36,14 +36,8 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 
 	// Set this project's metadata to match the image that we're certifying.
 	if certProject.Container.Registry == "" {
-		// Setting registry to the value we get from certImage from crane and then normalizing
-		// index.docker.io to docker.io so project info shows properly in the Red Hat Catalog
-		registry := certImage.Repositories[0].Registry
-		if registry == name.DefaultRegistry {
-			registry = defaultRegistryAlias
-		}
-
-		certProject.Container.Registry = registry
+		// normalizing index.docker.io to docker.io for the certProject
+		certProject.Container.Registry = normalizeDockerRegistry(certImage.Repositories[0].Registry)
 	}
 
 	if certProject.Container.Repository == "" {
@@ -62,6 +56,9 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 	// store the original digest so that we can pull the image later
 	// in the event that it exists. createImage will wipe it otherwise.
 	originalImageDigest := certImage.DockerImageDigest
+
+	// normalizing index.docker.io to docker.io for the certImage
+	certImage.Repositories[0].Registry = normalizeDockerRegistry(certImage.Repositories[0].Registry)
 
 	// Create the image, or get it if it already exists.
 	certImage, err = p.createImage(ctx, certImage)
@@ -118,4 +115,14 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificatio
 		CertImage:   certImage,
 		TestResults: testResults,
 	}, nil
+}
+
+// normalizeDockerRegistry sets registry to the value we get from certImage from crane and then normalizes
+// index.docker.io to docker.io so project/image info shows properly in the Red Hat Catalog and other backend systems (Clair)
+func normalizeDockerRegistry(registry string) string {
+	if registry == name.DefaultRegistry {
+		registry = defaultRegistryAlias
+	}
+
+	return registry
 }

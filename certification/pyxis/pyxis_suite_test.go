@@ -105,6 +105,8 @@ func (p *pyxisImageHandler) ServeHTTP(response http.ResponseWriter, request *htt
 		response.WriteHeader(http.StatusUnauthorized)
 	case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-bad-500-image-api-token":
 		response.WriteHeader(http.StatusInternalServerError)
+	case request.Header["X-Api-Key"][0] == "my-index-docker-io-project-api-token":
+		mustWrite(response, `{"_id": "blah", "architecture": "amd64", "object_type": "containerImage", "repositories": [ {"published": false, "registry": "docker.io", "repository": "my/repo", "tags": [{"name": "docker_io_v3"}]}]}`)
 	case request.Method == http.MethodPost:
 		mustWrite(response, responseString)
 	default:
