@@ -1,4 +1,4 @@
-package cli
+package openshift
 
 import (
 	"context"
@@ -35,7 +35,7 @@ type RoleBindingData struct {
 	Namespace string
 }
 
-type OpenshiftEngine interface {
+type Client interface {
 	CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
 	DeleteNamespace(ctx context.Context, name string) error
 	GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error)

@@ -1,4 +1,4 @@
-package engine
+package openshift
 
 import (
 	"context"
@@ -12,23 +12,41 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 )
 
-type openshiftEngine struct {
+type openshiftClient struct {
 	Client crclient.Client
 }
 
-func NewOpenshiftEngine(client crclient.Client) *cli.OpenshiftEngine {
-	var engine cli.OpenshiftEngine = &openshiftEngine{
+// NewClient provides a wrapper around the passed in client in
+// order to present convenience functions for each of the object
+// types that are interacted with.
+func NewClient(client crclient.Client) Client {
+	var osclient Client = &openshiftClient{
 		Client: client,
 	}
-	return &engine
+	return osclient
 }
 
-func (oe *openshiftEngine) CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
+func AddSchemes(scheme *apiruntime.Scheme) error {
+	if err := operatorv1.AddToScheme(scheme); err != nil {
+		return err
+	}
+	if err := operatorv1alpha1.AddToScheme(scheme); err != nil {
+		return err
+	}
+	if err := imagestreamv1.AddToScheme(scheme); err != nil {
+		return err
+	}
+	if err := rbacv1.AddToScheme(scheme); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (oe *openshiftClient) CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
 	nsSpec := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -43,7 +61,7 @@ func (oe *openshiftEngine) CreateNamespace(ctx context.Context, name string) (*c
 	return &nsSpec, nil
 }
 
-func (oe *openshiftEngine) DeleteNamespace(ctx context.Context, name string) error {
+func (oe *openshiftClient) DeleteNamespace(ctx context.Context, name string) error {
 	log.Debugf("Deleting namespace: %s", name)
 	nsSpec := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -53,7 +71,7 @@ func (oe *openshiftEngine) DeleteNamespace(ctx context.Context, name string) err
 	return oe.Client.Delete(ctx, &nsSpec, &crclient.DeleteOptions{})
 }
 
-func (oe *openshiftEngine) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
+func (oe *openshiftClient) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
 	log.Debugf("fetching namespace %s", name)
 	nsSpec := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -71,7 +89,7 @@ func (oe *openshiftEngine) GetNamespace(ctx context.Context, name string) (*core
 	return &nsSpec, nil
 }
 
-func (oe *openshiftEngine) CreateOperatorGroup(ctx context.Context, data cli.OperatorGroupData, namespace string) (*operatorv1.OperatorGroup, error) {
+func (oe *openshiftClient) CreateOperatorGroup(ctx context.Context, data OperatorGroupData, namespace string) (*operatorv1.OperatorGroup, error) {
 	log.Debugf("Creating OperatorGroup %s in namespace %s", data.Name, namespace)
 	operatorGroup := &operatorv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
@@ -92,7 +110,7 @@ func (oe *openshiftEngine) CreateOperatorGroup(ctx context.Context, data cli.Ope
 	return operatorGroup, nil
 }
 
-func (oe *openshiftEngine) DeleteOperatorGroup(ctx context.Context, name string, namespace string) error {
+func (oe *openshiftClient) DeleteOperatorGroup(ctx context.Context, name string, namespace string) error {
 	log.Debugf("Deleting OperatorGroup %s in namespace %s", name, namespace)
 	operatorGroup := operatorv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
@@ -110,7 +128,7 @@ func (oe *openshiftEngine) DeleteOperatorGroup(ctx context.Context, name string,
 	return nil
 }
 
-func (oe *openshiftEngine) GetOperatorGroup(ctx context.Context, name string, namespace string) (*operatorv1.OperatorGroup, error) {
+func (oe *openshiftClient) GetOperatorGroup(ctx context.Context, name string, namespace string) (*operatorv1.OperatorGroup, error) {
 	log.Debugf("fetching operatorgroup %s from namespace %s", name, namespace)
 	operatorGroup := operatorv1.OperatorGroup{}
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
@@ -124,7 +142,7 @@ func (oe *openshiftEngine) GetOperatorGroup(ctx context.Context, name string, na
 	return &operatorGroup, nil
 }
 
-func (oe openshiftEngine) CreateSecret(ctx context.Context, name string, content map[string]string, secretType corev1.SecretType, namespace string) (*corev1.Secret, error) {
+func (oe openshiftClient) CreateSecret(ctx context.Context, name string, content map[string]string, secretType corev1.SecretType, namespace string) (*corev1.Secret, error) {
 	secret := corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
@@ -147,7 +165,7 @@ func (oe openshiftEngine) CreateSecret(ctx context.Context, name string, content
 	return &secret, nil
 }
 
-func (oe openshiftEngine) DeleteSecret(ctx context.Context, name string, namespace string) error {
+func (oe openshiftClient) DeleteSecret(ctx context.Context, name string, namespace string) error {
 	secret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -158,7 +176,7 @@ func (oe openshiftEngine) DeleteSecret(ctx context.Context, name string, namespa
 	return oe.Client.Delete(ctx, &secret, &crclient.DeleteOptions{})
 }
 
-func (oe openshiftEngine) GetSecret(ctx context.Context, name string, namespace string) (*corev1.Secret, error) {
+func (oe openshiftClient) GetSecret(ctx context.Context, name string, namespace string) (*corev1.Secret, error) {
 	log.Debugf("fetching secrets %s from namespace %s", name, namespace)
 	secret := corev1.Secret{}
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
@@ -172,7 +190,7 @@ func (oe openshiftEngine) GetSecret(ctx context.Context, name string, namespace 
 	return &secret, nil
 }
 
-func (oe openshiftEngine) CreateCatalogSource(ctx context.Context, data cli.CatalogSourceData, namespace string) (*operatorv1alpha1.CatalogSource, error) {
+func (oe openshiftClient) CreateCatalogSource(ctx context.Context, data CatalogSourceData, namespace string) (*operatorv1alpha1.CatalogSource, error) {
 	log.Debugf("Creating CatalogSource %s in namespace %s", data.Name, namespace)
 	catalogSource := &operatorv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
@@ -195,7 +213,7 @@ func (oe openshiftEngine) CreateCatalogSource(ctx context.Context, data cli.Cata
 	return catalogSource, nil
 }
 
-func (oe *openshiftEngine) DeleteCatalogSource(ctx context.Context, name string, namespace string) error {
+func (oe *openshiftClient) DeleteCatalogSource(ctx context.Context, name string, namespace string) error {
 	log.Debugf("Deleting CatalogSource %s in namespace %s", name, namespace)
 	catalogSource := operatorv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
@@ -212,7 +230,7 @@ func (oe *openshiftEngine) DeleteCatalogSource(ctx context.Context, name string,
 	return nil
 }
 
-func (oe *openshiftEngine) GetCatalogSource(ctx context.Context, name string, namespace string) (*operatorv1alpha1.CatalogSource, error) {
+func (oe *openshiftClient) GetCatalogSource(ctx context.Context, name string, namespace string) (*operatorv1alpha1.CatalogSource, error) {
 	log.Debug("fetching catalogsource: " + name)
 	catalogSource := &operatorv1alpha1.CatalogSource{}
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
@@ -226,7 +244,7 @@ func (oe *openshiftEngine) GetCatalogSource(ctx context.Context, name string, na
 	return catalogSource, nil
 }
 
-func (oe openshiftEngine) CreateSubscription(ctx context.Context, data cli.SubscriptionData, namespace string) (*operatorv1alpha1.Subscription, error) {
+func (oe openshiftClient) CreateSubscription(ctx context.Context, data SubscriptionData, namespace string) (*operatorv1alpha1.Subscription, error) {
 	log.Debugf("Creating Subscription %s in namespace %s", data.Name, namespace)
 	subscription := &operatorv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
@@ -250,7 +268,7 @@ func (oe openshiftEngine) CreateSubscription(ctx context.Context, data cli.Subsc
 	return subscription, nil
 }
 
-func (oe *openshiftEngine) GetSubscription(ctx context.Context, name string, namespace string) (*operatorv1alpha1.Subscription, error) {
+func (oe *openshiftClient) GetSubscription(ctx context.Context, name string, namespace string) (*operatorv1alpha1.Subscription, error) {
 	log.Debugf("fetching subscription %s from namespace %s ", name, namespace)
 	subscription := &operatorv1alpha1.Subscription{}
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
@@ -264,7 +282,7 @@ func (oe *openshiftEngine) GetSubscription(ctx context.Context, name string, nam
 	return subscription, nil
 }
 
-func (oe openshiftEngine) DeleteSubscription(ctx context.Context, name string, namespace string) error {
+func (oe openshiftClient) DeleteSubscription(ctx context.Context, name string, namespace string) error {
 	log.Debugf("Deleting Subscription %s in namespace %s", name, namespace)
 
 	subscription := &operatorv1alpha1.Subscription{
@@ -282,7 +300,7 @@ func (oe openshiftEngine) DeleteSubscription(ctx context.Context, name string, n
 	return nil
 }
 
-func (oe *openshiftEngine) GetCSV(ctx context.Context, name string, namespace string) (*operatorv1alpha1.ClusterServiceVersion, error) {
+func (oe *openshiftClient) GetCSV(ctx context.Context, name string, namespace string) (*operatorv1alpha1.ClusterServiceVersion, error) {
 	log.Debugf("fetching csv %s from namespace %s", name, namespace)
 	csv := &operatorv1alpha1.ClusterServiceVersion{}
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
@@ -293,7 +311,7 @@ func (oe *openshiftEngine) GetCSV(ctx context.Context, name string, namespace st
 	return csv, err
 }
 
-func (oe *openshiftEngine) GetImages(ctx context.Context) (map[string]struct{}, error) {
+func (oe *openshiftClient) GetImages(ctx context.Context) (map[string]struct{}, error) {
 	var pods corev1.PodList
 	err := oe.Client.List(ctx, &pods, &crclient.ListOptions{})
 	if err != nil {
@@ -324,7 +342,7 @@ func (oe *openshiftEngine) GetImages(ctx context.Context) (map[string]struct{}, 
 	return imageList, nil
 }
 
-func (oe *openshiftEngine) CreateRoleBinding(ctx context.Context, data cli.RoleBindingData, namespace string) (*rbacv1.RoleBinding, error) {
+func (oe *openshiftClient) CreateRoleBinding(ctx context.Context, data RoleBindingData, namespace string) (*rbacv1.RoleBinding, error) {
 	log.Debugf("Creating RoleBinding %s in namespace %s", data.Name, namespace)
 	subjectsObj := make([]rbacv1.Subject, 0, len(data.Subjects))
 	for _, subject := range data.Subjects {
@@ -361,7 +379,7 @@ func (oe *openshiftEngine) CreateRoleBinding(ctx context.Context, data cli.RoleB
 	return &roleBindingObj, nil
 }
 
-func (oe *openshiftEngine) GetRoleBinding(ctx context.Context, name string, namespace string) (*rbacv1.RoleBinding, error) {
+func (oe *openshiftClient) GetRoleBinding(ctx context.Context, name string, namespace string) (*rbacv1.RoleBinding, error) {
 	log.Debugf("fetching RoleBinding %s from namespace %s: ", name, namespace)
 	roleBinding := rbacv1.RoleBinding{
 		TypeMeta: metav1.TypeMeta{
@@ -384,7 +402,7 @@ func (oe *openshiftEngine) GetRoleBinding(ctx context.Context, name string, name
 	return &roleBinding, nil
 }
 
-func (oe *openshiftEngine) DeleteRoleBinding(ctx context.Context, name string, namespace string) error {
+func (oe *openshiftClient) DeleteRoleBinding(ctx context.Context, name string, namespace string) error {
 	log.Debugf("Deleting RoleBinding %s in namespace %s", name, namespace)
 
 	roleBinding := rbacv1.RoleBinding{

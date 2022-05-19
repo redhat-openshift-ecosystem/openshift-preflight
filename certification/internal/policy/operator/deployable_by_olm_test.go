@@ -10,10 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
-	imagestreamv1 "github.com/openshift/api/image/v1"
-	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
-	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,6 +17,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/openshift"
 )
 
 var _ = Describe("DeployableByOLMCheck", func() {
@@ -107,10 +104,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		og.Status.LastUpdated = &now
 		deployableByOLMCheck = *NewDeployableByOlmCheck(&fakeEngine)
 		scheme := apiruntime.NewScheme()
-		Expect(operatorv1.AddToScheme(scheme)).To(Succeed())
-		Expect(operatorv1alpha1.AddToScheme(scheme)).To(Succeed())
-		Expect(imagestreamv1.AddToScheme(scheme)).To(Succeed())
-		Expect(rbacv1.AddToScheme(scheme)).To(Succeed())
+		Expect(openshift.AddSchemes(scheme)).To(Succeed())
 		client = fake.NewClientBuilder().
 			WithScheme(scheme).
 			WithObjects(&csv, &csvDefault, &csvMarketplace, &ns, &secret, &sub, &og).
