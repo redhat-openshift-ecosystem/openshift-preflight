@@ -20,8 +20,7 @@ func genericJSONFormatter(ctx context.Context, r runtime.Results) ([]byte, error
 
 	responseJSON, err := jsonMarshalIndent(response, "", "    ")
 	if err != nil {
-		e := fmt.Errorf("%w with formatter %s: %s",
-			ErrFormattingResults,
+		e := fmt.Errorf("error formatting results with formatter %s: %w",
 			"json",
 			err,
 		)
@@ -36,16 +35,15 @@ func genericJSONFormatter(ctx context.Context, r runtime.Results) ([]byte, error
 func genericXMLFormatter(ctx context.Context, r runtime.Results) ([]byte, error) {
 	response := getResponse(r)
 
-	responseJSON, err := xmlMarshalIndent(response, "", "    ")
+	responseXML, err := xmlMarshalIndent(response, "", "    ")
 	if err != nil {
-		e := fmt.Errorf("%w with formatter %s: %s",
-			ErrFormattingResults,
-			"json",
+		e := fmt.Errorf("error formatting results with formatter %s: %w",
+			"xml",
 			err,
 		)
 
 		return nil, e
 	}
 
-	return responseJSON, nil
+	return responseXML, nil
 }

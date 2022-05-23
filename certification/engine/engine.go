@@ -31,16 +31,14 @@ type CheckEngine interface {
 func NewForConfig(config runtime.Config) (CheckEngine, error) {
 	if len(config.EnabledChecks) == 0 {
 		// refuse to run if the user has not specified any checks
-		return nil, ErrNoChecksEnabled
+		return nil, fmt.Errorf("no checks have been enabled")
 	}
 
 	checks := make([]certification.Check, 0, len(config.EnabledChecks))
 	for _, checkString := range config.EnabledChecks {
 		check := queryChecks(checkString)
 		if check == nil {
-			err := fmt.Errorf("%w: %s",
-				ErrRequestedCheckNotFound,
-				checkString)
+			err := fmt.Errorf("requested check not found: %s", checkString)
 			return nil, err
 		}
 

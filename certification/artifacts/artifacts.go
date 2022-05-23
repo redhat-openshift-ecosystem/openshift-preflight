@@ -18,7 +18,7 @@ func WriteFile(filename, contents string) (string, error) {
 
 	err := os.WriteFile(fullFilePath, []byte(contents), 0o644)
 	if err != nil {
-		return fullFilePath, err
+		return fullFilePath, fmt.Errorf("could not write file to artifacts diretory: %v", err)
 	}
 	return fullFilePath, nil
 }
@@ -27,8 +27,7 @@ func createArtifactsDir(artifactsDir string) (string, error) {
 	if !strings.HasPrefix(artifactsDir, "/") {
 		currentDir, err := os.Getwd()
 		if err != nil {
-			log.Error(fmt.Errorf("unable to get current directory: %w", err))
-			return "", err
+			return "", fmt.Errorf("unable to get current directory: %w", err)
 		}
 
 		artifactsDir = filepath.Join(currentDir, artifactsDir)
@@ -36,8 +35,7 @@ func createArtifactsDir(artifactsDir string) (string, error) {
 
 	err := os.MkdirAll(artifactsDir, 0o777)
 	if err != nil {
-		log.Error(fmt.Errorf("unable to create artifactsDir: %w", err))
-		return "", err
+		return "", fmt.Errorf("unable to create artifactsDir: %w", err)
 	}
 	return artifactsDir, nil
 }
@@ -47,8 +45,9 @@ func Path() string {
 	artifactDir := viper.GetString("artifacts")
 	artifactDir, err := createArtifactsDir(artifactDir)
 	if err != nil {
-		log.Fatal(fmt.Errorf("could not retrieve artifact path: %w", err))
-		// Fatal does an os.Exit
+		// Fatal does an os.Exit. If we can't create the artifacts directory,
+		// we can't continue.
+		log.Fatal(fmt.Errorf("could not retrieve artifact path: %v", err))
 	}
 	return filepath.Join(artifactDir)
 }
