@@ -112,7 +112,7 @@ var _ = Describe("Pyxis Submit", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(certResults).ToNot(BeNil())
 				Expect(certResults.CertProject.Container.Registry).Should(Equal(defaultRegistryAlias))
-				Expect(certResults.CertImage).ToNot(BeNil())
+				Expect(certResults.CertImage.Repositories[0].Registry).Should(Equal(defaultRegistryAlias))
 				Expect(certResults.TestResults).ToNot(BeNil())
 			})
 		})
