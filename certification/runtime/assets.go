@@ -34,7 +34,7 @@ func imageList(ctx context.Context) []string {
 		base := strings.Split(image, ":")[0]
 		digest, err := crane.Digest(image, options...)
 		if err != nil {
-			log.Error(err)
+			log.Error(fmt.Errorf("could not retrieve image digest: %w", err))
 			// Skip this entry
 			continue
 		}
@@ -56,7 +56,7 @@ func Assets(ctx context.Context) AssetData {
 func ScorecardImage() string {
 	scorecardImage := viper.GetString("scorecard_image")
 	if scorecardImage != "" {
-		log.Infof("Using %s as the scorecard test image", scorecardImage)
+		log.Debugf("Using %s as the scorecard test image", scorecardImage)
 		return scorecardImage
 	}
 	return images["scorecard"]
