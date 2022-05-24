@@ -18,8 +18,6 @@ var checkCmd = &cobra.Command{
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
 	checkCmd.PersistentFlags().BoolP("list-checks", "l", false, "lists all the checks run for a given check")
 
 	checkCmd.PersistentFlags().StringP("docker-config", "d", "", "Path to docker config.json file. This value is optional for publicly accessible images.\n"+
