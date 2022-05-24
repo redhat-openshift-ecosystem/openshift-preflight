@@ -18,14 +18,15 @@ var checkCmd = &cobra.Command{
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
 	checkCmd.PersistentFlags().BoolP("list-checks", "l", false, "lists all the checks run for a given check")
 
 	checkCmd.PersistentFlags().StringP("docker-config", "d", "", "Path to docker config.json file. This value is optional for publicly accessible images.\n"+
 		"However, it is strongly encouraged for public Docker Hub images,\n"+
 		"due to the rate limit imposed for unauthenticated requests. (env: PFLT_DOCKERCONFIG)")
 	viper.BindPFlag("dockerConfig", checkCmd.PersistentFlags().Lookup("docker-config"))
+
+	checkCmd.PersistentFlags().String("artifacts", "", "Where check-specific artifacts will be written. (env: PFLT_ARTIFACTS)")
+	viper.BindPFlag("artifacts", checkCmd.PersistentFlags().Lookup("artifacts"))
 
 	rootCmd.AddCommand(checkCmd)
 }
