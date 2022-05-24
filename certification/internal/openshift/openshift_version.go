@@ -6,7 +6,6 @@ import (
 	"os"
 
 	configv1Client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,7 +14,7 @@ import (
 
 func GetOpenshiftClusterVersion() (runtime.OpenshiftClusterVersion, error) {
 	if _, ok := os.LookupEnv("KUBECONFIG"); !ok {
-		return runtime.UnknownOpenshiftClusterVersion(), errors.ErrNoKubeconfig
+		return runtime.UnknownOpenshiftClusterVersion(), fmt.Errorf("KUBECONFIG not specified")
 	}
 	kubeConfig, err := ctrl.GetConfig()
 	if err != nil {

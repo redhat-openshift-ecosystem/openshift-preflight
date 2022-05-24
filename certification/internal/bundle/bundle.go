@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
@@ -154,7 +153,7 @@ func ExtractAnnotationsBytes(ctx context.Context, annotationBytes []byte) (map[s
 	}
 
 	if len(annotationBytes) == 0 {
-		return nil, errors.ErrEmptyAnnotationFile
+		return nil, ErrEmptyAnnotationFile
 	}
 
 	var bundleMeta metadata
@@ -180,7 +179,7 @@ func GetCsvFilePathFromBundle(mountedDir string) (string, error) {
 	}
 	if len(matches) > 1 {
 		log.Error("found more than one clusterserviceversion file in the bundle image")
-		return "", errors.ErrTooManyCSVs
+		return "", ErrTooManyCSVs
 	}
 	log.Debugf("The path to csv file is %s", matches[0])
 	return matches[0], nil

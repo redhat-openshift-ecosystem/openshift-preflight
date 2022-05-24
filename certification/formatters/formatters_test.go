@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
@@ -41,7 +40,7 @@ var _ = Describe("Formatters", func() {
 	Describe("When creating a new generic formatter", func() {
 		Context("with improper arguments", func() {
 			expectedResult := []byte(fmt.Errorf("failed to create a new generic formatter: %w",
-				errors.ErrFormatterNameNotProvided).Error())
+				ErrFormatterNameNotProvided).Error())
 			var fn FormatterFunc = func(context.Context, runtime.Results) ([]byte, error) {
 				return expectedResult, nil
 			}

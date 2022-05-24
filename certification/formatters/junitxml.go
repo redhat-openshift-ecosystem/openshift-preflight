@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
@@ -97,7 +96,7 @@ func junitXMLFormatter(ctx context.Context, r runtime.Results) ([]byte, error) {
 	bytes, err := xml.MarshalIndent(suites, "", "\t")
 	if err != nil {
 		o := fmt.Errorf("%w with formatter %s: %s",
-			errors.ErrFormattingResults,
+			ErrFormattingResults,
 			"junitxml",
 			err,
 		)

@@ -14,7 +14,6 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
@@ -40,7 +39,7 @@ var checkContainerCmd = &cobra.Command{
 		}
 
 		if len(args) != 1 {
-			return fmt.Errorf("%w: A container image positional argument is required", errors.ErrInsufficientPosArguments)
+			return fmt.Errorf("%w: A container image positional argument is required", ErrInsufficientPosArguments)
 		}
 
 		if submit {
@@ -83,7 +82,7 @@ var checkContainerCmd = &cobra.Command{
 			pyxisClient := pyxis.NewPyxisClient(pyxisHost, apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
 			certProject, err := pyxisClient.GetProject(ctx)
 			if err != nil {
-				log.Error(fmt.Errorf("%w: %s", errors.ErrRetrievingProject, err))
+				log.Error(fmt.Errorf("%w: %s", ErrRetrievingProject, err))
 				return err
 			}
 			log.Debugf("Certification project name is: %s", certProject.Name)
@@ -153,7 +152,7 @@ var checkContainerCmd = &cobra.Command{
 
 			// you must provide a project ID in order to submit.
 			if projectId == "" {
-				return errors.ErrEmptyProjectID
+				return ErrEmptyProjectID
 			}
 
 			// establish a pyxis client.
@@ -163,7 +162,7 @@ var checkContainerCmd = &cobra.Command{
 			// get the project info from pyxis
 			certProject, err := pyxisClient.GetProject(ctx)
 			if err != nil {
-				log.Error(fmt.Errorf("%w: %s", errors.ErrRetrievingProject, err))
+				log.Error(fmt.Errorf("%w: %s", ErrRetrievingProject, err))
 				return err
 			}
 			log.Tracef("CertProject: %+v", certProject)
@@ -181,7 +180,7 @@ var checkContainerCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf(
 					"%w: could not build submission with required assets: %s",
-					errors.ErrSubmittingToPyxis,
+					ErrSubmittingToPyxis,
 					err,
 				)
 			}
@@ -236,14 +235,14 @@ var checkContainerCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf(
 					"%w: unable to finalize data that would be sent to pyxis %s",
-					errors.ErrSubmittingToPyxis,
+					ErrSubmittingToPyxis,
 					err,
 				)
 			}
 
 			certResults, err := pyxisClient.SubmitResults(ctx, input)
 			if err != nil {
-				return fmt.Errorf("%w: %s", errors.ErrSubmittingToPyxis, err)
+				return fmt.Errorf("%w: %s", ErrSubmittingToPyxis, err)
 			}
 
 			log.Info("Test results have been submitted to Red Hat.")

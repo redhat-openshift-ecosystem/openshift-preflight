@@ -2,13 +2,12 @@ package container
 
 import (
 	"context"
-	stdliberrors "errors"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -25,7 +24,7 @@ type HasLicenseCheck struct{}
 func (p *HasLicenseCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	licenseFileList, err := p.getDataToValidate(ctx, imgRef.ImageFSPath)
 	if err != nil {
-		if stdliberrors.Is(err, fs.ErrNotExist) || stdliberrors.Is(err, errors.ErrLicensesNotADir) {
+		if errors.Is(err, fs.ErrNotExist) || errors.Is(err, ErrLicensesNotADir) {
 			return false, nil
 		}
 		return false, err
@@ -42,7 +41,7 @@ func (p *HasLicenseCheck) getDataToValidate(ctx context.Context, mountedPath str
 	}
 	if !fileinfo.IsDir() {
 		log.Errorf("%s is not a directory", licensePath)
-		return nil, errors.ErrLicensesNotADir
+		return nil, ErrLicensesNotADir
 	}
 
 	files, err := os.ReadDir(fullPath)

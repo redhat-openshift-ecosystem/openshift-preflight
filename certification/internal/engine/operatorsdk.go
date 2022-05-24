@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	log "github.com/sirupsen/logrus"
@@ -77,18 +76,17 @@ func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecard
 			log.Error("operator-sdk scorecard failed to run properly.")
 			log.Error("stderr: ", stderr.String())
 
-			return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkScorecardFailed, err)
+			return nil, fmt.Errorf("failed to run operator-sdk scorecard: %w", err)
 		}
 	}
 
 	if err := o.writeScorecardFile(opts.ResultFile, stdout.String()); err != nil {
-		log.Error("unable to copy result to artifacts directory: ", err)
-		return nil, err
+		return nil, fmt.Errorf("unable to copy result to artifacts directory: %w", err)
 	}
 
 	var scorecardData cli.OperatorSdkScorecardReport
 	if err := json.Unmarshal(stdout.Bytes(), &scorecardData); err != nil {
-		return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkScorecardFailed, err)
+		return nil, fmt.Errorf("failed to run operator-sdk scorecard: %w", err)
 	}
 	scorecardData.Stdout = stdout.String()
 	scorecardData.Stderr = stderr.String()
@@ -137,14 +135,14 @@ func (o operatorSdkEngine) BundleValidate(image string, opts cli.OperatorSdkBund
 		if stderr.Len() != 0 && strings.Contains(stderr.String(), "FATA") {
 			log.Error("stdout: ", stdout.String())
 			log.Error("stderr: ", stderr.String())
-			return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkBundleValidateFailed, err)
+			return nil, fmt.Errorf("failed to run operator-sdk bundle validate: %w", err)
 		}
 	}
 
 	var bundleValidateData cli.OperatorSdkBundleValidateReport
 	if strings.Contains(opts.OutputFormat, "json") {
 		if err := json.Unmarshal(stdout.Bytes(), &bundleValidateData); err != nil {
-			return nil, fmt.Errorf("%w: %s", errors.ErrOperatorSdkBundleValidateFailed, err)
+			return nil, fmt.Errorf("failed to run operator-sdk bundle validate: %w", err)
 		}
 	} else {
 		if strings.Contains(stdout.String(), "ERRO") || strings.Contains(stdout.String(), "FATA") {

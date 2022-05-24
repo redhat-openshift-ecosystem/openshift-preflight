@@ -6,7 +6,6 @@ import (
 	"regexp"
 
 	"github.com/manifoldco/promptui"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -38,7 +37,7 @@ var supportCmd = &cobra.Command{
 
 		_, certProjectTypeValue, err := certProjectTypeLabel.Run()
 		if err != nil {
-			return errors.ErrSupportCmdPromptFailed
+			return ErrSupportCmdPromptFailed
 		}
 
 		log.Debugf("certification project type: %s", certProjectTypeValue)
@@ -50,22 +49,22 @@ var supportCmd = &cobra.Command{
 			// and is in the proper format
 			Validate: func(s string) error {
 				if s == "" {
-					return errors.ErrEmptyProjectID
+					return ErrEmptyProjectID
 				}
 
 				isLegacy, _ := regexp.MatchString(`^p.*`, s)
 				if isLegacy {
-					return errors.ErrRemovePFromProjectID
+					return ErrRemovePFromProjectID
 				}
 
 				isOSPID, _ := regexp.MatchString(`^ospid-.*`, s)
 				if isOSPID {
-					return errors.ErrRemoveOSPIDFromProjectID
+					return ErrRemoveOSPIDFromProjectID
 				}
 
 				isAlphaNumeric := regexp.MustCompile(`^[a-zA-Z0-9]*$`).MatchString(s)
 				if !isAlphaNumeric {
-					return errors.ErrRemoveSpecialCharFromProjectID
+					return ErrRemoveSpecialCharFromProjectID
 				}
 
 				return nil
@@ -74,7 +73,7 @@ var supportCmd = &cobra.Command{
 
 		certProjectIDValue, err := certProjectIDLabel.Run()
 		if err != nil {
-			return errors.ErrSupportCmdPromptFailed
+			return ErrSupportCmdPromptFailed
 		}
 
 		log.Debugf("certification project id: %s", certProjectIDValue)
@@ -95,12 +94,12 @@ var supportCmd = &cobra.Command{
 				Validate: func(s string) error {
 					_, err := url.ParseRequestURI(s)
 					if err != nil {
-						return errors.ErrPullRequestURL
+						return ErrPullRequestURL
 					}
 
 					url, err := url.Parse(s)
 					if err != nil || url.Scheme == "" || url.Host == "" || url.Path == "" {
-						return errors.ErrPullRequestURL
+						return ErrPullRequestURL
 					}
 
 					return nil
@@ -109,7 +108,7 @@ var supportCmd = &cobra.Command{
 
 			pullRequestURLValue, err := pullRequestURLLabel.Run()
 			if err != nil {
-				return errors.ErrSupportCmdPromptFailed
+				return ErrSupportCmdPromptFailed
 			}
 
 			log.Debugf("pull request url: %s", pullRequestURLValue)
