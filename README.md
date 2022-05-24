@@ -1,5 +1,8 @@
 # Preflight
 
+[![Build Status](https://github.com/redhat-openshift-ecosystem/openshift-preflight/actions/workflows/go.yml/badge.svg)](https://github.com/redhat-openshift-ecosystem/openshift-preflight/actions?workflow=go)
+[![Coverage Status](https://coveralls.io/repos/github/redhat-openshift-ecosystem/openshift-preflight/badge.svg?branch=main)](https://coveralls.io/github/redhat-openshift-ecosystem/openshift-preflight?branch=main)
+
 **Preflight** is a commandline interface for validating if
 [OpenShift](https://www.openshift.com/) operator bundles and containers meet minimum
 requirements for [Red Hat OpenShift
