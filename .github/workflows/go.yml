@@ -30,7 +30,16 @@ jobs:
       run: make fmt
 
     - name: Test
-      run: make test
+      run: make cover
+
+    - name: Convert coverage.out to coverage.lcov
+      uses: jandelgado/gcov2lcov-action@v1.0.9
+    
+    - name: Coveralls
+      uses: coverallsapp/github-action@v1.1.2
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: coverage.lcov
 
     - name: Build Multi-arch
       run: make build-multi-arch
