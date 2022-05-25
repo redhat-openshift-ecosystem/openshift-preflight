@@ -3,6 +3,7 @@ package rpm
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -11,7 +12,7 @@ import (
 
 // GetPackageList returns the list of packages in the rpm database from either
 // /var/lib/rpm/rpmdb.sqlite, or /var/lib/rpm/Packages if the former does not exist.
-// If neither exists, this returns an error.
+// If neither exists, this returns an error of type os.ErrNotExists
 func GetPackageList(ctx context.Context, basePath string) ([]*rpmdb.PackageInfo, error) {
 	rpmdirPath := filepath.Join(basePath, "var", "lib", "rpm")
 	rpmdbPath := filepath.Join(rpmdirPath, "rpmdb.sqlite")
@@ -28,11 +29,11 @@ func GetPackageList(ctx context.Context, basePath string) ([]*rpmdb.PackageInfo,
 
 	db, err := rpmdb.Open(rpmdbPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not open rpm db: %v", err)
 	}
 	pkgList, err := db.ListPackages()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not list packages: %v", err)
 	}
 
 	return pkgList, nil
