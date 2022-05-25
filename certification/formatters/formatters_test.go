@@ -39,8 +39,7 @@ var _ = Describe("Formatters", func() {
 
 	Describe("When creating a new generic formatter", func() {
 		Context("with improper arguments", func() {
-			expectedResult := []byte(fmt.Errorf("failed to create a new generic formatter: %w",
-				ErrFormatterNameNotProvided).Error())
+			expectedResult := []byte(fmt.Errorf("failed to create a new generic formatter: formatter name is required").Error())
 			var fn FormatterFunc = func(context.Context, runtime.Results) ([]byte, error) {
 				return expectedResult, nil
 			}

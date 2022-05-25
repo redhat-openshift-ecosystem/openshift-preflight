@@ -32,9 +32,8 @@ func NewForConfig(cfg runtime.Config) (ResponseFormatter, error) {
 	formatter, defined := availableFormatters[cfg.ResponseFormat]
 	if !defined {
 		return nil, fmt.Errorf(
-			"failed to create a new formatter from config \"%s\": %w",
+			"failed to create a new formatter from config: %s",
 			cfg.ResponseFormat,
-			ErrRequestedFormatterNotFound,
 		)
 	}
 
@@ -45,8 +44,7 @@ func NewForConfig(cfg runtime.Config) (ResponseFormatter, error) {
 func New(name, extension string, fn FormatterFunc) (ResponseFormatter, error) {
 	if len(name) == 0 {
 		return nil, fmt.Errorf(
-			"failed to create a new generic formatter: %w",
-			ErrFormatterNameNotProvided,
+			"failed to create a new generic formatter: formatter name is required",
 		)
 	}
 

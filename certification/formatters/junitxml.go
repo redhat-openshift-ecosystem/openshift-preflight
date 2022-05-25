@@ -95,8 +95,7 @@ func junitXMLFormatter(ctx context.Context, r runtime.Results) ([]byte, error) {
 
 	bytes, err := xml.MarshalIndent(suites, "", "\t")
 	if err != nil {
-		o := fmt.Errorf("%w with formatter %s: %s",
-			ErrFormattingResults,
+		o := fmt.Errorf("error formatting results with formatter %s: %v",
 			"junitxml",
 			err,
 		)
