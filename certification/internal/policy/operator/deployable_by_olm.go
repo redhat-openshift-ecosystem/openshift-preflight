@@ -3,6 +3,7 @@ package operator
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,7 +29,6 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/openshift"
 
 	log "github.com/sirupsen/logrus"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 )
 
 type operatorData struct {
@@ -237,11 +237,11 @@ func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef c
 }
 
 func (p *DeployableByOlmCheck) setUp(ctx context.Context, operatorData *operatorData) error {
-	if _, err := p.openshiftClient.CreateNamespace(ctx, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
+	if _, err := p.openshiftClient.CreateNamespace(ctx, operatorData.InstallNamespace); err != nil && !errors.Is(err, openshift.ErrAlreadyExists) {
 		return err
 	}
 
-	if _, err := p.openshiftClient.CreateNamespace(ctx, operatorData.TargetNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
+	if _, err := p.openshiftClient.CreateNamespace(ctx, operatorData.TargetNamespace); err != nil && !errors.Is(err, openshift.ErrAlreadyExists) {
 		return err
 	}
 
@@ -252,7 +252,7 @@ func (p *DeployableByOlmCheck) setUp(ctx context.Context, operatorData *operator
 			return err
 		}
 		data := map[string]string{".dockerconfigjson": string(content)}
-		if _, err := p.openshiftClient.CreateSecret(ctx, secretName, data, corev1.SecretTypeDockerConfigJson, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
+		if _, err := p.openshiftClient.CreateSecret(ctx, secretName, data, corev1.SecretTypeDockerConfigJson, operatorData.InstallNamespace); err != nil && !errors.Is(err, openshift.ErrAlreadyExists) {
 			return err
 		}
 	} else {
@@ -281,7 +281,7 @@ func (p *DeployableByOlmCheck) setUp(ctx context.Context, operatorData *operator
 		}
 	}
 
-	if _, err := p.openshiftClient.CreateCatalogSource(ctx, openshift.CatalogSourceData{Name: operatorData.App, Image: operatorData.CatalogImage, Secrets: []string{secretName}}, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
+	if _, err := p.openshiftClient.CreateCatalogSource(ctx, openshift.CatalogSourceData{Name: operatorData.App, Image: operatorData.CatalogImage, Secrets: []string{secretName}}, operatorData.InstallNamespace); err != nil && !errors.Is(err, openshift.ErrAlreadyExists) {
 		return err
 	}
 
@@ -289,7 +289,7 @@ func (p *DeployableByOlmCheck) setUp(ctx context.Context, operatorData *operator
 	if err != nil {
 		return err
 	}
-	if _, err := p.openshiftClient.CreateOperatorGroup(ctx, operatorGroupData, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
+	if _, err := p.openshiftClient.CreateOperatorGroup(ctx, operatorGroupData, operatorData.InstallNamespace); err != nil && !errors.Is(err, openshift.ErrAlreadyExists) {
 		return err
 	}
 
@@ -300,7 +300,7 @@ func (p *DeployableByOlmCheck) setUp(ctx context.Context, operatorData *operator
 		CatalogSourceNamespace: operatorData.InstallNamespace,
 		Package:                operatorData.PackageName,
 	}
-	if _, err := p.openshiftClient.CreateSubscription(ctx, subscriptionData, operatorData.InstallNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
+	if _, err := p.openshiftClient.CreateSubscription(ctx, subscriptionData, operatorData.InstallNamespace); err != nil && !errors.Is(err, openshift.ErrAlreadyExists) {
 		return err
 	}
 	return nil
@@ -341,7 +341,7 @@ func (p *DeployableByOlmCheck) grantRegistryPermissionToServiceAccount(ctx conte
 			Role:      role,
 			Namespace: serviceAccountNamespace,
 		}
-		if _, err := p.openshiftClient.CreateRoleBinding(ctx, roleBindingData, indexImageNamespace); err != nil && !k8serr.IsAlreadyExists(err) {
+		if _, err := p.openshiftClient.CreateRoleBinding(ctx, roleBindingData, indexImageNamespace); err != nil && !errors.Is(err, openshift.ErrAlreadyExists) {
 			return err
 		}
 	}
@@ -385,7 +385,7 @@ func watch(ctx context.Context, client openshift.Client, wg *sync.WaitGroup, nam
 
 func csvStatusSucceeded(ctx context.Context, client openshift.Client, name, namespace string) (string, bool, error) {
 	csv, err := client.GetCSV(ctx, name, namespace)
-	if err != nil && !k8serr.IsNotFound(err) {
+	if err != nil && !errors.Is(err, openshift.ErrNotFound) {
 		// This is not a normal error. Get out of town
 		log.Errorf("failed to fetch the csv %s from namespace %s: %s", name, namespace, err)
 		return "", false, err
@@ -434,7 +434,7 @@ func (p *DeployableByOlmCheck) isCSVReady(ctx context.Context, operatorData oper
 
 func subscriptionCsvIsInstalled(ctx context.Context, client openshift.Client, name, namespace string) (string, bool, error) {
 	sub, err := client.GetSubscription(ctx, name, namespace)
-	if err != nil && !k8serr.IsNotFound(err) {
+	if err != nil && !errors.Is(err, openshift.ErrNotFound) {
 		log.Errorf("failed to fetch the subscription %s from namespace %s: %s", name, namespace, err)
 		return "", false, err
 	}

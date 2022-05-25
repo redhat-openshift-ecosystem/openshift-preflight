@@ -18,18 +18,15 @@ func GetOpenshiftClusterVersion() (runtime.OpenshiftClusterVersion, error) {
 	}
 	kubeConfig, err := ctrl.GetConfig()
 	if err != nil {
-		log.Error("unable to load the config, check if KUBECONFIG is set correctly: ", err)
-		return runtime.UnknownOpenshiftClusterVersion(), err
+		return runtime.UnknownOpenshiftClusterVersion(), fmt.Errorf("unable to load the config, check if KUBECONFIG is set correctly: %v", err)
 	}
 	configV1Client, err := configv1Client.NewForConfig(kubeConfig)
 	if err != nil {
-		log.Error("unable to create a client with the provided kubeconfig: ", err)
-		return runtime.UnknownOpenshiftClusterVersion(), err
+		return runtime.UnknownOpenshiftClusterVersion(), fmt.Errorf("unable to create a client with the provided kubeconfig: %v", err)
 	}
 	openshiftApiServer, err := configV1Client.ClusterOperators().Get(context.Background(), "openshift-apiserver", metav1.GetOptions{})
 	if err != nil {
-		log.Error("unable to get openshift-apiserver cluster operator: ", err)
-		return runtime.UnknownOpenshiftClusterVersion(), err
+		return runtime.UnknownOpenshiftClusterVersion(), fmt.Errorf("unable to get openshift-apiserver cluster operator: %v", err)
 	}
 
 	log.Debug(fmt.Sprintf("fetching operator version and openshift-apiserver version %s from %s", openshiftApiServer.Status.Versions, kubeConfig.Host))
