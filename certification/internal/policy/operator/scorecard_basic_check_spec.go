@@ -2,6 +2,7 @@ package operator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
@@ -26,13 +27,13 @@ func NewScorecardBasicSpecCheck(operatorSdkEngine *cli.OperatorSdkEngine) *Score
 }
 
 func (p *ScorecardBasicSpecCheck) Validate(ctx context.Context, bundleRef certification.ImageReference) (bool, error) {
-	log.Debug("Running operator-sdk scorecard check for ", bundleRef.ImageURI)
+	log.Trace("Running operator-sdk scorecard check for ", bundleRef.ImageURI)
 	selector := []string{"test=basic-check-spec-test"}
-	log.Debugf("--selector=%s", selector)
+	log.Tracef("--selector=%s", selector)
 	scorecardReport, err := p.getDataToValidate(ctx, bundleRef.ImageFSPath, selector, scorecardBasicCheckResult)
 	if err != nil {
 		p.fatalError = true
-		return false, err
+		return false, fmt.Errorf("%v", err)
 	}
 
 	return p.validate(ctx, scorecardReport.Items)

@@ -2,6 +2,7 @@ package operator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
@@ -26,8 +27,7 @@ const ocpVerV1beta1Unsupported = "4.9"
 func (p ValidateOperatorBundleCheck) Validate(ctx context.Context, bundleRef certification.ImageReference) (bool, error) {
 	report, err := p.getDataToValidate(ctx, bundleRef.ImageFSPath)
 	if err != nil {
-		log.Error("Error while executing operator-sdk bundle validate: ", err)
-		return false, err
+		return false, fmt.Errorf("error while executing operator-sdk bundle validate: %v", err)
 	}
 
 	return p.validate(ctx, report)

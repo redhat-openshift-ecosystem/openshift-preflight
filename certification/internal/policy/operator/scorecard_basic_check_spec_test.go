@@ -88,7 +88,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 			})
 			It("Should not pass Validate", func() {
 				ok, err := scorecardBasicCheck.Validate(context.TODO(), certification.ImageReference{ImageURI: "dummy/image"})
-				Expect(err).ToNot(HaveOccurred())
+				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
 		})
