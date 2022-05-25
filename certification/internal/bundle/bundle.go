@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -34,13 +35,11 @@ func Validate(ctx context.Context, engine cli.OperatorSdkEngine, imagePath strin
 	annotationsFileName := filepath.Join(imagePath, "metadata", "annotations.yaml")
 	annotationsFile, err := os.Open(annotationsFileName)
 	if err != nil {
-		log.Error(fmt.Errorf("%w: could not open annotations.yaml", err))
-		return nil, err
+		return nil, fmt.Errorf("could not open annotations.yaml: %v", err)
 	}
 	annotations, err := GetAnnotations(ctx, annotationsFile)
 	if err != nil {
-		log.Error("unable to get annotations.yaml from the bundle")
-		return nil, err
+		return nil, fmt.Errorf("unable to get annotations.yaml from the bundle: %v", err)
 	}
 
 	if versions, ok := annotations[versionsKey]; ok {
@@ -132,14 +131,12 @@ func cleanStringToGetTheVersionToParse(value string) string {
 func GetAnnotations(ctx context.Context, r io.Reader) (map[string]string, error) {
 	fileContents, err := io.ReadAll(r)
 	if err != nil {
-		log.Error("fail to read metadata/annotation.yaml file in bundle")
-		return nil, err
+		return nil, fmt.Errorf("fail to read metadata/annotation.yaml file in bundle: %v", err)
 	}
 
 	annotations, err := ExtractAnnotationsBytes(ctx, fileContents)
 	if err != nil {
-		log.Error("metadata/annotations.yaml found but is malformed")
-		return nil, err
+		return nil, fmt.Errorf("metadata/annotations.yaml found but is malformed: %v", err)
 	}
 
 	return annotations, nil
@@ -153,13 +150,12 @@ func ExtractAnnotationsBytes(ctx context.Context, annotationBytes []byte) (map[s
 	}
 
 	if len(annotationBytes) == 0 {
-		return nil, ErrEmptyAnnotationFile
+		return nil, errors.New("the annotations file was empty")
 	}
 
 	var bundleMeta metadata
 	if err := yaml.Unmarshal(annotationBytes, &bundleMeta); err != nil {
-		log.Error("metadata/annotations.yaml found but is malformed")
-		return nil, err
+		return nil, fmt.Errorf("metadata/annotations.yaml found but is malformed: %v", err)
 	}
 
 	return bundleMeta.Annotations, nil
@@ -170,16 +166,13 @@ func GetCsvFilePathFromBundle(mountedDir string) (string, error) {
 	log.Debug("mounted directory is ", mountedDir)
 	matches, err := filepath.Glob(filepath.Join(mountedDir, "manifests", "*.clusterserviceversion.yaml"))
 	if err != nil {
-		log.Error(fmt.Errorf("%w: glob pattern is malformed", err))
-		return "", err
+		return "", fmt.Errorf("glob pattern is malformed: %v", err)
 	}
 	if len(matches) == 0 {
-		log.Error("unable to find clusterserviceversion file in the bundle image")
-		return "", os.ErrNotExist
+		return "", fmt.Errorf("unable to find clusterserviceversion file in the bundle image: %v", os.ErrNotExist)
 	}
 	if len(matches) > 1 {
-		log.Error("found more than one clusterserviceversion file in the bundle image")
-		return "", ErrTooManyCSVs
+		return "", fmt.Errorf("more than one CSV file detected in bundle")
 	}
 	log.Debugf("The path to csv file is %s", matches[0])
 	return matches[0], nil
@@ -189,13 +182,11 @@ func GetSupportedInstallModes(ctx context.Context, csvReader io.Reader) (map[str
 	var csv ClusterServiceVersion
 	bts, err := io.ReadAll(csvReader)
 	if err != nil {
-		log.Error(fmt.Errorf("%w: could not get CSV from reader", err))
-		return nil, err
+		return nil, fmt.Errorf("could not get CSV from reader: %v", err)
 	}
 	err = yaml.Unmarshal(bts, &csv)
 	if err != nil {
-		log.Error(fmt.Errorf("%w: malformed CSV detected", err))
-		return nil, err
+		return nil, fmt.Errorf("malformed CSV detected: %v", err)
 	}
 
 	var installedModes map[string]bool = make(map[string]bool, len(csv.Spec.InstallModes))
