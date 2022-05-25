@@ -17,6 +17,7 @@ type scorecardCheck struct {
 
 func (p *scorecardCheck) validate(ctx context.Context, items []cli.OperatorSdkScorecardItem) (bool, error) {
 	foundTestFailed := false
+	var err error
 
 	if len(items) == 0 {
 		log.Warn("Did not receive any test result information from scorecard output")
@@ -24,12 +25,12 @@ func (p *scorecardCheck) validate(ctx context.Context, items []cli.OperatorSdkSc
 	for _, item := range items {
 		for _, result := range item.Status.Results {
 			if strings.Contains(result.State, "fail") {
-				log.Error(result.Log)
+				err = fmt.Errorf("result log: %s", result.Log)
 				foundTestFailed = true
 			}
 		}
 	}
-	return !foundTestFailed, nil
+	return !foundTestFailed, err
 }
 
 func (p *scorecardCheck) getDataToValidate(ctx context.Context, bundleImage string, selector []string, resultFile string) (*cli.OperatorSdkScorecardReport, error) {
@@ -48,5 +49,9 @@ func (p *scorecardCheck) getDataToValidate(ctx context.Context, bundleImage stri
 		Verbose:        true,
 		WaitTime:       fmt.Sprintf("%ss", waitTime),
 	}
-	return p.OperatorSdkEngine.Scorecard(bundleImage, opts)
+	result, err := p.OperatorSdkEngine.Scorecard(bundleImage, opts)
+	if err != nil {
+		return result, fmt.Errorf("%v", err)
+	}
+	return result, nil
 }
