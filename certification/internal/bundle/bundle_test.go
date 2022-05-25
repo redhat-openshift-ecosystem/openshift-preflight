@@ -139,7 +139,6 @@ var _ = Describe("BundleValidateCheck", func() {
 				It("should return an error", func() {
 					filename, err := GetCsvFilePathFromBundle("[]")
 					Expect(err).To(HaveOccurred())
-					Expect(err).To(Equal(filepath.ErrBadPattern))
 					Expect(filename).To(Equal(""))
 				})
 			})
