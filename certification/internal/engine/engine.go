@@ -65,31 +65,31 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	log.Debug("pulling image from target registry")
 	img, err := crane.Pull(c.Image, options...)
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrGetRemoteContainerFailed, err)
+		return fmt.Errorf("failed to pull remote container: %v", err)
 	}
 
 	// create tmpdir to receive extracted fs
 	tmpdir, err := os.MkdirTemp(os.TempDir(), "preflight-*")
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrCreateTempDir, err)
+		return fmt.Errorf("failed to create temporary directory: %v", err)
 	}
 	log.Debug("temporary directory is ", tmpdir)
 	defer func() {
 		if err := os.RemoveAll(tmpdir); err != nil {
-			log.Error("unable to clean up tmpdir", tmpdir, err)
+			log.Errorf("unable to clean up tmpdir %s: %v", tmpdir, err)
 		}
 	}()
 
 	imageTarPath := path.Join(tmpdir, "cache")
 	if err := os.Mkdir(imageTarPath, 0o755); err != nil {
-		return fmt.Errorf("%w: %s: %s", ErrCreateTempDir, imageTarPath, err)
+		return fmt.Errorf("failed to create cache directory: %s: %v", imageTarPath, err)
 	}
 
 	img = cache.Image(img, cache.NewFilesystemCache(imageTarPath))
 
 	containerFSPath := path.Join(tmpdir, "fs")
 	if err := os.Mkdir(containerFSPath, 0o755); err != nil {
-		return fmt.Errorf("%w: %s: %s", ErrCreateTempDir, containerFSPath, err)
+		return fmt.Errorf("failed to create container expansion directory: %s: %v", containerFSPath, err)
 	}
 
 	// export/flatten, and extract
@@ -113,13 +113,13 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 
 	log.Debug("extracting container filesystem to ", containerFSPath)
 	if err := untar(containerFSPath, r); err != nil {
-		return fmt.Errorf("%w: %s", ErrExtractingTarball, err)
+		return fmt.Errorf("failed to extract tarball: %v", err)
 	}
 	wg.Wait()
 
 	reference, err := name.ParseReference(c.Image)
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrInvalidImageUri, err)
+		return fmt.Errorf("image uri could not be parsed: %v", err)
 	}
 
 	// store the image internals in the engine image reference to pass to validations.
@@ -133,12 +133,12 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	}
 
 	if err := writeCertImage(ctx, c.imageRef); err != nil {
-		return err
+		return fmt.Errorf("could not write cert image: %v", err)
 	}
 
 	if !c.IsScratch {
 		if err := writeRPMManifest(ctx, containerFSPath); err != nil {
-			return err
+			return fmt.Errorf("could not write rpm manifest: %v", err)
 		}
 	}
 
@@ -146,7 +146,7 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 		// Record test cluster version
 		c.results.TestedOn, err = openshift.GetOpenshiftClusterVersion()
 		if err != nil {
-			log.Error("Unable to determine test cluster version: ", err)
+			log.Errorf("could not determine test cluster version: %v", err)
 		}
 	} else {
 		log.Debug("Container checks do not require a cluster. skipping cluster version check.")
@@ -191,7 +191,7 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	if c.IsBundle {
 		md5sum, err := generateBundleHash(c.imageRef.ImageFSPath)
 		if err != nil {
-			log.Debugf("could not generate bundle hash")
+			log.Errorf("could not generate bundle hash: %v", err)
 		}
 		c.results.CertificationHash = md5sum
 	}
@@ -207,8 +207,7 @@ func generateBundleHash(bundlePath string) (string, error) {
 
 	fs.WalkDir(fileSystem, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			log.Errorf("could not read bundle directory: %s", path)
-			return err
+			return fmt.Errorf("could not read bundle directory: %s: %w", path, err)
 		}
 		if d.Name() == "Dockerfile" {
 			return nil
@@ -218,8 +217,7 @@ func generateBundleHash(bundlePath string) (string, error) {
 		}
 		filebytes, err := fs.ReadFile(fileSystem, path)
 		if err != nil {
-			log.Errorf("could not read file: %s", path)
-			return err
+			return fmt.Errorf("could not read file: %s: %w", path, err)
 		}
 		md5sum := fmt.Sprintf("%x", md5.Sum(filebytes))
 		files[md5sum] = fmt.Sprintf("./%s", path)
@@ -238,7 +236,7 @@ func generateBundleHash(bundlePath string) (string, error) {
 
 	_, err := artifacts.WriteFile("hashes.txt", hashBuffer.String())
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("could not write hash file to artifacts dir: %w", err)
 	}
 
 	sum := fmt.Sprintf("%x", md5.Sum(hashBuffer.Bytes()))
@@ -326,27 +324,27 @@ func untar(dst string, r io.Reader) error {
 func writeCertImage(ctx context.Context, imageRef certification.ImageReference) error {
 	config, err := imageRef.ImageInfo.ConfigFile()
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrImageInspectFailed, err)
+		return fmt.Errorf("failed to get image config file: %w", err)
 	}
 
 	manifest, err := imageRef.ImageInfo.Manifest()
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrImageInspectFailed, err)
+		return fmt.Errorf("failed to get image manifest: %w", err)
 	}
 
 	digest, err := imageRef.ImageInfo.Digest()
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrImageInspectFailed, err)
+		return fmt.Errorf("failed to get image digest: %w", err)
 	}
 
 	rawConfig, err := imageRef.ImageInfo.RawConfigFile()
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrImageInspectFailed, err)
+		return fmt.Errorf("failed to image raw config file: %w", err)
 	}
 
 	size, err := imageRef.ImageInfo.Size()
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrImageInspectFailed, err)
+		return fmt.Errorf("failed to get image size: %w", err)
 	}
 
 	labels := convertLabels(config.Config.Labels)
@@ -354,16 +352,16 @@ func writeCertImage(ctx context.Context, imageRef certification.ImageReference) 
 	for _, diffid := range config.RootFS.DiffIDs {
 		layer, err := imageRef.ImageInfo.LayerByDiffID(diffid)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not get layer by diff id: %w", err)
 		}
 
 		uncompressed, err := layer.Uncompressed()
 		if err != nil {
-			return err
+			return fmt.Errorf("could not get uncompressed layer: %w", err)
 		}
 		written, err := io.Copy(io.Discard, uncompressed)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not copy from layer: %w", err)
 		}
 
 		pyxisLayer := pyxis.Layer{
@@ -378,10 +376,7 @@ func writeCertImage(ctx context.Context, imageRef certification.ImageReference) 
 		manifestLayers = append(manifestLayers, layer.Digest.String())
 	}
 
-	sumLayersSizeBytes, err := sumLayerSizeBytes(layerSizes)
-	if err != nil {
-		return fmt.Errorf("%w: %s", ErrImageInspectFailed, err)
-	}
+	sumLayersSizeBytes := sumLayerSizeBytes(layerSizes)
 
 	addedDate := time.Now().UTC().Format(time.RFC3339)
 
@@ -427,12 +422,12 @@ func writeCertImage(ctx context.Context, imageRef certification.ImageReference) 
 	// calling MarshalIndent so the json file written to disk is human-readable when opened
 	certImageJson, err := json.MarshalIndent(certImage, "", "    ")
 	if err != nil {
-		return err
+		return fmt.Errorf("could not marshal cert image: %w", err)
 	}
 
 	fileName, err := artifacts.WriteFile(certification.DefaultCertImageFilename, string(certImageJson))
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrSaveFileFailed, err)
+		return fmt.Errorf("failed to save file to artifacts directory: %w", err)
 	}
 
 	log.Tracef("image config written to disk: %s", fileName)
@@ -448,7 +443,7 @@ func getBgName(srcrpm string) string {
 func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 	pkgList, err := rpm.GetPackageList(ctx, containerFSPath)
 	if err != nil {
-		log.Error(fmt.Errorf("%w: continuing without it", ErrRPMPackageList))
+		log.Errorf("could not get rpm list, continuing without it: %v", err)
 	}
 
 	// covert rpm struct to pxyis struct
@@ -497,12 +492,12 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 	// calling MarshalIndent so the json file written to disk is human-readable when opened
 	rpmManifestJson, err := json.MarshalIndent(rpmManifest, "", "    ")
 	if err != nil {
-		return err
+		return fmt.Errorf("could not marshal rpm manifest: %w", err)
 	}
 
 	fileName, err := artifacts.WriteFile(certification.DefaultRPMManifestFilename, string(rpmManifestJson))
 	if err != nil {
-		return fmt.Errorf("%w: %s", ErrSaveFileFailed, err)
+		return fmt.Errorf("failed to save file to artifacts directory: %w", err)
 	}
 
 	log.Tracef("rpm manifest written to disk: %s", fileName)
@@ -510,13 +505,13 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 	return nil
 }
 
-func sumLayerSizeBytes(layers []pyxis.Layer) (int64, error) {
+func sumLayerSizeBytes(layers []pyxis.Layer) int64 {
 	var sum int64
 	for _, layer := range layers {
 		sum += layer.Size
 	}
 
-	return sum, nil
+	return sum
 }
 
 func convertLabels(imageLabels map[string]string) []pyxis.Label {

@@ -48,8 +48,7 @@ func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecard
 	configFile, err := createScorecardConfigFile()
 	defer os.Remove(configFile)
 	if err != nil {
-		log.Error("could not create scorecard config file", err)
-		return nil, err
+		return nil, fmt.Errorf("could not create scorecard config file: %v", err)
 	}
 	cmdArgs = append(cmdArgs, "--config", configFile)
 	if opts.Verbose {
@@ -73,20 +72,20 @@ func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecard
 		// We also conclude/assume that "FATA" being in stderr would indicate an error in the
 		// check execution itself.
 		if stderr.Len() != 0 && strings.Contains(strings.ToUpper(stderr.String()), "FATA") {
-			log.Error("operator-sdk scorecard failed to run properly.")
-			log.Error("stderr: ", stderr.String())
+			log.Debug("operator-sdk scorecard failed to run properly.")
+			log.Debugf("stderr: %s", stderr.String())
 
-			return nil, fmt.Errorf("failed to run operator-sdk scorecard: %w", err)
+			return nil, fmt.Errorf("failed to run operator-sdk scorecard: %v", err)
 		}
 	}
 
 	if err := o.writeScorecardFile(opts.ResultFile, stdout.String()); err != nil {
-		return nil, fmt.Errorf("unable to copy result to artifacts directory: %w", err)
+		return nil, fmt.Errorf("unable to copy result to artifacts directory: %v", err)
 	}
 
 	var scorecardData cli.OperatorSdkScorecardReport
 	if err := json.Unmarshal(stdout.Bytes(), &scorecardData); err != nil {
-		return nil, fmt.Errorf("failed to run operator-sdk scorecard: %w", err)
+		return nil, fmt.Errorf("failed to run operator-sdk scorecard: %v", err)
 	}
 	scorecardData.Stdout = stdout.String()
 	scorecardData.Stderr = stderr.String()
@@ -133,16 +132,16 @@ func (o operatorSdkEngine) BundleValidate(image string, opts cli.OperatorSdkBund
 		// We also conclude/assume that "FATA" being in stderr would indicate an error in the
 		// check execution itself.
 		if stderr.Len() != 0 && strings.Contains(stderr.String(), "FATA") {
-			log.Error("stdout: ", stdout.String())
-			log.Error("stderr: ", stderr.String())
-			return nil, fmt.Errorf("failed to run operator-sdk bundle validate: %w", err)
+			log.Debugf("stdout: %s", stdout.String())
+			log.Debugf("stderr: %s", stderr.String())
+			return nil, fmt.Errorf("failed to run operator-sdk bundle validate: %v", err)
 		}
 	}
 
 	var bundleValidateData cli.OperatorSdkBundleValidateReport
 	if strings.Contains(opts.OutputFormat, "json") {
 		if err := json.Unmarshal(stdout.Bytes(), &bundleValidateData); err != nil {
-			return nil, fmt.Errorf("failed to run operator-sdk bundle validate: %w", err)
+			return nil, fmt.Errorf("failed to run operator-sdk bundle validate: %v", err)
 		}
 	} else {
 		if strings.Contains(stdout.String(), "ERRO") || strings.Contains(stdout.String(), "FATA") {
@@ -186,8 +185,7 @@ stages:
 
 	tempConfigFile, err := os.CreateTemp("", "scorecard-test-config-*.yaml")
 	if err != nil {
-		log.Error("could not create temp config file", err)
-		return "", err
+		return "", fmt.Errorf("could not create temp config file: %w", err)
 	}
 	_, err = tempConfigFile.WriteString(configTemplate)
 	return tempConfigFile.Name(), err
