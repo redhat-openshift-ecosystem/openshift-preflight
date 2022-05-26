@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 	"net/http/httptest"
 	"net/url"
 	"os"
@@ -22,7 +24,8 @@ var _ = Describe("Execute Checks tests", func() {
 	var engine CraneEngine
 	BeforeEach(func() {
 		// Set up a fake registry.
-		s := httptest.NewServer(registry.New())
+		registryLogger := log.New(io.Discard, "", log.Ldate)
+		s := httptest.NewServer(registry.New(registry.Logger(registryLogger)))
 		DeferCleanup(func() {
 			s.Close()
 		})
