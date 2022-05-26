@@ -3,6 +3,8 @@ package container
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
 	"net/http/httptest"
 	"net/url"
 
@@ -20,7 +22,8 @@ var _ = Describe("UniqueTag", func() {
 
 	BeforeEach(func() {
 		// Set up a fake registry.
-		s := httptest.NewServer(registry.New())
+		registryLogger := log.New(io.Discard, "", log.Ldate)
+		s := httptest.NewServer(registry.New(registry.Logger(registryLogger)))
 		DeferCleanup(func() {
 			s.Close()
 		})
