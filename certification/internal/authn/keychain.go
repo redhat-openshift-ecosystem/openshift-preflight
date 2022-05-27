@@ -9,36 +9,60 @@ import (
 	craneauthn "github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
-type preflightKeychain struct{}
+type preflightKeychain struct {
+	dockercfg string
+}
 
-var PreflightKeychain craneauthn.Keychain = &preflightKeychain{}
+type PreflightKeychainOption func(*preflightKeychain)
+
+// WithDockerConfig configures the PreflightKeychain with the specified
+// docker config at path dockercfg. To unset any existing dockercfg, pass
+// this option with an empty string value.
+func WithDockerConfig(dockercfg string) PreflightKeychainOption {
+	return func(pk *preflightKeychain) {
+		pk.dockercfg = dockercfg
+	}
+}
+
+var keychain = preflightKeychain{}
+
+// PreflightKeychain will return the preflight keychain as a craneauthn.Keychain.
+// This operates as a singleton. If provided an option, that option overwrites
+// the single instance of PreflightKeychain. If provided no option, the keychain
+// is returned as already configured.
+func PreflightKeychain(opts ...PreflightKeychainOption) craneauthn.Keychain {
+	for _, opt := range opts {
+		opt(&keychain)
+	}
+
+	return &keychain
+}
 
 // Resolve returns an Authenticator with credentials, or Anonymous if no suitable credentials
 // are found for the target. This implements the Keychain interface from go-containerregistry,
 // and will be passed to crane,.
 //
-// If the viper config is empty, assume Anonymous.
+// If the dockerConfig value is empty, assume Anonymous.
 // If the file cannot be found or read, that constitues an error.
 // Can return os.IsNotExist.
 func (k *preflightKeychain) Resolve(target craneauthn.Resource) (craneauthn.Authenticator, error) {
 	log.Trace("entering preflight keychain Resolve")
 
-	configFile := viper.GetString("dockerConfig")
-	if configFile == "" {
+	if k.dockercfg == "" {
 		// No file specified. No auth expected
 		return craneauthn.Anonymous, nil
 	}
 
-	r, err := os.Open(configFile)
+	r, err := os.Open(k.dockercfg)
 	if os.IsNotExist(err) {
-		return nil, fmt.Errorf("could not find authfile: %s: %w", configFile, err)
+		return nil, fmt.Errorf("could not find authfile: %s: %w", k.dockercfg, err)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("could not open authfile: %s: %v", configFile, err)
+		return nil, fmt.Errorf("could not open authfile: %s: %v", k.dockercfg, err)
 	}
+
 	defer r.Close()
 	cf, err := config.LoadFromReader(r)
 	if err != nil {

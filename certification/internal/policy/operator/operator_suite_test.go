@@ -11,7 +11,6 @@ import (
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,9 +23,6 @@ func TestOperator(t *testing.T) {
 func init() {
 	log.SetFormatter(&log.TextFormatter{})
 	log.SetLevel(log.TraceLevel)
-
-	viper.SetEnvPrefix("pflt")
-	viper.AutomaticEnv()
 }
 
 type FakeOperatorSdkEngine struct {

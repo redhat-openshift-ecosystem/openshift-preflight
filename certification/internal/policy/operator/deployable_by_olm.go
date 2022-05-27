@@ -13,10 +13,8 @@ import (
 
 	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -44,6 +42,13 @@ type operatorData struct {
 }
 
 type DeployableByOlmCheck struct {
+	// dockerConfig is optional. If empty, we will not use one.
+	dockerConfig string
+	// indexImage is the catalog containing the operator bundle.
+	indexImage string
+	// channel is optional. If empty, we will introspect.
+	channel string
+
 	OperatorSdkEngine cli.OperatorSdkEngine
 	openshiftClient   openshift.Client
 	client            crclient.Client
@@ -82,9 +87,21 @@ func (p *DeployableByOlmCheck) initOpenShifeEngine() error {
 	return nil
 }
 
-func NewDeployableByOlmCheck(operatorSdkEngine *cli.OperatorSdkEngine) *DeployableByOlmCheck {
+// NewDeployableByOlmCheck will return a check that validates if an operator
+// is deployable by OLM. An empty dockerConfig value implies that the images
+// in scope are public. An empty channel value implies that the check should
+// introspect the channel from the bundle. indexImage is required.
+func NewDeployableByOlmCheck(
+	operatorSdkEngine *cli.OperatorSdkEngine,
+	indexImage,
+	dockerConfig,
+	channel string,
+) *DeployableByOlmCheck {
 	return &DeployableByOlmCheck{
 		OperatorSdkEngine: *operatorSdkEngine,
+		dockerConfig:      dockerConfig,
+		indexImage:        indexImage,
+		channel:           channel,
 	}
 }
 
@@ -185,15 +202,18 @@ func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef c
 		return nil, fmt.Errorf("unable to get annotations.yaml from the bundle: %w", err)
 	}
 
-	catalogImage := viper.GetString(indexImageKey)
+	catalogImage := p.indexImage
 
+	// introspect the channel from the bundle.
 	channel, err := annotation(annotations, channelKeyInBundle)
 	if err != nil {
 		return nil, fmt.Errorf("unable to extract channel name from the bundle: %w", err)
 	}
 
-	if len(viper.GetString(channelKey)) != 0 {
-		channel = viper.GetString(channelKey)
+	// The user provided a channel configuration so we will
+	// use that instead of the introspected value.
+	if len(p.channel) != 0 {
+		channel = p.channel
 	}
 
 	packageName, err := annotation(annotations, packageKey)
@@ -236,8 +256,9 @@ func (p *DeployableByOlmCheck) setUp(ctx context.Context, operatorData *operator
 		return err
 	}
 
-	dockerconfig := viper.GetString("dockerConfig")
+	dockerconfig := p.dockerConfig
 	if len(dockerconfig) != 0 {
+		// the user provided a dockerConfig to pass through for use with scorecard.
 		content, err := p.readFileAsByteArray(dockerconfig)
 		if err != nil {
 			return err
@@ -558,7 +579,7 @@ func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData operato
 }
 
 func (p *DeployableByOlmCheck) writeToFile(data interface{}) error {
-	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(data)
+	obj, err := apiruntime.DefaultUnstructuredConverter.ToUnstructured(data)
 	if err != nil {
 		return fmt.Errorf("unable to convert the object to unstructured.Unstructured: %w", err)
 	}

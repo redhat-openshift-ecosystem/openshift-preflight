@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -60,7 +61,7 @@ func initConfig() {
 	// Set up logging config defaults
 	viper.SetDefault("logfile", DefaultLogFile)
 	viper.SetDefault("loglevel", DefaultLogLevel)
-	viper.SetDefault("artifacts", DefaultArtifactsDir)
+	viper.SetDefault("artifacts", artifacts.DefaultArtifactsDir)
 
 	// Set up cluster defaults
 	viper.SetDefault("namespace", DefaultNamespace)

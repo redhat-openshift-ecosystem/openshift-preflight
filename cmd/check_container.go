@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
@@ -38,7 +40,7 @@ var checkContainerCmd = &cobra.Command{
 		}
 
 		if len(args) != 1 {
-			return fmt.Errorf("A container image positional argument is required")
+			return fmt.Errorf("a container image positional argument is required")
 		}
 
 		if submit {
@@ -63,46 +65,59 @@ func checkContainerRunE(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 	containerImage := args[0]
 
-	cfg := runtime.Config{
-		Image:          containerImage,
-		EnabledChecks:  engine.ContainerPolicy(),
-		ResponseFormat: DefaultOutputFormat,
+	// Render the Viper configuration as a runtime.Config
+	cfg, err := runtime.NewConfigFrom(*viper.GetViper())
+	if err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	pyxisHost := pyxisHostLookup(viper.GetString("pyxis_env"), viper.GetString("pyxis_host"))
+	// Set our runtime defaults.
+	cfg.Image = containerImage
+	cfg.ResponseFormat = DefaultOutputFormat
 
-	projectId := viper.GetString("certification_project_id")
-	if projectId != "" {
-		if strings.HasPrefix(projectId, "ospid-") {
-			projectId = strings.Split(projectId, "-")[1]
-			// Since we want the modified version, write it back
-			// to viper so that subsequent calls don't need to check
-			viper.Set("certification_project_id", projectId)
-		}
-		apiToken := viper.GetString("pyxis_api_token")
-		pyxisClient := pyxis.NewPyxisClient(pyxisHost, apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
+	// Run the  container check.
+	cmd.SilenceUsage = true
+	return checkContainer(ctx, cfg)
+}
+
+// checkContainer runs the Container policy.
+func checkContainer(ctx context.Context, cfg *runtime.Config) error {
+	cfg.Policy = policy.PolicyContainer
+
+	// configure the artifacts directory if the user requested a different directory.
+	if cfg.Artifacts != "" {
+		artifacts.SetDir(cfg.Artifacts)
+	}
+
+	// Determine if we need to modify the policy that's executed.
+	if cfg.CertificationProjectID != "" {
+		pyxisClient := pyxis.NewPyxisClient(
+			cfg.PyxisHost,
+			cfg.PyxisAPIToken,
+			cfg.CertificationProjectID,
+			&http.Client{Timeout: 60 * time.Second},
+		)
 		certProject, err := pyxisClient.GetProject(ctx)
 		if err != nil {
 			return fmt.Errorf("could not retrieve project: %w", err)
 		}
 		log.Debugf("Certification project name is: %s", certProject.Name)
 		if certProject.Container.OsContentType == "scratch" {
-			cfg.EnabledChecks = engine.ScratchContainerPolicy()
+			cfg.Policy = policy.PolicyScratch
 			cfg.Scratch = true
 		}
 
 		// if a partner sets `Host Level Access` in connect to `Privileged`, enable RootExceptionContainerPolicy checks
 		if certProject.Container.Privileged {
-			cfg.EnabledChecks = engine.RootExceptionContainerPolicy()
+			cfg.Policy = policy.PolicyRoot
 		}
 	}
-
-	engine, err := engine.NewForConfig(cfg)
+	engine, err := engine.NewForConfig(ctx, cfg.ReadOnly())
 	if err != nil {
 		return err
 	}
 
-	formatter, err := formatters.NewForConfig(cfg)
+	formatter, err := formatters.NewForConfig(cfg.ReadOnly())
 	if err != nil {
 		return err
 	}
@@ -121,10 +136,6 @@ func checkContainerRunE(cmd *cobra.Command, args []string) error {
 	// also write to stdout
 	resultsOutputTarget := io.MultiWriter(os.Stdout, resultsFile)
 
-	// At this point, we would no longer want usage information printed out
-	// on error, so it doesn't contaminate the output.
-	cmd.SilenceUsage = true
-
 	// execute the checks
 	if err := engine.ExecuteChecks(ctx); err != nil {
 		return err
@@ -142,8 +153,10 @@ func checkContainerRunE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := writeJUnit(ctx, results); err != nil {
-		return err
+	if cfg.WriteJUnit {
+		if err := writeJUnit(ctx, results); err != nil {
+			return err
+		}
 	}
 
 	// assemble artifacts and submit results to pyxis if user provided the submit flag.
@@ -151,13 +164,16 @@ func checkContainerRunE(cmd *cobra.Command, args []string) error {
 		log.Info("preparing results that will be submitted to Red Hat")
 
 		// you must provide a project ID in order to submit.
-		if projectId == "" {
+		if cfg.CertificationProjectID == "" {
 			return fmt.Errorf("project ID must be provided")
 		}
 
 		// establish a pyxis client.
-		apiToken := viper.GetString("pyxis_api_token")
-		pyxisClient := pyxis.NewPyxisClient(pyxisHost, apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
+		pyxisClient := pyxis.NewPyxisClient(
+			cfg.PyxisHost,
+			cfg.PyxisAPIToken,
+			cfg.CertificationProjectID,
+			&http.Client{Timeout: 60 * time.Second})
 
 		// get the project info from pyxis
 		certProject, err := pyxisClient.GetProject(ctx)
@@ -167,7 +183,7 @@ func checkContainerRunE(cmd *cobra.Command, args []string) error {
 		log.Tracef("CertProject: %+v", certProject)
 
 		// read the provided docker config
-		dockerConfigJsonBytes, err := os.ReadFile(viper.GetString("dockerConfig"))
+		dockerConfigJsonBytes, err := os.ReadFile(cfg.DockerConfig)
 		if err != nil {
 			return err
 		}
@@ -206,12 +222,12 @@ func checkContainerRunE(cmd *cobra.Command, args []string) error {
 				err,
 			)
 		}
-		logfile, err := os.Open(viper.GetString("logfile"))
+		logfile, err := os.Open(cfg.LogFile)
 		defer logfile.Close()
 		if err != nil {
 			return fmt.Errorf(
 				"could not open file for submission: %s: %w",
-				viper.GetString("logfile"),
+				cfg.LogFile,
 				err,
 			)
 		}
@@ -223,14 +239,11 @@ func checkContainerRunE(cmd *cobra.Command, args []string) error {
 			// The certification engine writes the rpmManifest for images not based on scratch.
 			WithRPMManifest(rpmManifest).
 			// Include the preflight execution log file.
-			WithArtifact(logfile, filepath.Base(viper.GetString("logfile")))
+			WithArtifact(logfile, filepath.Base(cfg.LogFile))
 
 		input, err := submission.Finalize()
 		if err != nil {
-			return fmt.Errorf(
-				"unable to finalize data that would be sent to pyxis: %w",
-				err,
-			)
+			return fmt.Errorf("unable to finalize data that would be sent to pyxis: %w", err)
 		}
 
 		certResults, err := pyxisClient.SubmitResults(ctx, input)
@@ -241,31 +254,13 @@ func checkContainerRunE(cmd *cobra.Command, args []string) error {
 		log.Info("Test results have been submitted to Red Hat.")
 		log.Info("These results will be reviewed by Red Hat for final certification.")
 		log.Infof("The container's image id is: %s.", certResults.CertImage.ID)
-		log.Infof("Please check %s to view scan results.", buildScanResultsURL(projectId, certResults.CertImage.ID))
-		log.Infof("Please check %s to monitor the progress.", buildOverviewURL(projectId))
+		log.Infof("Please check %s to view scan results.", buildScanResultsURL(cfg.CertificationProjectID, certResults.CertImage.ID))
+		log.Infof("Please check %s to monitor the progress.", buildOverviewURL(cfg.CertificationProjectID))
 	}
 
 	log.Infof("Preflight result: %s", convertPassedOverall(results.PassedOverall))
 
 	return nil
-}
-
-func pyxisHostLookup(pyxisEnv, hostOverride string) string {
-	envs := map[string]string{
-		"prod":  "catalog.redhat.com/api/containers",
-		"uat":   "catalog.uat.redhat.com/api/containers",
-		"qa":    "catalog.qa.redhat.com/api/containers",
-		"stage": "catalog.stage.redhat.com/api/containers",
-	}
-	if hostOverride != "" {
-		return hostOverride
-	}
-
-	pyxisHost, ok := envs[pyxisEnv]
-	if !ok {
-		pyxisHost = envs["prod"]
-	}
-	return pyxisHost
 }
 
 func init() {

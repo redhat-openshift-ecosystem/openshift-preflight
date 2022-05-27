@@ -11,9 +11,9 @@ import (
 	internal "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/engine"
 	containerpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/container"
 	operatorpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/operator"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
-	"github.com/spf13/viper"
 )
 
 // CheckEngine defines the functionality necessary to run all checks for a policy,
@@ -28,137 +28,107 @@ type CheckEngine interface {
 	Results(context.Context) runtime.Results
 }
 
-func NewForConfig(config runtime.Config) (CheckEngine, error) {
-	if len(config.EnabledChecks) == 0 {
-		// refuse to run if the user has not specified any checks
-		return nil, fmt.Errorf("no checks have been enabled")
-	}
-
-	checks := make([]certification.Check, 0, len(config.EnabledChecks))
-	for _, checkString := range config.EnabledChecks {
-		check := queryChecks(checkString)
-		if check == nil {
-			err := fmt.Errorf("requested check not found: %s", checkString)
-			return nil, err
-		}
-
-		checks = append(checks, check)
+func NewForConfig(ctx context.Context, cfg certification.Config) (CheckEngine, error) {
+	checks, err := initializeChecks(ctx, cfg.Policy(), cfg)
+	if err != nil {
+		return nil, fmt.Errorf("error initializing checks: %v", err)
 	}
 
 	engine := &internal.CraneEngine{
-		Image:     config.Image,
+		Config:    cfg,
+		Image:     cfg.Image(),
 		Checks:    checks,
-		IsBundle:  config.Bundle,
-		IsScratch: config.Scratch,
+		IsBundle:  cfg.IsBundle(),
+		IsScratch: cfg.IsScratch(),
 	}
 
 	return engine, nil
 }
 
-// queryChecks queries Operator and Container checks by name, and return certification.Check
-// if found; nil otherwise. This will be collapsed when old checks are all deprecated.
-func queryChecks(checkName string) certification.Check {
-	// query Operator checks
-	if check, exists := operatorPolicy[checkName]; exists {
-		return check
-	}
-	// if not found in Operator Policy, query container policy.
-	// No need to check scratch container policy since this is
-	// a superset.
-	if check, exists := containerPolicy[checkName]; exists {
-		return check
-	}
-
-	return nil
-}
-
-// Register all checks
-
-// Operator checks
-var (
-	// operatorPkgNameIsUniqueCheck certification.Check = &operatorpol.OperatorPkgNameIsUniqueCheck{}
-	scorecardBasicSpecCheck certification.Check = operatorpol.NewScorecardBasicSpecCheck(internal.NewOperatorSdkEngine())
-	scorecardOlmSuiteCheck  certification.Check = operatorpol.NewScorecardOlmSuiteCheck(internal.NewOperatorSdkEngine())
-	deployableByOlmCheck    certification.Check = operatorpol.NewDeployableByOlmCheck(internal.NewOperatorSdkEngine())
-	validateOperatorBundle  certification.Check = operatorpol.NewValidateOperatorBundleCheck(internal.NewOperatorSdkEngine())
-)
-
-// Container checks
-var (
-	hasLicenseCheck        certification.Check = &containerpol.HasLicenseCheck{}
-	hasUniqueTagCheck      certification.Check = containerpol.NewHasUniqueTagCheck()
-	maxLayersCheck         certification.Check = &containerpol.MaxLayersCheck{}
-	hasNoProhibitedCheck   certification.Check = &containerpol.HasNoProhibitedPackagesCheck{}
-	hasRequiredLabelsCheck certification.Check = &containerpol.HasRequiredLabelsCheck{}
-	runAsRootCheck         certification.Check = &containerpol.RunAsNonRootCheck{}
-	hasModifiedFilesCheck  certification.Check = &containerpol.HasModifiedFilesCheck{}
-
-	// Since the Pyxis data for checking UBI is only correct in prod, force the use of external prod
-	basedOnUbiCheck certification.Check = containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisClient(
-		certification.DefaultPyxisHost,
-		viper.GetString("pyxis_api_token"),
-		viper.GetString("certification_project_id"),
-		&http.Client{Timeout: 60 * time.Second}))
-)
-
-var operatorPolicy = map[string]certification.Check{
-	scorecardBasicSpecCheck.Name(): scorecardBasicSpecCheck,
-	scorecardOlmSuiteCheck.Name():  scorecardOlmSuiteCheck,
-	deployableByOlmCheck.Name():    deployableByOlmCheck,
-	validateOperatorBundle.Name():  validateOperatorBundle,
-}
-
-var containerPolicy = map[string]certification.Check{
-	hasLicenseCheck.Name():        hasLicenseCheck,
-	hasUniqueTagCheck.Name():      hasUniqueTagCheck,
-	maxLayersCheck.Name():         maxLayersCheck,
-	hasNoProhibitedCheck.Name():   hasNoProhibitedCheck,
-	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
-	runAsRootCheck.Name():         runAsRootCheck,
-	basedOnUbiCheck.Name():        basedOnUbiCheck,
-	hasModifiedFilesCheck.Name():  hasModifiedFilesCheck,
-}
-
-var scratchContainerPolicy = map[string]certification.Check{
-	hasLicenseCheck.Name():        hasLicenseCheck,
-	hasUniqueTagCheck.Name():      hasUniqueTagCheck,
-	maxLayersCheck.Name():         maxLayersCheck,
-	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
-	runAsRootCheck.Name():         runAsRootCheck,
-}
-
-var rootExceptionContainerPolicy = map[string]certification.Check{
-	hasLicenseCheck.Name():        hasLicenseCheck,
-	hasUniqueTagCheck.Name():      hasUniqueTagCheck,
-	maxLayersCheck.Name():         maxLayersCheck,
-	hasNoProhibitedCheck.Name():   hasNoProhibitedCheck,
-	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
-	basedOnUbiCheck.Name():        basedOnUbiCheck,
-	hasModifiedFilesCheck.Name():  hasModifiedFilesCheck,
-}
-
-func makeCheckList(checkMap map[string]certification.Check) []string {
-	checks := make([]string, 0, len(checkMap))
-
-	for key := range checkMap {
-		checks = append(checks, key)
+// initializeChecks configures checks for a given policy p using cfg as needed.
+func initializeChecks(ctx context.Context, p policy.Policy, cfg certification.Config) ([]certification.Check, error) {
+	switch p {
+	case policy.PolicyOperator:
+		return []certification.Check{
+			operatorpol.NewScorecardBasicSpecCheck(internal.NewOperatorSdkEngine(cfg.ScorecardImage()), cfg.Namespace(), cfg.ServiceAccount(), cfg.Kubeconfig(), cfg.ScorecardWaitTime()),
+			operatorpol.NewScorecardOlmSuiteCheck(internal.NewOperatorSdkEngine(cfg.ScorecardImage()), cfg.Namespace(), cfg.ServiceAccount(), cfg.Kubeconfig(), cfg.ScorecardWaitTime()),
+			operatorpol.NewDeployableByOlmCheck(internal.NewOperatorSdkEngine(cfg.ScorecardImage()), cfg.IndexImage(), cfg.DockerConfig(), cfg.Channel()),
+			operatorpol.NewValidateOperatorBundleCheck(internal.NewOperatorSdkEngine(cfg.ScorecardImage())),
+		}, nil
+	case policy.PolicyContainer:
+		return []certification.Check{
+			&containerpol.HasLicenseCheck{},
+			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig()),
+			&containerpol.MaxLayersCheck{},
+			&containerpol.HasNoProhibitedPackagesCheck{},
+			&containerpol.HasRequiredLabelsCheck{},
+			&containerpol.RunAsNonRootCheck{},
+			&containerpol.HasModifiedFilesCheck{},
+			containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisClient(
+				certification.DefaultPyxisHost,
+				cfg.PyxisAPIToken(),
+				cfg.CertificationProjectID(),
+				&http.Client{Timeout: 60 * time.Second})),
+		}, nil
+	case policy.PolicyRoot:
+		return []certification.Check{
+			&containerpol.HasLicenseCheck{},
+			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig()),
+			&containerpol.MaxLayersCheck{},
+			&containerpol.HasNoProhibitedPackagesCheck{},
+			&containerpol.HasRequiredLabelsCheck{},
+			&containerpol.HasModifiedFilesCheck{},
+		}, nil
+	case policy.PolicyScratch:
+		return []certification.Check{
+			&containerpol.HasLicenseCheck{},
+			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig()),
+			&containerpol.MaxLayersCheck{},
+			&containerpol.HasRequiredLabelsCheck{},
+			&containerpol.RunAsNonRootCheck{},
+		}, nil
 	}
 
-	return checks
+	return nil, fmt.Errorf("provided policy %s is unknown", p)
 }
 
+// makeCheckList returns a list of check names.
+func makeCheckList(checks []certification.Check) []string {
+	checkNames := make([]string, len(checks))
+
+	for i, check := range checks {
+		checkNames[i] = check.Name()
+	}
+
+	return checkNames
+}
+
+// checkNamesFor produces a slice of names for checks in the requested policy.
+func checkNamesFor(p policy.Policy) []string {
+	// stub the config. We don't technically need the policy here, but why not.
+	c := &runtime.Config{Policy: p}
+	checks, _ := initializeChecks(context.TODO(), p, c.ReadOnly())
+	return makeCheckList(checks)
+}
+
+// OperatorPolicy returns the names of checks in the operator policy.
 func OperatorPolicy() []string {
-	return makeCheckList(operatorPolicy)
+	return checkNamesFor(policy.PolicyOperator)
 }
 
+// ContainerPolicy returns the names of checks in the container policy.
 func ContainerPolicy() []string {
-	return makeCheckList(containerPolicy)
+	return checkNamesFor(policy.PolicyContainer)
 }
 
+// ScratchContainerPolicy returns the names of checks in the
+// container policy with scratch exception.
 func ScratchContainerPolicy() []string {
-	return makeCheckList(scratchContainerPolicy)
+	return checkNamesFor(policy.PolicyScratch)
 }
 
+// RootExceptionContainerPolicy returns the names of checks in the
+// container policy with root exception.
 func RootExceptionContainerPolicy() []string {
-	return makeCheckList(rootExceptionContainerPolicy)
+	return checkNamesFor(policy.PolicyRoot)
 }

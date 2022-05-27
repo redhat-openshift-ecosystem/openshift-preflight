@@ -25,7 +25,6 @@ import (
 	craneauthn "github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -54,13 +53,19 @@ func setupConfigDir(t *testing.T) string {
 	return p
 }
 
+// setupConfigFile creates a docker config.json on disk and configures
+// the PreflightKeychain to use it. It returns the config directory
+// for cleanup purposes.
 func setupConfigFile(t *testing.T, content string) string {
 	cd := setupConfigDir(t)
 	p := filepath.Join(cd, "config.json")
 	if err := os.WriteFile(p, []byte(content), 0o600); err != nil {
 		t.Fatalf("write %q: %v", p, err)
 	}
-	os.Setenv("PFLT_DOCKERCONFIG", p)
+
+	// configure the keychain with the config provided.
+	keychain.dockercfg = p
+
 	// return the config dir so we can clean up
 	return cd
 }
@@ -69,7 +74,7 @@ func TestNoConfig(t *testing.T) {
 	cd := setupConfigDir(t)
 	defer os.RemoveAll(filepath.Dir(cd))
 
-	auth, err := PreflightKeychain.Resolve(testRegistry)
+	auth, err := keychain.Resolve(testRegistry)
 	if err != nil {
 		t.Fatalf("Resolve() = %v", err)
 	}
@@ -163,7 +168,7 @@ func TestVariousPaths(t *testing.T) {
 			// For some reason, these tempdirs don't get cleaned up.
 			defer os.RemoveAll(filepath.Dir(cd))
 
-			auth, err := PreflightKeychain.Resolve(test.target)
+			auth, err := keychain.Resolve(test.target)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("wanted err, got nil")
@@ -187,22 +192,7 @@ func TestVariousPaths(t *testing.T) {
 	}
 }
 
-type helper struct {
-	u, p string
-	err  error
-}
-
-func (h helper) Get(serverURL string) (string, string, error) {
-	if serverURL != "example.com" {
-		return "", "", fmt.Errorf("unexpected serverURL: %s", serverURL)
-	}
-	return h.u, h.p, h.err
-}
-
 func init() {
 	log.SetFormatter(&log.TextFormatter{})
 	log.SetLevel(log.TraceLevel)
-
-	viper.SetEnvPrefix("pflt")
-	viper.AutomaticEnv()
 }

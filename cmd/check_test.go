@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/spf13/viper"
 )
@@ -117,24 +117,17 @@ var _ = Describe("cmd package check command", func() {
 			var err error
 			artifactsDir, err = os.MkdirTemp("", "junit-test-*")
 			Expect(err).ToNot(HaveOccurred())
-			viper.Set("artifacts", artifactsDir)
+			// change the artifacts dir to our test dir
+			artifacts.SetDir(artifactsDir)
 			junitfile = filepath.Join(artifactsDir, "results-junit.xml")
 		})
 		AfterEach(func() {
 			Expect(os.RemoveAll(artifactsDir)).To(Succeed())
-			viper.Set("artifacts", DefaultArtifactsDir)
+			// BeforeEach changes the default artifacts dir, so reset it.
+			artifacts.Reset()
 		})
-		When("junit is disabled", func() {
-			It("should return no error and no file should be written", func() {
-				viper.Set("junit", false)
-				Expect(writeJUnit(context.TODO(), *results)).To(Succeed())
-				_, err := os.Stat(junitfile)
-				Expect(errors.Is(err, os.ErrNotExist)).To(BeTrue())
-			})
-		})
-		When("junit is enabled", func() {
-			It("should return no error and file should be created", func() {
-				viper.Set("junit", true)
+		When("The additional JUnitXML results file is requested", func() {
+			It("should be written to the artifacts directory without error", func() {
 				Expect(writeJUnit(context.TODO(), *results)).To(Succeed())
 				_, err := os.Stat(junitfile)
 				Expect(err).ToNot(HaveOccurred())

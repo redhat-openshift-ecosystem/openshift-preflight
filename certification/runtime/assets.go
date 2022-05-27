@@ -8,7 +8,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/authn"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 // images maps the images use by preflight with their purpose.
@@ -25,7 +24,7 @@ var images = map[string]string{
 func imageList(ctx context.Context) []string {
 	options := []crane.Option{
 		crane.WithContext(ctx),
-		crane.WithAuthFromKeychain(authn.PreflightKeychain),
+		crane.WithAuthFromKeychain(authn.PreflightKeychain()),
 	}
 
 	imageList := make([]string, 0, len(images))
@@ -52,12 +51,12 @@ func Assets(ctx context.Context) AssetData {
 }
 
 // ScorecardImage returns the container image used for OperatorSDK
-// Scorecard based checks.
-func ScorecardImage() string {
-	scorecardImage := viper.GetString("scorecard_image")
-	if scorecardImage != "" {
-		log.Debugf("Using %s as the scorecard test image", scorecardImage)
-		return scorecardImage
+// Scorecard based checks. If userProvidedScorecardImage is set, it is
+// returned, otherwise, the default is returned.
+func ScorecardImage(userProvidedScorecardImage string) string {
+	if userProvidedScorecardImage != "" {
+		log.Debugf("Using %s as the scorecard test image", userProvidedScorecardImage)
+		return userProvidedScorecardImage
 	}
 	return images["scorecard"]
 }

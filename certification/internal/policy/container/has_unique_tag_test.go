@@ -17,7 +17,7 @@ import (
 )
 
 var _ = Describe("UniqueTag", func() {
-	var hasUniqueTagCheck hasUniqueTagCheck = *NewHasUniqueTagCheck()
+	var hasUniqueTagCheck hasUniqueTagCheck = *NewHasUniqueTagCheck("")
 	var src, dst, host string
 
 	BeforeEach(func() {

@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/viper"
 )
 
 var _ = Describe("Artifacts package utility functions", func() {
@@ -14,8 +13,8 @@ var _ = Describe("Artifacts package utility functions", func() {
 		// in each of these tests. This removes only the artifacts
 		// directory value, not the temporary dir established in
 		// BeforeSuite.
-		err := os.RemoveAll(viper.GetString("artifacts"))
-		Expect(err).ToNot(HaveOccurred())
+
+		Expect(os.RemoveAll(ads)).To(Succeed())
 	})
 
 	Context("With an artifacts directory provided via configuration", func() {

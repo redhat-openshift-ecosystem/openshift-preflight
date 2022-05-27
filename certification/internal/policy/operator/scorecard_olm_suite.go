@@ -19,10 +19,16 @@ type ScorecardOlmSuiteCheck struct {
 
 const scorecardOlmSuiteResult string = "operator_bundle_scorecard_OlmSuiteCheck.json"
 
-func NewScorecardOlmSuiteCheck(operatorSdkEngine *cli.OperatorSdkEngine) *ScorecardOlmSuiteCheck {
+func NewScorecardOlmSuiteCheck(operatorSdkEngine *cli.OperatorSdkEngine, ns, sa, kubeconfig, waittime string) *ScorecardOlmSuiteCheck {
 	return &ScorecardOlmSuiteCheck{
-		scorecardCheck{OperatorSdkEngine: *operatorSdkEngine},
-		false,
+		scorecardCheck: scorecardCheck{
+			OperatorSdkEngine: *operatorSdkEngine,
+			namespace:         ns,
+			serviceAccount:    sa,
+			kubeconfig:        kubeconfig,
+			waitTime:          waittime,
+		},
+		fatalError: false,
 	}
 }
 

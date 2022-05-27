@@ -14,7 +14,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/viper"
 )
 
 var _ = Describe("Runtime assets tests", func() {
@@ -63,14 +62,13 @@ var _ = Describe("Scorecard Image tests", func() {
 	Context("when getting the Scorecard image", func() {
 		Context("the default is used", func() {
 			It("should return the default", func() {
-				image := ScorecardImage()
+				image := ScorecardImage("")
 				Expect(image).To(Equal(images["scorecard"]))
 			})
 		})
 		Context("the image is overriden", func() {
 			It("should return the passed param", func() {
-				viper.Set("scorecard_image", "quay.io/some/container:v1.0.0")
-				image := ScorecardImage()
+				image := ScorecardImage("quay.io/some/container:v1.0.0")
 				Expect(image).To(Equal("quay.io/some/container:v1.0.0"))
 			})
 		})

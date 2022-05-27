@@ -26,6 +26,7 @@ config.yaml
 results.json
 cert-image.json
 rpm-manifest.json
+results-junit.xml
 
 # Testing dirs
 /artifacts
