@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
@@ -31,7 +33,7 @@ func init() {
 	rootCmd.AddCommand(checkCmd)
 }
 
-func writeJunitIfEnabled(ctx context.Context, results runtime.Results) error {
+func writeJUnit(ctx context.Context, results runtime.Results) error {
 	if !viper.GetBool("junit") {
 		return nil
 	}
@@ -55,4 +57,34 @@ func writeJunitIfEnabled(ctx context.Context, results runtime.Results) error {
 	log.Tracef("JUnitXML written to %s", junitFilename)
 
 	return nil
+}
+
+func buildConnectURL(projectID string) string {
+	connectURL := fmt.Sprintf("https://connect.redhat.com/projects/%s", projectID)
+
+	if viper.GetString("pyxis_env") != "prod" {
+		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s", viper.GetString("pyxis_env"), projectID)
+	}
+
+	return connectURL
+}
+
+func buildOverviewURL(projectID string) string {
+	return fmt.Sprintf("%s/overview", buildConnectURL(projectID))
+}
+
+func buildScanResultsURL(projectID string, imageID string) string {
+	return fmt.Sprintf("%s/images/%s/scan-results", buildConnectURL(projectID), imageID)
+}
+
+func convertPassedOverall(passedOverall bool) string {
+	if passedOverall {
+		return "PASSED"
+	}
+
+	return "FAILED"
+}
+
+func resultsFilenameWithExtension(ext string) string {
+	return strings.Join([]string{"results", ext}, ".")
 }
