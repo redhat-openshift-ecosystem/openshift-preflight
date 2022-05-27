@@ -24,10 +24,20 @@ type hasUniqueTagCheck struct {
 }
 
 func (p *hasUniqueTagCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
-	tags, err := p.getDataToValidate(ctx, fmt.Sprintf("%s/%s", imgRef.ImageRegistry, imgRef.ImageRepository))
+	imgRepo := fmt.Sprintf("%s/%s", imgRef.ImageRegistry, imgRef.ImageRepository)
+	tags, err := p.getDataToValidate(ctx, imgRepo)
 	if err != nil {
-		return false, fmt.Errorf("could not get image tags: %v", err)
+		return false, fmt.Errorf("Error: failed to get tags list for %s: %v", imgRepo, err)
 	}
+
+	if len(tags) < 1 {
+		if !strings.HasPrefix(imgRef.ImageTagOrSha, "sha256:") {
+			tags = append(tags, imgRef.ImageTagOrSha)
+		} else {
+			return false, fmt.Errorf("Error: no tags found for %s: cannot assert tag from digest", imgRepo)
+		}
+	}
+
 	return p.validate(tags)
 }
 
