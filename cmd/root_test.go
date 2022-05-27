@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -30,7 +31,7 @@ var _ = Describe("cmd package utility functions", func() {
 				It("should have defaults set correctly", func() {
 					initConfig()
 					Expect(viper.GetString("namespace")).To(Equal(DefaultNamespace))
-					Expect(viper.GetString("artifacts")).To(Equal(DefaultArtifactsDir))
+					Expect(viper.GetString("artifacts")).To(Equal(artifacts.DefaultArtifactsDir))
 					Expect(viper.GetString("logfile")).To(Equal(DefaultLogFile))
 					Expect(viper.GetString("loglevel")).To(Equal(DefaultLogLevel))
 				})
@@ -43,7 +44,7 @@ var _ = Describe("cmd package utility functions", func() {
 				It("should have overrides in place", func() {
 					initConfig()
 					Expect(viper.GetString("namespace")).To(Equal(DefaultNamespace))
-					Expect(viper.GetString("artifacts")).To(Equal(DefaultArtifactsDir))
+					Expect(viper.GetString("artifacts")).To(Equal(artifacts.DefaultArtifactsDir))
 					Expect(viper.GetString("logfile")).To(Equal("/tmp/foo.log"))
 					Expect(viper.GetString("loglevel")).To(Equal("trace"))
 				})
@@ -60,9 +61,7 @@ var _ = Describe("cmd package utility functions", func() {
 		BeforeEach(func() {
 			cmd = &cobra.Command{
 				PersistentPreRun: preRunConfig,
-				Run: func(cmd *cobra.Command, args []string) {
-					return
-				},
+				Run:              func(cmd *cobra.Command, args []string) {},
 			}
 			cobra.OnInitialize(initConfig)
 		})

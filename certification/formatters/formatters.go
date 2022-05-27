@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
@@ -28,12 +29,12 @@ type FormatterFunc = func(context.Context, runtime.Results) (response []byte, fo
 
 // NewForConfig returns a new formatter based on the user-provided configuration. It relies
 // on config values which should align with known/supported/built-in formatters.
-func NewForConfig(cfg runtime.Config) (ResponseFormatter, error) {
-	formatter, defined := availableFormatters[cfg.ResponseFormat]
+func NewForConfig(cfg certification.Config) (ResponseFormatter, error) {
+	formatter, defined := availableFormatters[cfg.ResponseFormat()]
 	if !defined {
 		return nil, fmt.Errorf(
 			"failed to create a new formatter from config: %s",
-			cfg.ResponseFormat,
+			cfg.ResponseFormat(),
 		)
 	}
 

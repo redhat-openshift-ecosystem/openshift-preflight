@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
@@ -23,34 +24,34 @@ var _ = Describe("policy validation", func() {
 
 		Context("with a known-good image", func() {
 			cfg := runtime.Config{
-				Image:         goodImage,
-				EnabledChecks: engine.OperatorPolicy(),
+				Image:  goodImage,
+				Policy: policy.PolicyOperator,
 			}
 
-			engine, err := engine.NewForConfig(cfg)
+			e, err := engine.NewForConfig(context.TODO(), cfg.ReadOnly())
 			Expect(err).ToNot(HaveOccurred())
 
 			ctx := context.TODO()
-			engine.ExecuteChecks(ctx)
-			results := engine.Results(ctx)
+			e.ExecuteChecks(ctx)
+			results := e.Results(ctx)
 
 			It("should pass all checks", func() {
-				Expect(len(results.Passed)).To(Equal(len(cfg.EnabledChecks)))
+				Expect(len(results.Passed)).To(Equal(len(engine.OperatorPolicy())))
 			})
 		})
 
 		Context("with a known-bad image", func() {
 			cfg := runtime.Config{
-				Image:         badImage,
-				EnabledChecks: engine.OperatorPolicy(),
+				Image:  badImage,
+				Policy: policy.PolicyOperator,
 			}
 
-			engine, err := engine.NewForConfig(cfg)
+			e, err := engine.NewForConfig(context.TODO(), cfg.ReadOnly())
 			Expect(err).To(BeNil())
 
 			ctx := context.TODO()
-			engine.ExecuteChecks(ctx)
-			results := engine.Results(ctx)
+			e.ExecuteChecks(ctx)
+			results := e.Results(ctx)
 
 			// TODO: Replace this check so that you test for individual check failures
 			It("should not pass any checks", func() {
@@ -69,19 +70,19 @@ var _ = Describe("policy validation", func() {
 
 		Context("with a known-good image", func() {
 			cfg := runtime.Config{
-				Image:         goodImage,
-				EnabledChecks: engine.ContainerPolicy(),
+				Image:  goodImage,
+				Policy: policy.PolicyContainer,
 			}
 
-			engine, err := engine.NewForConfig(cfg)
+			e, err := engine.NewForConfig(context.TODO(), cfg.ReadOnly())
 			Expect(err).ToNot(HaveOccurred())
 
 			ctx := context.TODO()
-			engine.ExecuteChecks(ctx)
-			results := engine.Results(ctx)
+			e.ExecuteChecks(ctx)
+			results := e.Results(ctx)
 
 			It("should pass all checks", func() {
-				Expect(len(results.Passed)).To(Equal(len(cfg.EnabledChecks)))
+				Expect(len(results.Passed)).To(Equal(len(engine.ContainerPolicy())))
 				Expect(len(results.Errors)).To(BeZero())
 				Expect(len(results.Failed)).To(BeZero())
 			})
@@ -92,16 +93,16 @@ var _ = Describe("policy validation", func() {
 		// check in addition to all other container checks.
 		XContext("with a known-bad image", func() {
 			cfg := runtime.Config{
-				Image:         badImage,
-				EnabledChecks: engine.ContainerPolicy(),
+				Image:  badImage,
+				Policy: policy.PolicyContainer,
 			}
 
-			engine, err := engine.NewForConfig(cfg)
+			e, err := engine.NewForConfig(context.TODO(), cfg.ReadOnly())
 			Expect(err).ToNot(HaveOccurred())
 
 			ctx := context.TODO()
-			engine.ExecuteChecks(ctx)
-			results := engine.Results(ctx)
+			e.ExecuteChecks(ctx)
+			results := e.Results(ctx)
 
 			// TODO: Replace this check so that you test for individual check failures
 			It("should fail all checks", func() {

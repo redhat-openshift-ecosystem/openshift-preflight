@@ -17,7 +17,7 @@ var _ = Describe("Formatters", func() {
 			}
 
 			It("should return a formatter and no error", func() {
-				formatter, err := NewForConfig(cfg)
+				formatter, err := NewForConfig(cfg.ReadOnly())
 				Expect(err).ToNot(HaveOccurred())
 				Expect(formatter).ToNot(BeNil())
 			})
@@ -29,7 +29,7 @@ var _ = Describe("Formatters", func() {
 			}
 
 			It("should return an error", func() {
-				formatter, err := NewForConfig(cfg)
+				formatter, err := NewForConfig(cfg.ReadOnly())
 
 				Expect(err).To(HaveOccurred())
 				Expect(formatter).To(BeNil())

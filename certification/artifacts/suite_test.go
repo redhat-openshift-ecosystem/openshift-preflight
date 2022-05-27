@@ -7,7 +7,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/viper"
 )
 
 func TestArtifacts(t *testing.T) {
@@ -25,9 +24,8 @@ var _ = BeforeSuite(func() {
 	Expect(len(artifactsPkgTestBaseDir)).ToNot(BeZero())
 	artifactsDir := path.Join(artifactsPkgTestBaseDir, "artifacts")
 
-	// Set the artifacts dir in viper. This won't have been created
-	// prior to running tests.
-	viper.Set("artifacts", artifactsDir)
+	// Configure artifacts directory.
+	SetDir(artifactsDir)
 })
 
 var _ = AfterSuite(func() {

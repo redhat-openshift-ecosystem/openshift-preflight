@@ -33,15 +33,12 @@ func init() {
 	rootCmd.AddCommand(checkCmd)
 }
 
+// writeJUnit will write results as JUnit XML using the built-in formatter.
 func writeJUnit(ctx context.Context, results runtime.Results) error {
-	if !viper.GetBool("junit") {
-		return nil
-	}
-
 	var cfg runtime.Config
 	cfg.ResponseFormat = "junitxml"
 
-	junitformatter, err := formatters.NewForConfig(cfg)
+	junitformatter, err := formatters.NewForConfig(cfg.ReadOnly())
 	if err != nil {
 		return err
 	}
@@ -57,6 +54,10 @@ func writeJUnit(ctx context.Context, results runtime.Results) error {
 	log.Tracef("JUnitXML written to %s", junitFilename)
 
 	return nil
+}
+
+func resultsFilenameWithExtension(ext string) string {
+	return strings.Join([]string{"results", ext}, ".")
 }
 
 func buildConnectURL(projectID string) string {
@@ -83,8 +84,4 @@ func convertPassedOverall(passedOverall bool) string {
 	}
 
 	return "FAILED"
-}
-
-func resultsFilenameWithExtension(ext string) string {
-	return strings.Join([]string{"results", ext}, ".")
 }

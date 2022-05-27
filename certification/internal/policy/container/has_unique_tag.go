@@ -10,14 +10,18 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/authn"
 )
 
-func NewHasUniqueTagCheck() *hasUniqueTagCheck {
-	return &hasUniqueTagCheck{}
+func NewHasUniqueTagCheck(dockercfg string) *hasUniqueTagCheck {
+	return &hasUniqueTagCheck{
+		dockercfg: dockercfg,
+	}
 }
 
 // HasUniqueTagCheck evaluates the image to ensure that it has a tag other than
 // the latest tag, which is considered to be a "floating" tag and may not accurately
 // represent the same image over time.
-type hasUniqueTagCheck struct{}
+type hasUniqueTagCheck struct {
+	dockercfg string
+}
 
 func (p *hasUniqueTagCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	tags, err := p.getDataToValidate(ctx, fmt.Sprintf("%s/%s", imgRef.ImageRegistry, imgRef.ImageRepository))
@@ -30,7 +34,7 @@ func (p *hasUniqueTagCheck) Validate(ctx context.Context, imgRef certification.I
 func (p *hasUniqueTagCheck) getDataToValidate(ctx context.Context, image string) ([]string, error) {
 	options := []crane.Option{
 		crane.WithContext(ctx),
-		crane.WithAuthFromKeychain(authn.PreflightKeychain),
+		crane.WithAuthFromKeychain(authn.PreflightKeychain(authn.WithDockerConfig(p.dockercfg))),
 	}
 
 	return crane.ListTags(image, options...)

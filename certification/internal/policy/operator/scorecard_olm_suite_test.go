@@ -69,7 +69,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 		fakeEngine = FakeOperatorSdkEngine{
 			OperatorSdkReport: report,
 		}
-		scorecardOlmSuiteCheck = *NewScorecardOlmSuiteCheck(&fakeEngine)
+		scorecardOlmSuiteCheck = *NewScorecardOlmSuiteCheck(&fakeEngine, "myns", "mysa", "", "20")
 	})
 	Describe("Operator Bundle Scorecard", func() {
 		Context("When Operator Bundle Scorecard OLM Suite Check has a pass", func() {
@@ -84,7 +84,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 				engine := fakeEngine.(FakeOperatorSdkEngine)
 				engine.OperatorSdkReport.Items[0].Status.Results[0].State = "fail"
 				fakeEngine = engine
-				scorecardOlmSuiteCheck = *NewScorecardOlmSuiteCheck(&fakeEngine)
+				scorecardOlmSuiteCheck = *NewScorecardOlmSuiteCheck(&fakeEngine, "myns", "mysa", "", "20")
 			})
 			It("Should not pass Validate", func() {
 				ok, err := scorecardOlmSuiteCheck.Validate(context.TODO(), certification.ImageReference{ImageURI: "dummy/image"})
@@ -96,7 +96,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 	Describe("Checking that OperatorSdkEngine errors are handled correctly", func() {
 		BeforeEach(func() {
 			fakeEngine = BadOperatorSdkEngine{}
-			scorecardOlmSuiteCheck = *NewScorecardOlmSuiteCheck(&fakeEngine)
+			scorecardOlmSuiteCheck = *NewScorecardOlmSuiteCheck(&fakeEngine, "myns", "mysa", "", "20")
 		})
 		Context("When OperatorSdk throws an error", func() {
 			It("should fail Validate and return an error", func() {

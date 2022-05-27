@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/openshift"
 )
@@ -102,7 +103,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 
 		now := metav1.Now()
 		og.Status.LastUpdated = &now
-		deployableByOLMCheck = *NewDeployableByOlmCheck(&fakeEngine)
+		deployableByOLMCheck = *NewDeployableByOlmCheck(&fakeEngine, "test_indeximage", "", "")
 		scheme := apiruntime.NewScheme()
 		Expect(openshift.AddSchemes(scheme)).To(Succeed())
 		client = fake.NewClientBuilder().
@@ -112,9 +113,10 @@ var _ = Describe("DeployableByOLMCheck", func() {
 			Build()
 		deployableByOLMCheck.client = client
 
-		// set env var for index image
-		os.Setenv("PFLT_INDEXIMAGE", "test_indeximage")
-		os.Setenv("PFLT_ARTIFACTS", tmpDir)
+		artifacts.SetDir(tmpDir)
+	})
+	AfterEach(func() {
+		artifacts.Reset()
 	})
 	Describe("When deploying an operator using OLM", func() {
 		Context("When CSV has been created successfully", func() {
@@ -142,28 +144,22 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		})
 		Context("When index image is in a custom namespace and CSV has been created successfully", func() {
 			BeforeEach(func() {
-				os.Setenv("PFLT_INDEXIMAGE", "image-registry.openshift-image-registry.svc/namespace/indeximage:v0.0.0")
+				deployableByOLMCheck.indexImage = "image-registry.openshift-image-registry.svc/namespace/indeximage:v0.0.0"
 			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
-			})
-			AfterEach(func() {
-				os.Unsetenv("PFTL_INDEXIMAGE")
 			})
 		})
 		Context("When index image is in a private registry and CSV has been created successfully", func() {
 			BeforeEach(func() {
-				os.Setenv("PFLT_DOCKERCONFIG", filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename))
+				deployableByOLMCheck.dockerConfig = filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename)
 			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
-			})
-			AfterEach(func() {
-				os.Unsetenv("PFLT_DOCKERCONFIG")
 			})
 		})
 		Context("When the only supported install mode is AllNamespaces", func() {
@@ -175,15 +171,12 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		})
 		Context("When the non-default channel is being tested", func() {
 			BeforeEach(func() {
-				os.Setenv("PFLT_CHANNEL", "non-default-channel")
+				deployableByOLMCheck.channel = "non-default-channel"
 			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
-			})
-			AfterEach(func() {
-				os.Unsetenv("PFLT_CHANNEL")
 			})
 		})
 	})

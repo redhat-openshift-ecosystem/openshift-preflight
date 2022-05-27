@@ -1,3 +1,7 @@
+// Package artifacts provides functionality for writing artifact files in configured
+// artifacts directory. This package operators with a singleton directory variable that can be
+// changed and reset. It provides simple functionality that can be accessible from
+// any calling library.
 package artifacts
 
 import (
@@ -7,8 +11,29 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
+
+// ads is the artifacts directory singleton.
+var ads string
+
+// DefaultArtifactsDir is the default value for the directory.
+const DefaultArtifactsDir = "artifacts"
+
+func init() {
+	// set the singleton to the default value.
+	ads = DefaultArtifactsDir
+}
+
+// SetDir sets the package level artifacts directory. This
+// can be a relative path or a full path.
+func SetDir(s string) {
+	ads = s
+}
+
+// Reset restores the default value for the Artifacts Directory.
+func Reset() {
+	ads = DefaultArtifactsDir
+}
 
 // WriteFile will write contents of the string to a file in
 // the artifacts directory.
@@ -23,6 +48,8 @@ func WriteFile(filename, contents string) (string, error) {
 	return fullFilePath, nil
 }
 
+// createArtifactsDir creates the artifacts directory at path artifactsDir.
+// If the path is not a full path, this will resolve the full path.
 func createArtifactsDir(artifactsDir string) (string, error) {
 	if !strings.HasPrefix(artifactsDir, "/") {
 		currentDir, err := os.Getwd()
@@ -40,9 +67,9 @@ func createArtifactsDir(artifactsDir string) (string, error) {
 	return artifactsDir, nil
 }
 
-// Path will return the artifacts path from viper config
+// Path will return the artifacts directory.
 func Path() string {
-	artifactDir := viper.GetString("artifacts")
+	artifactDir := ads
 	artifactDir, err := createArtifactsDir(artifactDir)
 	if err != nil {
 		// Fatal does an os.Exit. If we can't create the artifacts directory,

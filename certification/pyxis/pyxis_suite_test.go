@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/ginkgo/v2/dsl/core"
 	. "github.com/onsi/gomega"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 func TestPyxis(t *testing.T) {
@@ -22,8 +21,6 @@ func TestPyxis(t *testing.T) {
 func init() {
 	log.SetFormatter(&log.TextFormatter{})
 	log.SetLevel(log.TraceLevel)
-	viper.SetEnvPrefix("pflt")
-	viper.AutomaticEnv()
 }
 
 type localRoundTripper struct {

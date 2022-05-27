@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 	log "github.com/sirupsen/logrus"
@@ -31,7 +33,7 @@ var checkOperatorCmd = &cobra.Command{
 		}
 
 		if len(args) != 1 {
-			return fmt.Errorf("An operator image positional argument is required")
+			return fmt.Errorf("an operator image positional argument is required")
 		}
 		return nil
 	},
@@ -40,10 +42,9 @@ var checkOperatorCmd = &cobra.Command{
 	RunE:    checkOperatorRunE,
 }
 
+// checkOperatorRunE is a cobra RunE compatible function that prepares
+// the user configuration for check operator.
 func checkOperatorRunE(cmd *cobra.Command, args []string) error {
-	// Expect exactly one positional arg. Check here instead of using builtin Args key
-	// so that we can get a more user-friendly error message
-
 	log.Info("certification library version ", version.Version.String())
 
 	ctx := cmd.Context()
@@ -55,23 +56,38 @@ func checkOperatorRunE(cmd *cobra.Command, args []string) error {
 	}
 
 	if catalogImage := viper.GetString("indexImage"); len(catalogImage) == 0 {
-		return fmt.Errorf("environemtn variable PFLT_INDEXIMAGE could not be found")
+		return fmt.Errorf("environment variable PFLT_INDEXIMAGE could not be found")
 	}
 
-	cfg := runtime.Config{
-		Image:          operatorImage,
-		EnabledChecks:  engine.OperatorPolicy(),
-		ResponseFormat: DefaultOutputFormat,
-		Bundle:         true,
-		Scratch:        true,
+	cfg, err := runtime.NewConfigFrom(*viper.GetViper())
+	if err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	engine, err := engine.NewForConfig(cfg)
+	cfg.Image = operatorImage
+	cfg.ResponseFormat = DefaultOutputFormat
+	cfg.Bundle = true
+	cfg.Scratch = true
+
+	// Run the operator check
+	cmd.SilenceUsage = true
+	return checkOperator(ctx, cfg)
+}
+
+func checkOperator(ctx context.Context, cfg *runtime.Config) error {
+	cfg.Policy = policy.PolicyOperator
+
+	// configure the artifacts directory if the user requested a different directory.
+	if cfg.Artifacts != "" {
+		artifacts.SetDir(cfg.Artifacts)
+	}
+
+	engine, err := engine.NewForConfig(ctx, cfg.ReadOnly())
 	if err != nil {
 		return err
 	}
 
-	formatter, err := formatters.NewForConfig(cfg)
+	formatter, err := formatters.NewForConfig(cfg.ReadOnly())
 	if err != nil {
 		return err
 	}
@@ -90,10 +106,6 @@ func checkOperatorRunE(cmd *cobra.Command, args []string) error {
 	// also write to stdout
 	resultsOutputTarget := io.MultiWriter(os.Stdout, resultsFile)
 
-	// At this point, we would no longer want usage information printed out
-	// on error, so it doesn't contaminate the output.
-	cmd.SilenceUsage = true
-
 	// execute the checks
 	if err := engine.ExecuteChecks(ctx); err != nil {
 		return err
@@ -111,8 +123,10 @@ func checkOperatorRunE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := writeJUnit(ctx, results); err != nil {
-		return err
+	if cfg.WriteJUnit {
+		if err := writeJUnit(ctx, results); err != nil {
+			return err
+		}
 	}
 
 	log.Infof("Preflight result: %s", convertPassedOverall(results.PassedOverall))

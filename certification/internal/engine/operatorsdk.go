@@ -14,12 +14,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func NewOperatorSdkEngine() *cli.OperatorSdkEngine {
-	var engine cli.OperatorSdkEngine = operatorSdkEngine{}
+func NewOperatorSdkEngine(userProvidedScorecardImage string) *cli.OperatorSdkEngine {
+	var engine cli.OperatorSdkEngine = operatorSdkEngine{scorecardImage: userProvidedScorecardImage}
 	return &engine
 }
 
-type operatorSdkEngine struct{}
+type operatorSdkEngine struct {
+	scorecardImage string
+}
 
 func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecardOptions) (*cli.OperatorSdkScorecardReport, error) {
 	cmdArgs := []string{"scorecard"}
@@ -45,7 +47,7 @@ func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecard
 		cmdArgs = append(cmdArgs, "--service-account", opts.ServiceAccount)
 	}
 
-	configFile, err := createScorecardConfigFile()
+	configFile, err := o.createScorecardConfigFile()
 	defer os.Remove(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("could not create scorecard config file: %v", err)
@@ -159,7 +161,8 @@ func (o operatorSdkEngine) writeScorecardFile(resultFile, stdout string) error {
 	return err
 }
 
-func createScorecardConfigFile() (string, error) {
+func (o operatorSdkEngine) createScorecardConfigFile() (string, error) {
+	img := runtime.ScorecardImage(o.scorecardImage)
 	configTemplate := fmt.Sprintf(`kind: Configuration
 apiversion: scorecard.operatorframework.io/v1alpha3
 metadata:
@@ -181,7 +184,7 @@ stages:
     labels:
       suite: olm
       test: olm-bundle-validation-test
-`, runtime.ScorecardImage(), runtime.ScorecardImage())
+`, img, img)
 
 	tempConfigFile, err := os.CreateTemp("", "scorecard-test-config-*.yaml")
 	if err != nil {

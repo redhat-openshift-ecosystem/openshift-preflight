@@ -16,7 +16,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/spf13/viper"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
 var _ = Describe("Execute Checks tests", func() {
@@ -43,7 +44,7 @@ var _ = Describe("Execute Checks tests", func() {
 
 		tmpDir, err := os.MkdirTemp("", "preflight-engine-test-*")
 		DeferCleanup(os.RemoveAll, tmpDir)
-		viper.Set("artifacts", tmpDir)
+		artifacts.SetDir(tmpDir)
 
 		goodCheck := certification.NewGenericCheck(
 			"testcheck",
@@ -72,8 +73,10 @@ var _ = Describe("Execute Checks tests", func() {
 			certification.HelpText{},
 		)
 
+		emptyConfig := runtime.Config{}
 		engine = CraneEngine{
-			Image: src,
+			Config: emptyConfig.ReadOnly(), // must pass a config to avoid nil pointer errors
+			Image:  src,
 			Checks: []certification.Check{
 				goodCheck,
 				errorCheck,
@@ -83,6 +86,7 @@ var _ = Describe("Execute Checks tests", func() {
 			IsScratch: false,
 		}
 	})
+	AfterEach(func() { artifacts.Reset() }) // reset the artifacts dir back to defaults.
 	Context("Run the checks", func() {
 		It("should succeed", func() {
 			err := engine.ExecuteChecks(context.TODO())

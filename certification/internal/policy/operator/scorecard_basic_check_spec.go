@@ -19,10 +19,16 @@ type ScorecardBasicSpecCheck struct {
 
 const scorecardBasicCheckResult string = "operator_bundle_scorecard_BasicSpecCheck.json"
 
-func NewScorecardBasicSpecCheck(operatorSdkEngine *cli.OperatorSdkEngine) *ScorecardBasicSpecCheck {
+func NewScorecardBasicSpecCheck(operatorSdkEngine *cli.OperatorSdkEngine, ns, sa, kubeconfig, waittime string) *ScorecardBasicSpecCheck {
 	return &ScorecardBasicSpecCheck{
-		scorecardCheck{OperatorSdkEngine: *operatorSdkEngine},
-		false,
+		scorecardCheck: scorecardCheck{
+			OperatorSdkEngine: *operatorSdkEngine,
+			namespace:         ns,
+			serviceAccount:    sa,
+			kubeconfig:        kubeconfig,
+			waitTime:          waittime,
+		},
+		fatalError: false,
 	}
 }
 

@@ -34,6 +34,7 @@ import (
 // CraneEngine implements a certification.CheckEngine, and leverage crane to interact with
 // the container registry and target image.
 type CraneEngine struct {
+	Config certification.Config
 	// Image is what is being tested, and should contain the
 	// fully addressable path (including registry, namespaces, etc)
 	// to the image
@@ -55,10 +56,24 @@ type CraneEngine struct {
 func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	log.Debug("target image: ", c.Image)
 
+	if c.Config == nil {
+		return fmt.Errorf("a runtime configuration was not provided")
+	}
+
 	// prepare crane runtime options, if necessary
 	options := []crane.Option{
 		crane.WithContext(ctx),
-		crane.WithAuthFromKeychain(authn.PreflightKeychain),
+		crane.WithAuthFromKeychain(
+			authn.PreflightKeychain(
+				// We configure the Preflight Keychain here.
+				// In theory, we should not require further configuration
+				// downstream because the PreflightKeychain is a singleton.
+				// However, as long as we pass this same DockerConfig
+				// value downstream, it shouldn't matter if the
+				// keychain is reconfigured downstream.
+				authn.WithDockerConfig(c.Config.DockerConfig()),
+			),
+		),
 	}
 
 	// pull the image and save to fs
@@ -415,7 +430,7 @@ func writeCertImage(ctx context.Context, imageRef certification.ImageReference) 
 		Repositories:      repositories,
 		SumLayerSizeBytes: sumLayersSizeBytes,
 		// This is an assumption that the DiffIDs are in order from base up.
-		// Need more evisdence that this is always the case.
+		// Need more evidence that this is always the case.
 		UncompressedTopLayerId: config.RootFS.DiffIDs[0].String(),
 	}
 
