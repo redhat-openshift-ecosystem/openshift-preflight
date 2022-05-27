@@ -2,6 +2,8 @@
 package cmd
 
 import (
+	"context"
+	"io"
 	"os"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
@@ -10,12 +12,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+var configFileUsed bool
+
 var rootCmd = &cobra.Command{
-	Use:     "preflight",
-	Short:   "Preflight Red Hat certification prep tool.",
-	Long:    "A utility that allows you to pre-test your bundles, operators, and container before submitting for Red Hat Certification.",
-	Version: version.Version.String(),
-	Args:    cobra.MinimumNArgs(1),
+	Use:              "preflight",
+	Short:            "Preflight Red Hat certification prep tool.",
+	Long:             "A utility that allows you to pre-test your bundles, operators, and container before submitting for Red Hat Certification.",
+	Version:          version.Version.String(),
+	Args:             cobra.MinimumNArgs(1),
+	PersistentPreRun: preRunConfig,
 }
 
 func init() {
@@ -29,8 +34,59 @@ func init() {
 }
 
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := rootCmd.ExecuteContext(context.Background()); err != nil {
 		log.Fatal(err)
 		os.Exit(-1)
+	}
+}
+
+func initConfig() {
+	// set up ENV var support
+	viper.SetEnvPrefix("pflt")
+	viper.AutomaticEnv()
+
+	// set up optional config file support
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+
+	configFileUsed = true
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			configFileUsed = false
+		}
+	}
+
+	// Set up logging config defaults
+	viper.SetDefault("logfile", DefaultLogFile)
+	viper.SetDefault("loglevel", DefaultLogLevel)
+	viper.SetDefault("artifacts", DefaultArtifactsDir)
+
+	// Set up cluster defaults
+	viper.SetDefault("namespace", DefaultNamespace)
+	viper.SetDefault("serviceaccount", DefaultServiceAccount)
+
+	// Set up scorecard wait time default
+	viper.SetDefault("scorecard_wait_time", DefaultScorecardWaitTime)
+}
+
+// preRunConfig is used by cobra.PreRun in all non-root commands to load all necessary configurations
+func preRunConfig(cmd *cobra.Command, args []string) {
+	// set up logging
+	logname := viper.GetString("logfile")
+	logFile, err := os.OpenFile(logname, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+	if err == nil {
+		mw := io.MultiWriter(os.Stderr, logFile)
+		log.SetOutput(mw)
+	} else {
+		log.Debug("Failed to log to file, using default stderr")
+	}
+	if ll, err := log.ParseLevel(viper.GetString("loglevel")); err == nil {
+		log.SetLevel(ll)
+	}
+
+	log.SetFormatter(&log.TextFormatter{})
+	if !configFileUsed {
+		log.Debug("config file not found, proceeding without it")
 	}
 }

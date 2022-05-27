@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -39,7 +38,7 @@ var checkContainerCmd = &cobra.Command{
 		}
 
 		if len(args) != 1 {
-			return fmt.Errorf("%w: A container image positional argument is required", ErrInsufficientPosArguments)
+			return fmt.Errorf("A container image positional argument is required")
 		}
 
 		if submit {
@@ -56,206 +55,199 @@ var checkContainerCmd = &cobra.Command{
 	},
 	// this fmt.Sprintf is in place to keep spacing consistent with cobras two spaces that's used in: Usage, Flags, etc
 	Example: fmt.Sprintf("  %s", "preflight check container quay.io/repo-name/container-name:version"),
-	PreRun:  preRunConfig,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Info("certification library version ", version.Version.String())
-		ctx := context.Background()
-		containerImage := args[0]
+	RunE:    checkContainerRunE,
+}
 
-		cfg := runtime.Config{
-			Image:          containerImage,
-			EnabledChecks:  engine.ContainerPolicy(),
-			ResponseFormat: DefaultOutputFormat,
+func checkContainerRunE(cmd *cobra.Command, args []string) error {
+	log.Info("certification library version ", version.Version.String())
+	ctx := cmd.Context()
+	containerImage := args[0]
+
+	cfg := runtime.Config{
+		Image:          containerImage,
+		EnabledChecks:  engine.ContainerPolicy(),
+		ResponseFormat: DefaultOutputFormat,
+	}
+
+	pyxisHost := pyxisHostLookup(viper.GetString("pyxis_env"), viper.GetString("pyxis_host"))
+
+	projectId := viper.GetString("certification_project_id")
+	if projectId != "" {
+		if strings.HasPrefix(projectId, "ospid-") {
+			projectId = strings.Split(projectId, "-")[1]
+			// Since we want the modified version, write it back
+			// to viper so that subsequent calls don't need to check
+			viper.Set("certification_project_id", projectId)
+		}
+		apiToken := viper.GetString("pyxis_api_token")
+		pyxisClient := pyxis.NewPyxisClient(pyxisHost, apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
+		certProject, err := pyxisClient.GetProject(ctx)
+		if err != nil {
+			return fmt.Errorf("could not retrieve project: %w", err)
+		}
+		log.Debugf("Certification project name is: %s", certProject.Name)
+		if certProject.Container.OsContentType == "scratch" {
+			cfg.EnabledChecks = engine.ScratchContainerPolicy()
+			cfg.Scratch = true
 		}
 
-		pyxisHost := pyxisHostLookup(viper.GetString("pyxis_env"), viper.GetString("pyxis_host"))
+		// if a partner sets `Host Level Access` in connect to `Privileged`, enable RootExceptionContainerPolicy checks
+		if certProject.Container.Privileged {
+			cfg.EnabledChecks = engine.RootExceptionContainerPolicy()
+		}
+	}
 
-		projectId := viper.GetString("certification_project_id")
-		if projectId != "" {
-			if strings.HasPrefix(projectId, "ospid-") {
-				projectId = strings.Split(projectId, "-")[1]
-				// Since we want the modified version, write it back
-				// to viper so that subsequent calls don't need to check
-				viper.Set("certification_project_id", projectId)
-			}
-			apiToken := viper.GetString("pyxis_api_token")
-			pyxisClient := pyxis.NewPyxisClient(pyxisHost, apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
-			certProject, err := pyxisClient.GetProject(ctx)
-			if err != nil {
-				log.Error(fmt.Errorf("%w: %s", ErrRetrievingProject, err))
-				return err
-			}
-			log.Debugf("Certification project name is: %s", certProject.Name)
-			if certProject.Container.OsContentType == "scratch" {
-				cfg.EnabledChecks = engine.ScratchContainerPolicy()
-				cfg.Scratch = true
-			}
+	engine, err := engine.NewForConfig(cfg)
+	if err != nil {
+		return err
+	}
 
-			// if a partner sets `Host Level Access` in connect to `Privileged`, enable RootExceptionContainerPolicy checks
-			if certProject.Container.Privileged {
-				cfg.EnabledChecks = engine.RootExceptionContainerPolicy()
-			}
+	formatter, err := formatters.NewForConfig(cfg)
+	if err != nil {
+		return err
+	}
+
+	// create the results file early to catch cases where we are not
+	// able to write to the filesystem before we attempt to execute checks.
+	resultsFile, err := os.OpenFile(
+		filepath.Join(artifacts.Path(), resultsFilenameWithExtension(formatter.FileExtension())),
+		os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
+		0o600,
+	)
+	if err != nil {
+		return err
+	}
+
+	// also write to stdout
+	resultsOutputTarget := io.MultiWriter(os.Stdout, resultsFile)
+
+	// At this point, we would no longer want usage information printed out
+	// on error, so it doesn't contaminate the output.
+	cmd.SilenceUsage = true
+
+	// execute the checks
+	if err := engine.ExecuteChecks(ctx); err != nil {
+		return err
+	}
+	results := engine.Results(ctx)
+
+	// return results to the user and then close output files
+	formattedResults, err := formatter.Format(ctx, results)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintln(resultsOutputTarget, string(formattedResults))
+	if err := resultsFile.Close(); err != nil {
+		return err
+	}
+
+	if err := writeJUnit(ctx, results); err != nil {
+		return err
+	}
+
+	// assemble artifacts and submit results to pyxis if user provided the submit flag.
+	if submit {
+		log.Info("preparing results that will be submitted to Red Hat")
+
+		// you must provide a project ID in order to submit.
+		if projectId == "" {
+			return fmt.Errorf("project ID must be provided")
 		}
 
-		engine, err := engine.NewForConfig(cfg)
+		// establish a pyxis client.
+		apiToken := viper.GetString("pyxis_api_token")
+		pyxisClient := pyxis.NewPyxisClient(pyxisHost, apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
+
+		// get the project info from pyxis
+		certProject, err := pyxisClient.GetProject(ctx)
+		if err != nil {
+			return fmt.Errorf("could not retrieve project: %w", err)
+		}
+		log.Tracef("CertProject: %+v", certProject)
+
+		// read the provided docker config
+		dockerConfigJsonBytes, err := os.ReadFile(viper.GetString("dockerConfig"))
 		if err != nil {
 			return err
 		}
 
-		formatter, err := formatters.NewForConfig(cfg)
+		certProject.Container.DockerConfigJSON = string(dockerConfigJsonBytes)
+
+		// prepare submission
+		submission, err := pyxis.NewCertificationInput(certProject)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not build submission with required assets: %w", err)
 		}
 
-		// create the results file early to catch cases where we are not
-		// able to write to the filesystem before we attempt to execute checks.
-		resultsFile, err := os.OpenFile(
-			filepath.Join(artifacts.Path(), resultsFilenameWithExtension(formatter.FileExtension())),
-			os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
-			0o600,
-		)
+		certImage, err := os.Open(path.Join(artifacts.Path(), certification.DefaultCertImageFilename))
+		defer certImage.Close()
 		if err != nil {
-			return err
+			return fmt.Errorf("could not open file for submission: %s: %w",
+				certification.DefaultCertImageFilename,
+				err,
+			)
 		}
-
-		// also write to stdout
-		resultsOutputTarget := io.MultiWriter(os.Stdout, resultsFile)
-
-		// At this point, we would no longer want usage information printed out
-		// on error, so it doesn't contaminate the output.
-		cmd.SilenceUsage = true
-
-		// execute the checks
-		if err := engine.ExecuteChecks(ctx); err != nil {
-			return err
-		}
-		results := engine.Results(ctx)
-
-		// return results to the user and then close output files
-		formattedResults, err := formatter.Format(ctx, results)
+		preflightResults, err := os.Open(path.Join(artifacts.Path(), certification.DefaultTestResultsFilename))
+		defer preflightResults.Close()
 		if err != nil {
-			return err
+			return fmt.Errorf(
+				"could not open file for submission: %s: %w",
+				certification.DefaultTestResultsFilename,
+				err,
+			)
+		}
+		rpmManifest, err := os.Open(path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename))
+		defer rpmManifest.Close()
+		if err != nil {
+			return fmt.Errorf(
+				"could not open file for submission: %s: %w",
+				certification.DefaultRPMManifestFilename,
+				err,
+			)
+		}
+		logfile, err := os.Open(viper.GetString("logfile"))
+		defer logfile.Close()
+		if err != nil {
+			return fmt.Errorf(
+				"could not open file for submission: %s: %w",
+				viper.GetString("logfile"),
+				err,
+			)
+		}
+		submission.
+			// The engine writes the certified image config to disk in a Pyxis-specific format.
+			WithCertImage(certImage).
+			// Include Preflight's test results in our submission. pyxis.TestResults embeds them.
+			WithPreflightResults(preflightResults).
+			// The certification engine writes the rpmManifest for images not based on scratch.
+			WithRPMManifest(rpmManifest).
+			// Include the preflight execution log file.
+			WithArtifact(logfile, filepath.Base(viper.GetString("logfile")))
+
+		input, err := submission.Finalize()
+		if err != nil {
+			return fmt.Errorf(
+				"unable to finalize data that would be sent to pyxis: %w",
+				err,
+			)
 		}
 
-		fmt.Fprintln(resultsOutputTarget, string(formattedResults))
-		if err := resultsFile.Close(); err != nil {
-			return err
+		certResults, err := pyxisClient.SubmitResults(ctx, input)
+		if err != nil {
+			return fmt.Errorf("could not submit to pyxis: %w", err)
 		}
 
-		if err := writeJunitIfEnabled(ctx, results); err != nil {
-			return err
-		}
+		log.Info("Test results have been submitted to Red Hat.")
+		log.Info("These results will be reviewed by Red Hat for final certification.")
+		log.Infof("The container's image id is: %s.", certResults.CertImage.ID)
+		log.Infof("Please check %s to view scan results.", buildScanResultsURL(projectId, certResults.CertImage.ID))
+		log.Infof("Please check %s to monitor the progress.", buildOverviewURL(projectId))
+	}
 
-		// assemble artifacts and submit results to pyxis if user provided the submit flag.
-		if submit {
-			log.Info("preparing results that will be submitted to Red Hat")
+	log.Infof("Preflight result: %s", convertPassedOverall(results.PassedOverall))
 
-			// you must provide a project ID in order to submit.
-			if projectId == "" {
-				return ErrEmptyProjectID
-			}
-
-			// establish a pyxis client.
-			apiToken := viper.GetString("pyxis_api_token")
-			pyxisClient := pyxis.NewPyxisClient(pyxisHost, apiToken, projectId, &http.Client{Timeout: 60 * time.Second})
-
-			// get the project info from pyxis
-			certProject, err := pyxisClient.GetProject(ctx)
-			if err != nil {
-				log.Error(fmt.Errorf("%w: %s", ErrRetrievingProject, err))
-				return err
-			}
-			log.Tracef("CertProject: %+v", certProject)
-
-			// read the provided docker config
-			dockerConfigJsonBytes, err := os.ReadFile(viper.GetString("dockerConfig"))
-			if err != nil {
-				return err
-			}
-
-			certProject.Container.DockerConfigJSON = string(dockerConfigJsonBytes)
-
-			// prepare submission
-			submission, err := pyxis.NewCertificationInput(certProject)
-			if err != nil {
-				return fmt.Errorf(
-					"%w: could not build submission with required assets: %s",
-					ErrSubmittingToPyxis,
-					err,
-				)
-			}
-
-			certImage, err := os.Open(path.Join(artifacts.Path(), certification.DefaultCertImageFilename))
-			defer certImage.Close()
-			if err != nil {
-				return fmt.Errorf(
-					"%w: could not open file for submission: %s",
-					err,
-					certification.DefaultCertImageFilename,
-				)
-			}
-			preflightResults, err := os.Open(path.Join(artifacts.Path(), certification.DefaultTestResultsFilename))
-			defer preflightResults.Close()
-			if err != nil {
-				return fmt.Errorf(
-					"%w: could not open file for submission: %s",
-					err,
-					certification.DefaultTestResultsFilename,
-				)
-			}
-			rpmManifest, err := os.Open(path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename))
-			defer rpmManifest.Close()
-			if err != nil {
-				return fmt.Errorf(
-					"%w: could not open file for submission: %s",
-					err,
-					certification.DefaultRPMManifestFilename,
-				)
-			}
-			logfile, err := os.Open(viper.GetString("logfile"))
-			defer logfile.Close()
-			if err != nil {
-				return fmt.Errorf(
-					"%w: could not open file for submission: %s",
-					err,
-					viper.GetString("logfile"),
-				)
-			}
-			submission.
-				// The engine writes the certified image config to disk in a Pyxis-specific format.
-				WithCertImage(certImage).
-				// Include Preflight's test results in our submission. pyxis.TestResults embeds them.
-				WithPreflightResults(preflightResults).
-				// The certification engine writes the rpmManifest for images not based on scratch.
-				WithRPMManifest(rpmManifest).
-				// Include the preflight execution log file.
-				WithArtifact(logfile, filepath.Base(viper.GetString("logfile")))
-
-			input, err := submission.Finalize()
-			if err != nil {
-				return fmt.Errorf(
-					"%w: unable to finalize data that would be sent to pyxis %s",
-					ErrSubmittingToPyxis,
-					err,
-				)
-			}
-
-			certResults, err := pyxisClient.SubmitResults(ctx, input)
-			if err != nil {
-				return fmt.Errorf("%w: %s", ErrSubmittingToPyxis, err)
-			}
-
-			log.Info("Test results have been submitted to Red Hat.")
-			log.Info("These results will be reviewed by Red Hat for final certification.")
-			log.Infof("The container's image id is: %s.", certResults.CertImage.ID)
-			log.Infof("Please check %s to view scan results.", buildScanResultsURL(projectId, certResults.CertImage.ID))
-			log.Infof("Please check %s to monitor the progress.", buildOverviewURL(projectId))
-		}
-
-		log.Infof("Preflight result: %s", convertPassedOverall(results.PassedOverall))
-
-		return nil
-	},
+	return nil
 }
 
 func pyxisHostLookup(pyxisEnv, hostOverride string) string {
