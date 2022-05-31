@@ -99,12 +99,9 @@ var (
 		viper.GetString("pyxis_api_token"),
 		viper.GetString("certification_project_id"),
 		&http.Client{Timeout: 60 * time.Second}))
-	// runnableContainerCheck  certification.Check = containerpol.NewRunnableContainerCheck(internal.NewPodmanEngine())
-	// runSystemContainerCheck certification.Check = containerpol.NewRunSystemContainerCheck(internal.NewPodmanEngine())
 )
 
 var operatorPolicy = map[string]certification.Check{
-	// operatorPkgNameIsUniqueCheck.Name(): operatorPkgNameIsUniqueCheck,
 	scorecardBasicSpecCheck.Name(): scorecardBasicSpecCheck,
 	scorecardOlmSuiteCheck.Name():  scorecardOlmSuiteCheck,
 	deployableByOlmCheck.Name():    deployableByOlmCheck,
@@ -120,8 +117,6 @@ var containerPolicy = map[string]certification.Check{
 	runAsRootCheck.Name():         runAsRootCheck,
 	basedOnUbiCheck.Name():        basedOnUbiCheck,
 	hasModifiedFilesCheck.Name():  hasModifiedFilesCheck,
-	// runnableContainerCheck.Name():  runnableContainerCheck,
-	// runSystemContainerCheck.Name(): runSystemContainerCheck,
 }
 
 var scratchContainerPolicy = map[string]certification.Check{
@@ -130,8 +125,6 @@ var scratchContainerPolicy = map[string]certification.Check{
 	maxLayersCheck.Name():         maxLayersCheck,
 	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
 	runAsRootCheck.Name():         runAsRootCheck,
-	// runnableContainerCheck.Name():  runnableContainerCheck,
-	// runSystemContainerCheck.Name(): runSystemContainerCheck,
 }
 
 var rootExceptionContainerPolicy = map[string]certification.Check{
@@ -142,8 +135,6 @@ var rootExceptionContainerPolicy = map[string]certification.Check{
 	hasRequiredLabelsCheck.Name(): hasRequiredLabelsCheck,
 	basedOnUbiCheck.Name():        basedOnUbiCheck,
 	hasModifiedFilesCheck.Name():  hasModifiedFilesCheck,
-	// runnableContainerCheck.Name():  runnableContainerCheck,
-	// runSystemContainerCheck.Name(): runSystemContainerCheck,
 }
 
 func makeCheckList(checkMap map[string]certification.Check) []string {
