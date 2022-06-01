@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"fmt"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -17,7 +18,7 @@ type HasRequiredLabelsCheck struct{}
 func (p *HasRequiredLabelsCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	labels, err := p.getDataForValidate(imgRef.ImageInfo)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("could not retrieve image labels: %v", err)
 	}
 
 	return p.validate(labels)
@@ -36,8 +37,9 @@ func (p *HasRequiredLabelsCheck) validate(labels map[string]string) (bool, error
 		}
 	}
 
+	// TODO: We should be reporting this in the results, not in a log message
 	if len(missingLabels) > 0 {
-		log.Warn("expected labels are missing:", missingLabels)
+		log.Debugf("expected labels are missing: %+v", missingLabels)
 	}
 
 	return len(missingLabels) == 0, nil

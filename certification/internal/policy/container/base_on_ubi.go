@@ -2,11 +2,11 @@ package container
 
 import (
 	"context"
+	"fmt"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	pyxis "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
-	log "github.com/sirupsen/logrus"
 )
 
 // BasedOnUBICheck evaluates if the provided image is based on the Red Hat Universal Base Image.
@@ -25,7 +25,7 @@ func NewBasedOnUbiCheck(layerHashChecker layerHashChecker) *BasedOnUBICheck {
 func (p *BasedOnUBICheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	layerHashes, err := p.getImageLayers(ctx, imgRef.ImageInfo)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("could not get image layers: %v", err)
 	}
 
 	return p.validate(ctx, layerHashes)
@@ -46,21 +46,18 @@ func (p *BasedOnUBICheck) getImageLayers(ctx context.Context, image cranev1.Imag
 func (p *BasedOnUBICheck) certifiedImagesFound(ctx context.Context, layerHashes []cranev1.Hash) (bool, error) {
 	certImages, err := p.LayerHashCheckEngine.CertifiedImagesContainingLayers(ctx, layerHashes)
 	if err != nil {
-		log.Error("Error when querying pyxis for uncompressed top layer ids", err)
-		return false, err
+		return false, fmt.Errorf("pyxis query for uncompressed top layers ids failed: %w", err)
 	}
 	if len(certImages) >= 1 {
 		return true, nil
 	}
-	log.Error("No matching layer ids found in pyxis db. Please verify if the image is based on a recent UBI image")
 	return false, nil
 }
 
 func (p *BasedOnUBICheck) validate(ctx context.Context, layerHashes []cranev1.Hash) (bool, error) {
 	hasUBIHash, err := p.certifiedImagesFound(ctx, layerHashes)
 	if err != nil {
-		log.Error("Unable to verify layer hashes", err)
-		return false, err
+		return false, fmt.Errorf("unable to verify layer hashes: %v", err)
 	}
 	if hasUBIHash {
 		return true, nil
