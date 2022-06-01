@@ -22,7 +22,7 @@ type hasUniqueTagCheck struct{}
 func (p *hasUniqueTagCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	tags, err := p.getDataToValidate(ctx, fmt.Sprintf("%s/%s", imgRef.ImageRegistry, imgRef.ImageRepository))
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("could not get image tags: %v", err)
 	}
 	return p.validate(tags)
 }

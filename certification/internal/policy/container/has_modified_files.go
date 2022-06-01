@@ -29,7 +29,7 @@ type packageFilesRef struct {
 func (p *HasModifiedFilesCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	packageFiles, err := p.getDataToValidate(ctx, imgRef)
 	if err != nil {
-		return false, fmt.Errorf("%w: %s", ErrDetectingModifiedFiles, err)
+		return false, fmt.Errorf("could not generate modified files list: %v", err)
 	}
 	return p.validate(packageFiles)
 }
@@ -51,7 +51,7 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 	for _, pkg := range pkgList {
 		filenames, err := pkg.InstalledFiles()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not list installed files: %w", err)
 		}
 		for _, file := range filenames {
 			// A struct is used here, but it is unimportant and
@@ -62,7 +62,7 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 
 	layers, err := imgRef.ImageInfo.Layers()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not get image layers: %w", err)
 	}
 
 	files := make([][]string, 0, len(layers))
@@ -72,7 +72,7 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 	for _, layer := range layers {
 		r, err := layer.Uncompressed()
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", ErrExtractingLayer, err)
+			return nil, fmt.Errorf("could not extract layers: %w", err)
 		}
 		pathChan := make(chan string)
 
@@ -133,7 +133,7 @@ func (p *HasModifiedFilesCheck) validate(packageFilesRef *packageFilesRef) (bool
 		for _, file := range layer {
 			if _, ok := baseLayer[file]; ok {
 				// This means the files exists in the base layer. This is a fail.
-				log.Errorf("modified file detected: %s", file)
+				log.Debugf("modified file detected: %s", file)
 				modifiedFilesDetected = true
 			}
 		}

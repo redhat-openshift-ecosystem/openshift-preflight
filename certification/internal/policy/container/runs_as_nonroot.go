@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"fmt"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -15,7 +16,7 @@ type RunAsNonRootCheck struct{}
 func (p *RunAsNonRootCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	user, err := p.getDataToValidate(imgRef.ImageInfo)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("could not get validation data: %v", err)
 	}
 
 	return p.validate(user)
@@ -24,8 +25,7 @@ func (p *RunAsNonRootCheck) Validate(ctx context.Context, imgRef certification.I
 func (p *RunAsNonRootCheck) getDataToValidate(image cranev1.Image) (string, error) {
 	configFile, err := image.ConfigFile()
 	if err != nil {
-		log.Error("could not retrieve ConfigFile from Image")
-		return "", err
+		return "", fmt.Errorf("could not retrieve ConfigFile from Image: %w", err)
 	}
 	return configFile.Config.User, nil
 }

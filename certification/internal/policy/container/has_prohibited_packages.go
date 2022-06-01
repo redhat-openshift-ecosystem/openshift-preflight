@@ -17,8 +17,7 @@ type HasNoProhibitedPackagesCheck struct{}
 func (p *HasNoProhibitedPackagesCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	pkgList, err := p.getDataToValidate(ctx, imgRef.ImageFSPath)
 	if err != nil {
-		log.Error("unable to get a list of all packages in the image")
-		return false, err
+		return false, fmt.Errorf("unable to get a list of all packages in the image: %v", err)
 	}
 
 	return p.validate(ctx, pkgList)
@@ -53,8 +52,8 @@ func (p *HasNoProhibitedPackagesCheck) validate(ctx context.Context, pkgList []s
 	}
 
 	if len(prohibitedPackages) > 0 {
-		log.Warn("The number of prohibited package found in the container image: ", len(prohibitedPackages))
-		log.Warn("found the following prohibited packages: ", prohibitedPackages)
+		log.Debugf("The number of prohibited package found in the container image: %d", len(prohibitedPackages))
+		log.Debugf("found the following prohibited packages: %+v", prohibitedPackages)
 	}
 
 	return len(prohibitedPackages) == 0, nil

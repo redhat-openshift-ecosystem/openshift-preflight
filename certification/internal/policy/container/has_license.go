@@ -3,6 +3,7 @@ package container
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -17,6 +18,8 @@ const (
 	minLicenseFileCount = 1
 )
 
+var errLicensesNotADir = errors.New("licenses is not a directory")
+
 // HasLicenseCheck evaluates that the image contains a license definition available at
 // /licenses.
 type HasLicenseCheck struct{}
@@ -24,10 +27,10 @@ type HasLicenseCheck struct{}
 func (p *HasLicenseCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	licenseFileList, err := p.getDataToValidate(ctx, imgRef.ImageFSPath)
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) || errors.Is(err, ErrLicensesNotADir) {
+		if errors.Is(err, fs.ErrNotExist) || errors.Is(err, errLicensesNotADir) {
 			return false, nil
 		}
-		return false, err
+		return false, fmt.Errorf("could not get license file list: %v", err)
 	}
 	return p.validate(ctx, licenseFileList)
 }
@@ -36,18 +39,15 @@ func (p *HasLicenseCheck) getDataToValidate(ctx context.Context, mountedPath str
 	fullPath := filepath.Join(mountedPath, licensePath)
 	fileinfo, err := os.Stat(fullPath)
 	if err != nil {
-		log.Errorf("Error when checking for %s : %s", licensePath, err)
-		return nil, err
+		return nil, fmt.Errorf("error when checking for %s: %w", licensePath, err)
 	}
 	if !fileinfo.IsDir() {
-		log.Errorf("%s is not a directory", licensePath)
-		return nil, ErrLicensesNotADir
+		return nil, fmt.Errorf("%s is not a directory: %w", licensePath, errLicensesNotADir)
 	}
 
 	files, err := os.ReadDir(fullPath)
 	if err != nil {
-		log.Errorf("Error when reading directory %s: %s", licensePath, err)
-		return nil, err
+		return nil, fmt.Errorf("could not read directory %s: %w", licensePath, err)
 	}
 	return files, nil
 }
