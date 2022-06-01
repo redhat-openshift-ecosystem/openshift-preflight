@@ -391,7 +391,7 @@ func csvStatusSucceeded(ctx context.Context, client openshift.Client, name, name
 		return "", false, err
 	}
 	// if the CSV phase is succeeded, stop the querying
-	if csv.Status.Phase == operatorv1alpha1.CSVPhaseSucceeded {
+	if csv != nil && csv.Status.Phase == operatorv1alpha1.CSVPhaseSucceeded {
 		log.Debugf("CSV %s is created successfully in namespace %s", name, namespace)
 		return name, true, nil
 	}
