@@ -27,9 +27,13 @@ results.json
 cert-image.json
 rpm-manifest.json
 results-junit.xml
+# E2E customzied env log file.
+sgol.txt
 
 # Testing dirs
 /artifacts
+# E2E customized env artifacts dir
+stcafitra/
 
 # But we don't want to ignore the artifacts package
 !/certification/artifacts
