@@ -65,6 +65,10 @@ vet:
 test-e2e:
 	./test/e2e/operator-test.sh
 
+.PHONY: test-e2e-customized-env
+test-e2e-customized-env:
+	./test/e2e/operator-test-customized-env.sh
+
 .PHONY: clean
 clean:
 	@go clean
