@@ -181,7 +181,7 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 		checkElapsedTime := time.Since(checkStartTime)
 
 		if err != nil {
-			log.WithFields(log.Fields{"result": err, "ERROR": err.Error()}).Info("check completed: ", check.Name())
+			log.WithFields(log.Fields{"result": "ERROR", "err": err}).Info("check completed: ", check.Name())
 			c.results.Errors = append(c.results.Errors, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue
 		}
