@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/hasura/go-graphql-client"
+	"github.com/shurcooL/graphql"
 )
 
 // CertifiedImagesContainingLayers takes uncompressedLayerHashes and queries to a Red Hat Pyxis,
@@ -24,6 +25,11 @@ func (p *pyxisClient) CertifiedImagesContainingLayers(ctx context.Context, uncom
 			ContainerImage []struct {
 				UncompressedTopLayerId graphql.String `graphql:"uncompressed_top_layer_id"`
 				ID                     graphql.String `graphql:"_id"`
+				FreshnessGrades        []struct {
+					Grade     graphql.String `graphql:"grade"`
+					StartDate graphql.String `graphql:"start_date"`
+					EndDate   graphql.String `graphql:"end_date"`
+				} `graphql:"freshness_grades"`
 			} `graphql:"data"`
 			Error struct {
 				Status graphql.Int    `graphql:"status"`
@@ -46,7 +52,7 @@ func (p *pyxisClient) CertifiedImagesContainingLayers(ctx context.Context, uncom
 	if !ok {
 		return nil, fmt.Errorf("client could not be used as http.Client")
 	}
-	client := graphql.NewClient(p.getPyxisGraphqlUrl(), httpClient).WithDebug(true)
+	client := graphql.NewClient(p.getPyxisGraphqlUrl(), httpClient)
 
 	err := client.Query(ctx, &query, variables)
 	if err != nil {
@@ -55,9 +61,20 @@ func (p *pyxisClient) CertifiedImagesContainingLayers(ctx context.Context, uncom
 
 	images := make([]CertImage, 0, len(query.FindImages.ContainerImage))
 	for _, image := range query.FindImages.ContainerImage {
+		freshnessGrades := make([]FreshnessGrade, 0, len(image.FreshnessGrades))
+		for _, grade := range image.FreshnessGrades {
+			startDate, _ := time.Parse(time.RFC3339, string(grade.StartDate))
+			endDate, _ := time.Parse(time.RFC3339, string(grade.EndDate))
+			freshnessGrades = append(freshnessGrades, FreshnessGrade{
+				Grade:     string(grade.Grade),
+				StartDate: startDate,
+				EndDate:   endDate,
+			})
+		}
 		images = append(images, CertImage{
 			ID:                     string(image.ID),
 			UncompressedTopLayerId: string(image.UncompressedTopLayerId),
+			FreshnessGrades:        freshnessGrades,
 		})
 	}
 

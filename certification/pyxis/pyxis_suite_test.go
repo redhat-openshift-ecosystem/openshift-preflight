@@ -155,7 +155,28 @@ func (p *pyxisGraphqlLayerHandler) ServeHTTP(response http.ResponseWriter, reque
 	if request.Body != nil {
 		defer request.Body.Close()
 	}
-	mustWrite(response, `{"data":{"find_images":{"error":null,"total":1,"page":0,"data":[{"uncompressed_top_layer_id":"good_top_layer","_id":"deadb33f"}]}}}`)
+	mustWrite(response, `{
+		"data":{
+			"find_images":{
+				"error":null,
+				"total":1,
+				"page":0,
+				"data":[
+					{
+						"uncompressed_top_layer_id":"good_top_layer",
+						"_id":"deadb33f",
+						"freshness_grades":[
+							{
+								"grade": "A",
+								"start_date": "2022-05-03T08:52:00+00:00",
+								"end_date": null
+							}
+						]
+					}
+				]
+			}
+		}
+	}`)
 	return
 }
 

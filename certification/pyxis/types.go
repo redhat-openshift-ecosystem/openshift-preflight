@@ -1,6 +1,8 @@
 package pyxis
 
 import (
+	"time"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 )
 
@@ -19,19 +21,26 @@ type CertificationResults struct {
 }
 
 type CertImage struct {
-	ID                     string       `json:"_id,omitempty"`
-	Certified              bool         `json:"certified"`
-	Deleted                bool         `json:"deleted" default:"false"`
-	DockerImageDigest      string       `json:"docker_image_digest,omitempty"`
-	DockerImageID          string       `json:"docker_image_id,omitempty"`
-	ImageID                string       `json:"image_id,omitempty"`
-	ISVPID                 string       `json:"isv_pid,omitempty"` // required
-	ParsedData             *ParsedData  `json:"parsed_data,omitempty"`
-	Architecture           string       `json:"architecture" default:"amd64"`
-	RawConfig              string       `json:"raw_config,omitempty"`
-	Repositories           []Repository `json:"repositories,omitempty"`
-	SumLayerSizeBytes      int64        `json:"sum_layer_size_bytes,omitempty"`
-	UncompressedTopLayerId string       `json:"uncompressed_top_layer_id,omitempty"` // TODO: figure out how to populate this, it is not required
+	ID                     string           `json:"_id,omitempty"`
+	Certified              bool             `json:"certified"`
+	Deleted                bool             `json:"deleted" default:"false"`
+	DockerImageDigest      string           `json:"docker_image_digest,omitempty"`
+	DockerImageID          string           `json:"docker_image_id,omitempty"`
+	ImageID                string           `json:"image_id,omitempty"`
+	ISVPID                 string           `json:"isv_pid,omitempty"` // required
+	ParsedData             *ParsedData      `json:"parsed_data,omitempty"`
+	Architecture           string           `json:"architecture" default:"amd64"`
+	RawConfig              string           `json:"raw_config,omitempty"`
+	Repositories           []Repository     `json:"repositories,omitempty"`
+	SumLayerSizeBytes      int64            `json:"sum_layer_size_bytes,omitempty"`
+	UncompressedTopLayerId string           `json:"uncompressed_top_layer_id,omitempty"` // TODO: figure out how to populate this, it is not required
+	FreshnessGrades        []FreshnessGrade `json:"freshness_grades,omitempty"`
+}
+
+type FreshnessGrade struct {
+	Grade     string
+	StartDate time.Time
+	EndDate   time.Time
 }
 
 type ParsedData struct {
