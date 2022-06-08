@@ -10,9 +10,10 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
+	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 )
 
 const ocpVerV1beta1Unsupported = "4.9"
@@ -179,7 +180,7 @@ func GetCsvFilePathFromBundle(mountedDir string) (string, error) {
 }
 
 func GetSupportedInstallModes(ctx context.Context, csvReader io.Reader) (map[string]bool, error) {
-	var csv ClusterServiceVersion
+	var csv operatorv1alpha1.ClusterServiceVersion
 	bts, err := io.ReadAll(csvReader)
 	if err != nil {
 		return nil, fmt.Errorf("could not get CSV from reader: %v", err)
@@ -189,25 +190,40 @@ func GetSupportedInstallModes(ctx context.Context, csvReader io.Reader) (map[str
 		return nil, fmt.Errorf("malformed CSV detected: %v", err)
 	}
 
-	var installedModes map[string]bool = make(map[string]bool, len(csv.Spec.InstallModes))
+	installedModes := make(map[string]bool, len(csv.Spec.InstallModes))
 	for _, v := range csv.Spec.InstallModes {
 		if v.Supported {
-			installedModes[v.Type] = true
+			installedModes[string(v.Type)] = true
 		}
 	}
 	return installedModes, nil
 }
 
-type ClusterServiceVersion struct {
-	Spec ClusterServiceVersionSpec `yaml:"spec"`
-}
+func ExtractImagesFromBundle(ctx context.Context, csvReader io.Reader) ([]string, error) {
+	csvBytes, err := io.ReadAll(csvReader)
+	if err != nil {
+		return nil, fmt.Errorf("could not read CSV from path: %v", err)
+	}
 
-type ClusterServiceVersionSpec struct {
-	// InstallModes specify supported installation types
-	InstallModes []InstallMode `yaml:"installModes,omitempty"`
-}
+	var csv operatorv1alpha1.ClusterServiceVersion
+	if err := yaml.Unmarshal(csvBytes, &csv); err != nil {
+		return nil, fmt.Errorf("could not unmarshal CSV: %v", err)
+	}
 
-type InstallMode struct {
-	Type      string `yaml:"type"`
-	Supported bool   `yaml:"supported"`
+	imageMap := make(map[string]struct{}, len(csv.Spec.RelatedImages))
+	// This will trim down any duplicates
+	for _, v := range csv.Spec.RelatedImages {
+		imageMap[v.Image] = struct{}{}
+	}
+
+	for _, deployment := range csv.Spec.InstallStrategy.StrategySpec.DeploymentSpecs {
+		for _, container := range deployment.Spec.Template.Spec.Containers {
+			imageMap[container.Image] = struct{}{}
+		}
+	}
+	images := make([]string, 0, len(imageMap))
+	for k := range imageMap {
+		images = append(images, k)
+	}
+	return images, nil
 }
