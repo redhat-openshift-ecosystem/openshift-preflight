@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/shurcooL/graphql"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -124,6 +125,65 @@ func (p *pyxisClient) getImage(ctx context.Context, dockerImageDigest string) (*
 	}
 
 	return &data.Data[0], nil
+}
+
+// FindImagesByDigest uses an unauthenticated call to find_images() graphql function, and will
+// return a slice of CertImages. It accepts a slice of image digests. The query return is then
+// packed into the slice of CertImages.
+func (p *pyxisClient) FindImagesByDigest(ctx context.Context, digests []string) ([]CertImage, error) {
+	if len(digests) == 0 {
+		return nil, fmt.Errorf("no digests specified")
+	}
+	// our graphQL query
+	var query struct {
+		FindImages struct {
+			// Additional fields for return should be added here
+			ContainerImage []struct {
+				ID                graphql.String  `graphql:"_id"`
+				Certified         graphql.Boolean `graphql:"certified"`
+				DockerImageDigest graphql.String  `graphql:"docker_image_digest"`
+			} `graphql:"data"`
+			Error struct {
+				Status graphql.Int    `graphql:"status"`
+				Detail graphql.String `graphql:"detail"`
+			} `graphql:"error"`
+			Total graphql.Int
+			Page  graphql.Int
+			// filter to make sure we get exact results
+		} `graphql:"find_images(filter: {docker_image_digest:in:$digests})"`
+	}
+
+	graphqlDigests := make([]graphql.String, len(digests))
+	for idx, digest := range digests {
+		graphqlDigests[idx] = graphql.String(digest)
+	}
+	// variables to feed to our graphql filter
+	variables := map[string]interface{}{
+		"digests": graphqlDigests,
+	}
+
+	// make our query
+	httpClient, ok := p.Client.(*http.Client)
+	if !ok {
+		return nil, fmt.Errorf("client could not be used as http.Client")
+	}
+	client := graphql.NewClient(p.getPyxisGraphqlUrl(), httpClient)
+
+	err := client.Query(ctx, &query, variables)
+	if err != nil {
+		return nil, fmt.Errorf("error while executing find_images query: %v", err)
+	}
+
+	images := make([]CertImage, len(query.FindImages.ContainerImage))
+	for idx, image := range query.FindImages.ContainerImage {
+		images[idx] = CertImage{
+			ID:                string(image.ID),
+			Certified:         bool(image.Certified),
+			DockerImageDigest: string(image.DockerImageDigest),
+		}
+	}
+
+	return images, nil
 }
 
 func (p *pyxisClient) createRPMManifest(ctx context.Context, rpmManifest *RPMManifest) (*RPMManifest, error) {
