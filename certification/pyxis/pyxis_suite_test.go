@@ -41,11 +41,13 @@ func mustWrite(w io.Writer, s string) {
 }
 
 type (
-	pyxisProjectHandler      struct{}
-	pyxisImageHandler        struct{}
-	pyxisRPMManifestHandler  struct{}
-	pyxisTestResultsHandler  struct{}
-	pyxisGraphqlLayerHandler struct{}
+	pyxisProjectHandler           struct{}
+	pyxisImageHandler             struct{}
+	pyxisRPMManifestHandler       struct{}
+	pyxisTestResultsHandler       struct{}
+	pyxisGraphqlLayerHandler      struct{}
+	pyxisGraphqlFindImagesHandler struct{}
+	errorHandler                  struct{}
 )
 
 // For each of these ServeHTTP methods, there is a main switch statement that controls what response will
@@ -150,7 +152,7 @@ func (p *pyxisTestResultsHandler) ServeHTTP(response http.ResponseWriter, reques
 }
 
 func (p *pyxisGraphqlLayerHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
-	log.Trace("In the graphql ServeHTTP")
+	log.Trace("In the graphql Layers ServeHTTP")
 	response.Header().Set("Content-Type", "application/json")
 	if request.Body != nil {
 		defer request.Body.Close()
@@ -178,6 +180,23 @@ func (p *pyxisGraphqlLayerHandler) ServeHTTP(response http.ResponseWriter, reque
 		}
 	}`)
 	return
+}
+
+func (p *pyxisGraphqlFindImagesHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
+	log.Trace("In the graphql FindImages ServeHTTP")
+	response.Header().Set("Content-Type", "application/json")
+	if request.Body != nil {
+		defer request.Body.Close()
+	}
+	mustWrite(response, `{"data":{"find_images":{"error":null,"total":1,"page":0,"data":[{"_id":"deadb33f","certified":true}]}}}`)
+}
+
+func (p *errorHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
+	response.Header().Set("Content-Type", "application/json")
+	if request.Body != nil {
+		defer request.Body.Close()
+	}
+	response.WriteHeader(http.StatusBadGateway)
 }
 
 // In order to test some negative paths, this io.Reader will just throw an error
