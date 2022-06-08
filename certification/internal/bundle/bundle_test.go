@@ -1,10 +1,10 @@
 package bundle
 
 import (
-	"bytes"
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -23,6 +23,21 @@ var _ = Describe("BundleValidateCheck", func() {
   operators.operatorframework.io.bundle.package.v1: testPackage
   operators.operatorframework.io.bundle.channel.default.v1: testChannel
 `
+		csvContents = `spec:
+  install:
+    spec:
+      deployments:
+      - spec:
+          template:
+            spec:
+              containers:
+              - image: registry.example.io/foo/bar@sha256:f000432f07cd187469f0310e3ed9dcf9a5db2be14b8bab9c5293dd1ee8518176
+
+  relatedImages:
+  - name: the-operator
+    image: registry.example.io/foo/bar@sha256:f000432f07cd187469f0310e3ed9dcf9a5db2be14b8bab9c5293dd1ee8518176
+  - name: the-proxy
+    image: registry.example.io/foo/proxy@sha256:5e33f9d095952866b9743cc8268fb740cce6d93439f00ce333a2de1e5974837e`
 	)
 
 	Describe("Bundle validation", func() {
@@ -106,6 +121,30 @@ var _ = Describe("BundleValidateCheck", func() {
 				err := os.WriteFile(filepath.Join(manifestsPath, clusterServiceVersionFilename), []byte(""), 0o644)
 				Expect(err).ToNot(HaveOccurred())
 			})
+			Context("the CSV contains images", func() {
+				It("should get the images", func() {
+					r := strings.NewReader(csvContents)
+					images, err := ExtractImagesFromBundle(context.TODO(), r)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(images).To(HaveLen(2))
+					Expect(images).To(ContainElement("registry.example.io/foo/bar@sha256:f000432f07cd187469f0310e3ed9dcf9a5db2be14b8bab9c5293dd1ee8518176"))
+				})
+			})
+			Context("the CSV is malformed", func() {
+				It("should error", func() {
+					r := strings.NewReader("badcsv::bad")
+					images, err := ExtractImagesFromBundle(context.TODO(), r)
+					Expect(err).To(HaveOccurred())
+					Expect(images).To(BeNil())
+				})
+			})
+			Context("the CSV could not be read", func() {
+				It("should error", func() {
+					images, err := ExtractImagesFromBundle(context.TODO(), errReader(0))
+					Expect(err).To(HaveOccurred())
+					Expect(images).To(BeNil())
+				})
+			})
 			Context("the CSV exists by itself", func() {
 				It("should return the filename", func() {
 					filename, err := GetCsvFilePathFromBundle(imageRef.ImageFSPath)
@@ -159,7 +198,7 @@ var _ = Describe("BundleValidateCheck", func() {
 
 		Context("CSV is valid", func() {
 			It("should return a map of 3", func() {
-				installModes, err := GetSupportedInstallModes(context.Background(), bytes.NewBufferString(csv))
+				installModes, err := GetSupportedInstallModes(context.Background(), strings.NewReader(csv))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(installModes).ToNot(BeNil())
 				Expect(len(installModes)).To(Equal(3))
@@ -180,7 +219,7 @@ var _ = Describe("BundleValidateCheck", func() {
 				csv = `invalid`
 			})
 			It("should error", func() {
-				installModes, err := GetSupportedInstallModes(context.Background(), bytes.NewBufferString(csv))
+				installModes, err := GetSupportedInstallModes(context.Background(), strings.NewReader(csv))
 				Expect(err).To(HaveOccurred())
 				Expect(installModes).To(BeNil())
 			})
