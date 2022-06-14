@@ -78,13 +78,28 @@ func (s *containerCertificationSubmitter) Submit(ctx context.Context) error {
 
 	log.Tracef("CertProject: %+v", certProject)
 
-	// read the provided docker config
-	dockerConfigJsonBytes, err := os.ReadFile(s.dockerConfig)
-	if err != nil {
-		return err
+	// only read the dockerfile if the user provides a location for the file
+	// at this point in the flow, if `cfg.DockerConfig` is empty we know the repo is public and can continue the submission flow
+	if s.dockerConfig != "" {
+		dockerConfigJsonBytes, err := os.ReadFile(s.dockerConfig)
+		if err != nil {
+			return fmt.Errorf("could not open file for submission: %s: %w",
+				s.dockerConfig,
+				err,
+			)
+		}
+
+		certProject.Container.DockerConfigJSON = string(dockerConfigJsonBytes)
 	}
 
-	certProject.Container.DockerConfigJSON = string(dockerConfigJsonBytes)
+	// the below code is for the edge case where a partner has a DockerConfig in pyxis, but does not send one to preflight.
+	// when we call pyxis's GetProject API, we get back the DockerConfig as a PGP encrypted string and not JSON,
+	// if we were to send what pyixs just sent us in a update call, pyxis would throw a validation error saying it's not valid json
+	// the below code aims to set the DockerConfigJSON to an empty string, and since this field is `omitempty` when we marshall it
+	// we will not get a validation error
+	if s.dockerConfig == "" {
+		certProject.Container.DockerConfigJSON = ""
+	}
 
 	// prepare submission. We ignore the error because nil checks for the certProject
 	// are done earlier to prevent panics, and that's the only error case for this function.

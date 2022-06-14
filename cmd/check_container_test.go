@@ -156,6 +156,20 @@ var _ = Describe("Check Container Command", func() {
 			})
 		})
 
+		Context("and no docker config command argument was provided", func() {
+			BeforeEach(func() {
+				fakePC.setSRFuncSubmitSuccessfully("", "")
+			})
+			It("should not throw an error", func() {
+				sbmt.dockerConfig = ""
+				err := os.Remove(dockerConfigPath)
+				Expect(err).ToNot(HaveOccurred())
+
+				err = sbmt.Submit(context.TODO())
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
 		Context("and the cert image cannot be read from disk", func() {
 			It("should throw an error", func() {
 				err := os.Remove(path.Join(artifactsDir, certification.DefaultCertImageFilename))
