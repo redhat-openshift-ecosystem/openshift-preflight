@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/spf13/cobra"
@@ -16,15 +18,34 @@ var runtimeAssetsCmd = &cobra.Command{
 }
 
 func runtimeAssetsRunE(cmd *cobra.Command, args []string) error {
-	assets := runtime.Assets(cmd.Context())
+	if err := printAssets(cmd.Context(), cmd.OutOrStdout()); err != nil {
+		return err
+	}
 
-	assetsJSON, err := json.MarshalIndent(assets, "", "    ")
+	return nil
+}
+
+func printAssets(ctx context.Context, w io.Writer) error {
+	assets := runtime.Assets(ctx)
+
+	assetsJSON, err := prettyPrintJSON(assets)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(string(assetsJSON))
+	fmt.Fprintln(w, string(assetsJSON))
 	return nil
+}
+
+// prettyPrintJSON marhals v with standard pretty print spacing and returns
+// it in string form.
+func prettyPrintJSON(v interface{}) (string, error) {
+	json, err := json.MarshalIndent(v, "", "    ")
+	if err != nil {
+		return "", err
+	}
+
+	return string(json), nil
 }
 
 func init() {
