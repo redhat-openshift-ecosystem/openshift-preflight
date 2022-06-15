@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -11,6 +12,21 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+// executeCommand is used for cobra command testing. It is effectively what's seen here:
+// https://github.com/spf13/cobra/blob/master/command_test.go#L34-L43. It should only
+// be used in tests. Typically, you should pass rootCmd as the param for root, and your
+// subcommand's invocation within args.
+func executeCommand(root *cobra.Command, args ...string) (output string, err error) {
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetErr(buf)
+	root.SetArgs(args)
+
+	err = root.Execute()
+
+	return buf.String(), err
+}
 
 var _ = Describe("cmd package utility functions", func() {
 	DescribeTable("Determine filename to which to write test results",
