@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -31,14 +30,6 @@ var checkContainerCmd = &cobra.Command{
 	Short: "Run checks for a container",
 	Long:  `This command will run the Certification checks for a container image. `,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if l, _ := cmd.Flags().GetBool("list-checks"); l {
-			fmt.Printf("\n%s\n%s%s\n", "The checks that will be executed are the following:", "- ",
-				strings.Join(engine.ContainerPolicy(), "\n- "))
-
-			// exiting gracefully instead of retuning, otherwise cobra calls RunE
-			os.Exit(0)
-		}
-
 		if len(args) != 1 {
 			return fmt.Errorf("a container image positional argument is required")
 		}
