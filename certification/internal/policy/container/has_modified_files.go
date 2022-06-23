@@ -49,7 +49,7 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 	// installed packages.
 	packageFiles := make(map[string]struct{}, len(pkgList))
 	for _, pkg := range pkgList {
-		filenames, err := pkg.InstalledFiles()
+		filenames, err := pkg.InstalledFileNames()
 		if err != nil {
 			return nil, fmt.Errorf("could not list installed files: %w", err)
 		}
