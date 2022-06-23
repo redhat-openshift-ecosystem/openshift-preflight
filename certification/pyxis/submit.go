@@ -12,7 +12,7 @@ var defaultRegistryAlias = "docker.io"
 
 // SubmitResults takes certInput and sends requests to Pyxis to create or update entries
 // based on certInput.
-func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *certificationInput) (*CertificationResults, error) {
+func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *CertificationInput) (*CertificationResults, error) {
 	var err error
 
 	certProject := certInput.CertProject

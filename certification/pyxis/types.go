@@ -6,7 +6,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 )
 
-type certificationInput struct {
+type CertificationInput struct {
 	CertProject *CertProject
 	CertImage   *CertImage
 	TestResults *TestResults
