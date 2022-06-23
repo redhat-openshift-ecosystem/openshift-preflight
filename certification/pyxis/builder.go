@@ -13,7 +13,7 @@ import (
 // certificationInputBuilder facilitates the building of CertificationInput for
 // submitting an asset to Pyxis.
 type certificationInputBuilder struct {
-	certificationInput
+	CertificationInput
 }
 
 // NewCertificationInput accepts required values for submitting to Pyxis, and returns a CertificationInputBuilder for
@@ -25,7 +25,7 @@ func NewCertificationInput(project *CertProject) (*certificationInputBuilder, er
 	}
 
 	b := certificationInputBuilder{
-		certificationInput: certificationInput{
+		CertificationInput: CertificationInput{
 			CertProject: project,
 		},
 	}
@@ -39,7 +39,7 @@ func NewCertificationInput(project *CertProject) (*certificationInputBuilder, er
 // unmodifiable CertificationInput.
 //
 // If any required values are not included, an error is thrown.
-func (b *certificationInputBuilder) Finalize() (*certificationInput, error) {
+func (b *certificationInputBuilder) Finalize() (*CertificationInput, error) {
 	// safeguards, make sure things aren't nil for any reason.
 	if b.CertImage == nil {
 		return nil, fmt.Errorf("a CertImage was not provided and is required")
@@ -61,7 +61,7 @@ func (b *certificationInputBuilder) Finalize() (*certificationInput, error) {
 	b.CertImage.ISVPID = b.CertProject.Container.ISVPID
 	b.CertImage.Certified = b.TestResults.Passed
 
-	return &b.certificationInput, nil
+	return &b.CertificationInput, nil
 }
 
 // WithCertImage adds a pyxis.CertImage from the passed io.Reader to the CertificationInput.

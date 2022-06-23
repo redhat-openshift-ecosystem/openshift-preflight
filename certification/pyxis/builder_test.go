@@ -60,7 +60,7 @@ var _ = Describe("Pyxis Builder tests", func() {
 			})
 
 			It("should return a certification input builder with the project embedded", func() {
-				Expect(builder.certificationInput.CertProject.ID).To(Equal(p.ID))
+				Expect(builder.CertificationInput.CertProject.ID).To(Equal(p.ID))
 			})
 
 			It("should fail to finalize with no cert image", func() {

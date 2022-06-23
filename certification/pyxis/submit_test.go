@@ -12,7 +12,7 @@ var _ = Describe("Pyxis Submit", func() {
 	ctx := context.Background()
 
 	var pyxisClient *pyxisClient
-	var certInput certificationInput
+	var certInput CertificationInput
 	mux := http.NewServeMux()
 
 	// These go from most explicit to least explicit. They will be check that way by the ServeMux.
@@ -29,7 +29,7 @@ var _ = Describe("Pyxis Submit", func() {
 			"my-awesome-project-id",
 			&http.Client{Transport: localRoundTripper{handler: mux}},
 		)
-		certInput = certificationInput{
+		certInput = CertificationInput{
 			CertProject: &CertProject{CertificationStatus: "Started"},
 			CertImage: &CertImage{
 				Repositories: []Repository{
