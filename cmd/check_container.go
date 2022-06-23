@@ -64,7 +64,7 @@ func checkContainerRunE(cmd *cobra.Command, args []string) error {
 
 	// Set our runtime defaults.
 	cfg.Image = containerImage
-	cfg.ResponseFormat = DefaultOutputFormat
+	cfg.ResponseFormat = formatters.DefaultFormat
 
 	// Run the  container check.
 	cmd.SilenceUsage = true

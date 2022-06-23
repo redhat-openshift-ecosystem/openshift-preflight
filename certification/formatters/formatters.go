@@ -30,11 +30,17 @@ type FormatterFunc = func(context.Context, runtime.Results) (response []byte, fo
 // NewForConfig returns a new formatter based on the user-provided configuration. It relies
 // on config values which should align with known/supported/built-in formatters.
 func NewForConfig(cfg certification.Config) (ResponseFormatter, error) {
-	formatter, defined := availableFormatters[cfg.ResponseFormat()]
+	return NewByName(cfg.ResponseFormat())
+}
+
+// NewByName returns a predefined ResponseFormatter with the given name.
+// TODO: New* funcs in this package may benefit from renaming.
+func NewByName(name string) (ResponseFormatter, error) {
+	formatter, defined := availableFormatters[name]
 	if !defined {
-		return nil, fmt.Errorf(
-			"failed to create a new formatter from config: %s",
-			cfg.ResponseFormat(),
+		return nil, fmt.Errorf("%w: %s",
+			ErrUnknownFormatter,
+			name,
 		)
 	}
 

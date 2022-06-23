@@ -1,7 +1,6 @@
 package cmd
 
 var (
-	DefaultOutputFormat      = "json"
 	DefaultLogFile           = "preflight.log"
 	DefaultLogLevel          = "info"
 	DefaultNamespace         = "default"
