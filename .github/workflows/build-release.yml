@@ -70,12 +70,13 @@ jobs:
   extract-assets:
     needs: build-release
     uses: ./.github/workflows/release-artifacts.yml
-
     with:
       name: ${{ needs.build-release.outputs.imageName }}
       tag: ${{ needs.build-release.outputs.imageVersion }}
     secrets:
       registry: ${{ secrets.IMAGE_REGISTRY }}
+      user: ${{ secrets.REGISTRY_USER }}
+      password: ${{ secrets.REGISTRY_PASSWORD }}
       token: ${{ secrets.GITHUB_TOKEN }}
 
   copy-to-rhisv:

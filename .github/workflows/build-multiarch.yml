@@ -33,6 +33,14 @@ jobs:
     name: create and push a multiarch manifest to the repo
     runs-on: ubuntu-latest
     steps:
+      # Authenticate to container image registry to push the image
+      - name: Podman Login
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ${{ secrets.registry }}
+          username: ${{ secrets.user }}
+          password: ${{ secrets.password }}
+
       - name: Create and add to manifest
         run: |
           buildah manifest create ${{ inputs.name }}
@@ -41,14 +49,6 @@ jobs:
           buildah manifest add ${{ inputs.name }} ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}-linux-arm64
           buildah manifest add ${{ inputs.name }} ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}-linux-s390x
 
-      # Authenticate to container image registry to push the image
-      - name: Podman Login
-        uses: redhat-actions/podman-login@v1
-        with:
-          registry: ${{ secrets.registry }}
-          username: ${{ secrets.user }}
-          password: ${{ secrets.password }}
-          
       - name: Push manifest
         run: |
             podman manifest push ${{ inputs.name }} ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}  --all
