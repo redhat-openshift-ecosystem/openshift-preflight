@@ -1,0 +1,235 @@
+package cmd
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"math/rand"
+	"time"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+)
+
+type (
+	fibdFunc func(ctx context.Context, digests []string) ([]pyxis.CertImage, error)
+	gpFunc   func(context.Context) (*pyxis.CertProject, error)
+	srFunc   func(context.Context, *pyxis.CertificationInput) (*pyxis.CertificationResults, error)
+)
+
+// fakePyxisClient is a configurable pyxisClient for use in testing. It accepts function definitions to
+// use to implement a cmd.pyxisClient.
+type fakePyxisClient struct {
+	findImagesByDigestFunc fibdFunc
+	getProjectsFunc        gpFunc
+	submitResultsFunc      srFunc
+}
+
+// baseProject returns a pyxis.CertProject with an id of projectID, or a base value
+// if none is provided.
+func (pc *fakePyxisClient) baseProject(projectID string) pyxis.CertProject {
+	pid := "000000000000"
+	if len(projectID) > 0 {
+		pid = projectID
+	}
+
+	return pyxis.CertProject{
+		ID:                  pid,
+		CertificationStatus: "false",
+		Name:                "some-project",
+	}
+}
+
+// successfulCertResults returns a pyxis.CertificationResults for use in tests emulating successful
+// submission.
+func (pc *fakePyxisClient) successfulCertResults(projectID, certImageID string) pyxis.CertificationResults {
+	pid := "000000000000"
+	if len(projectID) > 0 {
+		pid = projectID
+	}
+
+	ciid := "111111111111"
+	if len(certImageID) > 0 {
+		ciid = certImageID
+	}
+	return pyxis.CertificationResults{
+		CertProject: &pyxis.CertProject{
+			ID: pid,
+		},
+		CertImage: &pyxis.CertImage{
+			ID: ciid,
+		},
+	}
+}
+
+// setGPFuncReturnBaseProject sets pc.getProjectFunc to a function that returns baseProject.
+// This is a fakePyxisClient method because it enables standardizing on a single value of
+// a CertificationProject for GetProject calls, tied to the instance of fakePyxisClient
+func (pc *fakePyxisClient) setGPFuncReturnBaseProject(projectID string) {
+	baseproj := pc.baseProject(projectID)
+	pc.getProjectsFunc = func(context.Context) (*pyxis.CertProject, error) { return &baseproj, nil }
+}
+
+func (pc *fakePyxisClient) setSRFuncSubmitSuccessfully(projectID, certImageID string) {
+	baseproj := pc.baseProject(projectID)
+	certresults := pc.successfulCertResults(baseproj.ID, certImageID)
+	pc.submitResultsFunc = func(context.Context, *pyxis.CertificationInput) (*pyxis.CertificationResults, error) {
+		return &certresults, nil
+	}
+}
+
+func (pc *fakePyxisClient) FindImagesByDigest(ctx context.Context, digests []string) ([]pyxis.CertImage, error) {
+	return pc.findImagesByDigestFunc(ctx, digests)
+}
+
+func (pc *fakePyxisClient) GetProject(ctx context.Context) (*pyxis.CertProject, error) {
+	return pc.getProjectsFunc(ctx)
+}
+
+func (pc *fakePyxisClient) SubmitResults(ctx context.Context, ci *pyxis.CertificationInput) (*pyxis.CertificationResults, error) {
+	return pc.submitResultsFunc(ctx, ci)
+}
+
+// gpFuncReturnError implements gpFunc but returns an error.
+func gpFuncReturnError(ctx context.Context) (*pyxis.CertProject, error) {
+	return nil, errors.New("some error returned from the api")
+}
+
+// gpFuncReturnScratchException implements gpFunc and returns a scratch exception.
+func gpFuncReturnScratchException(ctx context.Context) (*pyxis.CertProject, error) {
+	return &pyxis.CertProject{
+		Container: pyxis.Container{
+			OsContentType: "scratch",
+		},
+	}, nil
+}
+
+// gpFuncReturnRootException implements gpFunc and returns a root exception.
+func gpFuncReturnRootException(ctx context.Context) (*pyxis.CertProject, error) {
+	return &pyxis.CertProject{
+		Container: pyxis.Container{
+			DockerConfigJSON: "",
+			Privileged:       true,
+		},
+	}, nil
+}
+
+// gpFuncReturnNoException implements gpFunc and returns no exception indicators.
+func gpFuncReturnNoException(ctx context.Context) (*pyxis.CertProject, error) {
+	return &pyxis.CertProject{
+		Container: pyxis.Container{
+			Type:       "",
+			Privileged: false,
+		},
+	}, nil
+}
+
+// srFuncReturnError implements srFunc and returns a submission error.
+func srFuncReturnError(ctx context.Context, ci *pyxis.CertificationInput) (*pyxis.CertificationResults, error) {
+	return nil, errors.New("some submission error")
+}
+
+// fidbFuncNoop implements a fidbFunc, best to use while instantiating fakePyxisClient.
+func fidbFuncNoop(ctx context.Context, digests []string) ([]pyxis.CertImage, error) {
+	return nil, nil
+}
+
+// gpFuncNoop implements a gpFunc, best to use while instantiating fakePyxisClient.
+func gpFuncNoop(ctx context.Context) (*pyxis.CertProject, error) {
+	return nil, nil
+}
+
+// srFuncNoop implements a srFuncNoop, best to use while instantiating fakePyxisClient.
+func srFuncNoop(ctx context.Context, ci *pyxis.CertificationInput) (*pyxis.CertificationResults, error) {
+	return nil, nil
+}
+
+// fakeCheckEngine implements a certification.CheckEngine with configurables for use in tests.
+type fakeCheckEngine struct {
+	image              string
+	passed             bool
+	errorRunningChecks bool
+	errorMsg           string
+}
+
+// generateCheck generates a check with a randomized name
+func (e fakeCheckEngine) generateCheck() certification.Check {
+	generatedName := fmt.Sprintf("test-rand-%d", rand.Int())
+
+	var doNothing certification.ValidatorFunc = func(c context.Context, i certification.ImageReference) (bool, error) {
+		return true, nil
+	}
+
+	return certification.NewGenericCheck(generatedName,
+		doNothing,
+		certification.Metadata{},
+		certification.HelpText{},
+	)
+}
+
+func (e fakeCheckEngine) ExecuteChecks(ctx context.Context) error {
+	if e.errorRunningChecks {
+		return errors.New(e.errorMsg)
+	}
+	return nil
+}
+
+func (e fakeCheckEngine) Results(ctx context.Context) runtime.Results {
+	return runtime.Results{
+		TestedImage:       "",
+		PassedOverall:     false,
+		TestedOn:          runtime.OpenshiftClusterVersion{},
+		CertificationHash: "",
+		Passed: []runtime.Result{
+			{Check: e.generateCheck(), ElapsedTime: 20 * time.Millisecond},
+		},
+		Failed: []runtime.Result{},
+		Errors: []runtime.Result{},
+	}
+}
+
+// badResultWriter implements resultWriter and will automatically fail with the
+// provided errmsg.
+type badResultWriter struct {
+	errmsg string
+}
+
+func (brw *badResultWriter) OpenFile(n string) (io.WriteCloser, error) {
+	return nil, errors.New(brw.errmsg)
+}
+
+func (brw *badResultWriter) Close() error {
+	return nil
+}
+
+func (brw *badResultWriter) Write(p []byte) (int, error) {
+	return 0, nil
+}
+
+// badFormatter implements Formatter and fails to Format with the provided errmsg.
+type badFormatter struct {
+	errormsg string
+}
+
+func (f *badFormatter) FileExtension() string {
+	return "fake"
+}
+
+func (f *badFormatter) PrettyName() string {
+	return "Fake"
+}
+
+func (f *badFormatter) Format(ctx context.Context, r runtime.Results) ([]byte, error) {
+	return nil, errors.New(f.errormsg)
+}
+
+// badResultSubmitter implements resultSubmitter and fails to submit with the included errmsg.
+type badResultSubmitter struct {
+	errmsg string
+}
+
+func (brs *badResultSubmitter) Submit(ctx context.Context) error {
+	return errors.New(brs.errmsg)
+}
