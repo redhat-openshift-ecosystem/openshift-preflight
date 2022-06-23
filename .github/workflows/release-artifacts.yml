@@ -12,6 +12,10 @@ on:
     secrets:
       registry:
         required: true
+      user:
+        required: true
+      password:
+        required: true
       token:
         required: true
         
@@ -28,6 +32,13 @@ jobs:
           - ppc64le
           - s390x
     steps:
+    - name: Docker Login
+      uses: docker/login-action@v1
+      with:
+        registry: ${{ secrets.registry }}
+        username: ${{ secrets.user }}
+        password: ${{ secrets.password }}
+
     - name: Extract executable
       uses: shrink/actions-docker-extract@v1
       id: extract
