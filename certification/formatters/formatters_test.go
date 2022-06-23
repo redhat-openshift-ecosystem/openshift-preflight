@@ -10,6 +10,12 @@ import (
 )
 
 var _ = Describe("Formatters", func() {
+	Describe("When getting the formatter for the named default format", func() {
+		It("should never fail", func() {
+			_, err := NewByName(DefaultFormat)
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
 	Describe("When getting a new formatter for a configuration", func() {
 		Context("with a valid configuration", func() {
 			cfg := runtime.Config{

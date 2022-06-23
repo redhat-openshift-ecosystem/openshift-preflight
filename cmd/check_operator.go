@@ -56,7 +56,7 @@ func checkOperatorRunE(cmd *cobra.Command, args []string) error {
 	}
 
 	cfg.Image = operatorImage
-	cfg.ResponseFormat = DefaultOutputFormat
+	cfg.ResponseFormat = formatters.DefaultFormat
 	cfg.Bundle = true
 	cfg.Scratch = true
 
