@@ -1,12 +1,12 @@
+// go:test !race
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
 
-	"github.com/manifoldco/promptui"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -23,107 +23,156 @@ const (
 	containerImage       = "Container Image"
 )
 
+var projectTypeMapping = map[string]string{
+	"container": containerImage,
+	"operator":  operatorBundleImage,
+}
+
 var supportCmd = &cobra.Command{
-	Use:   "support",
-	Short: "Submits a support request",
-	Long: `This interactive command will generate a URL; based on user input which can then be used to create a Red Hat Support Ticket.
-	This command can be used when you'd like assistance from Red Hat Support when attempting to pass your certification checks. `,
+	Use:   "support <operator|container> <your project ID> [pullRequestURL if operator project]",
+	Short: "Creates a support request",
+	Args: cobra.MatchAll(
+		cobra.MinimumNArgs(2),
+		cobra.MaximumNArgs(3)),
+	Long: `Generate a URL that can be used to open a ticket with Red Hat Support if you're having an issue passing certification checks.`,
 	RunE: supportRunE,
 }
 
 func supportRunE(cmd *cobra.Command, args []string) error {
-	certProjectTypeLabel := promptui.Select{
-		Label: "Select a Certification Project Type",
-		Items: []string{containerImage, operatorBundleImage},
+	// the last positional argument is optional, so
+	// if the user didn't provide it, we'll make it an empty
+	// string.
+	if len(args) == 2 {
+		args = append(args, "")
 	}
 
-	_, certProjectTypeValue, err := certProjectTypeLabel.Run()
+	ptype := args[0]
+	pid := args[1]
+	prurl := args[2]
+
+	support, err := newSupportTextGenerator(ptype, pid, prurl)
 	if err != nil {
-		return fmt.Errorf("project type prompt failed, please try re-running support command")
+		return err
 	}
 
-	log.Debugf("certification project type: %s", certProjectTypeValue)
+	fmt.Fprint(cmd.OutOrStdout(), support.Generate())
+	return nil
+}
 
-	certProjectIDLabel := promptui.Prompt{
-		Label: "Please Enter Connect Certification Project ID",
+type supportTextGenerator struct {
+	ProjectType    string
+	ProjectID      string
+	PullRequestURL string
+}
 
-		// validate makes sure that the project id is not blank, does not contain special characters,
-		// and is in the proper format
-		Validate: func(s string) error {
-			if s == "" {
-				return fmt.Errorf("please enter a non empty project id")
-			}
-
-			isLegacy, _ := regexp.MatchString(`^p.*`, s)
-			if isLegacy {
-				return fmt.Errorf("please remove leading character p from project id")
-			}
-
-			isOSPID, _ := regexp.MatchString(`^ospid-.*`, s)
-			if isOSPID {
-				return fmt.Errorf("please remove leading character ospid- from project id")
-			}
-
-			isAlphaNumeric := regexp.MustCompile(`^[a-zA-Z0-9]*$`).MatchString(s)
-			if !isAlphaNumeric {
-				return fmt.Errorf("please remove all special characters from project id")
-			}
-
-			return nil
-		},
+func newSupportTextGenerator(ptype, pid, pullReqURL string) (*supportTextGenerator, error) {
+	gen := &supportTextGenerator{
+		ProjectType:    ptype,
+		ProjectID:      pid,
+		PullRequestURL: pullReqURL,
 	}
 
-	certProjectIDValue, err := certProjectIDLabel.Run()
-	if err != nil {
-		return fmt.Errorf("project ID prompt failed, please try re-running support command")
+	if err := gen.validate(); err != nil {
+		return nil, err
 	}
 
-	log.Debugf("certification project id: %s", certProjectIDValue)
+	return gen, nil
+}
 
-	// building and encoding query params
-	queryParams := url.Values{}
-	queryParams.Add(typeParam, typeValue)
-	queryParams.Add(sourceParam, sourceValue)
-	queryParams.Add(certProjectTypeParam, certProjectTypeValue)
-	queryParams.Add(certProjectIDParam, certProjectIDValue)
+func (g *supportTextGenerator) queryParams() url.Values {
+	// base parameters
+	qp := url.Values{}
+	qp.Add(typeParam, typeValue)
+	qp.Add(sourceParam, sourceValue)
 
-	// checking project type to see if we need to add additional query params
-	if certProjectTypeValue == operatorBundleImage {
-		pullRequestURLLabel := promptui.Prompt{
-			Label: "Please Enter Your Pull Request URL",
+	// user parameters
+	qp.Add(certProjectTypeParam, projectTypeMapping[g.ProjectType])
+	qp.Add(certProjectIDParam, g.ProjectID)
 
-			// validate makes sure that the url entered has a valid scheme, host and path to the pull request
-			Validate: func(s string) error {
-				_, err := url.ParseRequestURI(s)
-				if err != nil {
-					return fmt.Errorf("please enter a valid url: including scheme, host, and path to pull request")
-				}
-
-				url, err := url.Parse(s)
-				if err != nil || url.Scheme == "" || url.Host == "" || url.Path == "" {
-					return fmt.Errorf("please enter a valid url: including scheme, host, and path to pull request")
-				}
-
-				return nil
-			},
-		}
-
-		pullRequestURLValue, err := pullRequestURLLabel.Run()
-		if err != nil {
-			return fmt.Errorf("pull request URL prompt failed, please try re-running support command")
-		}
-
-		log.Debugf("pull request url: %s", pullRequestURLValue)
-
-		queryParams.Add(pullRequestURLParam, pullRequestURLValue)
+	if g.PullRequestURL != "" {
+		qp.Add(pullRequestURLParam, g.PullRequestURL)
 	}
+	return qp
+}
 
-	fmt.Printf("Create a support ticket by: \n"+
+func (g *supportTextGenerator) Generate() string {
+	params := g.queryParams()
+	return fmt.Sprintf("Create a support ticket by: \n"+
 		"\t1. Copying URL: %s\n"+
 		"\t2. Paste above URL in a browser\n"+
 		"\t3. Login with Red Hat SSO\n"+
 		"\t4. Enter an issue summary and description\n"+
-		"\t5. Preview and Submit your ticket\n", baseURL+queryParams.Encode())
+		"\t5. Preview and Submit your ticket",
+		baseURL+params.Encode())
+}
+
+func (g *supportTextGenerator) validate() error {
+	if err := projectTypeValidation(g.ProjectType); err != nil {
+		return err
+	}
+
+	if err := projectIDValidation(g.ProjectID); err != nil {
+		return err
+	}
+
+	if g.ProjectType == "operator" {
+		if len(g.PullRequestURL) == 0 {
+			return errors.New("a pull request URL is required for operator project support requests")
+		}
+
+		if err := pullRequestURLValidation(g.PullRequestURL); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// pullRequestURLValidation validates urlstr matches expected formats.
+// This implements promptui.ValidateFunc.
+func pullRequestURLValidation(urlstr string) error {
+	_, err := url.ParseRequestURI(urlstr)
+	if err != nil {
+		return fmt.Errorf("please enter a valid url: including scheme, host, and path to pull request")
+	}
+
+	url, err := url.Parse(urlstr)
+	if err != nil || url.Scheme == "" || url.Host == "" || url.Path == "" {
+		return fmt.Errorf("please enter a valid url: including scheme, host, and path to pull request")
+	}
+
+	return nil
+}
+
+// projectIDValidation validates id to ensure it conforms with expected formats.
+// This implements promptui.ValidateFunc.
+func projectIDValidation(id string) error {
+	if id == "" {
+		return errors.New("please enter a non empty project id")
+	}
+
+	isLegacy, _ := regexp.MatchString(`^p.*`, id)
+	if isLegacy {
+		return errors.New("please remove leading character p from project id")
+	}
+
+	isOSPID, _ := regexp.MatchString(`^ospid-.*`, id)
+	if isOSPID {
+		return errors.New("please remove leading characters ospid- from project id")
+	}
+
+	isAlphaNumeric := regexp.MustCompile(`^[a-zA-Z0-9]*$`).MatchString(id)
+	if !isAlphaNumeric {
+		return errors.New("please remove all special characters from project id")
+	}
+
+	return nil
+}
+
+func projectTypeValidation(s string) error {
+	if !(s == "operator" || s == "container") {
+		return fmt.Errorf(`the project type must be "operator" or "container, received %s"`, s)
+	}
 
 	return nil
 }
