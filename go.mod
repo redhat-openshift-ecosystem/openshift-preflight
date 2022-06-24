@@ -7,7 +7,6 @@ require (
 	github.com/docker/cli v20.10.12+incompatible
 	github.com/google/go-containerregistry v0.8.1-0.20220425181515-fc6ff852e45e
 	github.com/knqyf263/go-rpmdb v0.0.0-20201215100354-a9e3110d8ee1
-	github.com/manifoldco/promptui v0.9.0
 	github.com/onsi/ginkgo/v2 v2.1.3
 	github.com/onsi/gomega v1.18.1
 	github.com/openshift/api v0.0.0-20210910062324-a41d3573a3ba
@@ -30,7 +29,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.11.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.0+incompatible // indirect
