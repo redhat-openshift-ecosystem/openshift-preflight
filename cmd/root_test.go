@@ -5,6 +5,8 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -26,6 +28,57 @@ func executeCommand(root *cobra.Command, args ...string) (output string, err err
 	err = root.Execute()
 
 	return buf.String(), err
+}
+
+// executeCommandWithInput runs executeCommand but passes input to stdin. This runs executeCommand
+// asyncronously so that input can be passed once the command has started running. It is recommended
+// that this is executed with a timeout wrapper.
+func executeCommandWithInput(root *cobra.Command, input []byte, args ...string) (cmdout string, cmderr error) {
+	inBuffer := promptBuffer{bytes.NewBuffer([]byte{})}
+	root.SetIn(inBuffer)
+
+	var out string
+	var err error
+	var wg sync.WaitGroup
+
+	// run executeCommand with a timeout so we're not waiting forever.
+	wg.Add(1)
+	go func() {
+		out, err = executeCommand(root, args...)
+		wg.Done()
+	}()
+
+	inBuffer.Write(input)
+
+	// wait for the prompt to complete.
+	wg.Wait()
+
+	// This is execute error (if expected)
+	return out, err
+}
+
+// runTestFuncWithTimeout runs function with timeout. Returns true if the execution
+// timedout and false if it did not.
+func runTestFuncWithTimeout(function func(), timeout time.Duration) (timedout bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	done := make(chan int, 1)
+	go func() {
+		function()
+		done <- 0
+	}()
+
+	for {
+		select {
+		case <-done:
+			return false
+		case <-ctx.Done():
+			return true
+		default:
+			time.Sleep(1 * time.Second)
+		}
+	}
 }
 
 var _ = Describe("cmd package utility functions", func() {
