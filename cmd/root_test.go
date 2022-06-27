@@ -81,7 +81,7 @@ var _ = Describe("cmd package utility functions", func() {
 			}
 			cobra.OnInitialize(initConfig)
 		})
-		Context("confiuring a Cobra Command", func() {
+		Context("configuring a Cobra Command", func() {
 			var tmpDir string
 			BeforeEach(func() {
 				var err error
