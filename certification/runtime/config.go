@@ -50,7 +50,7 @@ func NewConfigFrom(vcfg viper.Viper) (*Config, error) {
 	cfg.LogFile = vcfg.GetString("logfile")
 	cfg.DockerConfig = vcfg.GetString("dockerConfig")
 	cfg.Artifacts = vcfg.GetString("artifacts")
-	cfg.WriteJUnit = viper.GetBool("junit")
+	cfg.WriteJUnit = vcfg.GetBool("junit")
 	cfg.storeContainerPolicyConfiguration(vcfg)
 	cfg.storeOperatorPolicyConfiguration(vcfg)
 	return &cfg, nil
@@ -75,10 +75,10 @@ func (c *Config) storeContainerPolicyConfiguration(vcfg viper.Viper) {
 // items in viper, normalizes them, and stores them in Config.
 func (c *Config) storeOperatorPolicyConfiguration(vcfg viper.Viper) {
 	c.Kubeconfig = os.Getenv("KUBECONFIG")
-	c.Namespace = viper.GetString("namespace")
-	c.ServiceAccount = viper.GetString("serviceaccount")
-	c.ScorecardImage = viper.GetString("scorecard_image")
-	c.ScorecardWaitTime = viper.GetString("scorecard_wait_time")
-	c.Channel = viper.GetString("channel")
-	c.IndexImage = viper.GetString("indeximage")
+	c.Namespace = vcfg.GetString("namespace")
+	c.ServiceAccount = vcfg.GetString("serviceaccount")
+	c.ScorecardImage = vcfg.GetString("scorecard_image")
+	c.ScorecardWaitTime = vcfg.GetString("scorecard_wait_time")
+	c.Channel = vcfg.GetString("channel")
+	c.IndexImage = vcfg.GetString("indeximage")
 }
