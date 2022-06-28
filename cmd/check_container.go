@@ -87,6 +87,8 @@ func checkContainerRunE(cmd *cobra.Command, args []string) error {
 	}
 
 	cfg.Image = containerImage
+	cfg.ResponseFormat = formatters.DefaultFormat
+
 	checkContainer, err := newCheckContainerRunner(ctx, cfg)
 	if err != nil {
 		return err
