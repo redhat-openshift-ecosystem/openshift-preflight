@@ -40,6 +40,15 @@ var _ = Describe("Check Container Command", func() {
 		artifacts.Reset()
 	})
 
+	Context("when running the check container subcommand", func() {
+		Context("With all of the required parameters", func() {
+			It("should reach the core logic, but throw an error because of the placeholder values for the container image", func() {
+				_, err := executeCommand(rootCmd, "check", "container", "example.com/example/image:mytag")
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
+
 	Context("When determining container policy exceptions", func() {
 		var fakePC *fakePyxisClient
 		BeforeEach(func() {
@@ -440,6 +449,7 @@ var _ = Describe("Check Container Command", func() {
 
 				expectedEngine, err := engine.NewForConfig(context.TODO(), cfg.ReadOnly())
 				Expect(runner.eng).To(BeEquivalentTo(expectedEngine))
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 		// NOTE(): There's no way to test policy exceptions here because
