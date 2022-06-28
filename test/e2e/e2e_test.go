@@ -36,7 +36,7 @@ var _ = Describe("policy validation", func() {
 			results := e.Results(ctx)
 
 			It("should pass all checks", func() {
-				Expect(len(results.Passed)).To(Equal(len(engine.OperatorPolicy())))
+				Expect(len(results.Passed)).To(Equal(len(engine.OperatorPolicy(context.TODO()))))
 			})
 		})
 
@@ -82,7 +82,7 @@ var _ = Describe("policy validation", func() {
 			results := e.Results(ctx)
 
 			It("should pass all checks", func() {
-				Expect(len(results.Passed)).To(Equal(len(engine.ContainerPolicy())))
+				Expect(len(results.Passed)).To(Equal(len(engine.ContainerPolicy(context.TODO()))))
 				Expect(len(results.Errors)).To(BeZero())
 				Expect(len(results.Failed)).To(BeZero())
 			})

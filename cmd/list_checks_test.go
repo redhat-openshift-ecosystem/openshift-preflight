@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -39,7 +40,7 @@ var _ = Describe("list checks subcommand", func() {
 
 	Context("Printing checks", func() {
 		It("should always contain the container policy", func() {
-			expected := formatList(engine.ContainerPolicy())
+			expected := formatList(engine.ContainerPolicy(context.TODO()))
 			buf := strings.Builder{}
 			printChecks(&buf)
 
@@ -47,7 +48,7 @@ var _ = Describe("list checks subcommand", func() {
 		})
 
 		It("should always contain the operator policy", func() {
-			expected := formatList(engine.OperatorPolicy())
+			expected := formatList(engine.OperatorPolicy(context.TODO()))
 			buf := strings.Builder{}
 			printChecks(&buf)
 
@@ -55,7 +56,7 @@ var _ = Describe("list checks subcommand", func() {
 		})
 
 		It("should always contain the root exception policy", func() {
-			expected := formatList(engine.RootExceptionContainerPolicy())
+			expected := formatList(engine.RootExceptionContainerPolicy(context.TODO()))
 			buf := strings.Builder{}
 			printChecks(&buf)
 
@@ -63,7 +64,7 @@ var _ = Describe("list checks subcommand", func() {
 		})
 
 		It("should always contain the scratch exception policy", func() {
-			expected := formatList(engine.ScratchContainerPolicy())
+			expected := formatList(engine.ScratchContainerPolicy(context.TODO()))
 			buf := strings.Builder{}
 			printChecks(&buf)
 
