@@ -38,8 +38,8 @@ func NewForConfig(cfg certification.Config) (ResponseFormatter, error) {
 func NewByName(name string) (ResponseFormatter, error) {
 	formatter, defined := availableFormatters[name]
 	if !defined {
-		return nil, fmt.Errorf("%w: %s",
-			ErrUnknownFormatter,
+		return nil, fmt.Errorf("%s: %s",
+			"The requested formatter is unknown",
 			name,
 		)
 	}
