@@ -104,31 +104,31 @@ func makeCheckList(checks []certification.Check) []string {
 }
 
 // checkNamesFor produces a slice of names for checks in the requested policy.
-func checkNamesFor(p policy.Policy) []string {
+func checkNamesFor(ctx context.Context, p policy.Policy) []string {
 	// stub the config. We don't technically need the policy here, but why not.
 	c := &runtime.Config{Policy: p}
-	checks, _ := initializeChecks(context.TODO(), p, c.ReadOnly())
+	checks, _ := initializeChecks(ctx, p, c.ReadOnly())
 	return makeCheckList(checks)
 }
 
 // OperatorPolicy returns the names of checks in the operator policy.
-func OperatorPolicy() []string {
-	return checkNamesFor(policy.PolicyOperator)
+func OperatorPolicy(ctx context.Context) []string {
+	return checkNamesFor(ctx, policy.PolicyOperator)
 }
 
 // ContainerPolicy returns the names of checks in the container policy.
-func ContainerPolicy() []string {
-	return checkNamesFor(policy.PolicyContainer)
+func ContainerPolicy(ctx context.Context) []string {
+	return checkNamesFor(ctx, policy.PolicyContainer)
 }
 
 // ScratchContainerPolicy returns the names of checks in the
 // container policy with scratch exception.
-func ScratchContainerPolicy() []string {
-	return checkNamesFor(policy.PolicyScratch)
+func ScratchContainerPolicy(ctx context.Context) []string {
+	return checkNamesFor(ctx, policy.PolicyScratch)
 }
 
 // RootExceptionContainerPolicy returns the names of checks in the
 // container policy with root exception.
-func RootExceptionContainerPolicy() []string {
-	return checkNamesFor(policy.PolicyRoot)
+func RootExceptionContainerPolicy(ctx context.Context) []string {
+	return checkNamesFor(ctx, policy.PolicyRoot)
 }

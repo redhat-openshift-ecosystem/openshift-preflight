@@ -10,7 +10,7 @@ import (
 )
 
 var _ = Describe("Engine Creation", func() {
-	Describe("When getting a new engine for a configuration", func() {
+	When("getting a new engine for a configuration", func() {
 		Context("with a valid configurations", func() {
 			Context("for the container policy", func() {
 				cfg := runtime.Config{
@@ -24,6 +24,19 @@ var _ = Describe("Engine Creation", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(engine).ToNot(BeNil())
 				})
+				It("should return the correct names", func() {
+					names := ContainerPolicy(context.TODO())
+					Expect(names).To(ContainElements([]string{
+						"HasLicense",
+						"HasUniqueTag",
+						"LayerCountAcceptable",
+						"HasNoProhibitedPackages",
+						"HasRequiredLabel",
+						"RunAsNonRoot",
+						"HasModifiedFiles",
+						"BasedOnUbi",
+					}))
+				})
 			})
 			Context("for the operator policy", func() {
 				cfg := runtime.Config{
@@ -35,6 +48,15 @@ var _ = Describe("Engine Creation", func() {
 					engine, err := NewForConfig(context.TODO(), cfg.ReadOnly())
 					Expect(err).ToNot(HaveOccurred())
 					Expect(engine).ToNot(BeNil())
+				})
+				It("should return the correct names", func() {
+					names := OperatorPolicy(context.TODO())
+					Expect(names).To(ContainElements([]string{
+						"ScorecardBasicSpecCheck",
+						"ScorecardOlmSuiteCheck",
+						"DeployableByOLM",
+						"ValidateOperatorBundle",
+					}))
 				})
 			})
 
@@ -50,6 +72,16 @@ var _ = Describe("Engine Creation", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(engine).ToNot(BeNil())
 				})
+				It("should return the correct names", func() {
+					names := ScratchContainerPolicy(context.TODO())
+					Expect(names).To(ContainElements([]string{
+						"HasLicense",
+						"HasUniqueTag",
+						"LayerCountAcceptable",
+						"HasRequiredLabel",
+						"RunAsNonRoot",
+					}))
+				})
 			})
 
 			Context("for the Root policy", func() {
@@ -64,6 +96,31 @@ var _ = Describe("Engine Creation", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(engine).ToNot(BeNil())
 				})
+				It("should return the correct names", func() {
+					names := RootExceptionContainerPolicy(context.TODO())
+					Expect(names).To(ContainElements([]string{
+						"HasLicense",
+						"HasUniqueTag",
+						"LayerCountAcceptable",
+						"HasNoProhibitedPackages",
+						"HasRequiredLabel",
+						"HasModifiedFiles",
+					}))
+				})
+			})
+		})
+
+		Context("with an invalid policy", func() {
+			cfg := runtime.Config{
+				Image:          "dummy/image",
+				Policy:         "invalid",
+				ResponseFormat: "json",
+			}
+
+			It("should return an error and no engine", func() {
+				engine, err := NewForConfig(context.TODO(), cfg.ReadOnly())
+				Expect(err).To(HaveOccurred())
+				Expect(engine).To(BeNil())
 			})
 		})
 	})

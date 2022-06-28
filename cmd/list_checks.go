@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -25,11 +26,11 @@ func listChecksRunFunc(cmd *cobra.Command, args []string) {
 // printChecks writes the formatted check list output to w.
 func printChecks(w io.Writer) {
 	fmt.Fprintln(w, "These are the available checks for each policy:")
-	fmt.Fprintln(w, formattedPolicyBlock("Operator", engine.OperatorPolicy(), "invoked on operator bundles"))
-	fmt.Fprintln(w, formattedPolicyBlock("Container", engine.ContainerPolicy(), "invoked on container images"))
-	fmt.Fprintln(w, formattedPolicyBlock("Container Root Exception", engine.RootExceptionContainerPolicy(),
+	fmt.Fprintln(w, formattedPolicyBlock("Operator", engine.OperatorPolicy(context.TODO()), "invoked on operator bundles"))
+	fmt.Fprintln(w, formattedPolicyBlock("Container", engine.ContainerPolicy(context.TODO()), "invoked on container images"))
+	fmt.Fprintln(w, formattedPolicyBlock("Container Root Exception", engine.RootExceptionContainerPolicy(context.TODO()),
 		"automatically applied for container images if preflight determines a root exception flag has been added to your Red Hat Connect project"))
-	fmt.Fprintln(w, formattedPolicyBlock("Container Scratch Exception", engine.ScratchContainerPolicy(),
+	fmt.Fprintln(w, formattedPolicyBlock("Container Scratch Exception", engine.ScratchContainerPolicy(context.TODO()),
 		"automatically applied for container checks if preflight determines a scratch exception flag has been added to your Red Hat Connect project"))
 }
 
