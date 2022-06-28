@@ -51,11 +51,7 @@ test:
 
 .PHONY: cover
 cover:
-	go test -v \
-	 -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo" \
-	 $$(go list ./... | grep -v e2e) \
-	 -race \
-	 -cover -coverprofile=coverage.out
+	go tool cover -func=coverage.out
 
 .PHONY: vet
 vet:
