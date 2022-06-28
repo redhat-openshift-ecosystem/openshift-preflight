@@ -9,7 +9,7 @@ The following configurables are available for the `preflight` tool.
 |`PFLT_LOGLEVEL`|env|The verbosity of the preflight tool itself. Ex. warn, debug, trace, info, error|optional|[warn](https://github.com/redhat-openshift-ecosystem/openshift-preflight/blob/main/cmd/defaults.go#L6)|
 |`PFLT_LOGFILE`|env|Where the execution logfile will be written.|optional|[preflight.log](https://github.com/redhat-openshift-ecosystem/openshift-preflight/blob/main/cmd/defaults.go#L5)|
 |`PFLT_ARTIFACTS`|env|Where check-specific artifacts will be written.|optional|[artifacts/](https://github.com/redhat-openshift-ecosystem/openshift-preflight/blob/main/cmd/defaults.go#L7)|
-
+|`PFLT_JUNIT`|env|Will write results as JUnit XML.|optional|false|
 
 ## Operator Policy Configuration
 
