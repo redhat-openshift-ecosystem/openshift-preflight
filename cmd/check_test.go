@@ -13,17 +13,6 @@ import (
 )
 
 var _ = Describe("cmd package check command", func() {
-	Describe("Test Flags", func() {
-		Context("Docker Config", func() {
-			It("docker-config from Flags() should be nil, but PersistentFlags() should be set", func() {
-				expected := "/my/docker/config.json"
-				checkCmd.PersistentFlags().Set("docker-config", expected)
-				Expect(checkCmd.Flags().Lookup("docker-config")).To(BeNil())
-				Expect(checkCmd.PersistentFlags().Lookup("docker-config").Value.String()).To(Equal(expected))
-			})
-		})
-	})
-
 	DescribeTable("Checking overall pass/fail",
 		func(result bool, expected string) {
 			Expect(convertPassedOverall(result)).To(Equal(expected))
