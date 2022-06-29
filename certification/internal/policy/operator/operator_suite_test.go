@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -9,7 +10,7 @@ import (
 	imagestreamv1 "github.com/openshift/api/image/v1"
 	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,36 +26,36 @@ func init() {
 	log.SetLevel(log.TraceLevel)
 }
 
-type FakeOperatorSdkEngine struct {
-	OperatorSdkReport   cli.OperatorSdkScorecardReport
-	OperatorSdkBVReport cli.OperatorSdkBundleValidateReport
+type FakeOperatorSdk struct {
+	OperatorSdkReport   operatorsdk.OperatorSdkScorecardReport
+	OperatorSdkBVReport operatorsdk.OperatorSdkBundleValidateReport
 }
 
-func (f FakeOperatorSdkEngine) BundleValidate(image string, opts cli.OperatorSdkBundleValidateOptions) (*cli.OperatorSdkBundleValidateReport, error) {
+func (f FakeOperatorSdk) BundleValidate(ctx context.Context, image string, opts operatorsdk.OperatorSdkBundleValidateOptions) (*operatorsdk.OperatorSdkBundleValidateReport, error) {
 	return &f.OperatorSdkBVReport, nil
 }
 
-func (f FakeOperatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecardOptions) (*cli.OperatorSdkScorecardReport, error) {
+func (f FakeOperatorSdk) Scorecard(ctx context.Context, image string, opts operatorsdk.OperatorSdkScorecardOptions) (*operatorsdk.OperatorSdkScorecardReport, error) {
 	return &f.OperatorSdkReport, nil
 }
 
-type BadOperatorSdkEngine struct{}
+type BadOperatorSdk struct{}
 
-func (bose BadOperatorSdkEngine) Scorecard(bundleImage string, opts cli.OperatorSdkScorecardOptions) (*cli.OperatorSdkScorecardReport, error) {
-	operatorSdkReport := cli.OperatorSdkScorecardReport{
+func (bose BadOperatorSdk) Scorecard(ctx context.Context, bundleImage string, opts operatorsdk.OperatorSdkScorecardOptions) (*operatorsdk.OperatorSdkScorecardReport, error) {
+	operatorSdkReport := operatorsdk.OperatorSdkScorecardReport{
 		Stdout: "Bad Stdout",
 		Stderr: "Bad Stderr",
-		Items:  []cli.OperatorSdkScorecardItem{},
+		Items:  []operatorsdk.OperatorSdkScorecardItem{},
 	}
 	return &operatorSdkReport, errors.New("the Operator Sdk Scorecard has failed")
 }
 
-func (bose BadOperatorSdkEngine) BundleValidate(bundleImage string, opts cli.OperatorSdkBundleValidateOptions) (*cli.OperatorSdkBundleValidateReport, error) {
-	operatorSdkReport := cli.OperatorSdkBundleValidateReport{
+func (bose BadOperatorSdk) BundleValidate(ctx context.Context, bundleImage string, opts operatorsdk.OperatorSdkBundleValidateOptions) (*operatorsdk.OperatorSdkBundleValidateReport, error) {
+	operatorSdkReport := operatorsdk.OperatorSdkBundleValidateReport{
 		Stdout:  "Bad Stdout",
 		Stderr:  "Bad Stderr",
 		Passed:  false,
-		Outputs: []cli.OperatorSdkBundleValidateOutput{},
+		Outputs: []operatorsdk.OperatorSdkBundleValidateOutput{},
 	}
 	return &operatorSdkReport, errors.New("the Operator Sdk Bundle Validate has failed")
 }

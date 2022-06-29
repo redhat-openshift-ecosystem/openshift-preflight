@@ -1,7 +1,8 @@
-package engine
+package operatorsdk
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -9,21 +10,26 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	log "github.com/sirupsen/logrus"
 )
 
-func NewOperatorSdkEngine(userProvidedScorecardImage string) *cli.OperatorSdkEngine {
-	var engine cli.OperatorSdkEngine = operatorSdkEngine{scorecardImage: userProvidedScorecardImage}
+func New(userProvidedScorecardImage string, cmdContext execContext) *operatorSdk {
+	engine := operatorSdk{scorecardImage: userProvidedScorecardImage, cmdContext: cmdContext}
 	return &engine
 }
 
-type operatorSdkEngine struct {
+type operatorSdk struct {
 	scorecardImage string
+	cmdContext     execContext
 }
 
-func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecardOptions) (*cli.OperatorSdkScorecardReport, error) {
+// Define a type that is the signature of the exec.Command function.
+// This allows us to override that function with our own for
+// testing purposes. This type is only used directly in the New() function.
+type execContext = func(name string, arg ...string) *exec.Cmd
+
+func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorSdkScorecardOptions) (*OperatorSdkScorecardReport, error) {
 	cmdArgs := []string{"scorecard"}
 	if opts.OutputFormat == "" {
 		opts.OutputFormat = "json"
@@ -59,7 +65,7 @@ func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecard
 
 	cmdArgs = append(cmdArgs, image)
 
-	cmd := exec.Command("operator-sdk", cmdArgs...)
+	cmd := o.cmdContext("operator-sdk", cmdArgs...)
 	log.Trace("running scorecard with the following invocation", cmd.Args)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -85,7 +91,7 @@ func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecard
 		return nil, fmt.Errorf("unable to copy result to artifacts directory: %v", err)
 	}
 
-	var scorecardData cli.OperatorSdkScorecardReport
+	var scorecardData OperatorSdkScorecardReport
 	if err := json.Unmarshal(stdout.Bytes(), &scorecardData); err != nil {
 		return nil, fmt.Errorf("failed to run operator-sdk scorecard: %v", err)
 	}
@@ -94,7 +100,7 @@ func (o operatorSdkEngine) Scorecard(image string, opts cli.OperatorSdkScorecard
 	return &scorecardData, nil
 }
 
-func (o operatorSdkEngine) BundleValidate(image string, opts cli.OperatorSdkBundleValidateOptions) (*cli.OperatorSdkBundleValidateReport, error) {
+func (o operatorSdk) BundleValidate(ctx context.Context, image string, opts OperatorSdkBundleValidateOptions) (*OperatorSdkBundleValidateReport, error) {
 	cmdArgs := []string{"bundle", "validate"}
 	if opts.ContainerEngine == "" {
 		opts.ContainerEngine = "none"
@@ -119,7 +125,7 @@ func (o operatorSdkEngine) BundleValidate(image string, opts cli.OperatorSdkBund
 	}
 	cmdArgs = append(cmdArgs, image)
 
-	cmd := exec.Command("operator-sdk", cmdArgs...)
+	cmd := o.cmdContext("operator-sdk", cmdArgs...)
 	log.Debugf("Command being run: %s", cmd.Args)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -140,7 +146,7 @@ func (o operatorSdkEngine) BundleValidate(image string, opts cli.OperatorSdkBund
 		}
 	}
 
-	var bundleValidateData cli.OperatorSdkBundleValidateReport
+	var bundleValidateData OperatorSdkBundleValidateReport
 	if strings.Contains(opts.OutputFormat, "json") {
 		if err := json.Unmarshal(stdout.Bytes(), &bundleValidateData); err != nil {
 			return nil, fmt.Errorf("failed to run operator-sdk bundle validate: %v", err)
@@ -156,12 +162,12 @@ func (o operatorSdkEngine) BundleValidate(image string, opts cli.OperatorSdkBund
 	return &bundleValidateData, nil
 }
 
-func (o operatorSdkEngine) writeScorecardFile(resultFile, stdout string) error {
+func (o operatorSdk) writeScorecardFile(resultFile, stdout string) error {
 	_, err := artifacts.WriteFile(resultFile, stdout)
 	return err
 }
 
-func (o operatorSdkEngine) createScorecardConfigFile() (string, error) {
+func (o operatorSdk) createScorecardConfigFile() (string, error) {
 	img := runtime.ScorecardImage(o.scorecardImage)
 	configTemplate := fmt.Sprintf(`kind: Configuration
 apiversion: scorecard.operatorframework.io/v1alpha3

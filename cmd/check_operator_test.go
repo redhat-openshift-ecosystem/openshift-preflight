@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/spf13/viper"
 )
@@ -119,11 +120,14 @@ var _ = Describe("Check Operator", func() {
 
 		Context("with an invalid policy definition", func() {
 			It("should return the container policy engine anyway", func() {
+				cfg.Policy = "badpolicy"
+				beforeCfg := *cfg
 				runner, err := newCheckOperatorRunner(context.TODO(), cfg)
 				Expect(err).ToNot(HaveOccurred())
 
-				expectedEngine, err := engine.NewForConfig(context.TODO(), cfg.ReadOnly())
-				Expect(runner.eng).To(BeEquivalentTo(expectedEngine))
+				_, err = engine.NewForConfig(context.TODO(), cfg.ReadOnly())
+				Expect(runner.cfg.Policy).ToNot(Equal(beforeCfg.Policy))
+				Expect(runner.cfg.Policy).To(Equal(policy.PolicyOperator))
 				Expect(err).ToNot(HaveOccurred())
 			})
 		})

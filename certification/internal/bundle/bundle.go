@@ -11,7 +11,7 @@ import (
 
 	"github.com/blang/semver"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 )
@@ -21,9 +21,13 @@ const ocpVerV1beta1Unsupported = "4.9"
 // versionsKey is the OpenShift versions in annotations.yaml that lists the versions allowed for an operator
 const versionsKey = "com.redhat.openshift.versions"
 
-func Validate(ctx context.Context, engine cli.OperatorSdkEngine, imagePath string) (*cli.OperatorSdkBundleValidateReport, error) {
+type operatorSdk interface {
+	BundleValidate(context.Context, string, operatorsdk.OperatorSdkBundleValidateOptions) (*operatorsdk.OperatorSdkBundleValidateReport, error)
+}
+
+func Validate(ctx context.Context, operatorSdk operatorSdk, imagePath string) (*operatorsdk.OperatorSdkBundleValidateReport, error) {
 	selector := []string{"community", "operatorhub"}
-	opts := cli.OperatorSdkBundleValidateOptions{
+	opts := operatorsdk.OperatorSdkBundleValidateOptions{
 		Selector:        selector,
 		Verbose:         true,
 		ContainerEngine: "none",
@@ -52,7 +56,7 @@ func Validate(ctx context.Context, engine cli.OperatorSdkEngine, imagePath strin
 		}
 	}
 
-	return engine.BundleValidate(imagePath, opts)
+	return operatorSdk.BundleValidate(ctx, imagePath, opts)
 }
 
 func isTarget49OrGreater(ocpLabelIndex string) bool {

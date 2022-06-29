@@ -6,7 +6,6 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,14 +18,14 @@ type ScorecardBasicSpecCheck struct {
 
 const scorecardBasicCheckResult string = "operator_bundle_scorecard_BasicSpecCheck.json"
 
-func NewScorecardBasicSpecCheck(operatorSdkEngine *cli.OperatorSdkEngine, ns, sa, kubeconfig, waittime string) *ScorecardBasicSpecCheck {
+func NewScorecardBasicSpecCheck(operatorSdk operatorSdk, ns, sa, kubeconfig, waittime string) *ScorecardBasicSpecCheck {
 	return &ScorecardBasicSpecCheck{
 		scorecardCheck: scorecardCheck{
-			OperatorSdkEngine: *operatorSdkEngine,
-			namespace:         ns,
-			serviceAccount:    sa,
-			kubeconfig:        kubeconfig,
-			waitTime:          waittime,
+			OperatorSdk:    operatorSdk,
+			namespace:      ns,
+			serviceAccount: sa,
+			kubeconfig:     kubeconfig,
+			waitTime:       waittime,
 		},
 		fatalError: false,
 	}

@@ -5,10 +5,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os/exec"
 	"time"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	internal "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/engine"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 	containerpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/container"
 	operatorpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/operator"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
@@ -50,10 +52,10 @@ func initializeChecks(ctx context.Context, p policy.Policy, cfg certification.Co
 	switch p {
 	case policy.PolicyOperator:
 		return []certification.Check{
-			operatorpol.NewScorecardBasicSpecCheck(internal.NewOperatorSdkEngine(cfg.ScorecardImage()), cfg.Namespace(), cfg.ServiceAccount(), cfg.Kubeconfig(), cfg.ScorecardWaitTime()),
-			operatorpol.NewScorecardOlmSuiteCheck(internal.NewOperatorSdkEngine(cfg.ScorecardImage()), cfg.Namespace(), cfg.ServiceAccount(), cfg.Kubeconfig(), cfg.ScorecardWaitTime()),
-			operatorpol.NewDeployableByOlmCheck(internal.NewOperatorSdkEngine(cfg.ScorecardImage()), cfg.IndexImage(), cfg.DockerConfig(), cfg.Channel()),
-			operatorpol.NewValidateOperatorBundleCheck(internal.NewOperatorSdkEngine(cfg.ScorecardImage())),
+			operatorpol.NewScorecardBasicSpecCheck(operatorsdk.New(cfg.ScorecardImage(), exec.Command), cfg.Namespace(), cfg.ServiceAccount(), cfg.Kubeconfig(), cfg.ScorecardWaitTime()),
+			operatorpol.NewScorecardOlmSuiteCheck(operatorsdk.New(cfg.ScorecardImage(), exec.Command), cfg.Namespace(), cfg.ServiceAccount(), cfg.Kubeconfig(), cfg.ScorecardWaitTime()),
+			operatorpol.NewDeployableByOlmCheck(operatorsdk.New(cfg.ScorecardImage(), exec.Command), cfg.IndexImage(), cfg.DockerConfig(), cfg.Channel()),
+			operatorpol.NewValidateOperatorBundleCheck(operatorsdk.New(cfg.ScorecardImage(), exec.Command)),
 		}, nil
 	case policy.PolicyContainer:
 		return []certification.Check{

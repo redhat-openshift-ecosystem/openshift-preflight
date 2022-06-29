@@ -1,4 +1,4 @@
-package cli
+package operatorsdk
 
 type OperatorSdkScorecardOptions struct {
 	OutputFormat   string
@@ -51,9 +51,4 @@ type OperatorSdkBundleValidateReport struct {
 type OperatorSdkBundleValidateOutput struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
-}
-
-type OperatorSdkEngine interface {
-	Scorecard(image string, opts OperatorSdkScorecardOptions) (*OperatorSdkScorecardReport, error)
-	BundleValidate(image string, opts OperatorSdkBundleValidateOptions) (*OperatorSdkBundleValidateReport, error)
 }
