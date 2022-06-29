@@ -17,14 +17,15 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/openshift"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 )
 
 var _ = Describe("DeployableByOLMCheck", func() {
 	var (
 		deployableByOLMCheck DeployableByOlmCheck
-		fakeEngine           cli.OperatorSdkEngine
+		fakeEngine           operatorSdk
 		imageRef             certification.ImageReference
 		tmpDockerDir         string
 		client               crclient.Client
@@ -93,17 +94,17 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		imageRef.ImageInfo = &fakeImage
 		imageRef.ImageFSPath = tmpDir
 
-		report := cli.OperatorSdkBundleValidateReport{
+		report := operatorsdk.OperatorSdkBundleValidateReport{
 			Passed:  true,
-			Outputs: []cli.OperatorSdkBundleValidateOutput{},
+			Outputs: []operatorsdk.OperatorSdkBundleValidateOutput{},
 		}
-		fakeEngine = FakeOperatorSdkEngine{
+		fakeEngine = FakeOperatorSdk{
 			OperatorSdkBVReport: report,
 		}
 
 		now := metav1.Now()
 		og.Status.LastUpdated = &now
-		deployableByOLMCheck = *NewDeployableByOlmCheck(&fakeEngine, "test_indeximage", "", "")
+		deployableByOLMCheck = *NewDeployableByOlmCheck(fakeEngine, "test_indeximage", "", "")
 		scheme := apiruntime.NewScheme()
 		Expect(openshift.AddSchemes(scheme)).To(Succeed())
 		client = fake.NewClientBuilder().

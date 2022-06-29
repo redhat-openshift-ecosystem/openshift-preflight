@@ -6,13 +6,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 )
 
 var _ = Describe("ScorecardBasicCheck", func() {
 	var (
 		scorecardBasicCheck ScorecardBasicSpecCheck
-		fakeEngine          cli.OperatorSdkEngine
+		fakeEngine          operatorSdk
 	)
 
 	BeforeEach(func() {
@@ -48,10 +48,10 @@ var _ = Describe("ScorecardBasicCheck", func() {
 		  }
 		  `
 		stderr := ""
-		items := []cli.OperatorSdkScorecardItem{
+		items := []operatorsdk.OperatorSdkScorecardItem{
 			{
-				Status: cli.OperatorSdkScorecardStatus{
-					Results: []cli.OperatorSdkScorecardResult{
+				Status: operatorsdk.OperatorSdkScorecardStatus{
+					Results: []operatorsdk.OperatorSdkScorecardResult{
 						{
 							Name:  "olm-bundle-validation",
 							Log:   "log",
@@ -61,15 +61,15 @@ var _ = Describe("ScorecardBasicCheck", func() {
 				},
 			},
 		}
-		report := cli.OperatorSdkScorecardReport{
+		report := operatorsdk.OperatorSdkScorecardReport{
 			Stdout: stdout,
 			Stderr: stderr,
 			Items:  items,
 		}
-		fakeEngine = FakeOperatorSdkEngine{
+		fakeEngine = FakeOperatorSdk{
 			OperatorSdkReport: report,
 		}
-		scorecardBasicCheck = *NewScorecardBasicSpecCheck(&fakeEngine, "myns", "mysa", "", "20")
+		scorecardBasicCheck = *NewScorecardBasicSpecCheck(fakeEngine, "myns", "mysa", "", "20")
 	})
 	Describe("Operator Bundle Scorecard", func() {
 		Context("When Operator Bundle Scorecard Basic Check has a pass", func() {
@@ -81,10 +81,10 @@ var _ = Describe("ScorecardBasicCheck", func() {
 		})
 		Context("When Operator Bundle Scorecard Basic Check has a fail", func() {
 			BeforeEach(func() {
-				engine := fakeEngine.(FakeOperatorSdkEngine)
+				engine := fakeEngine.(FakeOperatorSdk)
 				engine.OperatorSdkReport.Items[0].Status.Results[0].State = "fail"
 				fakeEngine = engine
-				scorecardBasicCheck = *NewScorecardBasicSpecCheck(&fakeEngine, "myns", "mysa", "", "20")
+				scorecardBasicCheck = *NewScorecardBasicSpecCheck(fakeEngine, "myns", "mysa", "", "20")
 			})
 			It("Should not pass Validate", func() {
 				ok, err := scorecardBasicCheck.Validate(context.TODO(), certification.ImageReference{ImageURI: "dummy/image"})
@@ -93,10 +93,10 @@ var _ = Describe("ScorecardBasicCheck", func() {
 			})
 		})
 	})
-	Describe("Checking that OperatorSdkEngine errors are handled correctly", func() {
+	Describe("Checking that OperatorSdk errors are handled correctly", func() {
 		BeforeEach(func() {
-			fakeEngine = BadOperatorSdkEngine{}
-			scorecardBasicCheck = *NewScorecardBasicSpecCheck(&fakeEngine, "myns", "mysa", "", "20")
+			fakeEngine = BadOperatorSdk{}
+			scorecardBasicCheck = *NewScorecardBasicSpecCheck(fakeEngine, "myns", "mysa", "", "20")
 		})
 		Context("When OperatorSdk throws an error", func() {
 			It("should fail Validate and return an error", func() {

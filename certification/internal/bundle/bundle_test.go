@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 )
 
 var _ = Describe("BundleValidateCheck", func() {
@@ -43,7 +42,7 @@ var _ = Describe("BundleValidateCheck", func() {
 	Describe("Bundle validation", func() {
 		var (
 			imageRef   certification.ImageReference
-			fakeEngine cli.OperatorSdkEngine
+			fakeEngine operatorSdk
 		)
 
 		BeforeEach(func() {
@@ -61,7 +60,7 @@ var _ = Describe("BundleValidateCheck", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			imageRef.ImageFSPath = tmpDir
-			fakeEngine = FakeOperatorSdkEngine{}
+			fakeEngine = FakeOperatorSdk{}
 		})
 
 		AfterEach(func() {

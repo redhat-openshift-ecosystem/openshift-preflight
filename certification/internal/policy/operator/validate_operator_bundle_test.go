@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 )
 
 var _ = Describe("BundleValidateCheck", func() {
@@ -24,7 +24,7 @@ var _ = Describe("BundleValidateCheck", func() {
 
 	var (
 		bundleValidateCheck ValidateOperatorBundleCheck
-		fakeEngine          cli.OperatorSdkEngine
+		fakeEngine          operatorSdk
 		imageRef            certification.ImageReference
 	)
 
@@ -34,13 +34,13 @@ var _ = Describe("BundleValidateCheck", func() {
 	"outputs": null
 }`
 		stderr := ""
-		report := cli.OperatorSdkBundleValidateReport{
+		report := operatorsdk.OperatorSdkBundleValidateReport{
 			Stdout:  stdout,
 			Stderr:  stderr,
 			Passed:  true,
-			Outputs: []cli.OperatorSdkBundleValidateOutput{},
+			Outputs: []operatorsdk.OperatorSdkBundleValidateOutput{},
 		}
-		fakeEngine = FakeOperatorSdkEngine{
+		fakeEngine = FakeOperatorSdk{
 			OperatorSdkBVReport: report,
 		}
 
@@ -56,7 +56,7 @@ var _ = Describe("BundleValidateCheck", func() {
 
 		imageRef.ImageFSPath = tmpDir
 
-		bundleValidateCheck = *NewValidateOperatorBundleCheck(&fakeEngine)
+		bundleValidateCheck = *NewValidateOperatorBundleCheck(fakeEngine)
 	})
 	Describe("Operator Bundle Validate", func() {
 		Context("When Operator Bundle Validate passes", func() {
@@ -68,14 +68,14 @@ var _ = Describe("BundleValidateCheck", func() {
 		})
 		Context("When Operator Bundle Validate does not Pass", func() {
 			BeforeEach(func() {
-				engine := fakeEngine.(FakeOperatorSdkEngine)
+				engine := fakeEngine.(FakeOperatorSdk)
 				engine.OperatorSdkBVReport.Passed = false
-				engine.OperatorSdkBVReport.Outputs = []cli.OperatorSdkBundleValidateOutput{
+				engine.OperatorSdkBVReport.Outputs = []operatorsdk.OperatorSdkBundleValidateOutput{
 					{Type: "warning", Message: "This is a warning"},
 					{Type: "error", Message: "This is an error"},
 				}
 				fakeEngine = engine
-				bundleValidateCheck = *NewValidateOperatorBundleCheck(&fakeEngine)
+				bundleValidateCheck = *NewValidateOperatorBundleCheck(fakeEngine)
 			})
 			It("Should not pass Validate", func() {
 				ok, err := bundleValidateCheck.Validate(context.TODO(), imageRef)
@@ -84,10 +84,10 @@ var _ = Describe("BundleValidateCheck", func() {
 			})
 		})
 	})
-	Describe("Checking that OperatorSdkEngine errors are handled correctly", func() {
+	Describe("Checking that OperatorSdk errors are handled correctly", func() {
 		BeforeEach(func() {
-			fakeEngine = BadOperatorSdkEngine{}
-			bundleValidateCheck = *NewValidateOperatorBundleCheck(&fakeEngine)
+			fakeEngine = BadOperatorSdk{}
+			bundleValidateCheck = *NewValidateOperatorBundleCheck(fakeEngine)
 		})
 		Context("When OperatorSdk throws an error", func() {
 			It("should fail Validate and return an error", func() {

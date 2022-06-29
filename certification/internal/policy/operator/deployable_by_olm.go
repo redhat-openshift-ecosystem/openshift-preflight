@@ -23,7 +23,6 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/openshift"
 
 	log "github.com/sirupsen/logrus"
@@ -49,11 +48,11 @@ type DeployableByOlmCheck struct {
 	// channel is optional. If empty, we will introspect.
 	channel string
 
-	OperatorSdkEngine cli.OperatorSdkEngine
-	openshiftClient   openshift.Client
-	client            crclient.Client
-	csvReady          bool
-	validImages       bool
+	OperatorSdk     operatorSdk
+	openshiftClient openshift.Client
+	client          crclient.Client
+	csvReady        bool
+	validImages     bool
 }
 
 func (p *DeployableByOlmCheck) initClient() error {
@@ -92,23 +91,23 @@ func (p *DeployableByOlmCheck) initOpenShifeEngine() error {
 // in scope are public. An empty channel value implies that the check should
 // introspect the channel from the bundle. indexImage is required.
 func NewDeployableByOlmCheck(
-	operatorSdkEngine *cli.OperatorSdkEngine,
+	operatorSdk operatorSdk,
 	indexImage,
 	dockerConfig,
 	channel string,
 ) *DeployableByOlmCheck {
 	return &DeployableByOlmCheck{
-		OperatorSdkEngine: *operatorSdkEngine,
-		dockerConfig:      dockerConfig,
-		indexImage:        indexImage,
-		channel:           channel,
+		OperatorSdk:  operatorSdk,
+		dockerConfig: dockerConfig,
+		indexImage:   indexImage,
+		channel:      channel,
 	}
 }
 
 func (p *DeployableByOlmCheck) Validate(ctx context.Context, bundleRef certification.ImageReference) (bool, error) {
 	p.initClient()
 	p.initOpenShifeEngine()
-	if report, err := bundle.Validate(ctx, p.OperatorSdkEngine, bundleRef.ImageFSPath); err != nil || !report.Passed {
+	if report, err := bundle.Validate(ctx, p.OperatorSdk, bundleRef.ImageFSPath); err != nil || !report.Passed {
 		return false, fmt.Errorf("%v", err)
 	}
 

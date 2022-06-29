@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 	log "github.com/sirupsen/logrus"
 )
 
 type scorecardCheck struct {
-	OperatorSdkEngine cli.OperatorSdkEngine
+	OperatorSdk operatorSdk
 
 	namespace      string
 	serviceAccount string
@@ -18,7 +18,7 @@ type scorecardCheck struct {
 	waitTime       string
 }
 
-func (p *scorecardCheck) validate(ctx context.Context, items []cli.OperatorSdkScorecardItem) (bool, error) {
+func (p *scorecardCheck) validate(ctx context.Context, items []operatorsdk.OperatorSdkScorecardItem) (bool, error) {
 	foundTestFailed := false
 	var err error
 
@@ -36,8 +36,8 @@ func (p *scorecardCheck) validate(ctx context.Context, items []cli.OperatorSdkSc
 	return !foundTestFailed, err
 }
 
-func (p *scorecardCheck) getDataToValidate(ctx context.Context, bundleImage string, selector []string, resultFile string) (*cli.OperatorSdkScorecardReport, error) {
-	opts := cli.OperatorSdkScorecardOptions{
+func (p *scorecardCheck) getDataToValidate(ctx context.Context, bundleImage string, selector []string, resultFile string) (*operatorsdk.OperatorSdkScorecardReport, error) {
+	opts := operatorsdk.OperatorSdkScorecardOptions{
 		OutputFormat:   "json",
 		Selector:       selector,
 		ResultFile:     resultFile,
@@ -47,7 +47,7 @@ func (p *scorecardCheck) getDataToValidate(ctx context.Context, bundleImage stri
 		Verbose:        true,
 		WaitTime:       fmt.Sprintf("%ss", p.waitTime),
 	}
-	result, err := p.OperatorSdkEngine.Scorecard(bundleImage, opts)
+	result, err := p.OperatorSdk.Scorecard(ctx, bundleImage, opts)
 	if err != nil {
 		return result, fmt.Errorf("%v", err)
 	}

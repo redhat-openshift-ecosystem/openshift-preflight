@@ -6,19 +6,19 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 	log "github.com/sirupsen/logrus"
 )
 
 // ValidateOperatorBundleCheck evaluates the image and ensures that it passes bundle validation
 // as executed by `operator-sdk bundle validate`
 type ValidateOperatorBundleCheck struct {
-	OperatorSdkEngine cli.OperatorSdkEngine
+	OperatorSdk operatorSdk
 }
 
-func NewValidateOperatorBundleCheck(operatorSdkEngine *cli.OperatorSdkEngine) *ValidateOperatorBundleCheck {
+func NewValidateOperatorBundleCheck(operatorSdk operatorSdk) *ValidateOperatorBundleCheck {
 	return &ValidateOperatorBundleCheck{
-		OperatorSdkEngine: *operatorSdkEngine,
+		OperatorSdk: operatorSdk,
 	}
 }
 
@@ -33,11 +33,11 @@ func (p ValidateOperatorBundleCheck) Validate(ctx context.Context, bundleRef cer
 	return p.validate(ctx, report)
 }
 
-func (p ValidateOperatorBundleCheck) getDataToValidate(ctx context.Context, imagePath string) (*cli.OperatorSdkBundleValidateReport, error) {
-	return bundle.Validate(ctx, p.OperatorSdkEngine, imagePath)
+func (p ValidateOperatorBundleCheck) getDataToValidate(ctx context.Context, imagePath string) (*operatorsdk.OperatorSdkBundleValidateReport, error) {
+	return bundle.Validate(ctx, p.OperatorSdk, imagePath)
 }
 
-func (p ValidateOperatorBundleCheck) validate(ctx context.Context, report *cli.OperatorSdkBundleValidateReport) (bool, error) {
+func (p ValidateOperatorBundleCheck) validate(ctx context.Context, report *operatorsdk.OperatorSdkBundleValidateReport) (bool, error) {
 	if !report.Passed || len(report.Outputs) > 0 {
 		for _, output := range report.Outputs {
 			var logFn func(...interface{})

@@ -6,7 +6,6 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/cli"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,14 +18,14 @@ type ScorecardOlmSuiteCheck struct {
 
 const scorecardOlmSuiteResult string = "operator_bundle_scorecard_OlmSuiteCheck.json"
 
-func NewScorecardOlmSuiteCheck(operatorSdkEngine *cli.OperatorSdkEngine, ns, sa, kubeconfig, waittime string) *ScorecardOlmSuiteCheck {
+func NewScorecardOlmSuiteCheck(operatorSdk operatorSdk, ns, sa, kubeconfig, waittime string) *ScorecardOlmSuiteCheck {
 	return &ScorecardOlmSuiteCheck{
 		scorecardCheck: scorecardCheck{
-			OperatorSdkEngine: *operatorSdkEngine,
-			namespace:         ns,
-			serviceAccount:    sa,
-			kubeconfig:        kubeconfig,
-			waitTime:          waittime,
+			OperatorSdk:    operatorSdk,
+			namespace:      ns,
+			serviceAccount: sa,
+			kubeconfig:     kubeconfig,
+			waitTime:       waittime,
 		},
 		fatalError: false,
 	}
