@@ -108,6 +108,12 @@ var _ = Describe("OpenShift Engine", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ns).ToNot(BeNil())
 			})
+			By("creating it again should error", func() {
+				ns, err := oc.CreateNamespace(context.TODO(), "testns")
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ErrAlreadyExists))
+				Expect(ns).ToNot(BeNil())
+			})
 			By("getting that Namespace", func() {
 				ns, err := oc.GetNamespace(context.TODO(), "testns")
 				Expect(err).ToNot(HaveOccurred())
@@ -135,6 +141,12 @@ var _ = Describe("OpenShift Engine", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(og).ToNot(BeNil())
 			})
+			By("creating it again should error", func() {
+				og, err := oc.CreateOperatorGroup(context.TODO(), operatorGroupData, "testns")
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ErrAlreadyExists))
+				Expect(og).ToNot(BeNil())
+			})
 			By("getting that OperatorGroup", func() {
 				og, err := oc.GetOperatorGroup(context.TODO(), "testog", "testns")
 				Expect(err).ToNot(HaveOccurred())
@@ -159,6 +171,14 @@ var _ = Describe("OpenShift Engine", func() {
 				content["test"] = "testdata"
 				secret, err := oc.CreateSecret(context.TODO(), "testsecret", content, corev1.SecretTypeDockerConfigJson, "testns")
 				Expect(err).ToNot(HaveOccurred())
+				Expect(secret).ToNot(BeNil())
+			})
+			By("creating a Secret again should error", func() {
+				content := make(map[string]string, 1)
+				content["test"] = "testdata"
+				secret, err := oc.CreateSecret(context.TODO(), "testsecret", content, corev1.SecretTypeDockerConfigJson, "testns")
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ErrAlreadyExists))
 				Expect(secret).ToNot(BeNil())
 			})
 			By("getting that Secret", func() {
@@ -193,6 +213,17 @@ var _ = Describe("OpenShift Engine", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cs).ToNot(BeNil())
 			})
+			By("creating a CatalogSource again should error", func() {
+				csData := CatalogSourceData{
+					Name:    "testcs",
+					Image:   "this/is/my-image:now",
+					Secrets: []string{"my-secrets"},
+				}
+				cs, err := oc.CreateCatalogSource(context.TODO(), csData, "testns")
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ErrAlreadyExists))
+				Expect(cs).ToNot(BeNil())
+			})
 			By("getting that CatalogSource", func() {
 				cs, err := oc.GetCatalogSource(context.TODO(), "testcs", "testns")
 				Expect(err).ToNot(HaveOccurred())
@@ -222,6 +253,19 @@ var _ = Describe("OpenShift Engine", func() {
 				}
 				sub, err := oc.CreateSubscription(context.TODO(), subData, "testns")
 				Expect(err).ToNot(HaveOccurred())
+				Expect(sub).ToNot(BeNil())
+			})
+			By("creating a Subscription again should error", func() {
+				subData := SubscriptionData{
+					Name:                   "testsub",
+					Channel:                "testchannel",
+					CatalogSource:          "testcs",
+					CatalogSourceNamespace: "testns",
+					Package:                "testpackage",
+				}
+				sub, err := oc.CreateSubscription(context.TODO(), subData, "testns")
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ErrAlreadyExists))
 				Expect(sub).ToNot(BeNil())
 			})
 			By("getting that Subscription", func() {
@@ -254,6 +298,18 @@ var _ = Describe("OpenShift Engine", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(rb).ToNot(BeNil())
 			})
+			By("creating a RoleBinding again should error", func() {
+				rbData := RoleBindingData{
+					Name:      "testrb",
+					Subjects:  []string{"testsubject"},
+					Role:      "testrole",
+					Namespace: "testns",
+				}
+				rb, err := oc.CreateRoleBinding(context.TODO(), rbData, "testns")
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ErrAlreadyExists))
+				Expect(rb).ToNot(BeNil())
+			})
 			By("getting that RoleBinding", func() {
 				rb, err := oc.GetRoleBinding(context.TODO(), "testrb", "testns")
 				Expect(err).ToNot(HaveOccurred())
@@ -279,10 +335,16 @@ var _ = Describe("OpenShift Engine", func() {
 		})
 	})
 	Context("CSVs", func() {
-		It("should exercise GetCSV", func() {
+		It("should get a CSV", func() {
 			csv, err := oc.GetCSV(context.TODO(), "testcsv", "testns")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(csv).ToNot(BeNil())
+		})
+		It("should error if CSV doesn't exist", func() {
+			csv, err := oc.GetCSV(context.TODO(), "badcsv", "badns")
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ErrNotFound))
+			Expect(csv).To(BeNil())
 		})
 	})
 })
