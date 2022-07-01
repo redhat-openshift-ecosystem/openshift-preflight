@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
 	log "github.com/sirupsen/logrus"
@@ -45,19 +46,9 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 		return nil, fmt.Errorf("could not get rpm list: %w", err)
 	}
 
-	// Get the files put in place on the filesystem by the
-	// installed packages.
-	packageFiles := make(map[string]struct{}, len(pkgList))
-	for _, pkg := range pkgList {
-		filenames, err := pkg.InstalledFileNames()
-		if err != nil {
-			return nil, fmt.Errorf("could not list installed files: %w", err)
-		}
-		for _, file := range filenames {
-			// A struct is used here, but it is unimportant and
-			// should not have value.
-			packageFiles[file] = struct{}{}
-		}
+	packageFiles, err := p.getInstalledFilesFor(pkgList)
+	if err != nil {
+		return nil, fmt.Errorf("could not list installed files: %w", err)
 	}
 
 	layers, err := imgRef.ImageInfo.Layers()
@@ -93,11 +84,9 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 		}
 	}
 
-	// In cases where the image was built FROM scratch,
-	// we drop the empty layer. This should be relatively rare,
-	// but it is the case in images such as ubi-micro. This works
-	// around using that empty layer as a base layer in Validate().
-	if len(files[0]) == 0 {
+	files, dropped := p.dropFirstLayerIfEmpty(files)
+	if dropped {
+		// tell the user the first layer was dropped
 		diff0, _ := layers[0].DiffID()
 		diff1, _ := layers[1].DiffID()
 		log.Debugf(
@@ -105,10 +94,23 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 			diff0.String(),
 			diff1.String(),
 		)
-		files = files[1:] // shift the empty layer out.
 	}
 
 	return &packageFilesRef{files, packageFiles}, nil
+}
+
+// dropFirstLayerIfEmpty will evaluate the length of the first layer and will drop its entry in files if it's empty.
+// This avoids establishing a baseline of files installed in the original layer with an empty list. An example
+// of when this should occur is in cases where the image was built FROM scratch, such as ubi-micro. This is required
+// to ensure we don't attempt to validate against an empty layer.
+func (p *HasModifiedFilesCheck) dropFirstLayerIfEmpty(files [][]string) ([][]string, bool) {
+	var dropped bool
+	if len(files[0]) == 0 {
+		files = files[1:] // shift the empty layer out.
+		dropped = true
+	}
+
+	return files, dropped
 }
 
 // validate compares the list of LayerFiles and PackageFiles to see what PackageFiles
@@ -209,4 +211,23 @@ func untar(pathChan chan<- string, r io.Reader) error {
 			pathChan <- strings.TrimLeft(header.Linkname, "./")
 		}
 	}
+}
+
+// getInstalledFilesFor returns a map of installed files by pkgs. The returned map only contains
+// relevant keys to aid in lookup; values are unimportant.
+func (p *HasModifiedFilesCheck) getInstalledFilesFor(pkgList []*rpmdb.PackageInfo) (map[string]struct{}, error) {
+	installedFiles := make(map[string]struct{}, len(pkgList))
+	for _, pkg := range pkgList {
+		filenames, err := pkg.InstalledFileNames()
+		if err != nil {
+			return nil, err
+		}
+		for _, file := range filenames {
+			// A struct is used here, but it is unimportant and
+			// should not have value.
+			installedFiles[file] = struct{}{}
+		}
+	}
+
+	return installedFiles, nil
 }
