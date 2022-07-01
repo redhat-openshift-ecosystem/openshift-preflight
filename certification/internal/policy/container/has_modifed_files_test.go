@@ -1,8 +1,13 @@
 package container
 
 import (
+	"context"
+	"path"
+
+	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 )
 
 var _ = Describe("HasModifiedFiles", func() {
@@ -54,6 +59,76 @@ var _ = Describe("HasModifiedFiles", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
+		})
+	})
+
+	Context("When building the installed file list for installed packages", func() {
+		const (
+			basename = "foobasename"
+			dirname  = "foodirname"
+			dirindex = 0
+		)
+		var goodPkgList []*rpmdb.PackageInfo
+		var badPkgList []*rpmdb.PackageInfo
+
+		BeforeEach(func() {
+			goodPkgList = []*rpmdb.PackageInfo{
+				{
+					BaseNames:  []string{basename},
+					DirIndexes: []int32{dirindex},
+					DirNames:   []string{dirname},
+				},
+			}
+
+			badPkgList = []*rpmdb.PackageInfo{
+				{
+					BaseNames:  []string{basename},
+					DirIndexes: []int32{dirindex},
+					DirNames:   []string{dirname, "extra"},
+				},
+			}
+		})
+		It("should contain all files installed by the package according to its metadata", func() {
+			files, err := HasModifiedFiles.getInstalledFilesFor(goodPkgList)
+			Expect(err).ToNot(HaveOccurred())
+
+			_, ok := files[path.Join(dirname, basename)]
+			Expect(ok).To(BeTrue())
+		})
+
+		It("should fail if the rpm is invalid", func() {
+			_, err := HasModifiedFiles.getInstalledFilesFor(badPkgList)
+			Expect(err).To(HaveOccurred())
+		})
+	})
+
+	Context("When evaluating files in each layer", func() {
+		var files [][]string
+		BeforeEach(func() {
+			files = [][]string{
+				{"foo"},
+				{"bar"},
+			}
+		})
+		It("should shift over to the next layer if the first layer is empty", func() {
+			files[0] = []string{}
+			shiftedFiles, shifted := HasModifiedFiles.dropFirstLayerIfEmpty(files)
+			Expect(shiftedFiles).To(BeEquivalentTo(files[1:]))
+			Expect(shifted).To(BeTrue())
+		})
+
+		It("should start at the first layer if it's not empty", func() {
+			unshiftedFiles, shifted := HasModifiedFiles.dropFirstLayerIfEmpty(files)
+			Expect(unshiftedFiles).To(BeEquivalentTo(files))
+			Expect(shifted).To(BeFalse())
+		})
+	})
+
+	Context("When calling the top level Validate", func() {
+		It("should fail with an invalid ImageReference", func() {
+			passed, err := HasModifiedFiles.Validate(context.TODO(), certification.ImageReference{})
+			Expect(err).To(HaveOccurred())
+			Expect(passed).To(BeFalse())
 		})
 	})
 })
