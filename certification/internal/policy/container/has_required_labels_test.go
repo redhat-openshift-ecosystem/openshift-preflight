@@ -56,6 +56,26 @@ var _ = Describe("HasRequiredLabels", func() {
 		imageRef.ImageInfo = &fakeImage
 	})
 
+	Context("When checking metadata", func() {
+		Context("The check name should not be empty", func() {
+			Expect(hasRequiredLabelsCheck.Name()).ToNot(BeEmpty())
+		})
+
+		Context("The metadata keys should not be empty", func() {
+			meta := hasRequiredLabelsCheck.Metadata()
+			Expect(meta.CheckURL).ToNot(BeEmpty())
+			Expect(meta.Description).ToNot(BeEmpty())
+			Expect(meta.KnowledgeBaseURL).ToNot(BeEmpty())
+			// Level is optional.
+		})
+
+		Context("The help text should not be empty", func() {
+			help := hasRequiredLabelsCheck.Help()
+			Expect(help.Message).ToNot(BeEmpty())
+			Expect(help.Suggestion).ToNot(BeEmpty())
+		})
+	})
+
 	Describe("Checking for required labels", func() {
 		Context("When it has required labels", func() {
 			It("should pass Validate", func() {

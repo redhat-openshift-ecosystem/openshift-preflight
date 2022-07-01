@@ -47,6 +47,26 @@ var _ = Describe("RunAsNonRoot", func() {
 		imageRef.ImageInfo = &fakeImage
 	})
 
+	Context("When checking metadata", func() {
+		Context("The check name should not be empty", func() {
+			Expect(runAsNonRoot.Name()).ToNot(BeEmpty())
+		})
+
+		Context("The metadata keys should not be empty", func() {
+			meta := runAsNonRoot.Metadata()
+			Expect(meta.CheckURL).ToNot(BeEmpty())
+			Expect(meta.Description).ToNot(BeEmpty())
+			Expect(meta.KnowledgeBaseURL).ToNot(BeEmpty())
+			// Level is optional.
+		})
+
+		Context("The help text should not be empty", func() {
+			help := runAsNonRoot.Help()
+			Expect(help.Message).ToNot(BeEmpty())
+			Expect(help.Suggestion).ToNot(BeEmpty())
+		})
+	})
+
 	Describe("Checking manifest user is not root", func() {
 		Context("When manifest user is not root", func() {
 			It("should pass Validate", func() {

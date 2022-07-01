@@ -119,6 +119,27 @@ var _ = Describe("DeployableByOLMCheck", func() {
 	AfterEach(func() {
 		artifacts.Reset()
 	})
+
+	Context("When checking metadata", func() {
+		Context("The check name should not be empty", func() {
+			Expect(deployableByOLMCheck.Name()).ToNot(BeEmpty())
+		})
+
+		Context("The metadata keys should not be empty", func() {
+			meta := deployableByOLMCheck.Metadata()
+			Expect(meta.CheckURL).ToNot(BeEmpty())
+			Expect(meta.Description).ToNot(BeEmpty())
+			Expect(meta.KnowledgeBaseURL).ToNot(BeEmpty())
+			// Level is optional.
+		})
+
+		Context("The help text should not be empty", func() {
+			help := deployableByOLMCheck.Help()
+			Expect(help.Message).ToNot(BeEmpty())
+			Expect(help.Suggestion).ToNot(BeEmpty())
+		})
+	})
+
 	Describe("When deploying an operator using OLM", func() {
 		Context("When CSV has been created successfully", func() {
 			It("Should pass Validate", func() {
