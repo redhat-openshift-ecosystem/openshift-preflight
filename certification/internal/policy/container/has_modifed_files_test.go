@@ -35,6 +35,27 @@ var _ = Describe("HasModifiedFiles", func() {
 			},
 		}
 	})
+
+	Context("When checking metadata", func() {
+		Context("The check name should not be empty", func() {
+			Expect(HasModifiedFiles.Name()).ToNot(BeEmpty())
+		})
+
+		Context("The metadata keys should not be empty", func() {
+			meta := HasModifiedFiles.Metadata()
+			Expect(meta.CheckURL).ToNot(BeEmpty())
+			Expect(meta.Description).ToNot(BeEmpty())
+			Expect(meta.KnowledgeBaseURL).ToNot(BeEmpty())
+			// Level is optional.
+		})
+
+		Context("The help text should not be empty", func() {
+			help := HasModifiedFiles.Help()
+			Expect(help.Message).ToNot(BeEmpty())
+			Expect(help.Suggestion).ToNot(BeEmpty())
+		})
+	})
+
 	Describe("Checking if it has any modified RPM files", func() {
 		Context("When there are no modified RPM files found", func() {
 			It("should pass validate", func() {

@@ -92,5 +92,25 @@ var _ = Describe("BaseOnUBI", func() {
 				Expect(ok).To(BeFalse())
 			})
 		})
+
+		Context("When checking metadata", func() {
+			Context("The check name should not be empty", func() {
+				Expect(basedOnUbiCheck.Name()).ToNot(BeEmpty())
+			})
+
+			Context("The metadata keys should not be empty", func() {
+				meta := basedOnUbiCheck.Metadata()
+				Expect(meta.CheckURL).ToNot(BeEmpty())
+				Expect(meta.Description).ToNot(BeEmpty())
+				Expect(meta.KnowledgeBaseURL).ToNot(BeEmpty())
+				// Level is optional.
+			})
+
+			Context("The help text should not be empty", func() {
+				help := basedOnUbiCheck.Help()
+				Expect(help.Message).ToNot(BeEmpty())
+				Expect(help.Suggestion).ToNot(BeEmpty())
+			})
+		})
 	})
 })

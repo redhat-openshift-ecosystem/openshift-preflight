@@ -58,6 +58,26 @@ var _ = Describe("BundleValidateCheck", func() {
 
 		bundleValidateCheck = *NewValidateOperatorBundleCheck(fakeEngine)
 	})
+	Context("When checking metadata", func() {
+		Context("The check name should not be empty", func() {
+			Expect(bundleValidateCheck.Name()).ToNot(BeEmpty())
+		})
+
+		Context("The metadata keys should not be empty", func() {
+			meta := bundleValidateCheck.Metadata()
+			Expect(meta.CheckURL).ToNot(BeEmpty())
+			Expect(meta.Description).ToNot(BeEmpty())
+			Expect(meta.KnowledgeBaseURL).ToNot(BeEmpty())
+			// Level is optional.
+		})
+
+		Context("The help text should not be empty", func() {
+			help := bundleValidateCheck.Help()
+			Expect(help.Message).ToNot(BeEmpty())
+			Expect(help.Suggestion).ToNot(BeEmpty())
+		})
+	})
+
 	Describe("Operator Bundle Validate", func() {
 		Context("When Operator Bundle Validate passes", func() {
 			It("Should pass Validate", func() {
