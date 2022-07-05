@@ -39,26 +39,6 @@ var _ = Describe("LessThanMaxLayers", func() {
 		imgRef.ImageInfo = &fakeImage
 	})
 
-	Context("When checking metadata", func() {
-		Context("The check name should not be empty", func() {
-			Expect(maxLayersCheck.Name()).ToNot(BeEmpty())
-		})
-
-		Context("The metadata keys should not be empty", func() {
-			meta := maxLayersCheck.Metadata()
-			Expect(meta.CheckURL).ToNot(BeEmpty())
-			Expect(meta.Description).ToNot(BeEmpty())
-			Expect(meta.KnowledgeBaseURL).ToNot(BeEmpty())
-			// Level is optional.
-		})
-
-		Context("The help text should not be empty", func() {
-			help := maxLayersCheck.Help()
-			Expect(help.Message).ToNot(BeEmpty())
-			Expect(help.Suggestion).ToNot(BeEmpty())
-		})
-	})
-
 	Describe("Checking for less than max layers", func() {
 		Context("When it has fewer layers than max", func() {
 			It("should pass Validate", func() {
@@ -81,4 +61,6 @@ var _ = Describe("LessThanMaxLayers", func() {
 			})
 		})
 	})
+
+	AssertMetaData(&maxLayersCheck)
 })

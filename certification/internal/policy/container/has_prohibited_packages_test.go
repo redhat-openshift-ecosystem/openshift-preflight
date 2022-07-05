@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("HasNoProhibitedPackages", func() {
 	var (
-		HasNoProhibitedPackages HasNoProhibitedPackagesCheck
+		hasNoProhibitedPackages HasNoProhibitedPackagesCheck
 		pkgList                 []string
 	)
 
@@ -22,30 +22,12 @@ var _ = Describe("HasNoProhibitedPackages", func() {
 		}
 	})
 
-	Context("When checking metadata", func() {
-		Context("The check name should not be empty", func() {
-			Expect(HasNoProhibitedPackages.Name()).ToNot(BeEmpty())
-		})
-
-		Context("The metadata keys should not be empty", func() {
-			meta := HasNoProhibitedPackages.Metadata()
-			Expect(meta.CheckURL).ToNot(BeEmpty())
-			Expect(meta.Description).ToNot(BeEmpty())
-			Expect(meta.KnowledgeBaseURL).ToNot(BeEmpty())
-			// Level is optional.
-		})
-
-		Context("The help text should not be empty", func() {
-			help := HasNoProhibitedPackages.Help()
-			Expect(help.Message).ToNot(BeEmpty())
-			Expect(help.Suggestion).ToNot(BeEmpty())
-		})
-	})
+	AssertMetaData(&hasNoProhibitedPackages)
 
 	Describe("Checking if it has an prohibited packages", func() {
 		Context("When there are no prohibited packages found", func() {
 			It("should pass validate", func() {
-				ok, err := HasNoProhibitedPackages.validate(context.TODO(), pkgList)
+				ok, err := hasNoProhibitedPackages.validate(context.TODO(), pkgList)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -56,7 +38,7 @@ var _ = Describe("HasNoProhibitedPackages", func() {
 				pkgs = append(pkgList, "grub")
 			})
 			It("should not pass Validate", func() {
-				ok, err := HasNoProhibitedPackages.validate(context.TODO(), pkgs)
+				ok, err := hasNoProhibitedPackages.validate(context.TODO(), pkgs)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -67,7 +49,7 @@ var _ = Describe("HasNoProhibitedPackages", func() {
 				pkgs = append(pkgList, "kpatch2121")
 			})
 			It("should not pass Validate", func() {
-				ok, err := HasNoProhibitedPackages.validate(context.TODO(), pkgs)
+				ok, err := hasNoProhibitedPackages.validate(context.TODO(), pkgs)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
