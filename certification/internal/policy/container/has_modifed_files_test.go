@@ -12,7 +12,7 @@ import (
 
 var _ = Describe("HasModifiedFiles", func() {
 	var (
-		HasModifiedFiles HasModifiedFilesCheck
+		hasModifiedFiles HasModifiedFilesCheck
 		pkgList          packageFilesRef
 	)
 
@@ -41,30 +41,10 @@ var _ = Describe("HasModifiedFiles", func() {
 		}
 	})
 
-	Context("When checking metadata", func() {
-		Context("The check name should not be empty", func() {
-			Expect(HasModifiedFiles.Name()).ToNot(BeEmpty())
-		})
-
-		Context("The metadata keys should not be empty", func() {
-			meta := HasModifiedFiles.Metadata()
-			Expect(meta.CheckURL).ToNot(BeEmpty())
-			Expect(meta.Description).ToNot(BeEmpty())
-			Expect(meta.KnowledgeBaseURL).ToNot(BeEmpty())
-			// Level is optional.
-		})
-
-		Context("The help text should not be empty", func() {
-			help := HasModifiedFiles.Help()
-			Expect(help.Message).ToNot(BeEmpty())
-			Expect(help.Suggestion).ToNot(BeEmpty())
-		})
-	})
-
 	Describe("Checking if it has any modified RPM files", func() {
 		Context("When there are no modified RPM files found", func() {
 			It("should pass validate", func() {
-				ok, err := HasModifiedFiles.validate(&pkgList)
+				ok, err := hasModifiedFiles.validate(&pkgList)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -76,7 +56,7 @@ var _ = Describe("HasModifiedFiles", func() {
 				pkgs.LayerFiles[1] = append(pkgs.LayerFiles[1], "this")
 			})
 			It("should not pass Validate", func() {
-				ok, err := HasModifiedFiles.validate(&pkgs)
+				ok, err := hasModifiedFiles.validate(&pkgs)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -110,7 +90,7 @@ var _ = Describe("HasModifiedFiles", func() {
 			}
 		})
 		It("should contain all files installed by the package according to its metadata", func() {
-			files, err := HasModifiedFiles.getInstalledFilesFor(goodPkgList)
+			files, err := hasModifiedFiles.getInstalledFilesFor(goodPkgList)
 			Expect(err).ToNot(HaveOccurred())
 
 			_, ok := files[path.Join(dirname, basename)]
@@ -118,7 +98,7 @@ var _ = Describe("HasModifiedFiles", func() {
 		})
 
 		It("should fail if the rpm is invalid", func() {
-			_, err := HasModifiedFiles.getInstalledFilesFor(badPkgList)
+			_, err := hasModifiedFiles.getInstalledFilesFor(badPkgList)
 			Expect(err).To(HaveOccurred())
 		})
 	})
@@ -133,13 +113,13 @@ var _ = Describe("HasModifiedFiles", func() {
 		})
 		It("should shift over to the next layer if the first layer is empty", func() {
 			files[0] = []string{}
-			shiftedFiles, shifted := HasModifiedFiles.dropFirstLayerIfEmpty(files)
+			shiftedFiles, shifted := hasModifiedFiles.dropFirstLayerIfEmpty(files)
 			Expect(shiftedFiles).To(BeEquivalentTo(files[1:]))
 			Expect(shifted).To(BeTrue())
 		})
 
 		It("should start at the first layer if it's not empty", func() {
-			unshiftedFiles, shifted := HasModifiedFiles.dropFirstLayerIfEmpty(files)
+			unshiftedFiles, shifted := hasModifiedFiles.dropFirstLayerIfEmpty(files)
 			Expect(unshiftedFiles).To(BeEquivalentTo(files))
 			Expect(shifted).To(BeFalse())
 		})
@@ -147,9 +127,11 @@ var _ = Describe("HasModifiedFiles", func() {
 
 	Context("When calling the top level Validate", func() {
 		It("should fail with an invalid ImageReference", func() {
-			passed, err := HasModifiedFiles.Validate(context.TODO(), certification.ImageReference{})
+			passed, err := hasModifiedFiles.Validate(context.TODO(), certification.ImageReference{})
 			Expect(err).To(HaveOccurred())
 			Expect(passed).To(BeFalse())
 		})
 	})
+
+	AssertMetaData(&hasModifiedFiles)
 })

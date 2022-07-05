@@ -72,25 +72,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 		scorecardOlmSuiteCheck = *NewScorecardOlmSuiteCheck(fakeEngine, "myns", "mysa", "", "20")
 	})
 
-	Context("When checking metadata", func() {
-		Context("The check name should not be empty", func() {
-			Expect(scorecardOlmSuiteCheck.Name()).ToNot(BeEmpty())
-		})
-
-		Context("The metadata keys should not be empty", func() {
-			meta := scorecardOlmSuiteCheck.Metadata()
-			Expect(meta.CheckURL).ToNot(BeEmpty())
-			Expect(meta.Description).ToNot(BeEmpty())
-			Expect(meta.KnowledgeBaseURL).ToNot(BeEmpty())
-			// Level is optional.
-		})
-
-		Context("The help text should not be empty", func() {
-			help := scorecardOlmSuiteCheck.Help()
-			Expect(help.Message).ToNot(BeEmpty())
-			Expect(help.Suggestion).ToNot(BeEmpty())
-		})
-	})
+	AssertMetaData(&scorecardOlmSuiteCheck)
 
 	Describe("Operator Bundle Scorecard", func() {
 		Context("When Operator Bundle Scorecard OLM Suite Check has a pass", func() {

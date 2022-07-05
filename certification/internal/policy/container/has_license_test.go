@@ -17,7 +17,7 @@ const (
 )
 
 var _ = Describe("HasLicense", func() {
-	var HasLicense HasLicenseCheck
+	var hasLicense HasLicenseCheck
 
 	Describe("Checking if licenses can be found", func() {
 		var imgRef certification.ImageReference
@@ -35,7 +35,7 @@ var _ = Describe("HasLicense", func() {
 		})
 		Context("When license(s) are found", func() {
 			It("Should pass Validate", func() {
-				ok, err := HasLicense.Validate(context.TODO(), imgRef)
+				ok, err := hasLicense.Validate(context.TODO(), imgRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -45,7 +45,7 @@ var _ = Describe("HasLicense", func() {
 				imgRef.ImageFSPath = "/invalid"
 			})
 			It("Should not pass Validate", func() {
-				ok, err := HasLicense.Validate(context.TODO(), imgRef)
+				ok, err := hasLicense.Validate(context.TODO(), imgRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -56,7 +56,7 @@ var _ = Describe("HasLicense", func() {
 				os.Remove(filepath.Join(imgRef.ImageFSPath, licenses, emptyLicense))
 			})
 			It("Should not pass Validate", func() {
-				ok, err := HasLicense.Validate(context.TODO(), imgRef)
+				ok, err := hasLicense.Validate(context.TODO(), imgRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -66,7 +66,7 @@ var _ = Describe("HasLicense", func() {
 				os.Remove(filepath.Join(imgRef.ImageFSPath, licenses, validLicense))
 			})
 			It("Should not pass Validate", func() {
-				ok, err := HasLicense.Validate(context.TODO(), imgRef)
+				ok, err := hasLicense.Validate(context.TODO(), imgRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -76,24 +76,6 @@ var _ = Describe("HasLicense", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		Context("When checking metadata", func() {
-			Context("The check name should not be empty", func() {
-				Expect(HasLicense.Name()).ToNot(BeEmpty())
-			})
-
-			Context("The metadata keys should not be empty", func() {
-				meta := HasLicense.Metadata()
-				Expect(meta.CheckURL).ToNot(BeEmpty())
-				Expect(meta.Description).ToNot(BeEmpty())
-				Expect(meta.KnowledgeBaseURL).ToNot(BeEmpty())
-				// Level is optional.
-			})
-
-			Context("The help text should not be empty", func() {
-				help := HasLicense.Help()
-				Expect(help.Message).ToNot(BeEmpty())
-				Expect(help.Suggestion).ToNot(BeEmpty())
-			})
-		})
+		AssertMetaData(&hasLicense)
 	})
 })

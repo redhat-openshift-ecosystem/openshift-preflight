@@ -46,26 +46,6 @@ var _ = Describe("UniqueTag", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	Context("When checking metadata", func() {
-		Context("The check name should not be empty", func() {
-			Expect(hasUniqueTagCheck.Name()).ToNot(BeEmpty())
-		})
-
-		Context("The metadata keys should not be empty", func() {
-			meta := hasUniqueTagCheck.Metadata()
-			Expect(meta.CheckURL).ToNot(BeEmpty())
-			Expect(meta.Description).ToNot(BeEmpty())
-			Expect(meta.KnowledgeBaseURL).ToNot(BeEmpty())
-			// Level is optional.
-		})
-
-		Context("The help text should not be empty", func() {
-			help := hasUniqueTagCheck.Help()
-			Expect(help.Message).ToNot(BeEmpty())
-			Expect(help.Suggestion).ToNot(BeEmpty())
-		})
-	})
-
 	Describe("Checking for unique tags", func() {
 		Context("When it has tags other than latest", func() {
 			It("should pass Validate", func() {
@@ -82,6 +62,8 @@ var _ = Describe("UniqueTag", func() {
 			})
 		})
 	})
+
+	AssertMetaData(&hasUniqueTagCheck)
 })
 
 func validImageTags() []string {

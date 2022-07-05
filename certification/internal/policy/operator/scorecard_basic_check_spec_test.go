@@ -72,25 +72,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 		scorecardBasicCheck = *NewScorecardBasicSpecCheck(fakeEngine, "myns", "mysa", "", "20")
 	})
 
-	Context("When checking metadata", func() {
-		Context("The check name should not be empty", func() {
-			Expect(scorecardBasicCheck.Name()).ToNot(BeEmpty())
-		})
-
-		Context("The metadata keys should not be empty", func() {
-			meta := scorecardBasicCheck.Metadata()
-			Expect(meta.CheckURL).ToNot(BeEmpty())
-			Expect(meta.Description).ToNot(BeEmpty())
-			Expect(meta.KnowledgeBaseURL).ToNot(BeEmpty())
-			// Level is optional.
-		})
-
-		Context("The help text should not be empty", func() {
-			help := scorecardBasicCheck.Help()
-			Expect(help.Message).ToNot(BeEmpty())
-			Expect(help.Suggestion).ToNot(BeEmpty())
-		})
-	})
+	AssertMetaData(&scorecardBasicCheck)
 
 	Describe("Operator Bundle Scorecard", func() {
 		Context("When Operator Bundle Scorecard Basic Check has a pass", func() {
