@@ -103,4 +103,4 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
 
-replace github.com/knqyf263/go-rpmdb => github.com/opdev/go-rpmdb v0.0.0-20220630122500-7186d78a0783
+replace github.com/knqyf263/go-rpmdb => github.com/opdev/go-rpmdb v0.0.0-20220719131451-751902254f35
