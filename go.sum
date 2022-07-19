@@ -680,8 +680,8 @@ github.com/onsi/gomega v1.16.0/go.mod h1:HnhC7FXeEQY45zxNK3PPoIUhzk/80Xly9PcubAl
 github.com/onsi/gomega v1.17.0/go.mod h1:HnhC7FXeEQY45zxNK3PPoIUhzk/80Xly9PcubAlGdZY=
 github.com/onsi/gomega v1.18.1 h1:M1GfJqGRrBrrGGsbxzV5dqM2U2ApXefZCQpkukxYRLE=
 github.com/onsi/gomega v1.18.1/go.mod h1:0q+aL8jAiMXy9hbwj2mr5GziHiwhAIQpFmmtT5hitRs=
-github.com/opdev/go-rpmdb v0.0.0-20220630122500-7186d78a0783 h1:4grEQK7DNshreUS6QNROenqvotJGlCQZlMZEAmakl/o=
-github.com/opdev/go-rpmdb v0.0.0-20220630122500-7186d78a0783/go.mod h1:ZQDkL8JLWXdoduwq/aZGDfI3Cn0FT5ta1yhDcb3yQAE=
+github.com/opdev/go-rpmdb v0.0.0-20220719131451-751902254f35 h1:2JW+k9NdNWtkixPw1n5xfxsneG88tPUOwMBbOIv/Ct0=
+github.com/opdev/go-rpmdb v0.0.0-20220719131451-751902254f35/go.mod h1:ZQDkL8JLWXdoduwq/aZGDfI3Cn0FT5ta1yhDcb3yQAE=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.0.3-0.20220114050600-8b9d41f48198 h1:+czc/J8SlhPKLOtVLMQc+xDCFBT73ZStMsRhSsUhsSg=
