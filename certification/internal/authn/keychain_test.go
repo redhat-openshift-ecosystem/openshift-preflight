@@ -123,6 +123,14 @@ func TestVariousPaths(t *testing.T) {
 			Password: "bar",
 		},
 	}, {
+		desc:    "valid config file as written by podman; default registry",
+		target:  defaultRegistry,
+		content: fmt.Sprintf(`{"auths": {"docker.io": {"auth": %q}}}`, encode("foo", "bar")),
+		cfg: &craneauthn.AuthConfig{
+			Username: "foo",
+			Password: "bar",
+		},
+	}, {
 		desc:   "valid config file; matches registry w/ v1",
 		target: testRegistry,
 		content: fmt.Sprintf(`{
