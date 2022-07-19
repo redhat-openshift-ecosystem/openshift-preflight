@@ -3,6 +3,7 @@ package authn
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/types"
@@ -69,11 +70,25 @@ func (k *preflightKeychain) Resolve(target craneauthn.Resource) (craneauthn.Auth
 		return nil, fmt.Errorf("could not load authfile from reader: %v", err)
 	}
 
-	var cfg, empty types.AuthConfig
-	for _, key := range []string{
+	// We'll check the authconfig for creds associated with these endpoints.
+	authFileTargets := []string{
 		target.String(),
 		target.RegistryStr(),
-	} {
+	}
+
+	// If the user logged into docker.io using podman, the auth.json would
+	// contain docker.io. Crane rewrites this to index.docker.io internally,
+	// but the credential file does not have an entry for this, so we also
+	// check for docker.io/* entries that match.
+	if strings.Contains(name.DefaultRegistry, target.RegistryStr()) {
+		authFileTargets = append(authFileTargets,
+			strings.Replace(target.String(), name.DefaultRegistry, "docker.io", 1),
+			strings.Replace(target.RegistryStr(), name.DefaultRegistry, "docker.io", 1),
+		)
+	}
+
+	var cfg, empty types.AuthConfig
+	for _, key := range authFileTargets {
 		if key == name.DefaultRegistry {
 			key = craneauthn.DefaultAuthKey
 		}
