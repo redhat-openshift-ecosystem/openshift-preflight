@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -67,6 +68,8 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 		}
 		pathChan := make(chan string)
 
+		var wg sync.WaitGroup
+		wg.Add(1)
 		go func() {
 			// For each path in the pathChan, add it to the layer's
 			// list of files.
@@ -76,12 +79,15 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 			}
 			// also add it to the overall list of files.
 			files = append(files, layerFiles)
+			wg.Done()
 		}()
 		// add paths to the pathChan
 		err = untar(pathChan, r)
 		if err != nil {
 			return nil, fmt.Errorf("failed to extract tarball: %w", err)
 		}
+
+		wg.Wait() // wait for file list to get appended to the files var
 	}
 
 	files, dropped := p.dropFirstLayerIfEmpty(files)
