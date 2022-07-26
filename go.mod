@@ -11,7 +11,8 @@ require (
 	github.com/onsi/gomega v1.18.1
 	github.com/openshift/api v0.0.0-20210910062324-a41d3573a3ba
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
-	github.com/operator-framework/api v0.12.0
+	github.com/operator-framework/api v0.15.0
+	github.com/operator-framework/operator-manifest-tools v0.2.1
 	github.com/shurcooL/graphql v0.0.0-20220606043923-3cf50f8a0a29
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0
@@ -19,7 +20,7 @@ require (
 	gotest.tools/v3 v3.0.3
 	k8s.io/api v0.24.0
 	k8s.io/apimachinery v0.24.0
-	sigs.k8s.io/controller-runtime v0.12.0
+	sigs.k8s.io/controller-runtime v0.12.1
 	sigs.k8s.io/yaml v1.3.0
 )
 

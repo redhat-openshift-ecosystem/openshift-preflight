@@ -150,7 +150,7 @@ func (p *pyxisClient) FindImagesByDigest(ctx context.Context, digests []string) 
 			Total graphql.Int
 			Page  graphql.Int
 			// filter to make sure we get exact results
-		} `graphql:"find_images(filter: {docker_image_digest:in:$digests})"`
+		} `graphql:"find_images(filter: {docker_image_digest:{in:$digests}})"`
 	}
 
 	graphqlDigests := make([]graphql.String, len(digests))

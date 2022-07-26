@@ -120,26 +120,17 @@ var _ = Describe("BundleValidateCheck", func() {
 				err := os.WriteFile(filepath.Join(manifestsPath, clusterServiceVersionFilename), []byte(""), 0o644)
 				Expect(err).ToNot(HaveOccurred())
 			})
-			Context("the CSV contains images", func() {
-				It("should get the images", func() {
-					r := strings.NewReader(csvContents)
-					images, err := ExtractImagesFromBundle(context.TODO(), r)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(images).To(HaveLen(2))
-					Expect(images).To(ContainElement("registry.example.io/foo/bar@sha256:f000432f07cd187469f0310e3ed9dcf9a5db2be14b8bab9c5293dd1ee8518176"))
-				})
-			})
 			Context("the CSV is malformed", func() {
 				It("should error", func() {
 					r := strings.NewReader("badcsv::bad")
-					images, err := ExtractImagesFromBundle(context.TODO(), r)
+					images, err := GetSupportedInstallModes(context.TODO(), r)
 					Expect(err).To(HaveOccurred())
 					Expect(images).To(BeNil())
 				})
 			})
 			Context("the CSV could not be read", func() {
 				It("should error", func() {
-					images, err := ExtractImagesFromBundle(context.TODO(), errReader(0))
+					images, err := GetSupportedInstallModes(context.TODO(), errReader(0))
 					Expect(err).To(HaveOccurred())
 					Expect(images).To(BeNil())
 				})
