@@ -139,3 +139,20 @@ var _ = Describe("Source RPM name function", func() {
 		})
 	})
 })
+
+var _ = Describe("Tag and digest binding information function", func() {
+	Context("with a digest as the user-provided identifier", func() {
+		It("should return a message indicating that no tag will be associated", func() {
+			m, _ := tagDigestBindingInfo("sha256:5031aedc52578c68277ef127ef0f2a941e12d280722f1c19ee83932b6efd2f3b", "sha256:5031aedc52578c68277ef127ef0f2a941e12d280722f1c19ee83932b6efd2f3b")
+			Expect(m).To(ContainSubstring("You've provided an image by digest"))
+		})
+		Context("with a tag as the user-proivded identifier", func() {
+			It("should return a message indicating the tag and digest are bound", func() {
+				t := "mytag"
+				d := "sha256:5031aedc52578c68277ef127ef0f2a941e12d280722f1c19ee83932b6efd2f3b"
+				m, _ := tagDigestBindingInfo(t, d)
+				Expect(m).To(ContainSubstring(fmt.Sprintf("This image's tag %s will be paired with digest %s", t, d)))
+			})
+		})
+	})
+})

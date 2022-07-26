@@ -202,16 +202,49 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 		c.results.PassedOverall = true
 	}
 
-	// hash contents if bundle
-	if c.IsBundle {
+	if c.IsBundle { // for operators:
+		// hash the contents of the bundle.
 		md5sum, err := generateBundleHash(c.imageRef.ImageFSPath)
 		if err != nil {
 			log.Errorf("could not generate bundle hash: %v", err)
 		}
 		c.results.CertificationHash = md5sum
+	} else { // for containers:
+		// Inform the user about the sha/tag binding.
+
+		// By this point, we should have already resolved the digest so
+		// we don't handle this error, but fail safe and don't log a potentially
+		// incorrect line message to the user.
+		if resolvedDigest, err := c.imageRef.ImageInfo.Digest(); err == nil {
+			msg, logfunc := tagDigestBindingInfo(c.imageRef.ImageTagOrSha, resolvedDigest.String())
+			logfunc(msg)
+		}
 	}
 
 	return nil
+}
+
+// tagDigestBindingInfo emits a log line describing tag and digest binding semantics.
+// The providedIdentifer is the tag or digest of the image as the user gave it at the commandline.
+// resolvedDigest
+func tagDigestBindingInfo(providedIdentifier string, resolvedDigest string) (msg string, logFunc func(...interface{})) {
+	if strings.HasPrefix(providedIdentifier, "sha256:") {
+		return "You've provided an image by digest. " +
+				"When submitting this image to Red Hat for certification, " +
+				"no tag will be associated with this image. " +
+				"If you would like to associate a tag with this image, " +
+				"please rerun this tool replacing your image reference with a tag.",
+			log.Warn
+	}
+
+	return fmt.Sprintf(
+		`This image's tag %s will be paired with digest %s`+
+			`once this image has been published in accordance `+
+			`with Red Hat Certification policy. `+
+			`You may then add or remove any supplemental tags `+
+			`through your Red Hat Connect portal as you see fit.`,
+		providedIdentifier, resolvedDigest,
+	), log.Info
 }
 
 func generateBundleHash(bundlePath string) (string, error) {
