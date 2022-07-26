@@ -56,6 +56,12 @@ func initializeChecks(ctx context.Context, p policy.Policy, cfg certification.Co
 			operatorpol.NewScorecardOlmSuiteCheck(operatorsdk.New(cfg.ScorecardImage(), exec.Command), cfg.Namespace(), cfg.ServiceAccount(), cfg.Kubeconfig(), cfg.ScorecardWaitTime()),
 			operatorpol.NewDeployableByOlmCheck(operatorsdk.New(cfg.ScorecardImage(), exec.Command), cfg.IndexImage(), cfg.DockerConfig(), cfg.Channel()),
 			operatorpol.NewValidateOperatorBundleCheck(operatorsdk.New(cfg.ScorecardImage(), exec.Command)),
+			operatorpol.NewCertifiedImagesCheck(pyxis.NewPyxisClient(
+				certification.DefaultPyxisHost,
+				"",
+				"",
+				&http.Client{Timeout: 60 * time.Second}),
+			),
 		}, nil
 	case policy.PolicyContainer:
 		return []certification.Check{
