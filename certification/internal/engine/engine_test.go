@@ -73,6 +73,24 @@ var _ = Describe("Execute Checks tests", func() {
 			certification.HelpText{},
 		)
 
+		optionalCheckPassing := certification.NewGenericCheck(
+			"optionalCheckPassing",
+			func(context.Context, certification.ImageReference) (bool, error) {
+				return true, nil
+			},
+			certification.Metadata{Level: "optional"},
+			certification.HelpText{},
+		)
+
+		optionalCheckFailing := certification.NewGenericCheck(
+			"optionalCheckFailing",
+			func(context.Context, certification.ImageReference) (bool, error) {
+				return false, fmt.Errorf("optionalError")
+			},
+			certification.Metadata{Level: "optional"},
+			certification.HelpText{},
+		)
+
 		emptyConfig := runtime.Config{}
 		engine = CraneEngine{
 			Config: emptyConfig.ReadOnly(), // must pass a config to avoid nil pointer errors
@@ -81,6 +99,8 @@ var _ = Describe("Execute Checks tests", func() {
 				goodCheck,
 				errorCheck,
 				failedCheck,
+				optionalCheckPassing,
+				optionalCheckFailing,
 			},
 			IsBundle:  false,
 			IsScratch: false,

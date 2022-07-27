@@ -74,7 +74,7 @@ func (p *RelatedImagesCheck) Name() string {
 
 func (p *RelatedImagesCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Check that all images in the CSV are listed in RelatedImages section",
+		Description:      "Check that all images in the CSV are listed in RelatedImages section. Currently, this check is not enforced.",
 		Level:            "optional",
 		KnowledgeBaseURL: "https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.45/html/red_hat_openshift_software_certification_policy_guide/assembly-products-managed-by-an-operator_openshift-sw-cert-policy-container-images#con-operator-requirements_openshift-sw-cert-policy-products-managed",
 		CheckURL:         "https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.45/html/red_hat_openshift_software_certification_policy_guide/assembly-products-managed-by-an-operator_openshift-sw-cert-policy-container-images#con-operator-requirements_openshift-sw-cert-policy-products-managed",
