@@ -86,6 +86,11 @@ func initializeChecks(ctx context.Context, p policy.Policy, cfg certification.Co
 			&containerpol.HasNoProhibitedPackagesCheck{},
 			&containerpol.HasRequiredLabelsCheck{},
 			&containerpol.HasModifiedFilesCheck{},
+			containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisClient(
+				certification.DefaultPyxisHost,
+				cfg.PyxisAPIToken(),
+				cfg.CertificationProjectID(),
+				&http.Client{Timeout: 60 * time.Second})),
 		}, nil
 	case policy.PolicyScratch:
 		return []certification.Check{
