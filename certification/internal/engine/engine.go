@@ -174,6 +174,9 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 		c.results.TestedImage = c.Image
 
 		log.Debug("running check: ", check.Name())
+		if check.Metadata().Level == "optional" {
+			log.Infof("Check %s is not currently being enforced.", check.Name())
+		}
 
 		// run the validation
 		checkStartTime := time.Now()
@@ -182,18 +185,18 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 
 		if err != nil {
 			log.WithFields(log.Fields{"result": "ERROR", "err": err}).Info("check completed: ", check.Name())
-			c.results.Errors = append(c.results.Errors, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
+			c.results.Errors = appendUnlessOptional(c.results.Errors, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
 		if !checkPassed {
 			log.WithFields(log.Fields{"result": "FAILED"}).Info("check completed: ", check.Name())
-			c.results.Failed = append(c.results.Failed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
+			c.results.Failed = appendUnlessOptional(c.results.Failed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
 		log.WithFields(log.Fields{"result": "PASSED"}).Info("check completed: ", check.Name())
-		c.results.Passed = append(c.results.Passed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
+		c.results.Passed = appendUnlessOptional(c.results.Passed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
 	}
 
 	if len(c.results.Errors) > 0 || len(c.results.Failed) > 0 {
@@ -222,6 +225,13 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func appendUnlessOptional(results []runtime.Result, result runtime.Result) []runtime.Result {
+	if result.Check.Metadata().Level == "optional" {
+		return results
+	}
+	return append(results, result)
 }
 
 // tagDigestBindingInfo emits a log line describing tag and digest binding semantics.

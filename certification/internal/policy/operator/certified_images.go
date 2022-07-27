@@ -89,7 +89,7 @@ func (p *certifiedImagesCheck) Name() string {
 
 func (p *certifiedImagesCheck) Metadata() certification.Metadata {
 	return certification.Metadata{
-		Description:      "Checking that all images referenced in the CSV are certified",
+		Description:      "Checking that all images referenced in the CSV are certified. Currently, this check is not enforced.",
 		Level:            "optional",
 		KnowledgeBaseURL: "https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.45/html/red_hat_openshift_software_certification_policy_guide/assembly-products-managed-by-an-operator_openshift-sw-cert-policy-container-images#con-operand-requirements_openshift-sw-cert-policy-products-managed",
 		CheckURL:         "https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.45/html/red_hat_openshift_software_certification_policy_guide/assembly-products-managed-by-an-operator_openshift-sw-cert-policy-container-images#con-operand-requirements_openshift-sw-cert-policy-products-managed",
