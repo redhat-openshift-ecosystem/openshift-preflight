@@ -87,15 +87,13 @@ var _ = Describe("cmd package utility functions", func() {
 				var err error
 				tmpDir, err = os.MkdirTemp("", "prerun-config-*")
 				Expect(err).ToNot(HaveOccurred())
+				DeferCleanup(os.RemoveAll, tmpDir)
 			})
 			It("should create the logfile", func() {
 				viper.Set("logfile", filepath.Join(tmpDir, "foo.log"))
 				Expect(cmd.ExecuteContext(context.TODO())).To(Succeed())
 				_, err := os.Stat(filepath.Join(tmpDir, "foo.log"))
 				Expect(err).ToNot(HaveOccurred())
-			})
-			AfterEach(func() {
-				os.RemoveAll(tmpDir)
 			})
 		})
 	})

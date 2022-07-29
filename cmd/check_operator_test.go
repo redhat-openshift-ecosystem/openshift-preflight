@@ -15,6 +15,7 @@ import (
 
 var _ = Describe("Check Operator", func() {
 	Context("when running the check operator subcommand", func() {
+		BeforeEach(createAndCleanupDirForArtifactsAndLogs)
 		Context("without the operator bundle image being provided", func() {
 			It("should return an error", func() {
 				_, err := executeCommand(rootCmd, "check", "operator")

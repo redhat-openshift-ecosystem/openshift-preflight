@@ -2,9 +2,11 @@ package e2e
 
 import (
 	"context"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
@@ -15,6 +17,15 @@ import (
 // Any check that is found in the error section of the Result will cause this
 // to fail.
 var _ = Describe("policy validation", func() {
+	BeforeEach(func() {
+		tmpDir, err := os.MkdirTemp("", "artifacts-*")
+		Expect(err).ToNot(HaveOccurred())
+
+		artifacts.SetDir(tmpDir)
+		DeferCleanup(os.RemoveAll, tmpDir)
+		DeferCleanup(artifacts.Reset)
+	})
+
 	Describe("When enforcing operator policy", func() {
 		var (
 			// TODO: replace the failure case with crafted examples.

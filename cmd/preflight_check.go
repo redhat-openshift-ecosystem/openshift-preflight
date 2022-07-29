@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
@@ -31,7 +30,11 @@ func preflightCheck(
 
 	// create the results file early to catch cases where we are not
 	// able to write to the filesystem before we attempt to execute checks.
-	resultsFile, err := rw.OpenFile(filepath.Join(artifacts.Path(), resultsFilenameWithExtension(formatter.FileExtension())))
+	resultsFilePath, err := artifacts.WriteFile(resultsFilenameWithExtension(formatter.FileExtension()), "")
+	if err != nil {
+		return err
+	}
+	resultsFile, err := rw.OpenFile(resultsFilePath)
 	if err != nil {
 		return err
 	}

@@ -8,6 +8,7 @@ import (
 
 var _ = Describe("support command tests", func() {
 	Context("When running the support cobra command", func() {
+		BeforeEach(createAndCleanupDirForArtifactsAndLogs)
 		Context("with valid inputs for a container project", func() {
 			It("should run without error", func() {
 				_, err := executeCommand(rootCmd, "support", "container", "000000000000")
