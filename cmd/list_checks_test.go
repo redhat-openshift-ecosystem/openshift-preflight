@@ -73,6 +73,7 @@ var _ = Describe("list checks subcommand", func() {
 	})
 
 	Context("When executing the cobra command", func() {
+		BeforeEach(createAndCleanupDirForArtifactsAndLogs)
 		It("should contain output equivalent to printChecks", func() {
 			// get the expected result
 			buf := strings.Builder{}

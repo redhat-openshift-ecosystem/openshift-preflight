@@ -13,6 +13,14 @@ import (
 )
 
 var _ = Describe("cmd package check command", func() {
+	BeforeEach(func() {
+		artifactsDir, err := os.MkdirTemp("", "cmd-test-*")
+		Expect(err).ToNot(HaveOccurred())
+		// change the artifacts dir to our test dir
+		artifacts.SetDir(artifactsDir)
+		DeferCleanup(os.RemoveAll, artifactsDir)
+		DeferCleanup(artifacts.Reset)
+	})
 	DescribeTable("Checking overall pass/fail",
 		func(result bool, expected string) {
 			Expect(convertPassedOverall(result)).To(Equal(expected))
@@ -90,7 +98,6 @@ var _ = Describe("cmd package check command", func() {
 
 	Describe("JUnit", func() {
 		var results *runtime.Results
-		var artifactsDir string
 		var junitfile string
 
 		BeforeEach(func() {
@@ -103,18 +110,9 @@ var _ = Describe("cmd package check command", func() {
 				Failed:            []runtime.Result{},
 				Errors:            []runtime.Result{},
 			}
-			var err error
-			artifactsDir, err = os.MkdirTemp("", "junit-test-*")
-			Expect(err).ToNot(HaveOccurred())
-			// change the artifacts dir to our test dir
-			artifacts.SetDir(artifactsDir)
-			junitfile = filepath.Join(artifactsDir, "results-junit.xml")
+			junitfile = filepath.Join(artifacts.Path(), "results-junit.xml")
 		})
-		AfterEach(func() {
-			Expect(os.RemoveAll(artifactsDir)).To(Succeed())
-			// BeforeEach changes the default artifacts dir, so reset it.
-			artifacts.Reset()
-		})
+
 		When("The additional JUnitXML results file is requested", func() {
 			It("should be written to the artifacts directory without error", func() {
 				Expect(writeJUnit(context.TODO(), *results)).To(Succeed())

@@ -115,9 +115,8 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		deployableByOLMCheck.client = client
 
 		artifacts.SetDir(tmpDir)
-	})
-	AfterEach(func() {
-		artifacts.Reset()
+		DeferCleanup(os.RemoveAll, tmpDir)
+		DeferCleanup(artifacts.Reset)
 	})
 
 	Describe("When deploying an operator using OLM", func() {

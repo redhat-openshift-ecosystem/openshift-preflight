@@ -2,10 +2,12 @@ package operator
 
 import (
 	"context"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 )
 
@@ -70,6 +72,13 @@ var _ = Describe("ScorecardBasicCheck", func() {
 			OperatorSdkReport: report,
 		}
 		scorecardBasicCheck = *NewScorecardBasicSpecCheck(fakeEngine, "myns", "mysa", "", "20")
+
+		tmpDir, err := os.MkdirTemp("", "artifacts-*")
+		Expect(err).ToNot(HaveOccurred())
+
+		artifacts.SetDir(tmpDir)
+		DeferCleanup(os.RemoveAll, tmpDir)
+		DeferCleanup(artifacts.Reset)
 	})
 
 	AssertMetaData(&scorecardBasicCheck)

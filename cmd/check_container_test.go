@@ -21,24 +21,7 @@ import (
 )
 
 var _ = Describe("Check Container Command", func() {
-	var contextTempDir string
-	var artifactsDir string
-
-	BeforeEach(func() {
-		// instantiate err to make sure we can equal-assign in the following line.
-		var err error
-		contextTempDir, err = os.MkdirTemp(os.TempDir(), "check-container-test-*")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(len(contextTempDir)).ToNot(BeZero())
-		artifactsDir = path.Join(contextTempDir, "artifacts")
-		artifacts.SetDir(artifactsDir)
-	})
-
-	AfterEach(func() {
-		err := os.RemoveAll(contextTempDir)
-		Expect(err).ToNot(HaveOccurred())
-		artifacts.Reset()
-	})
+	BeforeEach(createAndCleanupDirForArtifactsAndLogs)
 
 	Context("when running the check container subcommand", func() {
 		Context("With all of the required parameters", func() {
@@ -98,8 +81,8 @@ var _ = Describe("Check Container Command", func() {
 		preflightLogFilename := "preflight.log"
 		dockerconfigFilename := "dockerconfig.json"
 		BeforeEach(func() {
-			dockerConfigPath = path.Join(artifactsDir, dockerconfigFilename)
-			preflightLogPath = path.Join(artifactsDir, preflightLogFilename)
+			dockerConfigPath = path.Join(artifacts.Path(), dockerconfigFilename)
+			preflightLogPath = path.Join(artifacts.Path(), preflightLogFilename)
 			// Normalize a fakePyxisClient with noop functions.
 			fakePC = &fakePyxisClient{
 				findImagesByDigestFunc: fidbFuncNoop,
@@ -181,7 +164,7 @@ var _ = Describe("Check Container Command", func() {
 
 		Context("and the cert image cannot be read from disk", func() {
 			It("should throw an error", func() {
-				err := os.Remove(path.Join(artifactsDir, certification.DefaultCertImageFilename))
+				err := os.Remove(path.Join(artifacts.Path(), certification.DefaultCertImageFilename))
 				Expect(err).ToNot(HaveOccurred())
 
 				err = sbmt.Submit(context.TODO())
@@ -192,7 +175,7 @@ var _ = Describe("Check Container Command", func() {
 
 		Context("and the preflight results cannot be read from disk", func() {
 			It("should throw an error", func() {
-				err := os.Remove(path.Join(artifactsDir, certification.DefaultTestResultsFilename))
+				err := os.Remove(path.Join(artifacts.Path(), certification.DefaultTestResultsFilename))
 				Expect(err).ToNot(HaveOccurred())
 
 				err = sbmt.Submit(context.TODO())
@@ -203,7 +186,7 @@ var _ = Describe("Check Container Command", func() {
 
 		Context("and the rpmManifest cannot be read from disk", func() {
 			It("should throw an error", func() {
-				err := os.Remove(path.Join(artifactsDir, certification.DefaultRPMManifestFilename))
+				err := os.Remove(path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename))
 				Expect(err).ToNot(HaveOccurred())
 
 				err = sbmt.Submit(context.TODO())

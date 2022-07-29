@@ -48,6 +48,7 @@ var _ = Describe("runtime-assets test", func() {
 	})
 
 	Context("When calling the runtime-assets cobra command", func() {
+		BeforeEach(createAndCleanupDirForArtifactsAndLogs)
 		It("should print successfully and match the actual data", func() {
 			out, err := executeCommand(rootCmd, "runtime-assets")
 			Expect(err).ToNot(HaveOccurred())
