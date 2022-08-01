@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	rbacv1 "k8s.io/api/rbac/v1"
+
 	"github.com/blang/semver"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
@@ -210,4 +212,47 @@ func GetSupportedInstallModes(ctx context.Context, csvReader io.Reader) (map[str
 		}
 	}
 	return installedModes, nil
+}
+
+// GetSecurityContextConstraints returns an string array of SCC resource names requested by the operator as specified
+// in the csv
+func GetSecurityContextConstraints(ctx context.Context, csvReader io.Reader) ([]string, error) {
+	var csv operatorv1alpha1.ClusterServiceVersion
+	bts, err := io.ReadAll(csvReader)
+	if err != nil {
+		return nil, fmt.Errorf("could not get CSV from reader: %v", err)
+	}
+	err = yaml.Unmarshal(bts, &csv)
+	if err != nil {
+		return nil, fmt.Errorf("malformed CSV detected: %v", err)
+	}
+	for _, cp := range csv.Spec.InstallStrategy.StrategySpec.ClusterPermissions {
+		for _, rule := range cp.Rules {
+			if hasSCCApiGroup(rule) && hasSCCResource(rule) {
+				return rule.ResourceNames, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+// hasSCCApiGroup returns a bool indicating if security.openshift.io is in the list of apigroups referenced in a policy
+// rule
+func hasSCCApiGroup(rule rbacv1.PolicyRule) bool {
+	for _, apiGroup := range rule.APIGroups {
+		if apiGroup == "security.openshift.io" {
+			return true
+		}
+	}
+	return false
+}
+
+// hasSCCResource returns a bool indicating if any securitycontextconstraints resources are referenced in a policy rule
+func hasSCCResource(rule rbacv1.PolicyRule) bool {
+	for _, resource := range rule.Resources {
+		if resource == "securitycontextconstraints" {
+			return true
+		}
+	}
+	return false
 }
