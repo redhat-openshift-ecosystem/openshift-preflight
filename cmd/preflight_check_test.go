@@ -58,12 +58,10 @@ var _ = Describe("Preflight Check Func", func() {
 			fmttr, _ = formatters.NewByName(formatters.DefaultFormat)
 			rw = &runtime.ResultWriterFile{}
 			rs = &noopSubmitter{}
-		})
 
-		AfterEach(func() {
-			err := os.RemoveAll(localTempDir)
-			Expect(err).ToNot(HaveOccurred())
-			artifacts.Reset()
+			DeferCleanup(os.RemoveAll, localTempDir)
+			DeferCleanup(os.RemoveAll, localArtifactsDir)
+			DeferCleanup(artifacts.Reset)
 		})
 
 		Context("with a customized artifacts directory", func() {

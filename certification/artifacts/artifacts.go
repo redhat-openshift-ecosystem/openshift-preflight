@@ -6,11 +6,10 @@ package artifacts
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // ads is the artifacts directory singleton.
@@ -36,13 +35,20 @@ func Reset() {
 }
 
 // WriteFile will write contents of the string to a file in
-// the artifacts directory.
+// the artifacts directory. It will create the artifacts dir
+// if necessary.
 // Returns the full path (including the artifacts dir)
 func WriteFile(filename, contents string) (string, error) {
+	artifactDir := ads
+	artifactDir, err := createArtifactsDir(artifactDir)
+	if err != nil {
+		// Fatal does an os.Exit. If we can't create the artifacts directory,
+		// we can't continue.
+		log.Fatal(fmt.Errorf("could not create artifact path: %v", err))
+	}
 	fullFilePath := filepath.Join(Path(), filename)
 
-	err := os.WriteFile(fullFilePath, []byte(contents), 0o644)
-	if err != nil {
+	if err := os.WriteFile(fullFilePath, []byte(contents), 0o644); err != nil {
 		return fullFilePath, fmt.Errorf("could not write file to artifacts diretory: %v", err)
 	}
 	return fullFilePath, nil
@@ -69,12 +75,5 @@ func createArtifactsDir(artifactsDir string) (string, error) {
 
 // Path will return the artifacts directory.
 func Path() string {
-	artifactDir := ads
-	artifactDir, err := createArtifactsDir(artifactDir)
-	if err != nil {
-		// Fatal does an os.Exit. If we can't create the artifacts directory,
-		// we can't continue.
-		log.Fatal(fmt.Errorf("could not retrieve artifact path: %v", err))
-	}
-	return filepath.Join(artifactDir)
+	return ads
 }

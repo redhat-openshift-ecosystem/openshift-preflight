@@ -38,8 +38,9 @@ var _ = Describe("Artifacts package utility functions", func() {
 			Expect(dirInfo.IsDir()).To(BeTrue())
 		})
 
-		It("should be created by the exported Path() function", func() {
+		It("should be created by the exported WriteFile() function", func() {
 			createdDir := Path()
+			_, err := WriteFile("test.txt", "foo")
 			dirInfo, err := os.Stat(createdDir)
 			// if it doesn't exist, this error will capture it.
 			Expect(err).ToNot(HaveOccurred())
