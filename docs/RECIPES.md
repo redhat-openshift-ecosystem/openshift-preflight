@@ -178,6 +178,29 @@ preflight check container registry.example.org/your-namespace/your-image:sometag
 --docker-config=/path/to/your/dockerconfig 
 ```
 
+### Testing Container and Passing Parameters in the Config File
+To avoid displaying the Pyxis token in the console, you may pass it in the config file. First, add config.yaml in the directory with the Preflight binary
+
+```bash
+$ cat config.yaml
+dockerConfig: path/to/config.json
+loglevel: trace
+logfile: artifacts/preflight.log
+artifacts: artifacts
+junit: true
+certification_project_id: my_nice_project_id
+pyxis_api_token: my_nice_token
+```
+
+and then run Preflight.
+
+```bash
+preflight \
+check container \
+your-image:sometag \
+--submit
+```
+
 ### Using Podman on a RHEL host
 
 Here, we explicitly set the location in the container where we would like
