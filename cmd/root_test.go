@@ -29,6 +29,16 @@ func executeCommand(root *cobra.Command, args ...string) (output string, err err
 }
 
 var _ = Describe("cmd package utility functions", func() {
+	Describe("Get the root command", func() {
+		Context("when calling the root command function", func() {
+			It("should return a root command", func() {
+				cmd := rootCmd()
+				Expect(cmd).ToNot(BeNil())
+				Expect(cmd.Commands()).ToNot(BeEmpty())
+			})
+		})
+	})
+
 	DescribeTable("Determine filename to which to write test results",
 		func(extension, expected string) {
 			// Ensure resultsFilenameWithExtension accurately joins the
@@ -79,7 +89,6 @@ var _ = Describe("cmd package utility functions", func() {
 				PersistentPreRun: preRunConfig,
 				Run:              func(cmd *cobra.Command, args []string) {},
 			}
-			cobra.OnInitialize(initConfig)
 		})
 		Context("configuring a Cobra Command", func() {
 			var tmpDir string

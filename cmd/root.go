@@ -15,30 +15,36 @@ import (
 
 var configFileUsed bool
 
-var rootCmd = &cobra.Command{
-	Use:              "preflight",
-	Short:            "Preflight Red Hat certification prep tool.",
-	Long:             "A utility that allows you to pre-test your bundles, operators, and container before submitting for Red Hat Certification.",
-	Version:          version.Version.String(),
-	Args:             cobra.MinimumNArgs(1),
-	PersistentPreRun: preRunConfig,
-}
-
 func init() {
 	cobra.OnInitialize(initConfig)
+}
+
+func rootCmd() *cobra.Command {
+	rootCmd := &cobra.Command{
+		Use:              "preflight",
+		Short:            "Preflight Red Hat certification prep tool.",
+		Long:             "A utility that allows you to pre-test your bundles, operators, and container before submitting for Red Hat Certification.",
+		Version:          version.Version.String(),
+		Args:             cobra.MinimumNArgs(1),
+		PersistentPreRun: preRunConfig,
+	}
 
 	rootCmd.PersistentFlags().String("logfile", "", "Where the execution logfile will be written. (env: PFLT_LOGFILE)")
 	viper.BindPFlag("logfile", rootCmd.PersistentFlags().Lookup("logfile"))
 
 	rootCmd.PersistentFlags().String("loglevel", "", "The verbosity of the preflight tool itself. Ex. warn, debug, trace, info, error. (env: PFLT_LOGLEVEL)")
 	viper.BindPFlag("loglevel", rootCmd.PersistentFlags().Lookup("loglevel"))
+
+	rootCmd.AddCommand(checkCmd())
+	rootCmd.AddCommand(listChecksCmd())
+	rootCmd.AddCommand(runtimeAssetsCmd())
+	rootCmd.AddCommand(supportCmd())
+
+	return rootCmd
 }
 
-func Execute() {
-	if err := rootCmd.ExecuteContext(context.Background()); err != nil {
-		log.Fatal(err)
-		os.Exit(-1)
-	}
+func Execute() error {
+	return rootCmd().ExecuteContext(context.Background())
 }
 
 func initConfig() {

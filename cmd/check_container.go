@@ -17,14 +17,35 @@ import (
 
 var submit bool
 
-var checkContainerCmd = &cobra.Command{
-	Use:   "container",
-	Short: "Run checks for a container",
-	Long:  `This command will run the Certification checks for a container image. `,
-	Args:  checkContainerPositionalArgs,
-	// this fmt.Sprintf is in place to keep spacing consistent with cobras two spaces that's used in: Usage, Flags, etc
-	Example: fmt.Sprintf("  %s", "preflight check container quay.io/repo-name/container-name:version"),
-	RunE:    checkContainerRunE,
+func checkContainerCmd() *cobra.Command {
+	checkContainerCmd := &cobra.Command{
+		Use:   "container",
+		Short: "Run checks for a container",
+		Long:  `This command will run the Certification checks for a container image. `,
+		Args:  checkContainerPositionalArgs,
+		// this fmt.Sprintf is in place to keep spacing consistent with cobras two spaces that's used in: Usage, Flags, etc
+		Example: fmt.Sprintf("  %s", "preflight check container quay.io/repo-name/container-name:version"),
+		RunE:    checkContainerRunE,
+	}
+
+	checkContainerCmd.Flags().BoolVarP(&submit, "submit", "s", false, "submit check container results to red hat")
+	viper.BindPFlag("submit", checkContainerCmd.Flags().Lookup("submit"))
+
+	checkContainerCmd.Flags().String("pyxis-api-token", "", "API token for Pyxis authentication (env: PFLT_PYXIS_API_TOKEN)")
+	viper.BindPFlag("pyxis_api_token", checkContainerCmd.Flags().Lookup("pyxis-api-token"))
+
+	checkContainerCmd.Flags().String("pyxis-host", "", fmt.Sprintf("Host to use for Pyxis submissions. This will override Pyxis Env. Only set this if you know what you are doing.\n"+
+		"If you do set it, it should include just the host, and the URI path. (env: PFLT_PYXIS_HOST)"))
+	viper.BindPFlag("pyxis_host", checkContainerCmd.Flags().Lookup("pyxis-host"))
+
+	checkContainerCmd.Flags().String("pyxis-env", certification.DefaultPyxisEnv, "Env to use for Pyxis submissions.")
+	viper.BindPFlag("pyxis_env", checkContainerCmd.Flags().Lookup("pyxis-env"))
+
+	checkContainerCmd.Flags().String("certification-project-id", "", fmt.Sprintf("Certification Project ID from connect.redhat.com/projects/{certification-project-id}/overview\n"+
+		"URL paramater. This value may differ from the PID on the overview page. (env: PFLT_CERTIFICATION_PROJECT_ID)"))
+	viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
+
+	return checkContainerCmd
 }
 
 // checkContainerRunner contains all of the components necessary to run checkContainer.
@@ -161,25 +182,4 @@ func checkContainerPositionalArgs(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-func init() {
-	checkContainerCmd.Flags().BoolVarP(&submit, "submit", "s", false, "submit check container results to red hat")
-	viper.BindPFlag("submit", checkContainerCmd.Flags().Lookup("submit"))
-
-	checkContainerCmd.Flags().String("pyxis-api-token", "", "API token for Pyxis authentication (env: PFLT_PYXIS_API_TOKEN)")
-	viper.BindPFlag("pyxis_api_token", checkContainerCmd.Flags().Lookup("pyxis-api-token"))
-
-	checkContainerCmd.Flags().String("pyxis-host", "", fmt.Sprintf("Host to use for Pyxis submissions. This will override Pyxis Env. Only set this if you know what you are doing.\n"+
-		"If you do set it, it should include just the host, and the URI path. (env: PFLT_PYXIS_HOST)"))
-	viper.BindPFlag("pyxis_host", checkContainerCmd.Flags().Lookup("pyxis-host"))
-
-	checkContainerCmd.Flags().String("pyxis-env", certification.DefaultPyxisEnv, "Env to use for Pyxis submissions.")
-	viper.BindPFlag("pyxis_env", checkContainerCmd.Flags().Lookup("pyxis-env"))
-
-	checkContainerCmd.Flags().String("certification-project-id", "", fmt.Sprintf("Certification Project ID from connect.redhat.com/projects/{certification-project-id}/overview\n"+
-		"URL paramater. This value may differ from the PID on the overview page. (env: PFLT_CERTIFICATION_PROJECT_ID)"))
-	viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
-
-	checkCmd.AddCommand(checkContainerCmd)
 }

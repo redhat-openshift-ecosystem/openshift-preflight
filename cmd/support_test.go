@@ -1,4 +1,3 @@
-// go:test !race
 package cmd
 
 import (
@@ -9,48 +8,11 @@ import (
 var _ = Describe("support command tests", func() {
 	Context("When running the support cobra command", func() {
 		BeforeEach(createAndCleanupDirForArtifactsAndLogs)
-		Context("with valid inputs for a container project", func() {
-			It("should run without error", func() {
-				_, err := executeCommand(rootCmd, "support", "container", "000000000000")
-				Expect(err).ToNot(HaveOccurred())
-			})
-		})
-		Context("with valid inputs for an operator project", func() {
-			It("should run without error", func() {
-				_, err := executeCommand(rootCmd, "support", "operator", "000000000000", "https://github.com/example/pull/2")
-				Expect(err).ToNot(HaveOccurred())
-			})
-		})
-
 		Context("with an invalid project type", func() {
 			It("should throw an error", func() {
-				out, err := executeCommand(rootCmd, "support", "fooproject", "000000000000")
+				out, err := executeCommand(supportCmd(), "fooproject", "000000000000")
 				Expect(err).To(HaveOccurred())
-				Expect(out).To(ContainSubstring("the project type must be"))
-			})
-		})
-
-		Context("with an invalid project ID", func() {
-			It("should throw an error", func() {
-				out, err := executeCommand(rootCmd, "support", "container", "ospid-00000000")
-				Expect(err).To(HaveOccurred())
-				Expect(out).To(ContainSubstring("please remove leading characters ospid-"))
-			})
-		})
-
-		Context("with an operator project designation but no pull request url", func() {
-			It("should throw an error", func() {
-				out, err := executeCommand(rootCmd, "support", "operator", "000000000000")
-				Expect(err).To(HaveOccurred())
-				Expect(out).To(ContainSubstring("a pull request URL is required"))
-			})
-		})
-
-		Context("with an operator project designation but an invalid pull request url", func() {
-			It("should throw an error", func() {
-				out, err := executeCommand(rootCmd, "support", "operator", "000000000000", "github.com")
-				Expect(err).To(HaveOccurred())
-				Expect(out).To(ContainSubstring("please enter a valid url"))
+				Expect(out).To(ContainSubstring("Error: unknown command"))
 			})
 		})
 	})

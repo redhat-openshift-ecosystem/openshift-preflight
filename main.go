@@ -1,9 +1,13 @@
 package main
 
 import (
+	"log"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/cmd"
 )
 
 func main() {
-	cmd.Execute()
+	if err := cmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
 }
