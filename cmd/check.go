@@ -13,13 +13,13 @@ import (
 	"github.com/spf13/viper"
 )
 
-var checkCmd = &cobra.Command{
-	Use:   "check",
-	Short: "Run checks for an operator or container",
-	Long:  "This command will allow you to execute the Red Hat Certification tests for an operator or a container.",
-}
+func checkCmd() *cobra.Command {
+	checkCmd := &cobra.Command{
+		Use:   "check",
+		Short: "Run checks for an operator or container",
+		Long:  "This command will allow you to execute the Red Hat Certification tests for an operator or a container.",
+	}
 
-func init() {
 	checkCmd.PersistentFlags().StringP("docker-config", "d", "", "Path to docker config.json file. This value is optional for publicly accessible images.\n"+
 		"However, it is strongly encouraged for public Docker Hub images,\n"+
 		"due to the rate limit imposed for unauthenticated requests. (env: PFLT_DOCKERCONFIG)")
@@ -28,7 +28,10 @@ func init() {
 	checkCmd.PersistentFlags().String("artifacts", "", "Where check-specific artifacts will be written. (env: PFLT_ARTIFACTS)")
 	viper.BindPFlag("artifacts", checkCmd.PersistentFlags().Lookup("artifacts"))
 
-	rootCmd.AddCommand(checkCmd)
+	checkCmd.AddCommand(checkContainerCmd())
+	checkCmd.AddCommand(checkOperatorCmd())
+
+	return checkCmd
 }
 
 // writeJUnit will write results as JUnit XML using the built-in formatter.
@@ -61,7 +64,8 @@ func resultsFilenameWithExtension(ext string) string {
 func buildConnectURL(projectID string) string {
 	connectURL := fmt.Sprintf("https://connect.redhat.com/projects/%s", projectID)
 
-	if viper.GetString("pyxis_env") != "prod" {
+	pyxis_env := viper.GetString("pyxis_env")
+	if len(pyxis_env) > 0 && pyxis_env != "prod" {
 		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s", viper.GetString("pyxis_env"), projectID)
 	}
 

@@ -82,7 +82,7 @@ var _ = Describe("list checks subcommand", func() {
 
 			// Run the command. Because we bind this command to the
 			// root command in init, we must pass rootCmd to executeCommand.
-			out, err := executeCommand(rootCmd, "list-checks")
+			out, err := executeCommand(listChecksCmd())
 			Expect(len(out) > 0).To(BeTrue())
 
 			Expect(err).ToNot(HaveOccurred())

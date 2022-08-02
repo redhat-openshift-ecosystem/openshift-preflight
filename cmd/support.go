@@ -1,4 +1,3 @@
-// go:test !race
 package cmd
 
 import (
@@ -28,35 +27,17 @@ var projectTypeMapping = map[string]string{
 	"operator":  operatorBundleImage,
 }
 
-var supportCmd = &cobra.Command{
-	Use:   "support <operator|container> <your project ID> [pullRequestURL if operator project]",
-	Short: "Creates a support request",
-	Args: cobra.MatchAll(
-		cobra.MinimumNArgs(2),
-		cobra.MaximumNArgs(3)),
-	Long: `Generate a URL that can be used to open a ticket with Red Hat Support if you're having an issue passing certification checks.`,
-	RunE: supportRunE,
-}
-
-func supportRunE(cmd *cobra.Command, args []string) error {
-	// the last positional argument is optional, so
-	// if the user didn't provide it, we'll make it an empty
-	// string.
-	if len(args) == 2 {
-		args = append(args, "")
+func supportCmd() *cobra.Command {
+	supportCmd := &cobra.Command{
+		Use:   "support <operator|container> <your project ID> [pullRequestURL if operator project]",
+		Short: "Creates a support request",
+		Long:  `Generate a URL that can be used to open a ticket with Red Hat Support if you're having an issue passing certification checks.`,
 	}
 
-	ptype := args[0]
-	pid := args[1]
-	prurl := args[2]
+	supportCmd.AddCommand(supportOperatorCmd())
+	supportCmd.AddCommand(supportContainerCmd())
 
-	support, err := newSupportTextGenerator(ptype, pid, prurl)
-	if err != nil {
-		return err
-	}
-
-	fmt.Fprint(cmd.OutOrStdout(), support.Generate())
-	return nil
+	return supportCmd
 }
 
 type supportTextGenerator struct {
@@ -107,10 +88,6 @@ func (g *supportTextGenerator) Generate() string {
 }
 
 func (g *supportTextGenerator) validate() error {
-	if err := projectTypeValidation(g.ProjectType); err != nil {
-		return err
-	}
-
 	if err := projectIDValidation(g.ProjectID); err != nil {
 		return err
 	}
@@ -167,16 +144,4 @@ func projectIDValidation(id string) error {
 	}
 
 	return nil
-}
-
-func projectTypeValidation(s string) error {
-	if !(s == "operator" || s == "container") {
-		return fmt.Errorf(`the project type must be "operator" or "container, received %s"`, s)
-	}
-
-	return nil
-}
-
-func init() {
-	rootCmd.AddCommand(supportCmd)
 }

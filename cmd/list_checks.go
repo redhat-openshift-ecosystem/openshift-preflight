@@ -10,11 +10,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var listChecksCmd = &cobra.Command{
-	Use:   "list-checks",
-	Short: "List all checks that will be executed for each policy",
-	Long:  "This command will list all checks that preflight uses against an asset by policy type",
-	Run:   listChecksRunFunc,
+func listChecksCmd() *cobra.Command {
+	listChecksCmd := &cobra.Command{
+		Use:   "list-checks",
+		Short: "List all checks that will be executed for each policy",
+		Long:  "This command will list all checks that preflight uses against an asset by policy type",
+		Run:   listChecksRunFunc,
+	}
+	return listChecksCmd
 }
 
 // listChecksRunFunc binds printChecks to cobra's Run function
@@ -56,8 +59,4 @@ func formatList(list []string) string {
 // dashPrefix prefixes string s with a hyphen.
 func dashPrefix(s string) string {
 	return fmt.Sprintf("- %s", s)
-}
-
-func init() {
-	rootCmd.AddCommand(listChecksCmd)
 }

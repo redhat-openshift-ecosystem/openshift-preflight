@@ -26,7 +26,7 @@ var _ = Describe("Check Container Command", func() {
 	Context("when running the check container subcommand", func() {
 		Context("With all of the required parameters", func() {
 			It("should reach the core logic, but throw an error because of the placeholder values for the container image", func() {
-				_, err := executeCommand(rootCmd, "check", "container", "example.com/example/image:mytag")
+				_, err := executeCommand(checkContainerCmd(), "example.com/example/image:mytag")
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -457,21 +457,21 @@ var _ = Describe("Check Container Command", func() {
 	Context("When validating check container arguments and flags", func() {
 		Context("and the user provided more than 1 positional arg", func() {
 			It("should fail to run", func() {
-				_, err := executeCommand(rootCmd, "check", "container", "foo", "bar")
+				_, err := executeCommand(checkContainerCmd(), "foo", "bar")
 				Expect(err).To(HaveOccurred())
 			})
 		})
 
 		Context("and the user provided less than 1 positional arg", func() {
 			It("should fail to run", func() {
-				_, err := executeCommand(rootCmd, "check", "container")
+				_, err := executeCommand(checkContainerCmd())
 				Expect(err).To(HaveOccurred())
 			})
 		})
 
 		Context("and the user has enabled the submit flag", func() {
 			It("should cause the certification-project-id and pyxis-api-token flag to be required", func() {
-				out, err := executeCommand(rootCmd, "check", "container", "--submit", "foo")
+				out, err := executeCommand(checkContainerCmd(), "--submit", "foo")
 				Expect(err).To(HaveOccurred())
 				Expect(out).To(ContainSubstring("required flag(s) \"%s\", \"%s\" not set", "certification-project-id", "pyxis-api-token"))
 			})

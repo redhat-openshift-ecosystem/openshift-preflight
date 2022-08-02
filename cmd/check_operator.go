@@ -15,14 +15,36 @@ import (
 	"github.com/spf13/viper"
 )
 
-var checkOperatorCmd = &cobra.Command{
-	Use:   "operator",
-	Short: "Run checks for an Operator",
-	Long:  `This command will run the Certification checks for an Operator bundle image. `,
-	Args:  checkOperatorPositionalArgs,
-	// this fmt.Sprintf is in place to keep spacing consistent with cobras two spaces that's used in: Usage, Flags, etc
-	Example: fmt.Sprintf("  %s", "preflight check operator quay.io/repo-name/operator-bundle:version"),
-	RunE:    checkOperatorRunE,
+func checkOperatorCmd() *cobra.Command {
+	checkOperatorCmd := &cobra.Command{
+		Use:   "operator",
+		Short: "Run checks for an Operator",
+		Long:  `This command will run the Certification checks for an Operator bundle image. `,
+		Args:  checkOperatorPositionalArgs,
+		// this fmt.Sprintf is in place to keep spacing consistent with cobras two spaces that's used in: Usage, Flags, etc
+		Example: fmt.Sprintf("  %s", "preflight check operator quay.io/repo-name/operator-bundle:version"),
+		RunE:    checkOperatorRunE,
+	}
+	checkOperatorCmd.Flags().String("namespace", "", "The namespace to use when running OperatorSDK Scorecard. (env: PFLT_NAMESPACE)")
+	viper.BindPFlag("namespace", checkOperatorCmd.Flags().Lookup("namespace"))
+
+	checkOperatorCmd.Flags().String("serviceaccount", "", "The service account to use when running OperatorSDK Scorecard. (env: PFLT_SERVICEACCOUNT)")
+	viper.BindPFlag("serviceaccount", checkOperatorCmd.Flags().Lookup("serviceaccount"))
+
+	checkOperatorCmd.Flags().String("scorecard-image", "", "A uri that points to the scorecard image digest, used in disconnected environments.\n"+
+		"It should only be used in a disconnected environment. Use preflight runtime-assets on a connected \n"+
+		"workstation to generate the digest that needs to be mirrored. (env: PFLT_SCORECARD_IMAGE)")
+	viper.BindPFlag("scorecard_image", checkOperatorCmd.Flags().Lookup("scorecard-image"))
+
+	checkOperatorCmd.Flags().String("scorecard-wait-time", "", "A time value that will be passed to scorecard's --wait-time environment variable.\n"+
+		"(env: PFLT_SCORECARD_WAIT_TIME)")
+	viper.BindPFlag("scorecard_wait_time", checkOperatorCmd.Flags().Lookup("scorecard-wait-time"))
+
+	checkOperatorCmd.Flags().String("channel", "", "The name of the operator channel which is used by DeployableByOLM to deploy the operator.\n"+
+		"If empty, the default operator channel in bundle's annotations file is used.. (env: PFLT_CHANNEL)")
+	viper.BindPFlag("channel", checkOperatorCmd.Flags().Lookup("channel"))
+
+	return checkOperatorCmd
 }
 
 // checkOperatorRunner contains all of the components necessary to run checkOperator.
@@ -124,27 +146,4 @@ func checkOperatorPositionalArgs(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-func init() {
-	checkOperatorCmd.Flags().String("namespace", "", "The namespace to use when running OperatorSDK Scorecard. (env: PFLT_NAMESPACE)")
-	viper.BindPFlag("namespace", checkOperatorCmd.Flags().Lookup("namespace"))
-
-	checkOperatorCmd.Flags().String("serviceaccount", "", "The service account to use when running OperatorSDK Scorecard. (env: PFLT_SERVICEACCOUNT)")
-	viper.BindPFlag("serviceaccount", checkOperatorCmd.Flags().Lookup("serviceaccount"))
-
-	checkOperatorCmd.Flags().String("scorecard-image", "", "A uri that points to the scorecard image digest, used in disconnected environments.\n"+
-		"It should only be used in a disconnected environment. Use preflight runtime-assets on a connected \n"+
-		"workstation to generate the digest that needs to be mirrored. (env: PFLT_SCORECARD_IMAGE)")
-	viper.BindPFlag("scorecard_image", checkOperatorCmd.Flags().Lookup("scorecard-image"))
-
-	checkOperatorCmd.Flags().String("scorecard-wait-time", "", "A time value that will be passed to scorecard's --wait-time environment variable.\n"+
-		"(env: PFLT_SCORECARD_WAIT_TIME)")
-	viper.BindPFlag("scorecard_wait_time", checkOperatorCmd.Flags().Lookup("scorecard-wait-time"))
-
-	checkOperatorCmd.Flags().String("channel", "", "The name of the operator channel which is used by DeployableByOLM to deploy the operator.\n"+
-		"If empty, the default operator channel in bundle's annotations file is used.. (env: PFLT_CHANNEL)")
-	viper.BindPFlag("channel", checkOperatorCmd.Flags().Lookup("channel"))
-
-	checkCmd.AddCommand(checkOperatorCmd)
 }

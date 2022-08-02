@@ -10,11 +10,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var runtimeAssetsCmd = &cobra.Command{
-	Use:   "runtime-assets",
-	Short: "Returns information about assets used at runtime.",
-	Long:  `This command will return information on all runtime assets used by preflight. Useful for preparing a disconnected environment intending to utilize preflight.`,
-	RunE:  runtimeAssetsRunE,
+func runtimeAssetsCmd() *cobra.Command {
+	runtimeAssetsCmd := &cobra.Command{
+		Use:   "runtime-assets",
+		Short: "Returns information about assets used at runtime.",
+		Long:  `This command will return information on all runtime assets used by preflight. Useful for preparing a disconnected environment intending to utilize preflight.`,
+		RunE:  runtimeAssetsRunE,
+	}
+
+	return runtimeAssetsCmd
 }
 
 func runtimeAssetsRunE(cmd *cobra.Command, args []string) error {
@@ -46,8 +50,4 @@ func prettyPrintJSON(v interface{}) (string, error) {
 	}
 
 	return string(json), nil
-}
-
-func init() {
-	rootCmd.AddCommand(runtimeAssetsCmd)
 }

@@ -18,14 +18,14 @@ var _ = Describe("Check Operator", func() {
 		BeforeEach(createAndCleanupDirForArtifactsAndLogs)
 		Context("without the operator bundle image being provided", func() {
 			It("should return an error", func() {
-				_, err := executeCommand(rootCmd, "check", "operator")
+				_, err := executeCommand(checkOperatorCmd())
 				Expect(err).To(HaveOccurred())
 			})
 		})
 
 		Context("without having set the KUBECONFIG environment variable", func() {
 			It("should return an error", func() {
-				out, err := executeCommand(rootCmd, "check", "operator", "quay.io/example/image:mytag")
+				out, err := executeCommand(checkOperatorCmd(), "quay.io/example/image:mytag")
 				Expect(err).To(HaveOccurred())
 				Expect(out).To(ContainSubstring("KUBECONFIG could not"))
 			})
@@ -35,7 +35,7 @@ var _ = Describe("Check Operator", func() {
 			BeforeEach(func() { os.Setenv("KUBECONFIG", "foo") })
 			AfterEach(func() { os.Unsetenv("KUBECONFIG") })
 			It("should return an error", func() {
-				out, err := executeCommand(rootCmd, "check", "operator", "quay.io/example/image:mytag")
+				out, err := executeCommand(checkOperatorCmd(), "quay.io/example/image:mytag")
 				Expect(err).To(HaveOccurred())
 				Expect(out).To(ContainSubstring("PFLT_INDEXIMAGE could not"))
 			})
@@ -53,7 +53,7 @@ var _ = Describe("Check Operator", func() {
 			})
 
 			It("should reach the core logic, but throw an error because of the placeholder values", func() {
-				_, err := executeCommand(rootCmd, "check", "operator", "quay.io/example/image:mytag")
+				_, err := executeCommand(checkOperatorCmd(), "quay.io/example/image:mytag")
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -164,7 +164,7 @@ var _ = Describe("Check Operator", func() {
 			os.Unsetenv("KUBECONFIG")
 		})
 		It("should succeed when all positional arg constraints and environment constraints are correct", func() {
-			err := checkOperatorPositionalArgs(checkOperatorCmd, posArgs)
+			err := checkOperatorPositionalArgs(checkOperatorCmd(), posArgs)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
