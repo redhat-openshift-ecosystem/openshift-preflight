@@ -63,6 +63,7 @@ func initializeChecks(ctx context.Context, p policy.Policy, cfg certification.Co
 				&http.Client{Timeout: 60 * time.Second}),
 			),
 			operatorpol.NewSecurityContextConstraintsCheck(),
+			&operatorpol.RelatedImagesCheck{},
 		}, nil
 	case policy.PolicyContainer:
 		return []certification.Check{
