@@ -73,7 +73,18 @@ func (p *certifiedImagesCheck) validate(ctx context.Context, imageDigests []stri
 		return false, err
 	}
 
+	foundMap := make(map[string]pyxis.CertImage, len(pyxisImages))
 	for _, img := range pyxisImages {
+		foundMap[img.DockerImageDigest] = img
+	}
+
+	for _, digest := range imageDigests {
+		img, ok := foundMap[digest]
+		if !ok {
+			log.Warningf("Image not found in Pyxis, therefore it is not certified: %s", digest)
+			p.nonCertifiedImages = append(p.nonCertifiedImages, digest)
+			continue
+		}
 		if !img.Certified {
 			fullImg := fmt.Sprintf("%s/%s@%s", img.Repositories[0].Registry, img.Repositories[0].Repository, img.DockerImageDigest)
 			log.Warningf("Image is not certified: %s", fullImg)
