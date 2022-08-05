@@ -26,6 +26,16 @@ func (c *certifiedImageFinder) FindImagesByDigest(ctx context.Context, digests [
 		},
 		DockerImageDigest: "sha256:f000432f07cd187469f0310e3ed9dcf9a5db2be14b8bab9c5293dd1ee8518176",
 	})
+	matchingImages = append(matchingImages, pyxis.CertImage{
+		Certified: true,
+		Repositories: []pyxis.Repository{
+			{
+				Registry:   "registry.example.io",
+				Repository: "foo/proxy",
+			},
+		},
+		DockerImageDigest: "sha256:5e33f9d095952866b9743cc8268fb740cce6d93439f00ce333a2de1e5974837e",
+	})
 	return matchingImages, nil
 }
 
@@ -35,6 +45,33 @@ func (c *uncertifiedImageFinder) FindImagesByDigest(ctx context.Context, digests
 	var matchingImages []pyxis.CertImage
 	matchingImages = append(matchingImages, pyxis.CertImage{
 		Certified: false,
+		Repositories: []pyxis.Repository{
+			{
+				Registry:   "registry.example.io",
+				Repository: "foo/bar",
+			},
+		},
+		DockerImageDigest: "sha256:f000432f07cd187469f0310e3ed9dcf9a5db2be14b8bab9c5293dd1ee8518176",
+	})
+	matchingImages = append(matchingImages, pyxis.CertImage{
+		Certified: true,
+		Repositories: []pyxis.Repository{
+			{
+				Registry:   "registry.example.io",
+				Repository: "foo/proxy",
+			},
+		},
+		DockerImageDigest: "sha256:5e33f9d095952866b9743cc8268fb740cce6d93439f00ce333a2de1e5974837e",
+	})
+	return matchingImages, nil
+}
+
+type missingImageFinder struct{}
+
+func (c *missingImageFinder) FindImagesByDigest(ctx context.Context, digests []string) ([]pyxis.CertImage, error) {
+	var matchingImages []pyxis.CertImage
+	matchingImages = append(matchingImages, pyxis.CertImage{
+		Certified: true,
 		Repositories: []pyxis.Repository{
 			{
 				Registry:   "registry.example.io",
@@ -107,6 +144,18 @@ spec:
 		})
 		It("should still succeed", func() {
 			certifiedImagesCheck.imageFinder = &uncertifiedImageFinder{}
+			result, err := certifiedImagesCheck.Validate(context.TODO(), imageRef)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(result).To(BeTrue())
+			Expect(certifiedImagesCheck.nonCertifiedImages).To(HaveLen(1))
+		})
+	})
+	When("an image in the CSV is not in Pyxis", func() {
+		AfterEach(func() {
+			certifiedImagesCheck.imageFinder = &certifiedImageFinder{}
+		})
+		It("should still succeed", func() {
+			certifiedImagesCheck.imageFinder = &missingImageFinder{}
 			result, err := certifiedImagesCheck.Validate(context.TODO(), imageRef)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(result).To(BeTrue())
