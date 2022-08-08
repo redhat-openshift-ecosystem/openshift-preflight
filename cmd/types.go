@@ -177,6 +177,8 @@ type noopSubmitter struct {
 	log     *log.Logger
 }
 
+var _ resultSubmitter = &noopSubmitter{}
+
 func (s *noopSubmitter) Submit(ctx context.Context) error {
 	if s.emitLog {
 		msg := "Results are not being sent for submission."

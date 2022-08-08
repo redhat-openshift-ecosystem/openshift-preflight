@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
@@ -12,6 +13,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -171,14 +173,37 @@ func checkContainerPositionalArgs(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("a container image positional argument is required")
 	}
 
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		if f.Changed && strings.Contains(f.Value.String(), "--submit") {
+			// We have --submit in one of the flags. That's a problem.
+			// We will set the submit flag to true so that the next block functions properly
+			submit = true
+		}
+	})
+
+	// --submit was specified
 	if submit {
-		if !viper.IsSet("certification_project_id") {
-			cmd.MarkFlagRequired("certification-project-id")
+		// If the flag is not marked as changed AND viper hasn't gotten it from environment, it's an error
+		if !cmd.Flag("certification-project-id").Changed && !viper.IsSet("certification_project_id") {
+			return fmt.Errorf("certification Project ID must be specified when --submit is present")
+		}
+		if !cmd.Flag("pyxis-api-token").Changed && !viper.IsSet("pyxis_api_token") {
+			return fmt.Errorf("pyxis API Token must be specified when --submit is present")
 		}
 
-		if !viper.IsSet("pyxis_api_token") {
-			cmd.MarkFlagRequired("pyxis-api-token")
+		// If the flag is marked as changed AND it's still empty, it's an error
+		if cmd.Flag("certification-project-id").Changed && viper.GetString("certification_project_id") == "" {
+			return fmt.Errorf("certification Project ID cannot be empty when --submit is present")
 		}
+		if cmd.Flag("pyxis-api-token").Changed && viper.GetString("pyxis_api_token") == "" {
+			return fmt.Errorf("pyxis API Token cannot be empty when --submit is present")
+		}
+
+		// Finally, if either certification project id or pyxis api token start with '--', it's an error
+		if strings.HasPrefix(viper.GetString("pyxis_api_token"), "--") || strings.HasPrefix(viper.GetString("certification_project_id"), "--") {
+			return fmt.Errorf("pyxis API token and certification ID are required when --submit is present")
+		}
+
 	}
 
 	return nil
