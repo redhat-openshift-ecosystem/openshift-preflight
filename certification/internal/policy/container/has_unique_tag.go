@@ -25,17 +25,26 @@ type hasUniqueTagCheck struct {
 
 func (p *hasUniqueTagCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
 	imgRepo := fmt.Sprintf("%s/%s", imgRef.ImageRegistry, imgRef.ImageRepository)
-	tags, err := p.getDataToValidate(ctx, imgRepo)
-	if err != nil {
-		return false, fmt.Errorf("Error: failed to get tags list for %s: %v", imgRepo, err)
+
+	tags := make([]string, 0)
+	var err error
+	// if sha or latest tag is passed in `/tags/list` must be exposed and available to validate that the image is being tagged properly
+	if strings.HasPrefix(imgRef.ImageTagOrSha, "sha256:") || imgRef.ImageTagOrSha == "latest" {
+		tags, err = p.getDataToValidate(ctx, imgRepo)
+		if err != nil {
+			return false, fmt.Errorf("failed to get tags list for %s: %v", imgRepo, err)
+		}
 	}
 
-	if len(tags) < 1 {
-		if !strings.HasPrefix(imgRef.ImageTagOrSha, "sha256:") {
-			tags = append(tags, imgRef.ImageTagOrSha)
-		} else {
-			return false, fmt.Errorf("Error: no tags found for %s: cannot assert tag from digest", imgRepo)
+	// if tags is of length zero we know that either
+	// the partners registry returned an empty list so fall back
+	// or the value imgRef.ImageTagOrSha did not meet the previous conditions so falling back to use the value passed in
+	if len(tags) == 0 {
+		if strings.HasPrefix(imgRef.ImageTagOrSha, "sha256:") {
+			return false, fmt.Errorf("no tags found for %s: cannot assert tag from digest", imgRepo)
 		}
+
+		tags = append(tags, imgRef.ImageTagOrSha)
 	}
 
 	return p.validate(tags)

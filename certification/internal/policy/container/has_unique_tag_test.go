@@ -27,9 +27,7 @@ var _ = Describe("UniqueTag", func() {
 		// Set up a fake registry.
 		registryLogger := log.New(io.Discard, "", log.Ldate)
 		s := httptest.NewServer(registry.New(registry.Logger(registryLogger)))
-		DeferCleanup(func() {
-			s.Close()
-		})
+		DeferCleanup(s.Close)
 		u, err := url.Parse(s.URL)
 		Expect(err).ToNot(HaveOccurred())
 		src = fmt.Sprintf("%s/test/preflight", u.Host)
@@ -52,24 +50,60 @@ var _ = Describe("UniqueTag", func() {
 	Describe("Checking for unique tags", func() {
 		Context("When it has tags other than latest", func() {
 			It("should pass Validate", func() {
-				ok, err := hasUniqueTagCheck.Validate(context.TODO(), certification.ImageReference{ImageRegistry: host, ImageRepository: "test/tags"})
+				ok, err := hasUniqueTagCheck.Validate(context.TODO(), certification.ImageReference{ImageRegistry: host, ImageRepository: "test/tags", ImageTagOrSha: "sha256:12345"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
 		})
+		Context("When it has tags other than latest and registry throws an error", func() {
+			BeforeEach(func() {
+				s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusInternalServerError)
+				}))
+				DeferCleanup(s.Close)
+
+				u, err := url.Parse(s.URL)
+				Expect(err).ToNot(HaveOccurred())
+				dst = fmt.Sprintf("%s/test/tags", u.Host)
+				host = u.Host
+			})
+			It("should throw an error", func() {
+				ok, err := hasUniqueTagCheck.Validate(context.TODO(), certification.ImageReference{ImageRegistry: host, ImageRepository: "test/tags", ImageTagOrSha: "sha256:12345"})
+				Expect(err).To(HaveOccurred())
+				Expect(ok).To(BeFalse())
+			})
+		})
+
 		Context("When it has only latest tag", func() {
 			It("should not pass Validate", func() {
-				ok, err := hasUniqueTagCheck.Validate(context.TODO(), certification.ImageReference{ImageRegistry: host, ImageRepository: "test/preflight"})
+				ok, err := hasUniqueTagCheck.Validate(context.TODO(), certification.ImageReference{ImageRegistry: host, ImageRepository: "test/preflight", ImageTagOrSha: "latest"})
 				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeFalse())
+			})
+		})
+		Context("When it has only latest tag and the registry throws an error", func() {
+			BeforeEach(func() {
+				s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusInternalServerError)
+				}))
+				DeferCleanup(s.Close)
+
+				u, err := url.Parse(s.URL)
+				Expect(err).ToNot(HaveOccurred())
+				dst = fmt.Sprintf("%s/test/tags", u.Host)
+				host = u.Host
+			})
+			It("should throw an error", func() {
+				ok, err := hasUniqueTagCheck.Validate(context.TODO(), certification.ImageReference{ImageRegistry: host, ImageRepository: "test/preflight", ImageTagOrSha: "latest"})
+				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
 		})
 		Context("When registry returns an empty tag list", func() {
 			BeforeEach(func() {
 				s := httptest.NewServer(http.HandlerFunc(mockRegistry))
-				DeferCleanup(func() {
-					s.Close()
-				})
+				DeferCleanup(s.Close)
+
 				u, err := url.Parse(s.URL)
 				Expect(err).ToNot(HaveOccurred())
 				host = u.Host
@@ -78,6 +112,11 @@ var _ = Describe("UniqueTag", func() {
 				ok, err := hasUniqueTagCheck.Validate(context.TODO(), certification.ImageReference{ImageRegistry: host, ImageRepository: "test/notags", ImageTagOrSha: "v0.0.1"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
+			})
+			It("should fail Validate", func() {
+				ok, err := hasUniqueTagCheck.Validate(context.TODO(), certification.ImageReference{ImageRegistry: host, ImageRepository: "test/notags", ImageTagOrSha: "sha256:12345"})
+				Expect(err).To(HaveOccurred())
+				Expect(ok).To(BeFalse())
 			})
 		})
 	})
