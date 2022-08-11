@@ -14,6 +14,8 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+var _ certification.Check = &RelatedImagesCheck{}
+
 type RelatedImagesCheck struct{}
 
 func (p *RelatedImagesCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {

@@ -9,6 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var _ certification.Check = &ScorecardBasicSpecCheck{}
+
 // ScorecardBasicSpecCheck evaluates the image to ensure it passes the operator-sdk
 // scorecard check with the basic-check-spec-test suite selected.
 type ScorecardBasicSpecCheck struct {

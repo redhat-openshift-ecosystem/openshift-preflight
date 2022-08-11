@@ -9,6 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var _ certification.Check = &ScorecardOlmSuiteCheck{}
+
 // ScorecardOlmSuiteCheck evaluates the image to ensure it passes the operator-sdk
 // scorecard check with the olm suite selected.
 type ScorecardOlmSuiteCheck struct {

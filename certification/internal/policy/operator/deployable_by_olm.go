@@ -28,6 +28,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var _ certification.Check = &DeployableByOlmCheck{}
+
 type operatorData struct {
 	CatalogImage     string
 	Channel          string

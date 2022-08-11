@@ -14,6 +14,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var _ certification.Check = &certifiedImagesCheck{}
+
 // imageFinder interface is used for testing. It represents the FindImagesByDigest
 // function that is part of the Pyxis client.
 type imageFinder interface {
