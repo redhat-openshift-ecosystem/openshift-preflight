@@ -13,6 +13,8 @@ const (
 	acceptableLayerMax = 40
 )
 
+var _ certification.Check = &MaxLayersCheck{}
+
 // UnderLayerMaxCheck ensures that the image has less layers in its assembly than a predefined maximum.
 type MaxLayersCheck struct{}
 

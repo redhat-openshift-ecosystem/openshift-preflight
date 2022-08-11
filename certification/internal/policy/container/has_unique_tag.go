@@ -10,6 +10,8 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/authn"
 )
 
+var _ certification.Check = &hasUniqueTagCheck{}
+
 func NewHasUniqueTagCheck(dockercfg string) *hasUniqueTagCheck {
 	return &hasUniqueTagCheck{
 		dockercfg: dockercfg,

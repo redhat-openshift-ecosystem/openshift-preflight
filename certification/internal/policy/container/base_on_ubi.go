@@ -9,6 +9,8 @@ import (
 	pyxis "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 )
 
+var _ certification.Check = &BasedOnUBICheck{}
+
 // BasedOnUBICheck evaluates if the provided image is based on the Red Hat Universal Base Image.
 type BasedOnUBICheck struct {
 	LayerHashCheckEngine layerHashChecker

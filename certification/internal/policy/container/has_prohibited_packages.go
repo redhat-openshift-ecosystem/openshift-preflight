@@ -10,6 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var _ certification.Check = &HasNoProhibitedPackagesCheck{}
+
 // HasProhibitedPackages evaluates that the image does not contain prohibited packages,
 // which refers to packages that are not redistributable without an appropriate license.
 type HasNoProhibitedPackagesCheck struct{}

@@ -20,6 +20,8 @@ const (
 
 var errLicensesNotADir = errors.New("licenses is not a directory")
 
+var _ certification.Check = &HasLicenseCheck{}
+
 // HasLicenseCheck evaluates that the image contains a license definition available at
 // /licenses.
 type HasLicenseCheck struct{}

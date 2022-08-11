@@ -14,6 +14,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var _ certification.Check = &HasModifiedFilesCheck{}
+
 // HasModifiedFilesCheck evaluates that no files from the base layer have been modified by
 // subsequent layers by comparing the file list installed by Packages against the file list
 // modified in subsequent layers.

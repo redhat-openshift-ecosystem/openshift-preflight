@@ -11,6 +11,8 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 )
 
+var _ certification.Check = &securityContextConstraintsInCSV{}
+
 // securityContextConstraintsInCSV evaluates the csv and logs a message if a non default security context constraint is
 // needed by the operator
 type securityContextConstraintsInCSV struct {

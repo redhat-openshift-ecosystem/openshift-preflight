@@ -10,6 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var _ certification.Check = &ValidateOperatorBundleCheck{}
+
 // ValidateOperatorBundleCheck evaluates the image and ensures that it passes bundle validation
 // as executed by `operator-sdk bundle validate`
 type ValidateOperatorBundleCheck struct {
