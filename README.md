@@ -18,7 +18,7 @@ functional, and in your path.
 
 | Name             | Tool cli          | Minimum version |
 |----------------- |:-----------------:| ---------------:|
-| OperatorSDK      | `operator-sdk`    | v1.14.0         |
+| OperatorSDK      | `operator-sdk`    | v1.22.2         |
 | OpenShift Client | `oc`              | v4.7.19         |
 
 See our [Vagrantfile](Vagrantfile) for more information on setting up a
