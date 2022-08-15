@@ -17,9 +17,9 @@ The preflight binary currently requires that you have the following tools instal
 functional, and in your path.
 
 | Name             | Tool cli          | Minimum version |
-|----------------- |:-----------------:| ---------------:|
-| OperatorSDK      | `operator-sdk`    | v1.14.0         |
-| OpenShift Client | `oc`              | v4.7.19         |
+|----------------- |:-----------------:|----------------:|
+| OperatorSDK      | `operator-sdk`    |         v1.22.2 |
+| OpenShift Client | `oc`              |         v4.7.19 |
 
 See our [Vagrantfile](Vagrantfile) for more information on setting up a
 development environment. Some checks may also require access to an OpenShift
