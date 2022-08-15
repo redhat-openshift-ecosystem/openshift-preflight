@@ -18,17 +18,27 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-const ocpVerV1beta1Unsupported = "4.9"
-
 // versionsKey is the OpenShift versions in annotations.yaml that lists the versions allowed for an operator
 const versionsKey = "com.redhat.openshift.versions"
+
+// This table signifies what the NEXT release of OpenShift will
+// deprecate, not what it matches up to.
+var ocpToKubeVersion = map[string]string{
+	"4.9":  "1.22",
+	"4.10": "1.23",
+	"4.11": "1.24",
+	"4.12": "1.25",
+	"4.13": "1.26",
+}
+
+const latestReleasedVersion = "4.11"
 
 type operatorSdk interface {
 	BundleValidate(context.Context, string, operatorsdk.OperatorSdkBundleValidateOptions) (*operatorsdk.OperatorSdkBundleValidateReport, error)
 }
 
 func Validate(ctx context.Context, operatorSdk operatorSdk, imagePath string) (*operatorsdk.OperatorSdkBundleValidateReport, error) {
-	selector := []string{"community", "operatorhub"}
+	selector := []string{"community", "operatorhub", "alpha-deprecated-apis"}
 	opts := operatorsdk.OperatorSdkBundleValidateOptions{
 		Selector:        selector,
 		Verbose:         true,
@@ -51,75 +61,70 @@ func Validate(ctx context.Context, operatorSdk operatorSdk, imagePath string) (*
 
 	if versions, ok := annotations[versionsKey]; ok {
 		// Check that the label range contains >= 4.9
-		if isTarget49OrGreater(versions) {
-			log.Debug("OpenShift 4.9 detected in annotations. Running with additional checks enabled.")
+		targetVersion, err := targetVersion(versions)
+		if err != nil {
+			// Could not parse the version, which probably means the annotation is invalid
+			return nil, fmt.Errorf("%v", err)
+		}
+		if k8sVer, ok := ocpToKubeVersion[targetVersion]; ok {
+			log.Debugf("OpenShift %s detected in annotations. Running with additional checks enabled.", targetVersion)
 			opts.OptionalValues = make(map[string]string)
-			opts.OptionalValues["k8s-version"] = "1.22"
+			opts.OptionalValues["k8s-version"] = k8sVer
 		}
 	}
 
 	return operatorSdk.BundleValidate(ctx, imagePath, opts)
 }
 
-func isTarget49OrGreater(ocpLabelIndex string) bool {
-	semVerOCPV1beta1Unsupported, _ := semver.ParseTolerant(ocpVerV1beta1Unsupported)
-	// the OCP range informed cannot allow carry on to OCP 4.9+
+func targetVersion(ocpLabelIndex string) (string, error) {
 	beginsEqual := strings.HasPrefix(ocpLabelIndex, "=")
 	// It means that the OCP label is =OCP version
 	if beginsEqual {
 		version := cleanStringToGetTheVersionToParse(strings.Split(ocpLabelIndex, "=")[1])
 		verParsed, err := semver.ParseTolerant(version)
 		if err != nil {
-			log.Errorf("unable to parse the value (%s) on (%s)", version, ocpLabelIndex)
-			return false
+			return "", fmt.Errorf("unable to parse the value (%s) on (%s): %v", version, ocpLabelIndex, err)
 		}
 
-		if verParsed.GE(semVerOCPV1beta1Unsupported) {
-			return true
-		}
-		return false
+		return fmt.Sprintf("%d.%d", verParsed.Major, verParsed.Minor), nil
 	}
+
 	indexRange := cleanStringToGetTheVersionToParse(ocpLabelIndex)
 	if len(indexRange) > 1 {
-		// Bare version
+		// Bare version, so send back latest released
 		if !strings.Contains(indexRange, "-") {
 			verParsed, err := semver.ParseTolerant(indexRange)
 			if err != nil {
-				log.Error("unable to parse the version")
-				return false
+				// The passed version is not valid. We don't care what it is,
+				// just that it's valid.
+				return "", fmt.Errorf("unable to parse the version: %v", err)
 			}
-			if verParsed.GE(semVerOCPV1beta1Unsupported) {
-				return true
+
+			// If the specified version is greater than latestReleased, we will accept that
+			latestReleasedParsed, _ := semver.ParseTolerant(latestReleasedVersion)
+			if verParsed.GT(latestReleasedParsed) {
+				return fmt.Sprintf("%d.%d", verParsed.Major, verParsed.Minor), nil
 			}
+
+			return latestReleasedVersion, nil
 		}
 
 		versions := strings.Split(indexRange, "-")
-		version := versions[0]
-		if len(versions) > 1 {
-			version = versions[1]
+		// This is a normal range of 1.0-2.0
+		if len(versions) > 1 && versions[1] != "" {
+			version := versions[1]
 			verParsed, err := semver.ParseTolerant(version)
 			if err != nil {
-				log.Error("unable to parse the version")
-				return false
+				return "", fmt.Errorf("unable to parse the version: %v", err)
 			}
-
-			if verParsed.GE(semVerOCPV1beta1Unsupported) {
-				return true
-			}
-			return false
+			return fmt.Sprintf("%d.%d", verParsed.Major, verParsed.Minor), nil
 		}
 
-		verParsed, err := semver.ParseTolerant(version)
-		if err != nil {
-			log.Error("unable to parse the version")
-			return false
-		}
-
-		if semVerOCPV1beta1Unsupported.GE(verParsed) {
-			return true
-		}
+		// This is an open-ended range: v1-. This is not valid.
+		// So, we just fall through to the default return.
+		return "", fmt.Errorf("unable to parse the version: malformed range: %s", indexRange)
 	}
-	return false
+	return "", fmt.Errorf("unable to parse the version: unknown error")
 }
 
 // cleanStringToGetTheVersionToParse will remove the expected characters for

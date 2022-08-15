@@ -112,6 +112,19 @@ var _ = Describe("BundleValidateCheck", func() {
 			})
 		})
 
+		Context("the annotations file has a bad OpenShift version", func() {
+			JustBeforeEach(func() {
+				err := os.WriteFile(filepath.Join(imageRef.ImageFSPath, metadataDir, annotationFilename), []byte(`annotations:
+  com.redhat.openshift.versions: "vfoo"`), 0o644)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			It("should fail", func() {
+				report, err := Validate(context.Background(), fakeEngine, imageRef.ImageFSPath)
+				Expect(err).To(HaveOccurred())
+				Expect(report).To(BeNil())
+			})
+		})
+
 		Context("getting the CSV file from the bundle", func() {
 			var manifestsPath string
 
@@ -258,18 +271,27 @@ var _ = Describe("BundleValidateCheck", func() {
 	})
 
 	DescribeTable("Image Registry validation",
-		func(versions string, expected bool) {
-			ok := isTarget49OrGreater(versions)
-			Expect(ok).To(Equal(expected))
+		func(versions string, expected string, success bool) {
+			version, err := targetVersion(versions)
+			if success {
+				Expect(err).ToNot(HaveOccurred())
+			} else {
+				Expect(err).To(HaveOccurred())
+			}
+			Expect(version).To(Equal(expected))
 		},
-		Entry("range 4.6 to 4.8", "v4.6-v4.8", false),
-		Entry("exactly 4.8", "=v4.8", false),
-		Entry("exactly 4.9", "=v4.9", true),
-		Entry("range 4.6 to 4.9", "v4.6-v4.9", true),
-		Entry(">= 4.8", "v4.8", true),
-		Entry(">= 4.9", "v4.9", true),
-		Entry("begins = with error", "=foo", false),
-		Entry("bare version with error", "vfoo", false),
-		Entry("range with error", "v4.6-vfoo", false),
+
+		Entry("range 4.6 to 4.8", "v4.6-v4.8", "4.8", true),
+		Entry("exactly 4.8", "=v4.8", "4.8", true),
+		Entry("exactly 4.9", "=v4.9", "4.9", true),
+		Entry("range 4.6 to 4.9", "v4.6-v4.9", "4.9", true),
+		Entry(">= 4.8", "v4.8", latestReleasedVersion, true),
+		Entry(">= 4.9", "v4.9", latestReleasedVersion, true),
+		Entry(">= 4.11", "v4.11", latestReleasedVersion, true),
+		Entry(">= 4.13, which is more than released", "v4.13", "4.13", true),
+		Entry("begins = with error", "=foo", "", false),
+		Entry("bare version with error", "vfoo", "", false),
+		Entry("range with error", "v4.6-vfoo", "", false),
+		Entry("open-ended range is error", "v4.11-", "", false),
 	)
 })
