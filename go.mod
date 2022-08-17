@@ -11,7 +11,7 @@ require (
 	github.com/onsi/gomega v1.20.0
 	github.com/openshift/api v0.0.0-20210910062324-a41d3573a3ba
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
-	github.com/operator-framework/api v0.15.0
+	github.com/operator-framework/api v0.16.0
 	github.com/operator-framework/operator-manifest-tools v0.2.1
 	github.com/shurcooL/graphql v0.0.0-20220606043923-3cf50f8a0a29
 	github.com/sirupsen/logrus v1.8.1
@@ -105,3 +105,5 @@ require (
 )
 
 replace github.com/knqyf263/go-rpmdb => github.com/opdev/go-rpmdb v0.0.0-20220719131451-751902254f35
+
+replace github.com/operator-framework/api v0.16.0 => github.com/operator-framework/api v0.16.1-0.20220823134246-5f99430d4ec4

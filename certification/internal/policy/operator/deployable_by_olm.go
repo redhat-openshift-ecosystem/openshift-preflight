@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/operator-framework/api/pkg/manifests"
 	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -37,7 +38,7 @@ type operatorData struct {
 	App              string
 	InstallNamespace string
 	TargetNamespace  string
-	InstallModes     map[string]bool
+	InstallModes     map[operatorv1alpha1.InstallModeType]operatorv1alpha1.InstallMode
 	CsvNamespaces    []string
 	InstalledCsv     string
 }
@@ -198,7 +199,7 @@ func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef c
 	if err != nil {
 		return nil, fmt.Errorf("could not open annotations.yaml: %w", err)
 	}
-	annotations, err := bundle.GetAnnotations(ctx, annotationsFile)
+	annotations, err := bundle.LoadAnnotations(ctx, annotationsFile)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get annotations.yaml from the bundle: %w", err)
 	}
@@ -206,10 +207,7 @@ func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef c
 	catalogImage := p.indexImage
 
 	// introspect the channel from the bundle.
-	channel, err := annotation(annotations, channelKeyInBundle)
-	if err != nil {
-		return nil, fmt.Errorf("unable to extract channel name from the bundle: %w", err)
-	}
+	channel := annotations.DefaultChannelName
 
 	// The user provided a channel configuration so we will
 	// use that instead of the introspected value.
@@ -217,24 +215,16 @@ func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef c
 		channel = p.channel
 	}
 
-	packageName, err := annotation(annotations, packageKey)
-	if err != nil {
-		return nil, fmt.Errorf("unable to extract package name from the bundle: %w", err)
-	}
+	packageName := annotations.PackageName
 
-	csvFilepath, err := bundle.GetCsvFilePathFromBundle(bundleRef.ImageFSPath)
+	bundle, err := manifests.GetBundleFromDir(bundleRef.ImageFSPath)
 	if err != nil {
 		return nil, err
 	}
 
-	csvFileReader, err := os.Open(csvFilepath)
-	if err != nil {
-		return nil, err
-	}
-
-	installModes, err := bundle.GetSupportedInstallModes(ctx, csvFileReader)
-	if err != nil {
-		return nil, fmt.Errorf("unable to extract operator install modes from ClusterServiceVersion: %w", err)
+	installModes := make(map[operatorv1alpha1.InstallModeType]operatorv1alpha1.InstallMode)
+	for _, val := range bundle.CSV.Spec.InstallModes {
+		installModes[val.Type] = val
 	}
 
 	return &operatorData{
@@ -352,24 +342,23 @@ func (p *DeployableByOlmCheck) setUp(ctx context.Context, operatorData *operator
 }
 
 func (p *DeployableByOlmCheck) generateOperatorGroupData(operatorData *operatorData) openshift.OperatorGroupData {
-	var installMode string
-	for i := 0; i < len(prioritizedInstallModes); i++ {
-		if _, ok := operatorData.InstallModes[prioritizedInstallModes[i]]; ok {
-			installMode = prioritizedInstallModes[i]
-			break
+	var installMode operatorv1alpha1.InstallModeType
+	for _, v := range prioritizedInstallModes {
+		if operatorData.InstallModes[v].Supported {
+			installMode = operatorData.InstallModes[v].Type
 		}
 	}
 	log.Debugf("The operator install mode is %s", installMode)
 	targetNamespaces := make([]string, 2)
 
 	switch installMode {
-	case string(operatorv1alpha1.InstallModeTypeOwnNamespace):
+	case operatorv1alpha1.InstallModeTypeOwnNamespace:
 		targetNamespaces = []string{operatorData.InstallNamespace}
-	case string(operatorv1alpha1.InstallModeTypeSingleNamespace):
+	case operatorv1alpha1.InstallModeTypeSingleNamespace:
 		targetNamespaces = []string{operatorData.TargetNamespace}
-	case string(operatorv1alpha1.InstallModeTypeMultiNamespace):
+	case operatorv1alpha1.InstallModeTypeMultiNamespace:
 		targetNamespaces = []string{operatorData.TargetNamespace, operatorData.InstallNamespace}
-	case string(operatorv1alpha1.InstallModeTypeAllNamespaces):
+	case operatorv1alpha1.InstallModeTypeAllNamespaces:
 		targetNamespaces = []string{}
 
 	}

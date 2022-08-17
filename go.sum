@@ -665,8 +665,8 @@ github.com/openshift/build-machinery-go v0.0.0-20210423112049-9415d7ebd33e/go.mo
 github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 h1:ZHRIMCFIJN1p9LsJt4HQ+akDrys4PrYnXzOWI5LK03I=
 github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142/go.mod h1:fjS8r9mqDVsPb5td3NehsNOAWa4uiFkYEfVZioQ2gH0=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
-github.com/operator-framework/api v0.15.0 h1:4f9i0drtqHj7ykLoHxv92GR43S7MmQHhmFQkfm5YaGI=
-github.com/operator-framework/api v0.15.0/go.mod h1:scnY9xqSeCsOdtJtNoHIXd7OtHZ14gj1hkDA4+DlgLY=
+github.com/operator-framework/api v0.16.1-0.20220823134246-5f99430d4ec4 h1:juST/k+hHmKD/BlZ4GCzeDdxvNsxB4wHlDyfAPYmSrU=
+github.com/operator-framework/api v0.16.1-0.20220823134246-5f99430d4ec4/go.mod h1:kk8xJahHJR3bKqrA+A+1VIrhOTmyV76k+ARv+iV+u1Q=
 github.com/operator-framework/operator-manifest-tools v0.2.1 h1:hD3iyOm2mBItzYhpFFWqU1StkolS4XGvXxRvFO4v3Oo=
 github.com/operator-framework/operator-manifest-tools v0.2.1/go.mod h1:C4AmRDIJiM8WVyGyqoUuK3KlloZr7XqaabKMMKKhHtA=
 github.com/otiai10/copy v1.2.0/go.mod h1:rrF5dJ5F0t/EWSYODDu4j9/vEeYHMkc8jt0zJChqQWw=

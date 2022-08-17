@@ -3,7 +3,6 @@ package operator
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
 	log "github.com/sirupsen/logrus"
@@ -35,17 +34,7 @@ func (p *securityContextConstraintsInCSV) Validate(ctx context.Context, bundleRe
 }
 
 func (p *securityContextConstraintsInCSV) dataToValidate(ctx context.Context, imagePath string) ([]string, error) {
-	csvFilepath, err := bundle.GetCsvFilePathFromBundle(imagePath)
-	if err != nil {
-		return nil, err
-	}
-
-	csvFileReader, err := os.Open(csvFilepath)
-	if err != nil {
-		return nil, err
-	}
-
-	requestedSccList, err := bundle.GetSecurityContextConstraints(ctx, csvFileReader)
+	requestedSccList, err := bundle.GetSecurityContextConstraints(ctx, imagePath)
 	if err != nil {
 		return nil, fmt.Errorf("unable to extract security context constraints from ClusterServiceVersion: %w", err)
 	}
