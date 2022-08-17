@@ -1,10 +1,10 @@
 package bundle
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -111,134 +111,16 @@ var _ = Describe("BundleValidateCheck", func() {
 				Expect(report).ToNot(BeNil())
 			})
 		})
-
-		Context("the annotations file has a bad OpenShift version", func() {
-			JustBeforeEach(func() {
-				err := os.WriteFile(filepath.Join(imageRef.ImageFSPath, metadataDir, annotationFilename), []byte(`annotations:
-  com.redhat.openshift.versions: "vfoo"`), 0o644)
-				Expect(err).ToNot(HaveOccurred())
-			})
-			It("should fail", func() {
-				report, err := Validate(context.Background(), fakeEngine, imageRef.ImageFSPath)
-				Expect(err).To(HaveOccurred())
-				Expect(report).To(BeNil())
-			})
-		})
-
-		Context("getting the CSV file from the bundle", func() {
-			var manifestsPath string
-
-			BeforeEach(func() {
-				manifestsPath = filepath.Join(imageRef.ImageFSPath, manifestsDir)
-				err := os.WriteFile(filepath.Join(manifestsPath, clusterServiceVersionFilename), []byte(""), 0o644)
-				Expect(err).ToNot(HaveOccurred())
-			})
-			Context("the CSV is malformed", func() {
-				It("should error", func() {
-					r := strings.NewReader("badcsv::bad")
-					images, err := GetSupportedInstallModes(context.TODO(), r)
-					Expect(err).To(HaveOccurred())
-					Expect(images).To(BeNil())
-				})
-			})
-			Context("the CSV could not be read", func() {
-				It("should error", func() {
-					images, err := GetSupportedInstallModes(context.TODO(), errReader(0))
-					Expect(err).To(HaveOccurred())
-					Expect(images).To(BeNil())
-				})
-			})
-			Context("the CSV exists by itself", func() {
-				It("should return the filename", func() {
-					filename, err := GetCsvFilePathFromBundle(imageRef.ImageFSPath)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(filename).To(Equal(filepath.Join(manifestsPath, clusterServiceVersionFilename)))
-				})
-			})
-			Context("the CSV doesn't exist", func() {
-				JustBeforeEach(func() {
-					err := os.Remove(filepath.Join(manifestsPath, clusterServiceVersionFilename))
-					Expect(err).ToNot(HaveOccurred())
-				})
-				It("should return an error", func() {
-					filename, err := GetCsvFilePathFromBundle(imageRef.ImageFSPath)
-					Expect(err).To(HaveOccurred())
-					Expect(filename).To(Equal(""))
-				})
-			})
-			Context("there is more than one CSV", func() {
-				JustBeforeEach(func() {
-					err := os.WriteFile(filepath.Join(manifestsPath, "otheroperator.clusterserviceversion.yaml"), []byte(""), 0o664)
-					Expect(err).ToNot(HaveOccurred())
-				})
-				It("should return an error", func() {
-					filename, err := GetCsvFilePathFromBundle(imageRef.ImageFSPath)
-					Expect(err).To(HaveOccurred())
-					Expect(filename).To(Equal(""))
-				})
-			})
-			Context("there is a bad mount dir", func() {
-				It("should return an error", func() {
-					filename, err := GetCsvFilePathFromBundle("[]")
-					Expect(err).To(HaveOccurred())
-					Expect(filename).To(Equal(""))
-				})
-			})
-		})
-	})
-
-	Describe("Supported Install Modes", func() {
-		var csv string = `spec:
-  installModes:
-  - supported: true
-    type: OwnNamespace
-  - supported: true
-    type: SingleNamespace
-  - supported: false
-    type: MultiNamespace
-  - supported: true
-    type: AllNamespaces`
-
-		Context("CSV is valid", func() {
-			It("should return a map of 3", func() {
-				installModes, err := GetSupportedInstallModes(context.Background(), strings.NewReader(csv))
-				Expect(err).ToNot(HaveOccurred())
-				Expect(installModes).ToNot(BeNil())
-				Expect(len(installModes)).To(Equal(3))
-				Expect("MultiNamespace").ToNot(BeElementOf(installModes))
-			})
-		})
-
-		Context("reader is not valid", func() {
-			It("should error", func() {
-				installModes, err := GetSupportedInstallModes(context.Background(), errReader(0))
-				Expect(err).To(HaveOccurred())
-				Expect(installModes).To(BeNil())
-			})
-		})
-
-		Context("CSV is invalid", func() {
-			JustBeforeEach(func() {
-				csv = `invalid`
-			})
-			It("should error", func() {
-				installModes, err := GetSupportedInstallModes(context.Background(), strings.NewReader(csv))
-				Expect(err).To(HaveOccurred())
-				Expect(installModes).To(BeNil())
-			})
-		})
 	})
 
 	Describe("While ensuring that container util is working", func() {
 		// tests: extractAnnotationsBytes
 		Context("with an annotations yaml data read from disk", func() {
 			Context("with the correct format", func() {
-				data := []byte("annotations:\n foo: bar")
-
 				It("should properly marshal to a map[string]string", func() {
-					annotations, err := ExtractAnnotationsBytes(context.TODO(), data)
+					annotations, err := LoadAnnotations(context.TODO(), bytes.NewReader([]byte(annotations)))
 					Expect(err).ToNot(HaveOccurred())
-					Expect(annotations["foo"]).To(Equal("bar"))
+					Expect(annotations.DefaultChannelName).To(Equal("testChannel"))
 				})
 			})
 
@@ -246,7 +128,7 @@ var _ = Describe("BundleValidateCheck", func() {
 				data := []byte{}
 
 				It("should return an error", func() {
-					_, err := ExtractAnnotationsBytes(context.TODO(), data)
+					_, err := LoadAnnotations(context.TODO(), bytes.NewReader(data))
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -255,14 +137,14 @@ var _ = Describe("BundleValidateCheck", func() {
 				data := []byte(`malformed`)
 
 				It("should return an error", func() {
-					_, err := ExtractAnnotationsBytes(context.TODO(), data)
+					_, err := LoadAnnotations(context.TODO(), bytes.NewReader(data))
 					Expect(err).To(HaveOccurred())
 				})
 			})
 
 			Context("a bad reader is sent to GetAnnotations", func() {
 				It("should return an error", func() {
-					annotations, err := GetAnnotations(context.Background(), errReader(0))
+					annotations, err := LoadAnnotations(context.TODO(), errReader(0))
 					Expect(err).To(HaveOccurred())
 					Expect(annotations).To(BeNil())
 				})

@@ -52,10 +52,10 @@ var (
 		"registry.access.redhat.com":        {},
 	}
 
-	prioritizedInstallModes = []string{
-		string(operatorv1alpha1.InstallModeTypeOwnNamespace),
-		string(operatorv1alpha1.InstallModeTypeSingleNamespace),
-		string(operatorv1alpha1.InstallModeTypeMultiNamespace),
-		string(operatorv1alpha1.InstallModeTypeAllNamespaces),
+	prioritizedInstallModes = []operatorv1alpha1.InstallModeType{
+		operatorv1alpha1.InstallModeTypeOwnNamespace,
+		operatorv1alpha1.InstallModeTypeSingleNamespace,
+		operatorv1alpha1.InstallModeTypeMultiNamespace,
+		operatorv1alpha1.InstallModeTypeAllNamespaces,
 	}
 )

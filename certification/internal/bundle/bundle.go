@@ -2,7 +2,6 @@ package bundle
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,14 +11,11 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/blang/semver"
-	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/operator-framework/api/pkg/manifests"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 )
-
-// versionsKey is the OpenShift versions in annotations.yaml that lists the versions allowed for an operator
-const versionsKey = "com.redhat.openshift.versions"
 
 // This table signifies what the NEXT release of OpenShift will
 // deprecate, not what it matches up to.
@@ -54,19 +50,19 @@ func Validate(ctx context.Context, operatorSdk operatorSdk, imagePath string) (*
 	if err != nil {
 		return nil, fmt.Errorf("could not open annotations.yaml: %v", err)
 	}
-	annotations, err := GetAnnotations(ctx, annotationsFile)
+	annotations, err := LoadAnnotations(ctx, annotationsFile)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get annotations.yaml from the bundle: %v", err)
 	}
 
-	if versions, ok := annotations[versionsKey]; ok {
+	if annotations.OpenshiftVersions != "" {
 		// Check that the label range contains >= 4.9
-		targetVersion, err := targetVersion(versions)
+		targetVersion, err := targetVersion(annotations.OpenshiftVersions)
 		if err != nil {
 			// Could not parse the version, which probably means the annotation is invalid
 			return nil, fmt.Errorf("%v", err)
 		}
-		if k8sVer, ok := ocpToKubeVersion[targetVersion]; ok {
+		if k8sVer, found := ocpToKubeVersion[targetVersion]; found {
 			log.Debugf("OpenShift %s detected in annotations. Running with additional checks enabled.", targetVersion)
 			opts.OptionalValues = make(map[string]string)
 			opts.OptionalValues["k8s-version"] = k8sVer
@@ -138,100 +134,33 @@ func cleanStringToGetTheVersionToParse(value string) string {
 	return value
 }
 
-// GetAnnotations accepts a context, and an io.Reader that is expected to provide
-// the annotations.yaml, and parses the annotations from there
-func GetAnnotations(ctx context.Context, r io.Reader) (map[string]string, error) {
-	fileContents, err := io.ReadAll(r)
+// LoadAnnotations reads an operator bundle's annotations.yaml from r.
+func LoadAnnotations(ctx context.Context, r io.Reader) (*Annotations, error) {
+	annFile, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("fail to read metadata/annotation.yaml file in bundle: %v", err)
 	}
 
-	annotations, err := ExtractAnnotationsBytes(ctx, fileContents)
-	if err != nil {
-		return nil, fmt.Errorf("metadata/annotations.yaml found but is malformed: %v", err)
+	if len(annFile) == 0 {
+		return nil, fmt.Errorf("annotations file was empty")
 	}
 
-	return annotations, nil
-}
-
-// extractAnnotationsBytes reads the annotation data read from a file and returns the expected format for that yaml
-// represented as a map[string]string.
-func ExtractAnnotationsBytes(ctx context.Context, annotationBytes []byte) (map[string]string, error) {
-	type metadata struct {
-		Annotations map[string]string
+	var annotationsFile AnnotationsFile
+	if err := yaml.Unmarshal(annFile, &annotationsFile); err != nil {
+		return nil, fmt.Errorf("unable to load the annotations file: %v", err)
 	}
 
-	if len(annotationBytes) == 0 {
-		return nil, errors.New("the annotations file was empty")
-	}
-
-	var bundleMeta metadata
-	if err := yaml.Unmarshal(annotationBytes, &bundleMeta); err != nil {
-		return nil, fmt.Errorf("metadata/annotations.yaml found but is malformed: %v", err)
-	}
-
-	return bundleMeta.Annotations, nil
-}
-
-func GetCsvFilePathFromBundle(imageDir string) (string, error) {
-	log.Trace("reading clusterserviceversion file from the bundle")
-	log.Debug("image directory is ", imageDir)
-	matches, err := filepath.Glob(filepath.Join(imageDir, "manifests", "*.clusterserviceversion.yaml"))
-	if err != nil {
-		return "", fmt.Errorf("glob pattern is malformed: %v", err)
-	}
-	if len(matches) == 0 {
-		return "", fmt.Errorf("unable to find clusterserviceversion file in the bundle image: %v", os.ErrNotExist)
-	}
-	if len(matches) > 1 {
-		return "", fmt.Errorf("more than one CSV file detected in bundle")
-	}
-	log.Debugf("The path to csv file is %s", matches[0])
-	return matches[0], nil
-}
-
-func csvFromReader(ctx context.Context, csvReader io.Reader) (*operatorv1alpha1.ClusterServiceVersion, error) {
-	var csv operatorv1alpha1.ClusterServiceVersion
-	bts, err := io.ReadAll(csvReader)
-	if err != nil {
-		return nil, fmt.Errorf("could not get CSV from reader: %v", err)
-	}
-	err = yaml.Unmarshal(bts, &csv)
-	if err != nil {
-		return nil, fmt.Errorf("malformed CSV detected: %v", err)
-	}
-
-	return &csv, nil
-}
-
-func GetSupportedInstallModes(ctx context.Context, csvReader io.Reader) (map[string]bool, error) {
-	csv, err := csvFromReader(ctx, csvReader)
-	if err != nil {
-		return nil, err
-	}
-
-	installedModes := make(map[string]bool, len(csv.Spec.InstallModes))
-	for _, v := range csv.Spec.InstallModes {
-		if v.Supported {
-			installedModes[string(v.Type)] = true
-		}
-	}
-	return installedModes, nil
+	return &annotationsFile.Annotations, nil
 }
 
 // GetSecurityContextConstraints returns an string array of SCC resource names requested by the operator as specified
 // in the csv
-func GetSecurityContextConstraints(ctx context.Context, csvReader io.Reader) ([]string, error) {
-	var csv operatorv1alpha1.ClusterServiceVersion
-	bts, err := io.ReadAll(csvReader)
+func GetSecurityContextConstraints(ctx context.Context, bundlePath string) ([]string, error) {
+	bundle, err := manifests.GetBundleFromDir(bundlePath)
 	if err != nil {
-		return nil, fmt.Errorf("could not get CSV from reader: %v", err)
+		return nil, fmt.Errorf("could not get bundle from dir: %s: %v", bundlePath, err)
 	}
-	err = yaml.Unmarshal(bts, &csv)
-	if err != nil {
-		return nil, fmt.Errorf("malformed CSV detected: %v", err)
-	}
-	for _, cp := range csv.Spec.InstallStrategy.StrategySpec.ClusterPermissions {
+	for _, cp := range bundle.CSV.Spec.InstallStrategy.StrategySpec.ClusterPermissions {
 		for _, rule := range cp.Rules {
 			if hasSCCApiGroup(rule) && hasSCCResource(rule) {
 				return rule.ResourceNames, nil

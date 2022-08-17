@@ -40,6 +40,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		annotations            = `annotations:
   operators.operatorframework.io.bundle.package.v1: testPackage
   operators.operatorframework.io.bundle.channel.default.v1: testChannel
+  operators.operatorframework.io.bundle.channels.v1: testChannel
 `
 		registryAuthToken = `{
 "auths": {
@@ -49,17 +50,18 @@ var _ = Describe("DeployableByOLMCheck", func() {
   }
 }`
 
-		csvStr = `
-    spec:
-      installModes:
-        - supported: false
-          type: OwnNamespace
-        - supported: false
-          type: SingleNamespace
-        - supported: false
-          type: MultiNamespace
-        - supported: true
-          type: AllNamespaces
+		csvStr = `apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+spec:
+  installModes:
+    - supported: false
+      type: OwnNamespace
+    - supported: false
+      type: SingleNamespace
+    - supported: false
+      type: MultiNamespace
+    - supported: true
+      type: AllNamespaces
 `
 	)
 	BeforeEach(func() {
