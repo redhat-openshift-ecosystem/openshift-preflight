@@ -99,9 +99,9 @@ type CertProject struct {
 	ID                  string    `json:"_id,omitempty"`
 	CertificationStatus string    `json:"certification_status" default:"In Progress"`
 	Container           Container `json:"container"`
-	Name                string    `json:"name"`                      // required
-	ProjectStatus       string    `json:"project_status"`            // required
-	Type                string    `json:"type" default:"Containers"` // required
+	Name                string    `json:"name"`           // required
+	ProjectStatus       string    `json:"project_status"` // required
+	Type                string    `json:"type,omitempty"` // required
 }
 
 type Container struct {
