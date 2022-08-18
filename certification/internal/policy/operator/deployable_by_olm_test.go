@@ -3,13 +3,11 @@ package operator
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/openshift"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
 	. "github.com/onsi/ginkgo/v2"
@@ -23,90 +21,24 @@ import (
 var _ = Describe("DeployableByOLMCheck", func() {
 	var (
 		deployableByOLMCheck DeployableByOlmCheck
-		fakeEngine           operatorSdk
 		imageRef             certification.ImageReference
-		tmpDockerDir         string
-		client               crclient.Client
 	)
-	const (
-		metadataDir            = "metadata"
-		manifestDir            = "manifests"
-		registryConfigDir      = ".docker"
-		annotationFilename     = "annotations.yaml"
-		csvFilename            = "test-operator.clusterserviceversion.yaml"
-		registryConfigFilename = "config.json"
-		annotations            = `annotations:
-  operators.operatorframework.io.bundle.package.v1: testPackage
-  operators.operatorframework.io.bundle.channel.default.v1: testChannel
-  operators.operatorframework.io.bundle.channels.v1: testChannel
-`
-		registryAuthToken = `{
-"auths": {
-  "quay.io": {
-    "auth": "auth-token-test"
-    }
-  }
-}`
 
-		csvStr = `apiVersion: operators.coreos.com/v1alpha1
-kind: ClusterServiceVersion
-spec:
-  installModes:
-    - supported: false
-      type: OwnNamespace
-    - supported: false
-      type: SingleNamespace
-    - supported: false
-      type: MultiNamespace
-    - supported: true
-      type: AllNamespaces
-`
-	)
 	BeforeEach(func() {
 		// override default timeout
 		subscriptionTimeout = 1 * time.Second
 		csvTimeout = 1 * time.Second
 
-		// mock bundle directory
-		tmpDir, err := os.MkdirTemp("", "bundle-metadata-*")
-		Expect(err).ToNot(HaveOccurred())
-
-		Expect(os.Mkdir(filepath.Join(tmpDir, metadataDir), 0o755)).To(Succeed())
-		Expect(os.WriteFile(filepath.Join(tmpDir, metadataDir, annotationFilename), []byte(annotations), 0o644)).To(Succeed())
-
-		// mock csv file
-		Expect(os.Mkdir(filepath.Join(tmpDir, manifestDir), 0o755)).To(Succeed())
-		Expect(os.WriteFile(filepath.Join(tmpDir, manifestDir, csvFilename), []byte(csvStr), 0o644)).To(Succeed())
-
-		// mock docker config file
-		tmpDockerDir, err = os.MkdirTemp("", "docker-config-*")
-		Expect(err).ToNot(HaveOccurred())
-
-		Expect(os.Mkdir(filepath.Join(tmpDockerDir, registryConfigDir), 0o755)).To(Succeed())
-		Expect(os.WriteFile(filepath.Join(
-			tmpDockerDir,
-			registryConfigDir,
-			registryConfigFilename),
-			[]byte(registryAuthToken),
-			0o644)).To(Succeed())
-
 		fakeImage := fakecranev1.FakeImage{}
 		imageRef.ImageInfo = &fakeImage
-		imageRef.ImageFSPath = tmpDir
-
-		report := operatorsdk.OperatorSdkBundleValidateReport{
-			Passed:  true,
-			Outputs: []operatorsdk.OperatorSdkBundleValidateOutput{},
-		}
-		fakeEngine = FakeOperatorSdk{
-			OperatorSdkBVReport: report,
-		}
+		imageRef.ImageFSPath = "./testdata/valid_bundle"
 
 		now := metav1.Now()
 		og.Status.LastUpdated = &now
-		deployableByOLMCheck = *NewDeployableByOlmCheck(fakeEngine, "test_indeximage", "", "")
+		deployableByOLMCheck = *NewDeployableByOlmCheck("test_indeximage", "", "")
 		scheme := apiruntime.NewScheme()
 		Expect(openshift.AddSchemes(scheme)).To(Succeed())
+		var client crclient.Client //nolint:gosimple // explicitly make var with interface
 		client = fake.NewClientBuilder().
 			WithScheme(scheme).
 			WithObjects(&csv, &csvDefault, &csvMarketplace, &ns, &secret, &sub, &og).
@@ -114,6 +46,9 @@ spec:
 			Build()
 		deployableByOLMCheck.client = client
 
+		// Temp artifacts dir
+		tmpDir, err := os.MkdirTemp("", "deployable-by-olm-*")
+		Expect(err).ToNot(HaveOccurred())
 		artifacts.SetDir(tmpDir)
 		DeferCleanup(os.RemoveAll, tmpDir)
 		DeferCleanup(artifacts.Reset)
@@ -130,12 +65,12 @@ spec:
 		Context("When installedCSV field of Subscription is not set", func() {
 			BeforeEach(func() {
 				badSub := sub
-				Expect(client.Get(context.TODO(), crclient.ObjectKey{
+				Expect(deployableByOLMCheck.client.Get(context.TODO(), crclient.ObjectKey{
 					Name:      "testPackage",
 					Namespace: "testPackage",
 				}, &badSub)).To(Succeed())
 				badSub.Status.InstalledCSV = ""
-				Expect(client.Update(context.TODO(), &badSub, &crclient.UpdateOptions{})).To(Succeed())
+				Expect(deployableByOLMCheck.client.Update(context.TODO(), &badSub, &crclient.UpdateOptions{})).To(Succeed())
 			})
 			It("Should fail Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
@@ -155,7 +90,8 @@ spec:
 		})
 		Context("When index image is in a private registry and CSV has been created successfully", func() {
 			BeforeEach(func() {
-				deployableByOLMCheck.dockerConfig = filepath.Join(tmpDockerDir, registryConfigDir, registryConfigFilename)
+				// dockerconfig.json is just an empty file. It just needs to exist.
+				deployableByOLMCheck.dockerConfig = "./testdata/dockerconfig.json"
 			})
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
@@ -197,11 +133,4 @@ spec:
 		Entry("registry.access.redhat.com", []string{"registry.access.redhat.com/ubi8/ubi"}, true),
 		Entry("quay.io", []string{"quay.io/rocrisp/preflight-operator-bundle:v1"}, false),
 	)
-	AfterEach(func() {
-		err := os.RemoveAll(imageRef.ImageFSPath)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = os.RemoveAll(tmpDockerDir)
-		Expect(err).ToNot(HaveOccurred())
-	})
 })

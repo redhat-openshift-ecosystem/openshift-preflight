@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
-
 	"github.com/blang/semver"
 	"github.com/operator-framework/api/pkg/manifests"
+	"github.com/operator-framework/api/pkg/validation"
+	olmvalidation "github.com/redhat-openshift-ecosystem/ocp-olm-catalog-validator/pkg/validation"
 	log "github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/yaml"
@@ -29,21 +29,22 @@ var ocpToKubeVersion = map[string]string{
 
 const latestReleasedVersion = "4.11"
 
-type operatorSdk interface {
-	BundleValidate(context.Context, string, operatorsdk.OperatorSdkBundleValidateOptions) (*operatorsdk.OperatorSdkBundleValidateReport, error)
-}
-
-func Validate(ctx context.Context, operatorSdk operatorSdk, imagePath string) (*operatorsdk.OperatorSdkBundleValidateReport, error) {
-	selector := []string{"community", "operatorhub", "alpha-deprecated-apis"}
-	opts := operatorsdk.OperatorSdkBundleValidateOptions{
-		Selector:        selector,
-		Verbose:         true,
-		ContainerEngine: "none",
-		OutputFormat:    "json-alpha1",
-	}
-
+func Validate(ctx context.Context, imagePath string) (*Report, error) {
 	log.Trace("reading annotations file from the bundle")
 	log.Debug("image extraction directory is ", imagePath)
+
+	bundle, err := manifests.GetBundleFromDir(imagePath)
+	if err != nil {
+		return nil, fmt.Errorf("could not load bundle from path: %s: %v", imagePath, err)
+	}
+	validators := validation.DefaultBundleValidators.WithValidators(
+		validation.AlphaDeprecatedAPIsValidator,
+		validation.OperatorHubValidator,
+		olmvalidation.OpenShiftValidator,
+	)
+
+	objs := bundle.ObjectsToValidate()
+
 	// retrieve the operator metadata from bundle image
 	annotationsFileName := filepath.Join(imagePath, "metadata", "annotations.yaml")
 	annotationsFile, err := os.Open(annotationsFileName)
@@ -55,6 +56,7 @@ func Validate(ctx context.Context, operatorSdk operatorSdk, imagePath string) (*
 		return nil, fmt.Errorf("unable to get annotations.yaml from the bundle: %v", err)
 	}
 
+	optionalValues := make(map[string]string)
 	if annotations.OpenshiftVersions != "" {
 		// Check that the label range contains >= 4.9
 		targetVersion, err := targetVersion(annotations.OpenshiftVersions)
@@ -64,12 +66,22 @@ func Validate(ctx context.Context, operatorSdk operatorSdk, imagePath string) (*
 		}
 		if k8sVer, found := ocpToKubeVersion[targetVersion]; found {
 			log.Debugf("OpenShift %s detected in annotations. Running with additional checks enabled.", targetVersion)
-			opts.OptionalValues = make(map[string]string)
-			opts.OptionalValues["k8s-version"] = k8sVer
+			optionalValues = make(map[string]string)
+			optionalValues["k8s-version"] = k8sVer
+		}
+	}
+	objs = append(objs, optionalValues)
+
+	results := validators.Validate(objs...)
+	passed := true
+	for _, v := range results {
+		if v.HasError() {
+			passed = false
+			break
 		}
 	}
 
-	return operatorSdk.BundleValidate(ctx, imagePath, opts)
+	return &Report{Results: results, Passed: passed}, nil
 }
 
 func targetVersion(ocpLabelIndex string) (string, error) {
