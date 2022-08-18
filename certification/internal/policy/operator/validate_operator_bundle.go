@@ -6,7 +6,6 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -15,18 +14,14 @@ var _ certification.Check = &ValidateOperatorBundleCheck{}
 
 // ValidateOperatorBundleCheck evaluates the image and ensures that it passes bundle validation
 // as executed by `operator-sdk bundle validate`
-type ValidateOperatorBundleCheck struct {
-	OperatorSdk operatorSdk
-}
+type ValidateOperatorBundleCheck struct{}
 
-func NewValidateOperatorBundleCheck(operatorSdk operatorSdk) *ValidateOperatorBundleCheck {
-	return &ValidateOperatorBundleCheck{
-		OperatorSdk: operatorSdk,
-	}
+func NewValidateOperatorBundleCheck() *ValidateOperatorBundleCheck {
+	return &ValidateOperatorBundleCheck{}
 }
 
 func (p *ValidateOperatorBundleCheck) Validate(ctx context.Context, bundleRef certification.ImageReference) (bool, error) {
-	report, err := p.getDataToValidate(ctx, bundleRef.ImageFSPath)
+	report, err := p.dataToValidate(ctx, bundleRef.ImageFSPath)
 	if err != nil {
 		return false, fmt.Errorf("error while executing operator-sdk bundle validate: %v", err)
 	}
@@ -34,24 +29,19 @@ func (p *ValidateOperatorBundleCheck) Validate(ctx context.Context, bundleRef ce
 	return p.validate(ctx, report)
 }
 
-func (p *ValidateOperatorBundleCheck) getDataToValidate(ctx context.Context, imagePath string) (*operatorsdk.OperatorSdkBundleValidateReport, error) {
-	return bundle.Validate(ctx, p.OperatorSdk, imagePath)
+func (p *ValidateOperatorBundleCheck) dataToValidate(ctx context.Context, imagePath string) (*bundle.Report, error) {
+	return bundle.Validate(ctx, imagePath)
 }
 
-//nolint:unparam // ctx is unused. Keep for future use.
-func (p *ValidateOperatorBundleCheck) validate(ctx context.Context, report *operatorsdk.OperatorSdkBundleValidateReport) (bool, error) {
-	if !report.Passed || len(report.Outputs) > 0 {
-		for _, output := range report.Outputs {
-			var logFn func(...interface{})
-			switch output.Type {
-			case "warning":
-				logFn = log.Warn
-			case "error":
-				logFn = log.Error
-			default:
-				logFn = log.Debug
+func (p *ValidateOperatorBundleCheck) validate(ctx context.Context, report *bundle.Report) (bool, error) { //nolint:unparam // save context for future use
+	if !report.Passed || len(report.Results) > 0 {
+		for _, output := range report.Results {
+			for _, result := range output.Errors {
+				log.Error(result.Error())
 			}
-			logFn(output.Message)
+			for _, result := range output.Warnings {
+				log.Warn(result.Error())
+			}
 		}
 	}
 	return report.Passed, nil

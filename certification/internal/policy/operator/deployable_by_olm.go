@@ -50,7 +50,6 @@ type DeployableByOlmCheck struct {
 	// channel is optional. If empty, we will introspect.
 	channel string
 
-	OperatorSdk     operatorSdk
 	openshiftClient openshift.Client
 	client          crclient.Client
 	csvReady        bool
@@ -92,13 +91,11 @@ func (p *DeployableByOlmCheck) initOpenShifeEngine() {
 // in scope are public. An empty channel value implies that the check should
 // introspect the channel from the bundle. indexImage is required.
 func NewDeployableByOlmCheck(
-	operatorSdk operatorSdk,
 	indexImage,
 	dockerConfig,
 	channel string,
 ) *DeployableByOlmCheck {
 	return &DeployableByOlmCheck{
-		OperatorSdk:  operatorSdk,
 		dockerConfig: dockerConfig,
 		indexImage:   indexImage,
 		channel:      channel,
@@ -110,7 +107,7 @@ func (p *DeployableByOlmCheck) Validate(ctx context.Context, bundleRef certifica
 		return false, fmt.Errorf("%v", err)
 	}
 	p.initOpenShifeEngine()
-	if report, err := bundle.Validate(ctx, p.OperatorSdk, bundleRef.ImageFSPath); err != nil || !report.Passed {
+	if report, err := bundle.Validate(ctx, bundleRef.ImageFSPath); err != nil || !report.Passed {
 		return false, fmt.Errorf("%v", err)
 	}
 
@@ -649,6 +646,6 @@ func (p *DeployableByOlmCheck) Metadata() certification.Metadata {
 func (p *DeployableByOlmCheck) Help() certification.HelpText {
 	return certification.HelpText{
 		Message:    "It is required that your operator could be deployed by OLM",
-		Suggestion: "Follow the guidelines on the operatorsdk website to learn how to package your operator https://sdk.operatorframework.io/docs/olm-integration/cli-overview/",
+		Suggestion: "Follow the guidelines on the operator-sdk website to learn how to package your operator https://sdk.operatorframework.io/docs/olm-integration/cli-overview/",
 	}
 }

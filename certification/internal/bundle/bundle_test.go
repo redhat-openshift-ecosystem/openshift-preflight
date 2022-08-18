@@ -3,95 +3,55 @@ package bundle
 import (
 	"bytes"
 	"context"
-	"os"
-	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 
-	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/ginkgo/v2/dsl/core"
+	. "github.com/onsi/ginkgo/v2/dsl/table"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("BundleValidateCheck", func() {
-	const (
-		manifestsDir       = "manifests"
-		metadataDir        = "metadata"
-		annotationFilename = "annotations.yaml"
-		annotations        = `annotations:
-  com.redhat.openshift.versions: "v4.6-v4.9"
-  operators.operatorframework.io.bundle.package.v1: testPackage
-  operators.operatorframework.io.bundle.channel.default.v1: testChannel
-`
-	)
-
 	Describe("Bundle validation", func() {
-		var (
-			imageRef   certification.ImageReference
-			fakeEngine operatorSdk
-		)
-
-		BeforeEach(func() {
-			// mock bundle directory
-			tmpDir, err := os.MkdirTemp("", "bundle-metadata-*")
-			Expect(err).ToNot(HaveOccurred())
-
-			err = os.Mkdir(filepath.Join(tmpDir, metadataDir), 0o755)
-			Expect(err).ToNot(HaveOccurred())
-
-			err = os.Mkdir(filepath.Join(tmpDir, manifestsDir), 0o755)
-			Expect(err).ToNot(HaveOccurred())
-
-			err = os.WriteFile(filepath.Join(tmpDir, metadataDir, annotationFilename), []byte(annotations), 0o644)
-			Expect(err).ToNot(HaveOccurred())
-
-			imageRef.ImageFSPath = tmpDir
-			fakeEngine = FakeOperatorSdk{}
-		})
-
-		AfterEach(func() {
-			err := os.RemoveAll(imageRef.ImageFSPath)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
 		Context("the annotations file is valid", func() {
 			It("should pass", func() {
-				report, err := Validate(context.Background(), fakeEngine, imageRef.ImageFSPath)
+				imageRef := certification.ImageReference{
+					ImageFSPath: "./testdata/valid_bundle",
+				}
+				report, err := Validate(context.Background(), imageRef.ImageFSPath)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(report).ToNot(BeNil())
 			})
 		})
 
 		Context("the annotations file does not exist", func() {
-			JustBeforeEach(func() {
-				err := os.Remove(filepath.Join(imageRef.ImageFSPath, metadataDir, annotationFilename))
-				Expect(err).ToNot(HaveOccurred())
-			})
 			It("should error", func() {
-				report, err := Validate(context.Background(), fakeEngine, imageRef.ImageFSPath)
+				imageRef := certification.ImageReference{
+					ImageFSPath: "./testdata/no_annotations_file",
+				}
+				report, err := Validate(context.Background(), imageRef.ImageFSPath)
 				Expect(err).To(HaveOccurred())
 				Expect(report).To(BeNil())
 			})
 		})
 
 		Context("the annotations file is malformed", func() {
-			JustBeforeEach(func() {
-				err := os.WriteFile(filepath.Join(imageRef.ImageFSPath, metadataDir, annotationFilename), []byte("badAnnotations"), 0o644)
-				Expect(err).ToNot(HaveOccurred())
-			})
 			It("should error", func() {
-				report, err := Validate(context.Background(), fakeEngine, imageRef.ImageFSPath)
+				imageRef := certification.ImageReference{
+					ImageFSPath: "./testdata/malformed_annotations_file",
+				}
+				report, err := Validate(context.Background(), imageRef.ImageFSPath)
 				Expect(err).To(HaveOccurred())
 				Expect(report).To(BeNil())
 			})
 		})
 
 		Context("the annotations file is valid but has no annotations", func() {
-			JustBeforeEach(func() {
-				err := os.WriteFile(filepath.Join(imageRef.ImageFSPath, metadataDir, annotationFilename), []byte("annotations:"), 0o644)
-				Expect(err).ToNot(HaveOccurred())
-			})
 			It("should fail gracefully", func() {
-				report, err := Validate(context.Background(), fakeEngine, imageRef.ImageFSPath)
+				imageRef := certification.ImageReference{
+					ImageFSPath: "./testdata/invalid_bundle",
+				}
+				report, err := Validate(context.Background(), imageRef.ImageFSPath)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(report).ToNot(BeNil())
 			})
@@ -101,14 +61,6 @@ var _ = Describe("BundleValidateCheck", func() {
 	Describe("While ensuring that container util is working", func() {
 		// tests: extractAnnotationsBytes
 		Context("with an annotations yaml data read from disk", func() {
-			Context("with the correct format", func() {
-				It("should properly marshal to a map[string]string", func() {
-					annotations, err := LoadAnnotations(context.TODO(), bytes.NewReader([]byte(annotations)))
-					Expect(err).ToNot(HaveOccurred())
-					Expect(annotations.DefaultChannelName).To(Equal("testChannel"))
-				})
-			})
-
 			Context("containing no data read in from the yaml file", func() {
 				data := []byte{}
 
