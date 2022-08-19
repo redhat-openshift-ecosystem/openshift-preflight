@@ -411,6 +411,13 @@ func watch(ctx context.Context, client openshift.Client, wg *sync.WaitGroup, nam
 		if err != nil {
 			// Something bad happened. Get out of town
 			err := fmt.Errorf("watch: could not retrieve the object %s/%s: %v", namespace, name, err)
+			// Fetch subscription to retrieve additional error message from sub.Status.Conditions
+			sub, sub_err := client.GetSubscription(ctx, name, namespace)
+			if sub_err != nil {
+				log.Tracef("watch: failed to fetch the subscription %s from namespace %s: %v", name, namespace, sub_err)
+			} else {
+				log.Tracef("watch: subscription status in error situation is %+v", sub.Status)
+			}
 			channel <- fmt.Sprintf("%s %v", errorPrefix, err)
 			return
 		}
