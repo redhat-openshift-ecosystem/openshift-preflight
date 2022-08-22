@@ -60,16 +60,6 @@ var _ = Describe("Viper to Runtime Config", func() {
 		})
 	})
 
-	Context("With proper values, but with an opsid- prefix on the certification project ID", func() {
-		It("should properly trim the ospid- prefix and succeed", func() {
-			baseViperCfg.Set("certification_project_id", "ospid-111111111111")
-			expectedRuntimeCfg.CertificationProjectID = "111111111111"
-			cfg, err := NewConfigFrom(*baseViperCfg)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(*cfg).To(BeEquivalentTo(*expectedRuntimeCfg))
-		})
-	})
-
 	It("should only have 20 struct keys for tests to be valid", func() {
 		// If this test fails, it means a developer has added or removed
 		// keys from runtime.Config, and so these tests may no longer be
