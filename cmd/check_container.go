@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -27,6 +28,7 @@ func checkContainerCmd() *cobra.Command {
 		Args:  checkContainerPositionalArgs,
 		// this fmt.Sprintf is in place to keep spacing consistent with cobras two spaces that's used in: Usage, Flags, etc
 		Example: fmt.Sprintf("  %s", "preflight check container quay.io/repo-name/container-name:version"),
+		PreRunE: validateCertificationProjectId,
 		RunE:    checkContainerRunE,
 	}
 
@@ -204,6 +206,25 @@ func checkContainerPositionalArgs(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("pyxis API token and certification ID are required when --submit is present")
 		}
 
+	}
+
+	return nil
+}
+
+// validateCertificationProjectId validates that the certification project id is in the proper format
+// and throws an error if the value provided is in a legacy format that is not usable to query pyxis
+func validateCertificationProjectId(cmd *cobra.Command, args []string) error {
+	certificationProjectID := viper.GetString("certification_project_id")
+	// splitting the certification project id into parts. if there are more than 2 elements in the array,
+	// we know they inputted a legacy project id, which can not be used to query pyxis
+	parts := strings.Split(certificationProjectID, "-")
+
+	if len(parts) > 2 {
+		return errors.New(fmt.Sprintf("certification project id: %s is improperly formatted see help command for instructions on obtaining proper value", certificationProjectID))
+	}
+
+	if parts[0] == "ospid" {
+		viper.Set("certification_project_id", parts[1])
 	}
 
 	return nil

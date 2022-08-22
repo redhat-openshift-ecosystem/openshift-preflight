@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"os"
-	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
 	"github.com/spf13/viper"
@@ -62,13 +61,7 @@ func (c *Config) storeContainerPolicyConfiguration(vcfg viper.Viper) {
 	c.PyxisAPIToken = vcfg.GetString("pyxis_api_token")
 	c.Submit = vcfg.GetBool("submit")
 	c.PyxisHost = pyxisHostLookup(vcfg.GetString("pyxis_env"), vcfg.GetString("pyxis_host"))
-
-	// Strip the ospid- prefix from the project ID if provided.
-	certificationProjectID := vcfg.GetString("certification_project_id")
-	if strings.HasPrefix(certificationProjectID, "ospid-") {
-		certificationProjectID = strings.Split(certificationProjectID, "-")[1]
-	}
-	c.CertificationProjectID = certificationProjectID
+	c.CertificationProjectID = vcfg.GetString("certification_project_id")
 }
 
 // storeOperatorPolicyConfiguration reads operator-policy-specific config
