@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"os"
 	"reflect"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -15,6 +16,10 @@ var _ = Describe("Viper to Runtime Config", func() {
 		baseViperCfg = viper.New()
 		expectedRuntimeCfg = &Config{}
 
+		if val, isSet := os.LookupEnv("KUBECONFIG"); isSet {
+			DeferCleanup(os.Setenv, "KUBECONFIG", val)
+			Expect(os.Unsetenv("KUBECONFIG")).To(Succeed())
+		}
 		baseViperCfg.Set("logfile", "logfile")
 		expectedRuntimeCfg.LogFile = "logfile"
 		baseViperCfg.Set("dockerConfig", "dockerConfig")

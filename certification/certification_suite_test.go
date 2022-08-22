@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestBundle(t *testing.T) {
+func TestCertification(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Certification Suite")
 }

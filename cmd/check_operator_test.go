@@ -24,6 +24,12 @@ var _ = Describe("Check Operator", func() {
 		})
 
 		Context("without having set the KUBECONFIG environment variable", func() {
+			BeforeEach(func() {
+				if val, isSet := os.LookupEnv("KUBECONFIG"); isSet {
+					DeferCleanup(os.Setenv, "KUBECONFIG", val)
+				}
+				os.Unsetenv("KUBECONFIG")
+			})
 			It("should return an error", func() {
 				out, err := executeCommand(checkOperatorCmd(), "quay.io/example/image:mytag")
 				Expect(err).To(HaveOccurred())
@@ -32,8 +38,18 @@ var _ = Describe("Check Operator", func() {
 		})
 
 		Context("without having set the PFLT_INDEXIMAGE environment variable", func() {
-			BeforeEach(func() { os.Setenv("KUBECONFIG", "foo") })
-			AfterEach(func() { os.Unsetenv("KUBECONFIG") })
+			BeforeEach(func() {
+				if val, isSet := os.LookupEnv("PFLT_INDEXIMAGE"); isSet {
+					DeferCleanup(os.Setenv, "PFLT_INDEXIMAGE", val)
+				}
+				os.Unsetenv("PFLT_INDEXIMAGE")
+				if val, isSet := os.LookupEnv("KUBECONFIG"); isSet {
+					DeferCleanup(os.Setenv, "KUBECONFIG", val)
+				} else {
+					DeferCleanup(os.Unsetenv, "KUBECONFIG")
+				}
+				os.Setenv("KUBECONFIG", "foo")
+			})
 			It("should return an error", func() {
 				out, err := executeCommand(checkOperatorCmd(), "quay.io/example/image:mytag")
 				Expect(err).To(HaveOccurred())
@@ -43,15 +59,15 @@ var _ = Describe("Check Operator", func() {
 
 		Context("With all of the required parameters", func() {
 			BeforeEach(func() {
+				DeferCleanup(viper.Set, "indexImage", viper.GetString("indexImage"))
 				viper.Set("indexImage", "foo")
+				if val, isSet := os.LookupEnv("KUBECONFIG"); isSet {
+					DeferCleanup(os.Setenv, "KUBECONFIG", val)
+				} else {
+					DeferCleanup(os.Unsetenv, "KUBECONFIG")
+				}
 				os.Setenv("KUBECONFIG", "foo")
 			})
-
-			AfterEach(func() {
-				viper.Set("indexImage", "")
-				os.Unsetenv("KUBECONFIG")
-			})
-
 			It("should reach the core logic, but throw an error because of the placeholder values", func() {
 				_, err := executeCommand(checkOperatorCmd(), "quay.io/example/image:mytag")
 				Expect(err).To(HaveOccurred())
@@ -61,8 +77,14 @@ var _ = Describe("Check Operator", func() {
 
 	Context("When checking for required environment variables", func() {
 		Context("specifically, KUBECONFIG", func() {
-			BeforeEach(func() { os.Setenv("KUBECONFIG", "foo") })
-			AfterEach(func() { os.Unsetenv("KUBECONFIG") })
+			BeforeEach(func() {
+				if val, isSet := os.LookupEnv("KUBECONIFG"); isSet {
+					DeferCleanup(os.Setenv, "KUBECONFIG", val)
+				} else {
+					DeferCleanup(os.Unsetenv, "KUBECONFIG")
+				}
+				os.Setenv("KUBECONFIG", "foo")
+			})
 			It("should not encounter an error if the value is set", func() {
 				err := ensureKubeconfigIsSet()
 				Expect(err).ToNot(HaveOccurred())
@@ -76,8 +98,10 @@ var _ = Describe("Check Operator", func() {
 		})
 
 		Context("specifically, PFLT_INDEXIMAGE", func() {
-			BeforeEach(func() { viper.Set("indexImage", "foo") })
-			AfterEach(func() { viper.Set("indexImage", "") })
+			BeforeEach(func() {
+				DeferCleanup(viper.Set, "indexImage", viper.GetString("indexImage"))
+				viper.Set("indexImage", "foo")
+			})
 			It("should not encounter an error if the value is set", func() {
 				err := ensureIndexImageConfigIsSet()
 				Expect(err).ToNot(HaveOccurred())
@@ -155,14 +179,16 @@ var _ = Describe("Check Operator", func() {
 		// to prevent trying to run the entire RunE func in previous cases.
 		posArgs := []string{"firstparam"}
 		BeforeEach(func() {
+			DeferCleanup(viper.Set, "indexImage", viper.GetString("indexImage"))
 			viper.Set("indexImage", "foo")
+			if val, isSet := os.LookupEnv("KUBECONIFG"); isSet {
+				DeferCleanup(os.Setenv, "KUBECONFIG", val)
+			} else {
+				DeferCleanup(os.Unsetenv, "KUBECONFIG")
+			}
 			os.Setenv("KUBECONFIG", "foo")
 		})
 
-		AfterEach(func() {
-			viper.Set("indexImage", "")
-			os.Unsetenv("KUBECONFIG")
-		})
 		It("should succeed when all positional arg constraints and environment constraints are correct", func() {
 			err := checkOperatorPositionalArgs(checkOperatorCmd(), posArgs)
 			Expect(err).ToNot(HaveOccurred())
