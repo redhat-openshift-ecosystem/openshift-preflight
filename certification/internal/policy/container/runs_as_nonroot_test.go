@@ -3,11 +3,12 @@ package container
 import (
 	"context"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 )
 
 func userConfigFile(user string) (*cranev1.ConfigFile, error) {
@@ -26,7 +27,7 @@ func configFileWithGoodUser() (*cranev1.ConfigFile, error) {
 	return userConfigFile("1000")
 }
 
-func configFileWithRootUid() (*cranev1.ConfigFile, error) {
+func configFileWithRootUID() (*cranev1.ConfigFile, error) {
 	return userConfigFile("0")
 }
 
@@ -86,7 +87,7 @@ var _ = Describe("RunAsNonRoot", func() {
 		Context("When manifest user is UID 0", func() {
 			BeforeEach(func() {
 				fakeImage := fakecranev1.FakeImage{
-					ConfigFileStub: configFileWithRootUid,
+					ConfigFileStub: configFileWithRootUID,
 				}
 				imageRef.ImageInfo = &fakeImage
 			})

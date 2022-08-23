@@ -7,6 +7,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -37,6 +38,7 @@ func (p *HasNoProhibitedPackagesCheck) getDataToValidate(ctx context.Context, di
 	return pkgs, nil
 }
 
+//nolint:unparam // ctx is unused. Keep for future use.
 func (p *HasNoProhibitedPackagesCheck) validate(ctx context.Context, pkgList []string) (bool, error) {
 	var prohibitedPackages []string
 	for _, pkg := range pkgList {

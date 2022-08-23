@@ -3,19 +3,10 @@ package operator
 import (
 	"time"
 
-	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 )
 
 const (
-	// packageKey is the packageKey in annotations.yaml that contains the package name.
-	packageKey = "operators.operatorframework.io.bundle.package.v1"
-
-	// channelKeyInBundle is the channel in annotations.yaml that contains the channel name.
-	channelKeyInBundle = "operators.operatorframework.io.bundle.channel.default.v1"
-
-	// apiEndpoint is the endpoint used to query for package uniqueness.
-	apiEndpoint = "https://catalog.redhat.com/api/containers/v1/operators/packages"
-
 	// secretName is the K8s secret name which stores the auth keys for the private registry access
 	secretName = "registry-auth-keys"
 
@@ -52,10 +43,10 @@ var (
 		"registry.access.redhat.com":        {},
 	}
 
-	prioritizedInstallModes = []operatorv1alpha1.InstallModeType{
-		operatorv1alpha1.InstallModeTypeOwnNamespace,
-		operatorv1alpha1.InstallModeTypeSingleNamespace,
-		operatorv1alpha1.InstallModeTypeMultiNamespace,
-		operatorv1alpha1.InstallModeTypeAllNamespaces,
+	prioritizedInstallModes = []operatorsv1alpha1.InstallModeType{
+		operatorsv1alpha1.InstallModeTypeOwnNamespace,
+		operatorsv1alpha1.InstallModeTypeSingleNamespace,
+		operatorsv1alpha1.InstallModeTypeMultiNamespace,
+		operatorsv1alpha1.InstallModeTypeAllNamespaces,
 	}
 )

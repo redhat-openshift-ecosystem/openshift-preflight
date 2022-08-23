@@ -21,24 +21,24 @@ type HTTPClient interface {
 }
 
 type pyxisClient struct {
-	ApiToken  string
-	ProjectId string
+	APIToken  string
+	ProjectID string
 	Client    HTTPClient
 	PyxisHost string
 }
 
-func (p *pyxisClient) getPyxisUrl(path string) string {
+func (p *pyxisClient) getPyxisURL(path string) string {
 	return fmt.Sprintf("https://%s/%s/%s", p.PyxisHost, apiVersion, path)
 }
 
-func (p *pyxisClient) getPyxisGraphqlUrl() string {
+func (p *pyxisClient) getPyxisGraphqlURL() string {
 	return fmt.Sprintf("https://%s/graphql/", p.PyxisHost)
 }
 
-func NewPyxisClient(pyxisHost string, apiToken string, projectId string, httpClient HTTPClient) *pyxisClient {
+func NewPyxisClient(pyxisHost string, apiToken string, projectID string, httpClient HTTPClient) *pyxisClient {
 	return &pyxisClient{
-		ApiToken:  apiToken,
-		ProjectId: projectId,
+		APIToken:  apiToken,
+		ProjectID: projectID,
 		Client:    httpClient,
 		PyxisHost: pyxisHost,
 	}
@@ -49,7 +49,7 @@ func (p *pyxisClient) createImage(ctx context.Context, certImage *CertImage) (*C
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal certImage: %w", err)
 	}
-	req, err := p.newRequestWithApiToken(ctx, http.MethodPost, p.getPyxisUrl("images"), bytes.NewReader(b))
+	req, err := p.newRequestWithAPIToken(ctx, http.MethodPost, p.getPyxisURL("images"), bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +88,8 @@ func (p *pyxisClient) createImage(ctx context.Context, certImage *CertImage) (*C
 }
 
 func (p *pyxisClient) getImage(ctx context.Context, dockerImageDigest string) (*CertImage, error) {
-	req, err := p.newRequestWithApiToken(ctx, http.MethodGet,
-		p.getPyxisUrl(fmt.Sprintf("projects/certification/id/%s/images?filter=docker_image_digest==%s", p.ProjectId, dockerImageDigest)), nil)
+	req, err := p.newRequestWithAPIToken(ctx, http.MethodGet,
+		p.getPyxisURL(fmt.Sprintf("projects/certification/id/%s/images?filter=docker_image_digest==%s", p.ProjectID, dockerImageDigest)), nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
@@ -167,7 +167,7 @@ func (p *pyxisClient) FindImagesByDigest(ctx context.Context, digests []string) 
 	if !ok {
 		return nil, fmt.Errorf("client could not be used as http.Client")
 	}
-	client := graphql.NewClient(p.getPyxisGraphqlUrl(), httpClient)
+	client := graphql.NewClient(p.getPyxisGraphqlURL(), httpClient)
 
 	err := client.Query(ctx, &query, variables)
 	if err != nil {
@@ -191,7 +191,7 @@ func (p *pyxisClient) createRPMManifest(ctx context.Context, rpmManifest *RPMMan
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal rpm manifest: %w", err)
 	}
-	req, err := p.newRequestWithApiToken(ctx, http.MethodPost, p.getPyxisUrl(fmt.Sprintf("images/id/%s/rpm-manifest", rpmManifest.ImageID)), bytes.NewReader(b))
+	req, err := p.newRequestWithAPIToken(ctx, http.MethodPost, p.getPyxisURL(fmt.Sprintf("images/id/%s/rpm-manifest", rpmManifest.ImageID)), bytes.NewReader(b))
 	if err != nil {
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
@@ -230,7 +230,7 @@ func (p *pyxisClient) createRPMManifest(ctx context.Context, rpmManifest *RPMMan
 }
 
 func (p *pyxisClient) getRPMManifest(ctx context.Context, imageID string) (*RPMManifest, error) {
-	req, err := p.newRequestWithApiToken(ctx, http.MethodGet, p.getPyxisUrl(fmt.Sprintf("images/id/%s/rpm-manifest", imageID)), nil)
+	req, err := p.newRequestWithAPIToken(ctx, http.MethodGet, p.getPyxisURL(fmt.Sprintf("images/id/%s/rpm-manifest", imageID)), nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
@@ -265,7 +265,7 @@ func (p *pyxisClient) getRPMManifest(ctx context.Context, imageID string) (*RPMM
 }
 
 func (p *pyxisClient) GetProject(ctx context.Context) (*CertProject, error) {
-	req, err := p.newRequestWithApiToken(ctx, http.MethodGet, p.getPyxisUrl(fmt.Sprintf("projects/certification/id/%s", p.ProjectId)), nil)
+	req, err := p.newRequestWithAPIToken(ctx, http.MethodGet, p.getPyxisURL(fmt.Sprintf("projects/certification/id/%s", p.ProjectID)), nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not create new request: %v", err)
 	}
@@ -316,7 +316,7 @@ func (p *pyxisClient) updateProject(ctx context.Context, certProject *CertProjec
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal certProject: %w", err)
 	}
-	req, err := p.newRequestWithApiToken(ctx, http.MethodPatch, p.getPyxisUrl(fmt.Sprintf("projects/certification/id/%s", p.ProjectId)), bytes.NewReader(b))
+	req, err := p.newRequestWithAPIToken(ctx, http.MethodPatch, p.getPyxisURL(fmt.Sprintf("projects/certification/id/%s", p.ProjectID)), bytes.NewReader(b))
 	if err != nil {
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
@@ -355,7 +355,7 @@ func (p *pyxisClient) createTestResults(ctx context.Context, testResults *TestRe
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal test results: %w", err)
 	}
-	req, err := p.newRequestWithApiToken(ctx, http.MethodPost, p.getPyxisUrl(fmt.Sprintf("projects/certification/id/%s/test-results", p.ProjectId)), bytes.NewReader(b))
+	req, err := p.newRequestWithAPIToken(ctx, http.MethodPost, p.getPyxisURL(fmt.Sprintf("projects/certification/id/%s/test-results", p.ProjectID)), bytes.NewReader(b))
 	if err != nil {
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
@@ -392,7 +392,7 @@ func (p *pyxisClient) createArtifact(ctx context.Context, artifact *Artifact) (*
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal artifact: %w", err)
 	}
-	req, err := p.newRequestWithApiToken(ctx, http.MethodPost, p.getPyxisUrl(fmt.Sprintf("projects/certification/id/%s/artifacts", p.ProjectId)), bytes.NewReader(b))
+	req, err := p.newRequestWithAPIToken(ctx, http.MethodPost, p.getPyxisURL(fmt.Sprintf("projects/certification/id/%s/artifacts", p.ProjectID)), bytes.NewReader(b))
 	if err != nil {
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
@@ -426,13 +426,13 @@ func (p *pyxisClient) createArtifact(ctx context.Context, artifact *Artifact) (*
 	return &newArtifact, nil
 }
 
-func (p *pyxisClient) newRequestWithApiToken(ctx context.Context, method string, url string, body io.Reader) (*http.Request, error) {
+func (p *pyxisClient) newRequestWithAPIToken(ctx context.Context, method string, url string, body io.Reader) (*http.Request, error) {
 	req, err := p.newRequest(ctx, method, url, body)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Add("X-API-KEY", p.ApiToken)
+	req.Header.Add("X-API-KEY", p.APIToken)
 
 	return req, nil
 }

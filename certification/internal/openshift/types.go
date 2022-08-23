@@ -3,8 +3,8 @@ package openshift
 import (
 	"context"
 
-	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
-	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 )
@@ -42,16 +42,16 @@ type Client interface {
 	CreateSecret(ctx context.Context, name string, content map[string]string, secretType corev1.SecretType, namespace string) (*corev1.Secret, error)
 	DeleteSecret(ctx context.Context, name string, namespace string) error
 	GetSecret(ctx context.Context, name string, namespace string) (*corev1.Secret, error)
-	CreateOperatorGroup(ctx context.Context, data OperatorGroupData, namespace string) (*operatorv1.OperatorGroup, error)
+	CreateOperatorGroup(ctx context.Context, data OperatorGroupData, namespace string) (*operatorsv1.OperatorGroup, error)
 	DeleteOperatorGroup(ctx context.Context, name string, namespace string) error
-	GetOperatorGroup(ctx context.Context, name string, namespace string) (*operatorv1.OperatorGroup, error)
-	CreateCatalogSource(ctx context.Context, data CatalogSourceData, namespace string) (*operatorv1alpha1.CatalogSource, error)
+	GetOperatorGroup(ctx context.Context, name string, namespace string) (*operatorsv1.OperatorGroup, error)
+	CreateCatalogSource(ctx context.Context, data CatalogSourceData, namespace string) (*operatorsv1alpha1.CatalogSource, error)
 	DeleteCatalogSource(ctx context.Context, name string, namespace string) error
-	GetCatalogSource(ctx context.Context, name string, namespace string) (*operatorv1alpha1.CatalogSource, error)
-	CreateSubscription(ctx context.Context, data SubscriptionData, namespace string) (*operatorv1alpha1.Subscription, error)
+	GetCatalogSource(ctx context.Context, name string, namespace string) (*operatorsv1alpha1.CatalogSource, error)
+	CreateSubscription(ctx context.Context, data SubscriptionData, namespace string) (*operatorsv1alpha1.Subscription, error)
 	DeleteSubscription(ctx context.Context, name string, namespace string) error
-	GetSubscription(ctx context.Context, name string, namespace string) (*operatorv1alpha1.Subscription, error)
-	GetCSV(ctx context.Context, name string, namespace string) (*operatorv1alpha1.ClusterServiceVersion, error)
+	GetSubscription(ctx context.Context, name string, namespace string) (*operatorsv1alpha1.Subscription, error)
+	GetCSV(ctx context.Context, name string, namespace string) (*operatorsv1alpha1.ClusterServiceVersion, error)
 	GetImages(ctx context.Context) (map[string]struct{}, error)
 	CreateRoleBinding(ctx context.Context, data RoleBindingData, namespace string) (*rbacv1.RoleBinding, error)
 	GetRoleBinding(ctx context.Context, name string, namespace string) (*rbacv1.RoleBinding, error)

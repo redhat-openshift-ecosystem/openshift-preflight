@@ -5,10 +5,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
+
 	. "github.com/onsi/ginkgo/v2/dsl/core"
 	. "github.com/onsi/gomega"
-
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 )
 
 func TestBundle(t *testing.T) {

@@ -7,11 +7,10 @@ import (
 	. "github.com/onsi/gomega"
 
 	imagestreamv1 "github.com/openshift/api/image/v1"
-	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
-
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -85,7 +84,7 @@ var _ = Describe("OpenShift Engine", func() {
 			},
 		}
 
-		csv := operatorv1alpha1.ClusterServiceVersion{
+		csv := operatorsv1alpha1.ClusterServiceVersion{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "testcsv",
 				Namespace: "testns",

@@ -4,11 +4,12 @@ import (
 	"io"
 	"testing"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	pyxis "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
+
+	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 var _ certification.Check = &BasedOnUBICheck{}
@@ -25,7 +26,7 @@ func NewBasedOnUbiCheck(layerHashChecker layerHashChecker) *BasedOnUBICheck {
 }
 
 func (p *BasedOnUBICheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
-	layerHashes, err := p.getImageLayers(ctx, imgRef.ImageInfo)
+	layerHashes, err := p.getImageLayers(imgRef.ImageInfo)
 	if err != nil {
 		return false, fmt.Errorf("could not get image layers: %v", err)
 	}
@@ -34,7 +35,7 @@ func (p *BasedOnUBICheck) Validate(ctx context.Context, imgRef certification.Ima
 }
 
 // getImageLayers returns the root filesystem DiffIDs of the image.
-func (p *BasedOnUBICheck) getImageLayers(ctx context.Context, image cranev1.Image) ([]cranev1.Hash, error) {
+func (p *BasedOnUBICheck) getImageLayers(image cranev1.Image) ([]cranev1.Hash, error) {
 	configFile, err := image.ConfigFile()
 	if err != nil {
 		return nil, err

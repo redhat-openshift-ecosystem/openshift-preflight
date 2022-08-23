@@ -66,7 +66,7 @@ var _ = Describe("Scorecard Image tests", func() {
 				Expect(image).To(Equal(images["scorecard"]))
 			})
 		})
-		Context("the image is overriden", func() {
+		Context("the image is overidden", func() {
 			It("should return the passed param", func() {
 				image := ScorecardImage("quay.io/some/container:v1.0.0")
 				Expect(image).To(Equal("quay.io/some/container:v1.0.0"))

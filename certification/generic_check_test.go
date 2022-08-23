@@ -9,7 +9,7 @@ import (
 )
 
 var _ = Describe("Generic check tests", func() {
-	var validatorFn ValidatorFunc = func(ctx context.Context, imageRef ImageReference) (bool, error) {
+	validatorFn := func(ctx context.Context, imageRef ImageReference) (bool, error) { //nolint:unparam // ctx param is unused
 		switch imageRef.ImageFSPath {
 		case "error":
 			return false, errors.New("invalid validator")
@@ -19,10 +19,10 @@ var _ = Describe("Generic check tests", func() {
 			return true, nil
 		}
 	}
-	var metadata Metadata = Metadata{
+	metadata := Metadata{
 		Description: "test metadata",
 	}
-	var helpText HelpText = HelpText{
+	helpText := HelpText{
 		Message: "test message",
 	}
 	When("A generic check is created", func() {

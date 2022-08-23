@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -23,10 +24,10 @@ func checkCmd() *cobra.Command {
 	checkCmd.PersistentFlags().StringP("docker-config", "d", "", "Path to docker config.json file. This value is optional for publicly accessible images.\n"+
 		"However, it is strongly encouraged for public Docker Hub images,\n"+
 		"due to the rate limit imposed for unauthenticated requests. (env: PFLT_DOCKERCONFIG)")
-	viper.BindPFlag("dockerConfig", checkCmd.PersistentFlags().Lookup("docker-config"))
+	_ = viper.BindPFlag("dockerConfig", checkCmd.PersistentFlags().Lookup("docker-config"))
 
 	checkCmd.PersistentFlags().String("artifacts", "", "Where check-specific artifacts will be written. (env: PFLT_ARTIFACTS)")
-	viper.BindPFlag("artifacts", checkCmd.PersistentFlags().Lookup("artifacts"))
+	_ = viper.BindPFlag("artifacts", checkCmd.PersistentFlags().Lookup("artifacts"))
 
 	checkCmd.AddCommand(checkContainerCmd())
 	checkCmd.AddCommand(checkOperatorCmd())
@@ -64,8 +65,8 @@ func resultsFilenameWithExtension(ext string) string {
 func buildConnectURL(projectID string) string {
 	connectURL := fmt.Sprintf("https://connect.redhat.com/projects/%s", projectID)
 
-	pyxis_env := viper.GetString("pyxis_env")
-	if len(pyxis_env) > 0 && pyxis_env != "prod" {
+	pyxisEnv := viper.GetString("pyxis_env")
+	if len(pyxisEnv) > 0 && pyxisEnv != "prod" {
 		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s", viper.GetString("pyxis_env"), projectID)
 	}
 

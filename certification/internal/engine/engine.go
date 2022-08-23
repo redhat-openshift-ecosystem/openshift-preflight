@@ -18,9 +18,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/go-containerregistry/pkg/crane"
-	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1/cache"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/authn"
@@ -28,6 +25,10 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+
+	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/cache"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -263,7 +264,7 @@ func generateBundleHash(bundlePath string) (string, error) {
 
 	hashBuffer := bytes.Buffer{}
 
-	fs.WalkDir(fileSystem, ".", func(path string, d fs.DirEntry, err error) error {
+	_ = fs.WalkDir(fileSystem, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("could not read bundle directory: %s: %w", path, err)
 		}
@@ -318,7 +319,6 @@ func untar(dst string, r io.Reader) error {
 		header, err := tr.Next()
 
 		switch {
-
 		// if no more files are found return
 		case err == io.EOF:
 			return nil
@@ -341,7 +341,6 @@ func untar(dst string, r io.Reader) error {
 
 		// check the file type
 		switch header.Typeflag {
-
 		// if its a dir and it doesn't exist create it
 		case tar.TypeDir:
 			if _, err := os.Stat(target); err != nil {
@@ -379,6 +378,8 @@ func untar(dst string, r io.Reader) error {
 
 // writeCertImage takes imageRef and writes it to disk as JSON representing a pyxis.CertImage
 // struct. The file is written at path certification.DefaultCertImageFilename.
+//
+//nolint:unparam // ctx is unused. Keep for future use.
 func writeCertImage(ctx context.Context, imageRef certification.ImageReference) error {
 	config, err := imageRef.ImageInfo.ConfigFile()
 	if err != nil {
@@ -423,7 +424,7 @@ func writeCertImage(ctx context.Context, imageRef certification.ImageReference) 
 		}
 
 		pyxisLayer := pyxis.Layer{
-			LayerId: diffid.String(),
+			LayerID: diffid.String(),
 			Size:    written,
 		}
 		layerSizes = append(layerSizes, pyxisLayer)
@@ -474,16 +475,16 @@ func writeCertImage(ctx context.Context, imageRef certification.ImageReference) 
 		SumLayerSizeBytes: sumLayersSizeBytes,
 		// This is an assumption that the DiffIDs are in order from base up.
 		// Need more evidence that this is always the case.
-		UncompressedTopLayerId: config.RootFS.DiffIDs[0].String(),
+		UncompressedTopLayerID: config.RootFS.DiffIDs[0].String(),
 	}
 
 	// calling MarshalIndent so the json file written to disk is human-readable when opened
-	certImageJson, err := json.MarshalIndent(certImage, "", "    ")
+	certImageJSON, err := json.MarshalIndent(certImage, "", "    ")
 	if err != nil {
 		return fmt.Errorf("could not marshal cert image: %w", err)
 	}
 
-	fileName, err := artifacts.WriteFile(certification.DefaultCertImageFilename, string(certImageJson))
+	fileName, err := artifacts.WriteFile(certification.DefaultCertImageFilename, string(certImageJSON))
 	if err != nil {
 		return fmt.Errorf("failed to save file to artifacts directory: %w", err)
 	}
@@ -507,8 +508,7 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 	// covert rpm struct to pxyis struct
 	rpms := make([]pyxis.RPM, 0, len(pkgList))
 	for _, packageInfo := range pkgList {
-
-		var bgName, endChop, srpmNevra, pgpKeyId string
+		var bgName, endChop, srpmNevra, pgpKeyID string
 
 		// accounting for the fact that not all packages have a source rpm
 		if len(packageInfo.SourceRpm) > 0 {
@@ -521,16 +521,16 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 		if len(packageInfo.PGP) > 0 {
 			matches := regexp.MustCompile(".*, Key ID (.*)").FindStringSubmatch(packageInfo.PGP)
 			if matches != nil {
-				pgpKeyId = matches[1]
+				pgpKeyID = matches[1]
 			} else {
 				log.Debugf("string did not match the format required: %s", packageInfo.PGP)
-				pgpKeyId = ""
+				pgpKeyID = ""
 			}
 		}
 
 		pyxisRPM := pyxis.RPM{
 			Architecture: packageInfo.Arch,
-			Gpg:          pgpKeyId,
+			Gpg:          pgpKeyID,
 			Name:         packageInfo.Name,
 			Nvra:         fmt.Sprintf("%s-%s-%s.%s", packageInfo.Name, packageInfo.Version, packageInfo.Release, packageInfo.Arch),
 			Release:      packageInfo.Release,
@@ -548,12 +548,12 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 	}
 
 	// calling MarshalIndent so the json file written to disk is human-readable when opened
-	rpmManifestJson, err := json.MarshalIndent(rpmManifest, "", "    ")
+	rpmManifestJSON, err := json.MarshalIndent(rpmManifest, "", "    ")
 	if err != nil {
 		return fmt.Errorf("could not marshal rpm manifest: %w", err)
 	}
 
-	fileName, err := artifacts.WriteFile(certification.DefaultRPMManifestFilename, string(rpmManifestJson))
+	fileName, err := artifacts.WriteFile(certification.DefaultRPMManifestFilename, string(rpmManifestJSON))
 	if err != nil {
 		return fmt.Errorf("failed to save file to artifacts directory: %w", err)
 	}

@@ -7,9 +7,10 @@ import (
 	"os/exec"
 	"testing"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 )
 
 const (
@@ -97,7 +98,7 @@ func TestShellProcessSuccess(t *testing.T) {
 	if os.Getenv("GO_TEST_PROCESS") != "1" {
 		return
 	}
-	fmt.Fprintf(os.Stdout, testStdoutValue)
+	fmt.Fprint(os.Stdout, testStdoutValue)
 	os.Exit(0)
 }
 
@@ -105,7 +106,7 @@ func TestShellProcessFail(t *testing.T) {
 	if os.Getenv("GO_TEST_PROCESS") != "1" {
 		return
 	}
-	fmt.Fprintf(os.Stderr, "FATA")
+	fmt.Fprint(os.Stderr, "FATA")
 	os.Exit(1)
 }
 
@@ -113,7 +114,7 @@ func TestBundleValidateProcessSuccess(t *testing.T) {
 	if os.Getenv("GO_TEST_PROCESS") != "1" {
 		return
 	}
-	fmt.Fprintf(os.Stdout, testBundleValidateStdoutValue)
+	fmt.Fprint(os.Stdout, testBundleValidateStdoutValue)
 	os.Exit(0)
 }
 
@@ -121,7 +122,7 @@ func TestBundleValidateProcessError(t *testing.T) {
 	if os.Getenv("GO_TEST_PROCESS") != "1" {
 		return
 	}
-	fmt.Fprintf(os.Stdout, "FATA")
+	fmt.Fprint(os.Stdout, "FATA")
 	os.Exit(0)
 }
 

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
+
 	"github.com/spf13/cobra"
 )
 

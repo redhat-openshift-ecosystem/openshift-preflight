@@ -8,9 +8,10 @@ import (
 	"strings"
 	"sync"
 
-	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
+
+	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -123,6 +124,8 @@ func (p *HasModifiedFilesCheck) dropFirstLayerIfEmpty(files [][]string) ([][]str
 
 // validate compares the list of LayerFiles and PackageFiles to see what PackageFiles
 // have been modified within the additional layers.
+//
+//nolint:unparam // ctx is unused. Keep for future use.
 func (p *HasModifiedFilesCheck) validate(packageFilesRef *packageFilesRef) (bool, error) {
 	layerFiles := packageFilesRef.LayerFiles
 	packageFiles := packageFilesRef.PackageFiles
@@ -180,7 +183,6 @@ func untar(pathChan chan<- string, r io.Reader) error {
 		header, err := tr.Next()
 
 		switch {
-
 		// if no more files are found return
 		case err == io.EOF:
 			close(pathChan)
@@ -204,7 +206,6 @@ func untar(pathChan chan<- string, r io.Reader) error {
 
 		// check the file type
 		switch header.Typeflag {
-
 		// if its a dir ignore it
 		case tar.TypeDir:
 			continue

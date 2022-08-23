@@ -40,7 +40,7 @@ func Reset() {
 // Returns the full path (including the artifacts dir)
 func WriteFile(filename, contents string) (string, error) {
 	artifactDir := ads
-	artifactDir, err := createArtifactsDir(artifactDir)
+	_, err := createArtifactsDir(artifactDir)
 	if err != nil {
 		// Fatal does an os.Exit. If we can't create the artifacts directory,
 		// we can't continue.

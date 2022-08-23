@@ -6,10 +6,11 @@ import (
 	"os"
 	"path"
 
-	. "github.com/onsi/ginkgo/v2/dsl/core"
-	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
+
+	. "github.com/onsi/ginkgo/v2/dsl/core"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Pyxis Builder tests", func() {
@@ -82,7 +83,7 @@ var _ = Describe("Pyxis Builder tests", func() {
 					RawConfig:              "",
 					Repositories:           []Repository{},
 					SumLayerSizeBytes:      0,
-					UncompressedTopLayerId: "",
+					UncompressedTopLayerID: "",
 				}
 				bts, err := json.Marshal(certimg)
 				Expect(err).ToNot(HaveOccurred())

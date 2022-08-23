@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -24,8 +25,6 @@ func NewValidateOperatorBundleCheck(operatorSdk operatorSdk) *ValidateOperatorBu
 	}
 }
 
-const ocpVerV1beta1Unsupported = "4.9"
-
 func (p *ValidateOperatorBundleCheck) Validate(ctx context.Context, bundleRef certification.ImageReference) (bool, error) {
 	report, err := p.getDataToValidate(ctx, bundleRef.ImageFSPath)
 	if err != nil {
@@ -39,6 +38,7 @@ func (p *ValidateOperatorBundleCheck) getDataToValidate(ctx context.Context, ima
 	return bundle.Validate(ctx, p.OperatorSdk, imagePath)
 }
 
+//nolint:unparam // ctx is unused. Keep for future use.
 func (p *ValidateOperatorBundleCheck) validate(ctx context.Context, report *operatorsdk.OperatorSdkBundleValidateReport) (bool, error) {
 	if !report.Passed || len(report.Outputs) > 0 {
 		for _, output := range report.Outputs {

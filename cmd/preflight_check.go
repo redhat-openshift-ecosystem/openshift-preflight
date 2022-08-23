@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -17,7 +18,7 @@ import (
 func preflightCheck(
 	ctx context.Context,
 	cfg *runtime.Config,
-	pc pyxisClient,
+	pc pyxisClient, //nolint:unparam // pyxisClient is currently unused.
 	eng engine.CheckEngine,
 	formatter formatters.ResponseFormatter,
 	rw resultWriter,

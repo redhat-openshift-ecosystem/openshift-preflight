@@ -33,7 +33,7 @@ fmt: gofumpt
 
 .PHONY: tidy
 tidy:
-	go mod tidy -compat=1.17
+	go mod tidy
 	git diff --exit-code
 
 .PHONY: image-build
@@ -84,7 +84,7 @@ clean:
 	$(shell if [ -f "$(BINARY)-$(GOOS)-$(GOARCH)" ]; then rm -f $(BINARY)-$(GOOS)-$(GOARCH); fi)))
 
 GOLANGCI_LINT = $(shell pwd)/bin/golangci-lint
-GOLANGCI_LINT_VERSION ?= v1.45.2
+GOLANGCI_LINT_VERSION ?= v1.48.0
 golangci-lint: $(GOLANGCI_LINT)
 $(GOLANGCI_LINT):
 	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION))

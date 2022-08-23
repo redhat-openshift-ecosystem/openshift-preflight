@@ -158,7 +158,7 @@ type fakeCheckEngine struct {
 func (e fakeCheckEngine) generateCheck() certification.Check {
 	generatedName := fmt.Sprintf("test-rand-%d", rand.Int())
 
-	var doNothing certification.ValidatorFunc = func(c context.Context, i certification.ImageReference) (bool, error) {
+	doNothing := func(c context.Context, i certification.ImageReference) (bool, error) {
 		return true, nil
 	}
 

@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -37,6 +38,8 @@ type pyxisClient interface {
 // newPyxisClient initializes a pyxisClient with relevant information from cfg.
 // If the the CertificationProjectID, PyxisAPIToken, or PyxisHost are empty, then nil is returned.
 // Callers should treat a nil pyxis client as an indicator that pyxis calls should not be made.
+//
+//nolint:unparam // ctx is unused. Keep for future use.
 func newPyxisClient(ctx context.Context, cfg certification.Config) pyxisClient {
 	if cfg.CertificationProjectID() == "" || cfg.PyxisAPIToken() == "" || cfg.PyxisHost() == "" {
 		return nil
@@ -81,7 +84,7 @@ func (s *containerCertificationSubmitter) Submit(ctx context.Context) error {
 	// only read the dockerfile if the user provides a location for the file
 	// at this point in the flow, if `cfg.DockerConfig` is empty we know the repo is public and can continue the submission flow
 	if s.dockerConfig != "" {
-		dockerConfigJsonBytes, err := os.ReadFile(s.dockerConfig)
+		dockerConfigJSONBytes, err := os.ReadFile(s.dockerConfig)
 		if err != nil {
 			return fmt.Errorf("could not open file for submission: %s: %w",
 				s.dockerConfig,
@@ -89,7 +92,7 @@ func (s *containerCertificationSubmitter) Submit(ctx context.Context) error {
 			)
 		}
 
-		certProject.Container.DockerConfigJSON = string(dockerConfigJsonBytes)
+		certProject.Container.DockerConfigJSON = string(dockerConfigJSONBytes)
 	}
 
 	// the below code is for the edge case where a partner has a DockerConfig in pyxis, but does not send one to preflight.
@@ -106,15 +109,15 @@ func (s *containerCertificationSubmitter) Submit(ctx context.Context) error {
 	submission, _ := pyxis.NewCertificationInput(certProject)
 
 	certImage, err := os.Open(path.Join(artifacts.Path(), certification.DefaultCertImageFilename))
-	defer certImage.Close()
 	if err != nil {
 		return fmt.Errorf("could not open file for submission: %s: %w",
 			certification.DefaultCertImageFilename,
 			err,
 		)
 	}
+	defer certImage.Close()
+
 	preflightResults, err := os.Open(path.Join(artifacts.Path(), certification.DefaultTestResultsFilename))
-	defer preflightResults.Close()
 	if err != nil {
 		return fmt.Errorf(
 			"could not open file for submission: %s: %w",
@@ -122,8 +125,9 @@ func (s *containerCertificationSubmitter) Submit(ctx context.Context) error {
 			err,
 		)
 	}
+	defer preflightResults.Close()
+
 	rpmManifest, err := os.Open(path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename))
-	defer rpmManifest.Close()
 	if err != nil {
 		return fmt.Errorf(
 			"could not open file for submission: %s: %w",
@@ -131,8 +135,9 @@ func (s *containerCertificationSubmitter) Submit(ctx context.Context) error {
 			err,
 		)
 	}
+	defer rpmManifest.Close()
+
 	logfile, err := os.Open(s.preflightLogFile)
-	defer logfile.Close()
 	if err != nil {
 		return fmt.Errorf(
 			"could not open file for submission: %s: %w",
@@ -140,6 +145,8 @@ func (s *containerCertificationSubmitter) Submit(ctx context.Context) error {
 			err,
 		)
 	}
+	defer logfile.Close()
+
 	submission.
 		// The engine writes the certified image config to disk in a Pyxis-specific format.
 		WithCertImage(certImage).

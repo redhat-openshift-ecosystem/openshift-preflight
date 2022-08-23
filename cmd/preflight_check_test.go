@@ -5,12 +5,13 @@ import (
 	"os"
 	"path"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Preflight Check Func", func() {
@@ -122,7 +123,7 @@ var _ = Describe("Preflight Check Func", func() {
 			})
 		})
 
-		Context("and submission encounteres an error", func() {
+		Context("and submission encounters an error", func() {
 			var msg string
 			BeforeEach(func() {
 				msg = "some error submitting"

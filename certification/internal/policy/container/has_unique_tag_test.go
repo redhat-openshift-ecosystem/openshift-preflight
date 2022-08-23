@@ -11,16 +11,17 @@ import (
 	"net/http/httptest"
 	"net/url"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/registry"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 )
 
 var _ = Describe("UniqueTag", func() {
-	var hasUniqueTagCheck hasUniqueTagCheck = *NewHasUniqueTagCheck("")
+	hasUniqueTagCheck := *NewHasUniqueTagCheck("")
 	var src, dst, host string
 
 	BeforeEach(func() {
@@ -124,14 +125,6 @@ var _ = Describe("UniqueTag", func() {
 	AssertMetaData(&hasUniqueTagCheck)
 })
 
-func validImageTags() []string {
-	return []string{"0.0.1", "0.0.2", "latest"}
-}
-
-func invalidImageTags() []string {
-	return []string{"latest"}
-}
-
 func emptyImageTags() []string {
 	return []string{}
 }
@@ -162,6 +155,5 @@ func mockRegistry(resp http.ResponseWriter, req *http.Request) {
 	jbod, _ := json.Marshal(tagsResp)
 	resp.Header().Set("Content-Length", fmt.Sprint(len(jbod)))
 	resp.WriteHeader(http.StatusOK)
-	io.Copy(resp, bytes.NewReader([]byte(jbod)))
-	return
+	_, _ = io.Copy(resp, bytes.NewReader(jbod))
 }

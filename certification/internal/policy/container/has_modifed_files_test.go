@@ -4,10 +4,11 @@ import (
 	"context"
 	"path"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 )
 
 var _ = Describe("HasModifiedFiles", func() {
@@ -23,13 +24,13 @@ var _ = Describe("HasModifiedFiles", func() {
 					"this",
 					"is",
 					"not",
-					"prohibitted",
+					"prohibited",
 				},
 				{
 					"there",
 					"are",
 					"no",
-					"prohibitted",
+					"prohibited",
 					"duplicates",
 				},
 			},

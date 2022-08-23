@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
-	log "github.com/sirupsen/logrus"
-
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var _ certification.Check = &securityContextConstraintsInCSV{}
@@ -42,6 +42,7 @@ func (p *securityContextConstraintsInCSV) dataToValidate(ctx context.Context, im
 	return requestedSccList, nil
 }
 
+//nolint:unparam // ctx is unused. Keep for future use.
 func (p *securityContextConstraintsInCSV) validate(ctx context.Context, requestedSccList []string) (bool, error) {
 	if len(requestedSccList) == 0 {
 		log.Infof("No custom security context constraint was detected in the CSV. The default restricted SCC will be used.")

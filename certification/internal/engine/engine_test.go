@@ -10,14 +10,15 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/registry"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
 var _ = Describe("Execute Checks tests", func() {
@@ -43,6 +44,7 @@ var _ = Describe("Execute Checks tests", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		tmpDir, err := os.MkdirTemp("", "preflight-engine-test-*")
+		Expect(err).ToNot(HaveOccurred())
 		DeferCleanup(os.RemoveAll, tmpDir)
 		artifacts.SetDir(tmpDir)
 
