@@ -11,6 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Cache build and module paths
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
 
     - name: Install system deps
       run: 'sudo apt update && sudo apt install -y libgpgme-dev libbtrfs-dev libdevmapper-dev'
@@ -29,8 +38,12 @@ jobs:
     - name: Format
       run: make fmt
 
+    - name: Run golangci linting checks
+      run: make lint
+
     - name: Test
       run: make cover
+
 
     - name: Convert coverage.out to coverage.lcov
       uses: jandelgado/gcov2lcov-action@v1.0.9
