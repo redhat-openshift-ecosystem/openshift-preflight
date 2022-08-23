@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,6 +19,7 @@ type scorecardCheck struct {
 	waitTime       string
 }
 
+//nolint:unparam // ctx is unused. Keep for future use.
 func (p *scorecardCheck) validate(ctx context.Context, items []operatorsdk.OperatorSdkScorecardItem) (bool, error) {
 	foundTestFailed := false
 	var err error

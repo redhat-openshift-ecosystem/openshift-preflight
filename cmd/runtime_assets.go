@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +38,7 @@ func printAssets(ctx context.Context, w io.Writer) error {
 		return err
 	}
 
-	fmt.Fprintln(w, string(assetsJSON))
+	fmt.Fprintln(w, assetsJSON)
 	return nil
 }
 

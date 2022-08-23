@@ -5,13 +5,14 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	imagestreamv1 "github.com/openshift/api/image/v1"
-	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
-	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
+	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -106,36 +107,36 @@ var pods = corev1.PodList{
 	},
 }
 
-var csv = operatorv1alpha1.ClusterServiceVersion{
+var csv = operatorsv1alpha1.ClusterServiceVersion{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "csv-v0.0.0",
 		Namespace: "testPackage-target",
 	},
-	Spec: operatorv1alpha1.ClusterServiceVersionSpec{},
-	Status: operatorv1alpha1.ClusterServiceVersionStatus{
-		Phase: operatorv1alpha1.CSVPhaseSucceeded,
+	Spec: operatorsv1alpha1.ClusterServiceVersionSpec{},
+	Status: operatorsv1alpha1.ClusterServiceVersionStatus{
+		Phase: operatorsv1alpha1.CSVPhaseSucceeded,
 	},
 }
 
-var csvDefault = operatorv1alpha1.ClusterServiceVersion{
+var csvDefault = operatorsv1alpha1.ClusterServiceVersion{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "csv-v0.0.0",
 		Namespace: "default",
 	},
-	Spec: operatorv1alpha1.ClusterServiceVersionSpec{},
-	Status: operatorv1alpha1.ClusterServiceVersionStatus{
-		Phase: operatorv1alpha1.CSVPhaseSucceeded,
+	Spec: operatorsv1alpha1.ClusterServiceVersionSpec{},
+	Status: operatorsv1alpha1.ClusterServiceVersionStatus{
+		Phase: operatorsv1alpha1.CSVPhaseSucceeded,
 	},
 }
 
-var csvMarketplace = operatorv1alpha1.ClusterServiceVersion{
+var csvMarketplace = operatorsv1alpha1.ClusterServiceVersion{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "csv-v0.0.0",
 		Namespace: "openshift-marketplace",
 	},
-	Spec: operatorv1alpha1.ClusterServiceVersionSpec{},
-	Status: operatorv1alpha1.ClusterServiceVersionStatus{
-		Phase: operatorv1alpha1.CSVPhaseSucceeded,
+	Spec: operatorsv1alpha1.ClusterServiceVersionSpec{},
+	Status: operatorsv1alpha1.ClusterServiceVersionStatus{
+		Phase: operatorsv1alpha1.CSVPhaseSucceeded,
 	},
 }
 
@@ -154,22 +155,22 @@ var secret = corev1.Secret{
 	StringData: map[string]string{".dockerconfigjson": "secretData"},
 }
 
-var sub = operatorv1alpha1.Subscription{
+var sub = operatorsv1alpha1.Subscription{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "testPackage",
 		Namespace: "testPackage",
 	},
-	Status: operatorv1alpha1.SubscriptionStatus{
+	Status: operatorsv1alpha1.SubscriptionStatus{
 		InstalledCSV: "csv-v0.0.0",
 	},
 }
 
-var og = operatorv1.OperatorGroup{
+var og = operatorsv1.OperatorGroup{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "testPackage",
 		Namespace: "testPackage",
 	},
-	Status: operatorv1.OperatorGroupStatus{
+	Status: operatorsv1.OperatorGroupStatus{
 		LastUpdated: nil,
 	},
 }

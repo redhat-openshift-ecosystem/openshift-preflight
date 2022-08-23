@@ -5,9 +5,10 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 )
 
 var _ = Describe("runtime-assets test", func() {
@@ -39,7 +40,7 @@ var _ = Describe("runtime-assets test", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			var printed runtime.AssetData
-			json.Unmarshal(buf.Bytes(), &printed)
+			Expect(json.Unmarshal(buf.Bytes(), &printed)).To(Succeed())
 
 			actual := runtime.Assets(context.TODO())
 
@@ -54,7 +55,7 @@ var _ = Describe("runtime-assets test", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			var printed runtime.AssetData
-			json.Unmarshal([]byte(out), &printed)
+			Expect(json.Unmarshal([]byte(out), &printed)).To(Succeed())
 
 			actual := runtime.Assets(context.TODO())
 

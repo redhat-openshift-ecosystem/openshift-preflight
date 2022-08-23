@@ -5,9 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 )
 
 const (

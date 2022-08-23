@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/authn"
+
+	"github.com/google/go-containerregistry/pkg/crane"
 )
 
 var _ certification.Check = &hasUniqueTagCheck{}

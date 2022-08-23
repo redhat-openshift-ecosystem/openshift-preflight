@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/authn"
+
+	"github.com/google/go-containerregistry/pkg/crane"
 	log "github.com/sirupsen/logrus"
 )
 

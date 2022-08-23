@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	rbacv1 "k8s.io/api/rbac/v1"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 
 	"github.com/blang/semver"
 	"github.com/operator-framework/api/pkg/manifests"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 	log "github.com/sirupsen/logrus"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/yaml"
 )
 

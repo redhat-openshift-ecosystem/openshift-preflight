@@ -33,7 +33,7 @@ type CertImage struct {
 	RawConfig              string           `json:"raw_config,omitempty"`
 	Repositories           []Repository     `json:"repositories,omitempty"`
 	SumLayerSizeBytes      int64            `json:"sum_layer_size_bytes,omitempty"`
-	UncompressedTopLayerId string           `json:"uncompressed_top_layer_id,omitempty"` // TODO: figure out how to populate this, it is not required
+	UncompressedTopLayerID string           `json:"uncompressed_top_layer_id,omitempty"`
 	FreshnessGrades        []FreshnessGrade `json:"freshness_grades,omitempty"`
 }
 
@@ -115,7 +115,7 @@ type Container struct {
 }
 
 type Layer struct {
-	LayerId string `json:"layer_id"`
+	LayerID string `json:"layer_id"`
 	Size    int64  `json:"size_bytes"`
 }
 

@@ -79,7 +79,6 @@ func (p *pyxisProjectHandler) ServeHTTP(response http.ResponseWriter, request *h
 	default:
 		mustWrite(response, `{"_id":"deadb33f","certification_status":"Started","name":"My Spiffy Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers"}}`)
 	}
-	return
 }
 
 func (p *pyxisImageHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
@@ -111,7 +110,6 @@ func (p *pyxisImageHandler) ServeHTTP(response http.ResponseWriter, request *htt
 	default:
 		mustWrite(response, fmt.Sprintf(`{"data":[%s]}`, responseString))
 	}
-	return
 }
 
 func (p *pyxisRPMManifestHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
@@ -133,7 +131,6 @@ func (p *pyxisRPMManifestHandler) ServeHTTP(response http.ResponseWriter, reques
 	default:
 		mustWrite(response, `{"_id":"blah"}`)
 	}
-	return
 }
 
 func (p *pyxisTestResultsHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
@@ -148,7 +145,6 @@ func (p *pyxisTestResultsHandler) ServeHTTP(response http.ResponseWriter, reques
 	default:
 		mustWrite(response, `{"image":"quay.io/awesome/image:latest","passed": true}`)
 	}
-	return
 }
 
 func (p *pyxisGraphqlLayerHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
@@ -179,7 +175,6 @@ func (p *pyxisGraphqlLayerHandler) ServeHTTP(response http.ResponseWriter, reque
 			}
 		}
 	}`)
-	return
 }
 
 func (p *pyxisGraphqlFindImagesHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {

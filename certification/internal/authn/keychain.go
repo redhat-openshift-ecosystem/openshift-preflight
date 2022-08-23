@@ -46,7 +46,7 @@ func PreflightKeychain(opts ...PreflightKeychainOption) craneauthn.Keychain {
 // and will be passed to crane,.
 //
 // If the dockerConfig value is empty, assume Anonymous.
-// If the file cannot be found or read, that constitues an error.
+// If the file cannot be found or read, that constitutes an error.
 // Can return os.IsNotExist.
 func (k *preflightKeychain) Resolve(target craneauthn.Resource) (craneauthn.Authenticator, error) {
 	log.Trace("entering preflight keychain Resolve")

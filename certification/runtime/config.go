@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
+
 	"github.com/spf13/viper"
 )
 

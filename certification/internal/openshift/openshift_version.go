@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	configv1Client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+
+	configv1Client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -24,14 +25,14 @@ func GetOpenshiftClusterVersion() (runtime.OpenshiftClusterVersion, error) {
 	if err != nil {
 		return runtime.UnknownOpenshiftClusterVersion(), fmt.Errorf("unable to create a client with the provided kubeconfig: %v", err)
 	}
-	openshiftApiServer, err := configV1Client.ClusterOperators().Get(context.Background(), "openshift-apiserver", metav1.GetOptions{})
+	openshiftAPIServer, err := configV1Client.ClusterOperators().Get(context.Background(), "openshift-apiserver", metav1.GetOptions{})
 	if err != nil {
 		return runtime.UnknownOpenshiftClusterVersion(), fmt.Errorf("unable to get openshift-apiserver cluster operator: %v", err)
 	}
 
-	log.Debug(fmt.Sprintf("fetching operator version and openshift-apiserver version %s from %s", openshiftApiServer.Status.Versions, kubeConfig.Host))
+	log.Debug(fmt.Sprintf("fetching operator version and openshift-apiserver version %s from %s", openshiftAPIServer.Status.Versions, kubeConfig.Host))
 	return runtime.OpenshiftClusterVersion{
 		Name:    "OpenShift",
-		Version: openshiftApiServer.Status.Versions[1].Version,
+		Version: openshiftAPIServer.Status.Versions[1].Version,
 	}, nil
 }

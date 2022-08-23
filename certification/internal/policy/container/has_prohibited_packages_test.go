@@ -18,7 +18,7 @@ var _ = Describe("HasNoProhibitedPackages", func() {
 			"this",
 			"is",
 			"not",
-			"prohibitted",
+			"prohibited",
 		}
 	})
 

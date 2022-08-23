@@ -11,6 +11,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+
 	"gotest.tools/v3/assert"
 )
 
@@ -22,13 +23,13 @@ func TestGenericJSONFormatter(t *testing.T) {
 			Passed: []runtime.Result{
 				{
 					Check:       certification.NewGenericCheck("passed1", nil, certification.Metadata{}, certification.HelpText{}),
-					ElapsedTime: time.Duration(1000 * time.Millisecond),
+					ElapsedTime: 1000 * time.Millisecond,
 				},
 			},
 			Failed: []runtime.Result{
 				{
 					Check:       certification.NewGenericCheck("failed1", nil, certification.Metadata{}, certification.HelpText{}),
-					ElapsedTime: time.Duration(1001 * time.Millisecond),
+					ElapsedTime: 1001 * time.Millisecond,
 				},
 			},
 		}
@@ -55,7 +56,6 @@ func TestGenericJSONFormatter(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		// Patch the function if we expect an error
 		if tc.marshalIndentFailure {
 			jsonMarshalIndent = func(v interface{}, prefix, indent string) ([]byte, error) {
@@ -99,13 +99,13 @@ func TestGenericXMLFormatter(t *testing.T) {
 			Passed: []runtime.Result{
 				{
 					Check:       certification.NewGenericCheck("passed1", nil, certification.Metadata{}, certification.HelpText{}),
-					ElapsedTime: time.Duration(1000 * time.Millisecond),
+					ElapsedTime: 1000 * time.Millisecond,
 				},
 			},
 			Failed: []runtime.Result{
 				{
 					Check:       certification.NewGenericCheck("failed1", nil, certification.Metadata{}, certification.HelpText{}),
-					ElapsedTime: time.Duration(1001 * time.Millisecond),
+					ElapsedTime: 1001 * time.Millisecond,
 				},
 			},
 		}
@@ -132,7 +132,6 @@ func TestGenericXMLFormatter(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		// Patch the function if we expect an error
 		if tc.marshalIndentFailure {
 			xmlMarshalIndent = func(v interface{}, prefix, indent string) ([]byte, error) {

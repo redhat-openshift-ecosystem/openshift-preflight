@@ -8,8 +8,6 @@ import (
 	"path"
 	"path/filepath"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
@@ -17,9 +15,11 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
-	"github.com/spf13/viper"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 var _ = Describe("Check Container Command", func() {
@@ -121,12 +121,14 @@ var _ = Describe("Check Container Command", func() {
 			})
 			Expect(err).ToNot(HaveOccurred())
 
-			// Create expected files.
-			artifacts.WriteFile(dockerconfigFilename, "dockerconfig")
-			artifacts.WriteFile(preflightLogFilename, "preflight log")
-			artifacts.WriteFile(certification.DefaultCertImageFilename, string(certImageJSONBytes))
-			artifacts.WriteFile(certification.DefaultTestResultsFilename, string(preflightTestResultsJSONBytes))
-			artifacts.WriteFile(certification.DefaultRPMManifestFilename, string(rpmManifestJSONBytes))
+			// Create expected files. Use of Gomega's Expect here (without a subsequent test) is intentional.
+			// Expect automatically checks that additional return values are nil, and thus will fail if they
+			// are not.
+			Expect(artifacts.WriteFile(dockerconfigFilename, "dockerconfig"))
+			Expect(artifacts.WriteFile(preflightLogFilename, "preflight log"))
+			Expect(artifacts.WriteFile(certification.DefaultCertImageFilename, string(certImageJSONBytes)))
+			Expect(artifacts.WriteFile(certification.DefaultTestResultsFilename, string(preflightTestResultsJSONBytes)))
+			Expect(artifacts.WriteFile(certification.DefaultRPMManifestFilename, string(rpmManifestJSONBytes)))
 		})
 
 		Context("and project cannot be obtained from the API", func() {
@@ -232,7 +234,7 @@ var _ = Describe("Check Container Command", func() {
 
 		Context("and one of the submission artifacts is malformed", func() {
 			BeforeEach(func() {
-				artifacts.WriteFile(certification.DefaultRPMManifestFilename, "malformed")
+				Expect(artifacts.WriteFile(certification.DefaultRPMManifestFilename, "malformed"))
 			})
 
 			It("should throw an error finalizing the submission", func() {

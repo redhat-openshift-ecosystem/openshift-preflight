@@ -6,20 +6,18 @@ import (
 	"path/filepath"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/openshift"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/openshift"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
 )
 
 var _ = Describe("DeployableByOLMCheck", func() {

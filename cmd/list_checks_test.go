@@ -4,9 +4,10 @@ import (
 	"context"
 	"strings"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 )
 
 var _ = Describe("list checks subcommand", func() {

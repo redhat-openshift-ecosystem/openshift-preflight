@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+
+	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	log "github.com/sirupsen/logrus"
 )
 

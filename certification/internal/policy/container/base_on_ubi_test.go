@@ -5,12 +5,13 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
+
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 )
 
 func ConfigFile() (*cranev1.ConfigFile, error) {

@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/operator-framework/operator-manifest-tools/pkg/image"
-	"github.com/operator-framework/operator-manifest-tools/pkg/pullspec"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/operator-framework/operator-manifest-tools/pkg/image"
+	"github.com/operator-framework/operator-manifest-tools/pkg/pullspec"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -45,6 +45,7 @@ func (p *certifiedImagesCheck) Validate(ctx context.Context, imgRef certificatio
 	return p.validate(ctx, imageDigests)
 }
 
+//nolint:unparam // ctx is unused. Keep for future use.
 func (p *certifiedImagesCheck) dataToValidate(ctx context.Context, imagePath string) ([]string, error) {
 	operatorManifests, err := pullspec.FromDirectory(imagePath, pullspec.DefaultHeuristic)
 	if err != nil {

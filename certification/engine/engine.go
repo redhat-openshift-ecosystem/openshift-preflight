@@ -48,6 +48,8 @@ func NewForConfig(ctx context.Context, cfg certification.Config) (CheckEngine, e
 }
 
 // initializeChecks configures checks for a given policy p using cfg as needed.
+//
+//nolint:unparam // ctx is unused. Keep for future use.
 func initializeChecks(ctx context.Context, p policy.Policy, cfg certification.Config) ([]certification.Check, error) {
 	switch p {
 	case policy.PolicyOperator:

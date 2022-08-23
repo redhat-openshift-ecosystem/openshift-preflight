@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"path/filepath"
 
-	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	log "github.com/sirupsen/logrus"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-manifest-tools/pkg/image"
 	"github.com/operator-framework/operator-manifest-tools/pkg/pullspec"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 )
 
@@ -27,6 +27,7 @@ func (p *RelatedImagesCheck) Validate(ctx context.Context, imgRef certification.
 	return p.validate(ctx, images, manifests)
 }
 
+//nolint:unparam // ctx is unused. Keep for future use.
 func (p *RelatedImagesCheck) dataToValidate(ctx context.Context, imagePath string) ([]string, map[string]struct{}, error) {
 	operatorManifests, err := pullspec.FromDirectory(filepath.Join(imagePath, "manifests"), pullspec.DefaultHeuristic)
 	if err != nil {
@@ -45,7 +46,7 @@ func (p *RelatedImagesCheck) dataToValidate(ctx context.Context, imagePath strin
 			if err != nil {
 				return nil, nil, fmt.Errorf("could not get manifest yaml: %v", err)
 			}
-			var csv operatorv1alpha1.ClusterServiceVersion
+			var csv operatorsv1alpha1.ClusterServiceVersion
 			err = yaml.Unmarshal(csvBytes, &csv)
 			if err != nil {
 				return nil, nil, fmt.Errorf("malformed CSV detected: %v", err)
@@ -61,6 +62,7 @@ func (p *RelatedImagesCheck) dataToValidate(ctx context.Context, imagePath strin
 	return imageNames, relatedImages, nil
 }
 
+//nolint:unparam // ctx is unused. Keep for future use.
 func (p *RelatedImagesCheck) validate(ctx context.Context, images []string, relatedImages map[string]struct{}) (bool, error) {
 	for _, image := range images {
 		if _, ok := relatedImages[image]; !ok {
@@ -85,7 +87,7 @@ func (p *RelatedImagesCheck) Metadata() certification.Metadata {
 
 func (p *RelatedImagesCheck) Help() certification.HelpText {
 	return certification.HelpText{
-		Message:    "Check that all images refereneced in the CSV are in RelatedImages",
+		Message:    "Check that all images referenced in the CSV are in RelatedImages",
 		Suggestion: "Either manually or with a tool, populate the RelatedImages section of the CSV",
 	}
 }

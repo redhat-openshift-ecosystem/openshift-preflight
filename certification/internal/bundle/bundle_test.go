@@ -6,37 +6,22 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 )
 
 var _ = Describe("BundleValidateCheck", func() {
 	const (
-		clusterServiceVersionFilename = "myoperator.clusterserviceversion.yaml"
-		manifestsDir                  = "manifests"
-		metadataDir                   = "metadata"
-		annotationFilename            = "annotations.yaml"
-		annotations                   = `annotations:
+		manifestsDir       = "manifests"
+		metadataDir        = "metadata"
+		annotationFilename = "annotations.yaml"
+		annotations        = `annotations:
   com.redhat.openshift.versions: "v4.6-v4.9"
   operators.operatorframework.io.bundle.package.v1: testPackage
   operators.operatorframework.io.bundle.channel.default.v1: testChannel
 `
-		csvContents = `spec:
-  install:
-    spec:
-      deployments:
-      - spec:
-          template:
-            spec:
-              containers:
-              - image: registry.example.io/foo/bar@sha256:f000432f07cd187469f0310e3ed9dcf9a5db2be14b8bab9c5293dd1ee8518176
-
-  relatedImages:
-  - name: the-operator
-    image: registry.example.io/foo/bar@sha256:f000432f07cd187469f0310e3ed9dcf9a5db2be14b8bab9c5293dd1ee8518176
-  - name: the-proxy
-    image: registry.example.io/foo/proxy@sha256:5e33f9d095952866b9743cc8268fb740cce6d93439f00ce333a2de1e5974837e`
 	)
 
 	Describe("Bundle validation", func() {

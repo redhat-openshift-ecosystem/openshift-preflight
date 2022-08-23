@@ -9,12 +9,12 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+
 	log "github.com/sirupsen/logrus"
 )
 
 const (
 	licensePath         = "/licenses"
-	newLine             = "\n"
 	minLicenseFileCount = 1
 )
 
@@ -37,6 +37,7 @@ func (p *HasLicenseCheck) Validate(ctx context.Context, imgRef certification.Ima
 	return p.validate(ctx, licenseFileList)
 }
 
+//nolint:unparam // ctx is unused. Keep for future use.
 func (p *HasLicenseCheck) getDataToValidate(ctx context.Context, mountedPath string) ([]fs.DirEntry, error) {
 	fullPath := filepath.Join(mountedPath, licensePath)
 	fileinfo, err := os.Stat(fullPath)
@@ -54,6 +55,7 @@ func (p *HasLicenseCheck) getDataToValidate(ctx context.Context, mountedPath str
 	return files, nil
 }
 
+//nolint:unparam // ctx is unused. Keep for future use.
 func (p *HasLicenseCheck) validate(ctx context.Context, licenseFileList []fs.DirEntry) (bool, error) {
 	nonZeroLength := false
 	for _, f := range licenseFileList {

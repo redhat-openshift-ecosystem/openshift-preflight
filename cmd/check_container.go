@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -31,21 +32,21 @@ func checkContainerCmd() *cobra.Command {
 	}
 
 	checkContainerCmd.Flags().BoolVarP(&submit, "submit", "s", false, "submit check container results to red hat")
-	viper.BindPFlag("submit", checkContainerCmd.Flags().Lookup("submit"))
+	_ = viper.BindPFlag("submit", checkContainerCmd.Flags().Lookup("submit"))
 
 	checkContainerCmd.Flags().String("pyxis-api-token", "", "API token for Pyxis authentication (env: PFLT_PYXIS_API_TOKEN)")
-	viper.BindPFlag("pyxis_api_token", checkContainerCmd.Flags().Lookup("pyxis-api-token"))
+	_ = viper.BindPFlag("pyxis_api_token", checkContainerCmd.Flags().Lookup("pyxis-api-token"))
 
 	checkContainerCmd.Flags().String("pyxis-host", "", fmt.Sprintf("Host to use for Pyxis submissions. This will override Pyxis Env. Only set this if you know what you are doing.\n"+
 		"If you do set it, it should include just the host, and the URI path. (env: PFLT_PYXIS_HOST)"))
-	viper.BindPFlag("pyxis_host", checkContainerCmd.Flags().Lookup("pyxis-host"))
+	_ = viper.BindPFlag("pyxis_host", checkContainerCmd.Flags().Lookup("pyxis-host"))
 
 	checkContainerCmd.Flags().String("pyxis-env", certification.DefaultPyxisEnv, "Env to use for Pyxis submissions.")
-	viper.BindPFlag("pyxis_env", checkContainerCmd.Flags().Lookup("pyxis-env"))
+	_ = viper.BindPFlag("pyxis_env", checkContainerCmd.Flags().Lookup("pyxis-env"))
 
 	checkContainerCmd.Flags().String("certification-project-id", "", fmt.Sprintf("Certification Project ID from connect.redhat.com/projects/{certification-project-id}/overview\n"+
 		"URL paramater. This value may differ from the PID on the overview page. (env: PFLT_CERTIFICATION_PROJECT_ID)"))
-	viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
+	_ = viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
 
 	return checkContainerCmd
 }
@@ -203,7 +204,6 @@ func checkContainerPositionalArgs(cmd *cobra.Command, args []string) error {
 		if strings.HasPrefix(viper.GetString("pyxis_api_token"), "--") || strings.HasPrefix(viper.GetString("certification_project_id"), "--") {
 			return fmt.Errorf("pyxis API token and certification ID are required when --submit is present")
 		}
-
 	}
 
 	return nil

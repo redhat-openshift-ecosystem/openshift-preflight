@@ -6,9 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

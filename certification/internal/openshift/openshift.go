@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
-
 	imagestreamv1 "github.com/openshift/api/image/v1"
-	operatorv1 "github.com/operator-framework/api/pkg/operators/v1"
-	operatorv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,10 +31,10 @@ func NewClient(client crclient.Client) Client {
 }
 
 func AddSchemes(scheme *apiruntime.Scheme) error {
-	if err := operatorv1.AddToScheme(scheme); err != nil {
+	if err := operatorsv1.AddToScheme(scheme); err != nil {
 		return err
 	}
-	if err := operatorv1alpha1.AddToScheme(scheme); err != nil {
+	if err := operatorsv1alpha1.AddToScheme(scheme); err != nil {
 		return err
 	}
 	if err := imagestreamv1.AddToScheme(scheme); err != nil {
@@ -56,7 +55,7 @@ func (oe *openshiftClient) CreateNamespace(ctx context.Context, name string) (*c
 		},
 	}
 	err := oe.Client.Create(ctx, &nsSpec, &crclient.CreateOptions{})
-	if k8serr.IsAlreadyExists(err) {
+	if apierrors.IsAlreadyExists(err) {
 		return &nsSpec, fmt.Errorf("could not create namespace: %s: %w: %v", name, ErrAlreadyExists, err)
 	}
 	if err != nil {
@@ -73,7 +72,7 @@ func (oe *openshiftClient) DeleteNamespace(ctx context.Context, name string) err
 		},
 	}
 	err := oe.Client.Delete(ctx, &nsSpec, &crclient.DeleteOptions{})
-	if err != nil && !k8serr.IsNotFound(err) {
+	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("could not delete namespace: %s: %v", name, err)
 	}
 
@@ -92,7 +91,7 @@ func (oe *openshiftClient) GetNamespace(ctx context.Context, name string) (*core
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
 		Name: name,
 	}, &nsSpec)
-	if k8serr.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		return nil, fmt.Errorf("could not retrieve namespace: %s: %w: %v", name, ErrNotFound, err)
 	}
 	if err != nil {
@@ -102,19 +101,19 @@ func (oe *openshiftClient) GetNamespace(ctx context.Context, name string) (*core
 }
 
 // CreateOperatorGroup can return an ErrAlreadyExists
-func (oe *openshiftClient) CreateOperatorGroup(ctx context.Context, data OperatorGroupData, namespace string) (*operatorv1.OperatorGroup, error) {
+func (oe *openshiftClient) CreateOperatorGroup(ctx context.Context, data OperatorGroupData, namespace string) (*operatorsv1.OperatorGroup, error) {
 	log.Tracef("Creating OperatorGroup %q in namespace %q", data.Name, namespace)
-	operatorGroup := &operatorv1.OperatorGroup{
+	operatorGroup := &operatorsv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      data.Name,
 			Namespace: namespace,
 		},
-		Spec: operatorv1.OperatorGroupSpec{
+		Spec: operatorsv1.OperatorGroupSpec{
 			TargetNamespaces: data.TargetNamespaces,
 		},
 	}
 	err := oe.Client.Create(ctx, operatorGroup)
-	if k8serr.IsAlreadyExists(err) {
+	if apierrors.IsAlreadyExists(err) {
 		return operatorGroup, fmt.Errorf("could not create operatorgroup: %s/%s: %w: %v", namespace, data.Name, ErrAlreadyExists, err)
 	}
 	if err != nil {
@@ -126,7 +125,7 @@ func (oe *openshiftClient) CreateOperatorGroup(ctx context.Context, data Operato
 
 func (oe *openshiftClient) DeleteOperatorGroup(ctx context.Context, name string, namespace string) error {
 	log.Tracef("Deleting OperatorGroup %q in namespace %q", name, namespace)
-	operatorGroup := operatorv1.OperatorGroup{
+	operatorGroup := operatorsv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -141,14 +140,14 @@ func (oe *openshiftClient) DeleteOperatorGroup(ctx context.Context, name string,
 }
 
 // GetOperatorGroup can return an ErrNotFound
-func (oe *openshiftClient) GetOperatorGroup(ctx context.Context, name string, namespace string) (*operatorv1.OperatorGroup, error) {
+func (oe *openshiftClient) GetOperatorGroup(ctx context.Context, name string, namespace string) (*operatorsv1.OperatorGroup, error) {
 	log.Tracef("fetching operatorgroup %q from namespace %q", name, namespace)
-	operatorGroup := operatorv1.OperatorGroup{}
+	operatorGroup := operatorsv1.OperatorGroup{}
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
 		Name:      name,
 		Namespace: namespace,
 	}, &operatorGroup)
-	if k8serr.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		return nil, fmt.Errorf("could not retrieve operatorgroup: %s/%s: %w: %v", namespace, name, ErrNotFound, err)
 	}
 	if err != nil {
@@ -173,7 +172,7 @@ func (oe openshiftClient) CreateSecret(ctx context.Context, name string, content
 		Type:       secretType,
 	}
 	err := oe.Client.Create(ctx, &secret, &crclient.CreateOptions{})
-	if k8serr.IsAlreadyExists(err) {
+	if apierrors.IsAlreadyExists(err) {
 		return &secret, fmt.Errorf("could not create secret: %s/%s: %w: %v", namespace, name, ErrAlreadyExists, err)
 	}
 	if err != nil {
@@ -207,8 +206,8 @@ func (oe openshiftClient) GetSecret(ctx context.Context, name string, namespace 
 		Name:      name,
 		Namespace: namespace,
 	}, &secret)
-	if k8serr.IsNotFound(err) {
-		return nil, fmt.Errorf("could not retreive secret %s/%s: %w: %v", namespace, name, ErrNotFound, err)
+	if apierrors.IsNotFound(err) {
+		return nil, fmt.Errorf("could not retrieve secret %s/%s: %w: %v", namespace, name, ErrNotFound, err)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve secret %s/%s: %v", namespace, name, err)
@@ -217,22 +216,22 @@ func (oe openshiftClient) GetSecret(ctx context.Context, name string, namespace 
 }
 
 // CreateCatalogSource can return an ErrAlreadyExists
-func (oe openshiftClient) CreateCatalogSource(ctx context.Context, data CatalogSourceData, namespace string) (*operatorv1alpha1.CatalogSource, error) {
+func (oe openshiftClient) CreateCatalogSource(ctx context.Context, data CatalogSourceData, namespace string) (*operatorsv1alpha1.CatalogSource, error) {
 	log.Tracef("Creating CatalogSource %q in namespace %q", data.Name, namespace)
-	catalogSource := &operatorv1alpha1.CatalogSource{
+	catalogSource := &operatorsv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      data.Name,
 			Namespace: namespace,
 		},
-		Spec: operatorv1alpha1.CatalogSourceSpec{
-			SourceType:  operatorv1alpha1.SourceTypeGrpc,
+		Spec: operatorsv1alpha1.CatalogSourceSpec{
+			SourceType:  operatorsv1alpha1.SourceTypeGrpc,
 			Image:       data.Image,
 			DisplayName: data.Name,
 			Secrets:     data.Secrets,
 		},
 	}
 	err := oe.Client.Create(ctx, catalogSource)
-	if k8serr.IsAlreadyExists(err) {
+	if apierrors.IsAlreadyExists(err) {
 		return catalogSource, fmt.Errorf("could not create catalogsource: %s/%s: %w: %v", namespace, data.Name, ErrAlreadyExists, err)
 	}
 	if err != nil {
@@ -243,7 +242,7 @@ func (oe openshiftClient) CreateCatalogSource(ctx context.Context, data CatalogS
 
 func (oe *openshiftClient) DeleteCatalogSource(ctx context.Context, name string, namespace string) error {
 	log.Tracef("Deleting CatalogSource %q in namespace %q", name, namespace)
-	catalogSource := operatorv1alpha1.CatalogSource{
+	catalogSource := operatorsv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -257,14 +256,14 @@ func (oe *openshiftClient) DeleteCatalogSource(ctx context.Context, name string,
 }
 
 // GetCatalogSource cat return an ErrNotFound
-func (oe *openshiftClient) GetCatalogSource(ctx context.Context, name string, namespace string) (*operatorv1alpha1.CatalogSource, error) {
+func (oe *openshiftClient) GetCatalogSource(ctx context.Context, name string, namespace string) (*operatorsv1alpha1.CatalogSource, error) {
 	log.Tracef("fetching catalogsource: %q", name)
-	catalogSource := &operatorv1alpha1.CatalogSource{}
+	catalogSource := &operatorsv1alpha1.CatalogSource{}
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
 		Name:      name,
 		Namespace: namespace,
 	}, catalogSource)
-	if k8serr.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		return nil, fmt.Errorf("could not retrieve catalogsource: %s/%s: %w: %v", namespace, name, ErrNotFound, err)
 	}
 	if err != nil {
@@ -274,14 +273,14 @@ func (oe *openshiftClient) GetCatalogSource(ctx context.Context, name string, na
 }
 
 // CreateSubscription can return an ErrAlreadyExists
-func (oe openshiftClient) CreateSubscription(ctx context.Context, data SubscriptionData, namespace string) (*operatorv1alpha1.Subscription, error) {
+func (oe openshiftClient) CreateSubscription(ctx context.Context, data SubscriptionData, namespace string) (*operatorsv1alpha1.Subscription, error) {
 	log.Tracef("Creating Subscription %q in namespace %q", data.Name, namespace)
-	subscription := &operatorv1alpha1.Subscription{
+	subscription := &operatorsv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      data.Name,
 			Namespace: namespace,
 		},
-		Spec: &operatorv1alpha1.SubscriptionSpec{
+		Spec: &operatorsv1alpha1.SubscriptionSpec{
 			CatalogSource:          data.CatalogSource,
 			CatalogSourceNamespace: data.CatalogSourceNamespace,
 			Channel:                data.Channel,
@@ -289,7 +288,7 @@ func (oe openshiftClient) CreateSubscription(ctx context.Context, data Subscript
 		},
 	}
 	err := oe.Client.Create(ctx, subscription)
-	if k8serr.IsAlreadyExists(err) {
+	if apierrors.IsAlreadyExists(err) {
 		return subscription, fmt.Errorf("could not create subscription: %s/%s: %w: %v", namespace, data.Name, ErrAlreadyExists, err)
 	}
 	if err != nil {
@@ -299,14 +298,14 @@ func (oe openshiftClient) CreateSubscription(ctx context.Context, data Subscript
 }
 
 // GetSubscription can return an ErrNotFound
-func (oe *openshiftClient) GetSubscription(ctx context.Context, name string, namespace string) (*operatorv1alpha1.Subscription, error) {
+func (oe *openshiftClient) GetSubscription(ctx context.Context, name string, namespace string) (*operatorsv1alpha1.Subscription, error) {
 	log.Tracef("fetching subscription %q from namespace %q", name, namespace)
-	subscription := &operatorv1alpha1.Subscription{}
+	subscription := &operatorsv1alpha1.Subscription{}
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
 		Name:      name,
 		Namespace: namespace,
 	}, subscription)
-	if k8serr.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		return nil, fmt.Errorf("could not retrieve subscription: %s/%s: %w: %v", namespace, name, ErrNotFound, err)
 	}
 	if err != nil {
@@ -318,7 +317,7 @@ func (oe *openshiftClient) GetSubscription(ctx context.Context, name string, nam
 func (oe openshiftClient) DeleteSubscription(ctx context.Context, name string, namespace string) error {
 	log.Tracef("Deleting Subscription %q in namespace %q", name, namespace)
 
-	subscription := &operatorv1alpha1.Subscription{
+	subscription := &operatorsv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -332,14 +331,14 @@ func (oe openshiftClient) DeleteSubscription(ctx context.Context, name string, n
 }
 
 // GetCSV can return an ErrNotFound
-func (oe *openshiftClient) GetCSV(ctx context.Context, name string, namespace string) (*operatorv1alpha1.ClusterServiceVersion, error) {
+func (oe *openshiftClient) GetCSV(ctx context.Context, name string, namespace string) (*operatorsv1alpha1.ClusterServiceVersion, error) {
 	log.Debugf("fetching csv %q from namespace %q", name, namespace)
-	csv := &operatorv1alpha1.ClusterServiceVersion{}
+	csv := &operatorsv1alpha1.ClusterServiceVersion{}
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
 		Name:      name,
 		Namespace: namespace,
 	}, csv)
-	if k8serr.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		return nil, fmt.Errorf("could not retrieve csv: %s/%s: %w: %v", namespace, name, ErrNotFound, err)
 	}
 	if err != nil {
@@ -406,7 +405,7 @@ func (oe *openshiftClient) CreateRoleBinding(ctx context.Context, data RoleBindi
 		RoleRef:  roleObj,
 	}
 	err := oe.Client.Create(ctx, &roleBindingObj, &crclient.CreateOptions{})
-	if k8serr.IsAlreadyExists(err) {
+	if apierrors.IsAlreadyExists(err) {
 		return &roleBindingObj, fmt.Errorf("could not create rolebinding: %s/%s: %w: %v", namespace, data.Name, ErrAlreadyExists, err)
 	}
 	if err != nil {
@@ -434,7 +433,7 @@ func (oe *openshiftClient) GetRoleBinding(ctx context.Context, name string, name
 		Name:      name,
 		Namespace: namespace,
 	}, &roleBinding)
-	if k8serr.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		return nil, fmt.Errorf("could not retrieve rolebinding: %s/%s: %w: %v", namespace, name, ErrNotFound, err)
 	}
 	if err != nil {

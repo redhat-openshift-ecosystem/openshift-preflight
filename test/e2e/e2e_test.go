@@ -4,12 +4,13 @@ import (
 	"context"
 	"os"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // These tests confirm that all container and operator policies properly pass
@@ -43,7 +44,7 @@ var _ = Describe("policy validation", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			ctx := context.TODO()
-			e.ExecuteChecks(ctx)
+			Expect(e.ExecuteChecks(ctx)).To(Succeed())
 			results := e.Results(ctx)
 
 			It("should pass all checks", func() {
@@ -61,7 +62,7 @@ var _ = Describe("policy validation", func() {
 			Expect(err).To(BeNil())
 
 			ctx := context.TODO()
-			e.ExecuteChecks(ctx)
+			Expect(e.ExecuteChecks(ctx)).To(Succeed())
 			results := e.Results(ctx)
 
 			// TODO: Replace this check so that you test for individual check failures
@@ -89,7 +90,7 @@ var _ = Describe("policy validation", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			ctx := context.TODO()
-			e.ExecuteChecks(ctx)
+			Expect(e.ExecuteChecks(ctx)).To(Succeed())
 			results := e.Results(ctx)
 
 			It("should pass all checks", func() {
@@ -112,7 +113,7 @@ var _ = Describe("policy validation", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			ctx := context.TODO()
-			e.ExecuteChecks(ctx)
+			Expect(e.ExecuteChecks(ctx)).To(Succeed())
 			results := e.Results(ctx)
 
 			// TODO: Replace this check so that you test for individual check failures

@@ -71,7 +71,7 @@ var _ = Describe("Pyxis Submit", func() {
 		})
 		Context("and a server error occurs", func() {
 			JustBeforeEach(func() {
-				pyxisClient.ApiToken = "my-error-project-api-token"
+				pyxisClient.APIToken = "my-error-project-api-token"
 			})
 			It("should handle the project update error", func() {
 				certResults, err := pyxisClient.SubmitResults(ctx, &certInput)
@@ -81,7 +81,7 @@ var _ = Describe("Pyxis Submit", func() {
 		})
 		Context("and the client sends a bad token", func() {
 			JustBeforeEach(func() {
-				pyxisClient.ApiToken = "my-bad-project-api-token"
+				pyxisClient.APIToken = "my-bad-project-api-token"
 			})
 			It("should get an unauthorized", func() {
 				certResults, err := pyxisClient.SubmitResults(ctx, &certInput)
@@ -103,7 +103,7 @@ var _ = Describe("Pyxis Submit", func() {
 
 	Context("when an index.docker.io project is submitted", func() {
 		BeforeEach(func() {
-			pyxisClient.ApiToken = "my-index-docker-io-project-api-token"
+			pyxisClient.APIToken = "my-index-docker-io-project-api-token"
 			certInput.CertImage.Repositories[0] = Repository{Registry: "index.docker.io", Repository: "my/repo"}
 		})
 		Context("and it is not already In Progress", func() {
@@ -121,8 +121,8 @@ var _ = Describe("Pyxis Submit", func() {
 	Context("Image", func() {
 		Context("createImage 409 Conflict", func() {
 			BeforeEach(func() {
-				pyxisClient.ApiToken = "my-image-409-api-token"
-				pyxisClient.ProjectId = "my-image-project-id"
+				pyxisClient.APIToken = "my-image-409-api-token"
+				pyxisClient.ProjectID = "my-image-project-id"
 			})
 			Context("when a project is submitted", func() {
 				Context("and the image already exists", func() {
@@ -140,8 +140,8 @@ var _ = Describe("Pyxis Submit", func() {
 
 		Context("createImage 401 Unauthorized", func() {
 			BeforeEach(func() {
-				pyxisClient.ApiToken = "my-bad-image-api-token"
-				pyxisClient.ProjectId = "my-image-project-id"
+				pyxisClient.APIToken = "my-bad-image-api-token"
+				pyxisClient.ProjectID = "my-image-project-id"
 			})
 			Context("when a project is submitted", func() {
 				Context("and the api token is invalid", func() {
@@ -156,8 +156,8 @@ var _ = Describe("Pyxis Submit", func() {
 
 		Context("createImage 409 Conflict and getImage 401 Unauthorized", func() {
 			BeforeEach(func() {
-				pyxisClient.ApiToken = "my-bad-401-image-api-token"
-				pyxisClient.ProjectId = "my-image-project-id"
+				pyxisClient.APIToken = "my-bad-401-image-api-token"
+				pyxisClient.ProjectID = "my-image-project-id"
 			})
 			Context("when a project is submitted", func() {
 				Context("and a bad token is sent to getImage and createImage is in conflict", func() {
@@ -172,8 +172,8 @@ var _ = Describe("Pyxis Submit", func() {
 
 		Context("createImage 500 InternalServerError", func() {
 			BeforeEach(func() {
-				pyxisClient.ApiToken = "my-bad-500-image-api-token"
-				pyxisClient.ProjectId = "my-image-project-id"
+				pyxisClient.APIToken = "my-bad-500-image-api-token"
+				pyxisClient.ProjectID = "my-image-project-id"
 			})
 			Context("when a project is submitted", func() {
 				Context("and an unknown error occurs", func() {
@@ -190,7 +190,7 @@ var _ = Describe("Pyxis Submit", func() {
 	Context("RPMManifest", func() {
 		Context("createRPMManifest 409 Conflict", func() {
 			BeforeEach(func() {
-				pyxisClient.ApiToken = "my-bad-rpmmanifest-409-api-token"
+				pyxisClient.APIToken = "my-bad-rpmmanifest-409-api-token"
 			})
 			Context("when a project is submitted", func() {
 				Context("and the RPM manifest already exists", func() {
@@ -208,7 +208,7 @@ var _ = Describe("Pyxis Submit", func() {
 
 		Context("createRPMManifest 401 Unauthorized", func() {
 			BeforeEach(func() {
-				pyxisClient.ApiToken = "my-bad-rpmmanifest-api-token"
+				pyxisClient.APIToken = "my-bad-rpmmanifest-api-token"
 			})
 			Context("when a project is submitted", func() {
 				Context("and a bad token is sent to createRPMManifest", func() {
@@ -223,7 +223,7 @@ var _ = Describe("Pyxis Submit", func() {
 
 		Context("createRPMManifest 409 Conflict and getRPMManifest 401 Unauthorized", func() {
 			BeforeEach(func() {
-				pyxisClient.ApiToken = "my-bad-rpmmanifest-401-api-token"
+				pyxisClient.APIToken = "my-bad-rpmmanifest-401-api-token"
 			})
 			Context("when a project is submitted", func() {
 				Context("and a bad token is sent to getRPMManifest and createRPMManifest is in conflict", func() {
@@ -239,8 +239,8 @@ var _ = Describe("Pyxis Submit", func() {
 
 	Context("createTestResults 401 Unauthorized", func() {
 		BeforeEach(func() {
-			pyxisClient.ApiToken = "my-bad-testresults-api-token"
-			pyxisClient.ProjectId = "my-awesome-project-id"
+			pyxisClient.APIToken = "my-bad-testresults-api-token"
+			pyxisClient.ProjectID = "my-awesome-project-id"
 		})
 		Context("when a project is submitted", func() {
 			Context("and a bad api token is sent to createTestResults", func() {
@@ -267,7 +267,7 @@ var _ = Describe("Pyxis Submit", func() {
 
 	Context("GetProject 401 Unauthorized", func() {
 		BeforeEach(func() {
-			pyxisClient.ApiToken = "my-401-project-api-token"
+			pyxisClient.APIToken = "my-401-project-api-token"
 		})
 		Context("when trying to retrieve a project", func() {
 			Context("and the API token is bad", func() {

@@ -35,8 +35,8 @@ var _ = Describe("Result Writers", func() {
 			It("should open, be writeable, and close successfully", func() {
 				p := path.Join(resultWriterTestDir, "foo.txt")
 				f, err := rw.OpenFile(p)
-				defer f.Close()
 				Expect(err).ToNot(HaveOccurred())
+				defer f.Close()
 				Expect(p).To(BeAnExistingFile())
 
 				toWrite := []byte("testing")

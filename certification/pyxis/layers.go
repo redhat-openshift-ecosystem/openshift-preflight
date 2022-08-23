@@ -23,7 +23,7 @@ func (p *pyxisClient) CertifiedImagesContainingLayers(ctx context.Context, uncom
 	var query struct {
 		FindImages struct {
 			ContainerImage []struct {
-				UncompressedTopLayerId graphql.String `graphql:"uncompressed_top_layer_id"`
+				UncompressedTopLayerID graphql.String `graphql:"uncompressed_top_layer_id"`
 				ID                     graphql.String `graphql:"_id"`
 				FreshnessGrades        []struct {
 					Grade     graphql.String `graphql:"grade"`
@@ -52,7 +52,7 @@ func (p *pyxisClient) CertifiedImagesContainingLayers(ctx context.Context, uncom
 	if !ok {
 		return nil, fmt.Errorf("client could not be used as http.Client")
 	}
-	client := graphql.NewClient(p.getPyxisGraphqlUrl(), httpClient)
+	client := graphql.NewClient(p.getPyxisGraphqlURL(), httpClient)
 
 	err := client.Query(ctx, &query, variables)
 	if err != nil {
@@ -73,7 +73,7 @@ func (p *pyxisClient) CertifiedImagesContainingLayers(ctx context.Context, uncom
 		}
 		images = append(images, CertImage{
 			ID:                     string(image.ID),
-			UncompressedTopLayerId: string(image.UncompressedTopLayerId),
+			UncompressedTopLayerID: string(image.UncompressedTopLayerID),
 			FreshnessGrades:        freshnessGrades,
 		})
 	}
