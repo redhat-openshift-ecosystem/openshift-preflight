@@ -299,9 +299,9 @@ func (p *pyxisClient) GetProject(ctx context.Context) (*CertProject, error) {
 }
 
 func (p *pyxisClient) updateProject(ctx context.Context, certProject *CertProject) (*CertProject, error) {
-	// We cannot send the project type to pyxis in a Patch.
-	// Copy the CertProject and strip the Type value to
-	// have omitempty skip the key in the JSON patch.
+	// We cannot send the project type or container type
+	// to pyxis in a Patch. Copy the CertProject and strip type
+	// values to have omitempty skip the key in the JSON patch.
 	patchCertProject := &CertProject{
 		ID:                  certProject.ID,
 		CertificationStatus: certProject.CertificationStatus,
@@ -310,6 +310,7 @@ func (p *pyxisClient) updateProject(ctx context.Context, certProject *CertProjec
 		ProjectStatus:       certProject.ProjectStatus,
 		// Do not copy the Type.
 	}
+	patchCertProject.Container.Type = "" // Truncate this value, too.
 
 	b, err := json.Marshal(patchCertProject)
 	if err != nil {
