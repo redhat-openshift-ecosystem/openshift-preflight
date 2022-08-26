@@ -101,7 +101,7 @@ func gpFuncReturnError(ctx context.Context) (*pyxis.CertProject, error) {
 func gpFuncReturnScratchException(ctx context.Context) (*pyxis.CertProject, error) {
 	return &pyxis.CertProject{
 		Container: pyxis.Container{
-			OsContentType: "scratch",
+			Type: "scratch",
 		},
 	}, nil
 }
