@@ -13,7 +13,9 @@ subject to change, and some features are not fully implemented.
 
 ## Requirements
 
-The preflight binary currently requires that you have the following tools installed,
+For running the Preflight binary, the host or VM must have at least RHEL 8.5, CentOS 8.5 or Fedora 35 installed.
+
+The Preflight binary currently requires that you have the following tools installed,
 functional, and in your path.
 
 | Name             | Tool cli          | Minimum version |
