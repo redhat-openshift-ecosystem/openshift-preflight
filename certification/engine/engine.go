@@ -96,7 +96,7 @@ func initializeChecks(ctx context.Context, p policy.Policy, cfg certification.Co
 				cfg.CertificationProjectID(),
 				&http.Client{Timeout: 60 * time.Second})),
 		}, nil
-	case policy.PolicyScratch:
+	case policy.PolicyScratchNonRoot:
 		return []certification.Check{
 			&containerpol.HasLicenseCheck{},
 			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig()),
@@ -138,10 +138,10 @@ func ContainerPolicy(ctx context.Context) []string {
 	return checkNamesFor(ctx, policy.PolicyContainer)
 }
 
-// ScratchContainerPolicy returns the names of checks in the
+// ScratchNonRootContainerPolicy returns the names of checks in the
 // container policy with scratch exception.
-func ScratchContainerPolicy(ctx context.Context) []string {
-	return checkNamesFor(ctx, policy.PolicyScratch)
+func ScratchNonRootContainerPolicy(ctx context.Context) []string {
+	return checkNamesFor(ctx, policy.PolicyScratchNonRoot)
 }
 
 // RootExceptionContainerPolicy returns the names of checks in the

@@ -125,7 +125,7 @@ func GetContainerPolicyExceptions(ctx context.Context, pc PyxisClient) (policy.P
 	}
 	// log.Debugf("Certification project name is: %s", certProject.Name)
 	if certProject.Container.Type == "scratch" {
-		return policy.PolicyScratch, nil
+		return policy.PolicyScratchNonRoot, nil
 	}
 
 	// if a partner sets `Host Level Access` in connect to `Privileged`, enable RootExceptionContainerPolicy checks

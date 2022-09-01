@@ -117,8 +117,8 @@ func gpFuncReturnHostedRegistry(ctx context.Context) (*pyxis.CertProject, error)
 	}, nil
 }
 
-// gpFuncReturnScratchException implements gpFunc and returns a scratch exception.
-func gpFuncReturnScratchException(ctx context.Context) (*pyxis.CertProject, error) {
+// gpFuncReturnScratchNonRootException implements gpFunc and returns a scratch exception.
+func gpFuncReturnScratchNonRootException(ctx context.Context) (*pyxis.CertProject, error) {
 	return &pyxis.CertProject{
 		Container: pyxis.Container{
 			Type: "scratch",

@@ -64,7 +64,7 @@ var _ = Describe("Engine Creation", func() {
 			Context("for the scratch policy", func() {
 				cfg := runtime.Config{
 					Image:          "dummy/image",
-					Policy:         policy.PolicyScratch,
+					Policy:         policy.PolicyScratchNonRoot,
 					ResponseFormat: "json",
 				}
 
@@ -74,7 +74,7 @@ var _ = Describe("Engine Creation", func() {
 					Expect(engine).ToNot(BeNil())
 				})
 				It("should return the correct names", func() {
-					names := ScratchContainerPolicy(context.TODO())
+					names := ScratchNonRootContainerPolicy(context.TODO())
 					Expect(names).To(ContainElements([]string{
 						"HasLicense",
 						"HasUniqueTag",

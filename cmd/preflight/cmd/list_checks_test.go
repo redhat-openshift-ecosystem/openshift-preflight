@@ -65,7 +65,7 @@ var _ = Describe("list checks subcommand", func() {
 		})
 
 		It("should always contain the scratch exception policy", func() {
-			expected := formatList(engine.ScratchContainerPolicy(context.TODO()))
+			expected := formatList(engine.ScratchNonRootContainerPolicy(context.TODO()))
 			buf := strings.Builder{}
 			printChecks(&buf)
 
