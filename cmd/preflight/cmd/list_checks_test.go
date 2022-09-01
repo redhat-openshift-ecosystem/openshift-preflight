@@ -71,6 +71,14 @@ var _ = Describe("list checks subcommand", func() {
 
 			Expect(buf.String()).To(ContainSubstring(expected))
 		})
+
+		It("should always contain the scratch and root exception policy", func() {
+			expected := formatList(engine.ScratchRootContainerPolicy(context.TODO()))
+			buf := strings.Builder{}
+			printChecks(&buf)
+
+			Expect(buf.String()).To(ContainSubstring(expected))
+		})
 	})
 
 	Context("When executing the cobra command", func() {

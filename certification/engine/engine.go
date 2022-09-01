@@ -104,6 +104,13 @@ func initializeChecks(ctx context.Context, p policy.Policy, cfg certification.Co
 			&containerpol.HasRequiredLabelsCheck{},
 			&containerpol.RunAsNonRootCheck{},
 		}, nil
+	case policy.PolicyScratchRoot:
+		return []certification.Check{
+			&containerpol.HasLicenseCheck{},
+			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig()),
+			&containerpol.MaxLayersCheck{},
+			&containerpol.HasRequiredLabelsCheck{},
+		}, nil
 	}
 
 	return nil, fmt.Errorf("provided policy %s is unknown", p)
@@ -142,6 +149,12 @@ func ContainerPolicy(ctx context.Context) []string {
 // container policy with scratch exception.
 func ScratchNonRootContainerPolicy(ctx context.Context) []string {
 	return checkNamesFor(ctx, policy.PolicyScratchNonRoot)
+}
+
+// ScratchRootContainerPolicy returns the names of checks in the
+// container policy with scratch and root exception.
+func ScratchRootContainerPolicy(ctx context.Context) []string {
+	return checkNamesFor(ctx, policy.PolicyScratchRoot)
 }
 
 // RootExceptionContainerPolicy returns the names of checks in the

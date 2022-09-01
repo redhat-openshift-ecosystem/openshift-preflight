@@ -85,6 +85,29 @@ var _ = Describe("Engine Creation", func() {
 				})
 			})
 
+			Context("for the scratch and root policy", func() {
+				cfg := runtime.Config{
+					Image:          "dummy/image",
+					Policy:         policy.PolicyScratchRoot,
+					ResponseFormat: "json",
+				}
+
+				It("should return an engine and no error", func() {
+					engine, err := NewForConfig(context.TODO(), cfg.ReadOnly())
+					Expect(err).ToNot(HaveOccurred())
+					Expect(engine).ToNot(BeNil())
+				})
+				It("should return the correct names", func() {
+					names := ScratchRootContainerPolicy(context.TODO())
+					Expect(names).To(ContainElements([]string{
+						"HasLicense",
+						"HasUniqueTag",
+						"LayerCountAcceptable",
+						"HasRequiredLabel",
+					}))
+				})
+			})
+
 			Context("for the Root policy", func() {
 				cfg := runtime.Config{
 					Image:          "dummy/image",

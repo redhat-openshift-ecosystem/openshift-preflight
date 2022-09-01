@@ -126,6 +126,17 @@ func gpFuncReturnScratchNonRootException(ctx context.Context) (*pyxis.CertProjec
 	}, nil
 }
 
+// gpFuncReturnScratchRootException implements gpFunc and returns a scratch
+// and root exception.
+func gpFuncReturnScratchRootException(ctx context.Context) (*pyxis.CertProject, error) {
+	return &pyxis.CertProject{
+		Container: pyxis.Container{
+			Type:       "scratch",
+			Privileged: true,
+		},
+	}, nil
+}
+
 // gpFuncReturnRootException implements gpFunc and returns a root exception.
 func gpFuncReturnRootException(ctx context.Context) (*pyxis.CertProject, error) {
 	return &pyxis.CertProject{

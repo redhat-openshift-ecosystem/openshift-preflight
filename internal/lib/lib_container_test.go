@@ -51,6 +51,13 @@ var _ = Describe("Lib Container Functions", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		It("should return a scratch and root policy exception if the project has the flag in the API", func() {
+			fakePC.getProjectsFunc = gpFuncReturnScratchRootException
+			p, err := GetContainerPolicyExceptions(context.TODO(), fakePC)
+			Expect(p).To(Equal(policy.PolicyScratchRoot))
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		It("should return a root policy exception if the project has the flag in the API", func() {
 			fakePC.getProjectsFunc = gpFuncReturnRootException
 			p, err := GetContainerPolicyExceptions(context.TODO(), fakePC)
