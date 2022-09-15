@@ -127,6 +127,51 @@ func (p *pyxisClient) getImage(ctx context.Context, dockerImageDigest string) (*
 	return &data.Data[0], nil
 }
 
+// updateImage updates a given certification image based on how the image is built in the `submit` flow
+func (p *pyxisClient) updateImage(ctx context.Context, certImage *CertImage) (*CertImage, error) {
+	// instantiating a patchCertImage struct, so we only send the minimum fields required to pyxis
+	patchCertImage := &CertImage{
+		ID:           certImage.ID,
+		Architecture: certImage.Architecture,
+		Certified:    certImage.Certified,
+	}
+
+	b, err := json.Marshal(patchCertImage)
+	if err != nil {
+		return nil, fmt.Errorf("could not marshal certImage: %w", err)
+	}
+	req, err := p.newRequestWithAPIToken(ctx, http.MethodPatch, p.getPyxisURL(fmt.Sprintf("images/id/%s", patchCertImage.ID)), bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := p.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("cannot update image in pyxis: %w", err)
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("could not read response body: %w", err)
+	}
+
+	if ok := checkStatus(resp.StatusCode); !ok {
+		return nil, fmt.Errorf(
+			"status code: %d: body: %s",
+			resp.StatusCode,
+			string(body))
+	}
+
+	var updatedCertImage CertImage
+	if err := json.Unmarshal(body, &updatedCertImage); err != nil {
+		return nil, fmt.Errorf("could not unmarshal body: %s: %w", string(body), err)
+	}
+
+	return &updatedCertImage, nil
+}
+
 // FindImagesByDigest uses an unauthenticated call to find_images() graphql function, and will
 // return a slice of CertImages. It accepts a slice of image digests. The query return is then
 // packed into the slice of CertImages.

@@ -19,7 +19,9 @@ var _ = Describe("Pyxis Submit", func() {
 	mux.Handle("/api/v1/projects/certification/id/my-awesome-project-id/test-results", &pyxisTestResultsHandler{})
 	mux.Handle("/api/v1/projects/certification/id/my-image-project-id/images", &pyxisImageHandler{})
 	mux.Handle("/api/v1/projects/certification/id/", &pyxisProjectHandler{})
+	mux.Handle("/api/v1/images/id/updateImage", &pyxisImageHandler{})
 	mux.Handle("/api/v1/images/id/blah/", &pyxisRPMManifestHandler{})
+	mux.Handle("/api/v1/images/id/updateImage/", &pyxisImageHandler{})
 	mux.Handle("/api/v1/images", &pyxisImageHandler{})
 
 	BeforeEach(func() {
@@ -162,6 +164,44 @@ var _ = Describe("Pyxis Submit", func() {
 			Context("when a project is submitted", func() {
 				Context("and a bad token is sent to getImage and createImage is in conflict", func() {
 					It("should error", func() {
+						certResults, err := pyxisClient.SubmitResults(ctx, &certInput)
+						Expect(err).To(HaveOccurred())
+						Expect(certResults).To(BeNil())
+					})
+				})
+			})
+		})
+
+		Context("createImage 409 Conflict, getImage 200, and updateImage 200", func() {
+			BeforeEach(func() {
+				pyxisClient.APIToken = "my-update-image-success-api-token"
+				pyxisClient.ProjectID = "my-image-project-id"
+				certInput.CertImage.Certified = true
+			})
+			Context("when a project is submitted", func() {
+				Context("and an update token is sent to getImage and createImage is in conflict", func() {
+					It("should call updateImage and certified flag should be updated", func() {
+						certResults, err := pyxisClient.SubmitResults(ctx, &certInput)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(certResults).ToNot(BeNil())
+						Expect(certResults.CertProject).ToNot(BeNil())
+						Expect(certResults.CertImage).ToNot(BeNil())
+						Expect(certResults.CertImage.Certified).To(Equal(true))
+						Expect(certResults.TestResults).ToNot(BeNil())
+					})
+				})
+			})
+		})
+
+		Context("createImage 409 Conflict, getImage 200, and updateImage 500", func() {
+			BeforeEach(func() {
+				pyxisClient.APIToken = "my-update-image-failure-api-token"
+				pyxisClient.ProjectID = "my-image-project-id"
+				certInput.CertImage.Certified = true
+			})
+			Context("when a project is submitted", func() {
+				Context("and an update token is sent to getImage and createImage is in conflict", func() {
+					It("should call updateImage and error", func() {
 						certResults, err := pyxisClient.SubmitResults(ctx, &certInput)
 						Expect(err).To(HaveOccurred())
 						Expect(certResults).To(BeNil())

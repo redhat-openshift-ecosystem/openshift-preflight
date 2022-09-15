@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2/dsl/core"
@@ -90,6 +91,14 @@ func (p *pyxisImageHandler) ServeHTTP(response http.ResponseWriter, request *htt
 	responseString := `{"_id":"blah","certified":false,"deleted":false,"image_id":"123456789abc"}`
 	log.Tracef("Method: %s", request.Method)
 	switch {
+	case request.Method == http.MethodPost && strings.Contains(request.Header["X-Api-Key"][0], "my-update-image"):
+		response.WriteHeader(http.StatusConflict)
+	case request.Method == http.MethodGet && strings.Contains(request.Header["X-Api-Key"][0], "my-update-image"):
+		mustWrite(response, `{"data":[{"_id":"updateImage","certified":false,"deleted":false,"image_id":"123456789abc"}]}`)
+	case request.Method == http.MethodPatch && request.Header["X-Api-Key"][0] == "my-update-image-success-api-token":
+		mustWrite(response, `{"_id":"updateImage","certified":true,"deleted":false,"image_id":"123456789abc"}`)
+	case request.Method == http.MethodPatch && request.Header["X-Api-Key"][0] == "my-update-image-failure-api-token":
+		response.WriteHeader(http.StatusInternalServerError)
 	case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-image-409-api-token":
 		response.WriteHeader(http.StatusConflict)
 	case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-bad-401-image-api-token":
@@ -128,6 +137,8 @@ func (p *pyxisRPMManifestHandler) ServeHTTP(response http.ResponseWriter, reques
 		response.WriteHeader(http.StatusUnauthorized)
 	case request.Header["X-Api-Key"][0] == "my-bad-rpmmanifest-api-token":
 		response.WriteHeader(http.StatusUnauthorized)
+	case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-update-image-success-api-token":
+		mustWrite(response, `{"_id":"updateImage"}`)
 	default:
 		mustWrite(response, `{"_id":"blah"}`)
 	}
