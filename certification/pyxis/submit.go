@@ -55,6 +55,9 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 	// in the event that it exists. createImage will wipe it otherwise.
 	originalImageDigest := certImage.DockerImageDigest
 
+	// store the certification status for this execution, in case a previous execution failed and we need to patch the image
+	certified := certInput.CertImage.Certified
+
 	// normalizing index.docker.io to docker.io for the certImage
 	certImage.Repositories[0].Registry = normalizeDockerRegistry(certImage.Repositories[0].Registry)
 
@@ -67,6 +70,19 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 		certImage, err = p.getImage(ctx, originalImageDigest)
 		if err != nil {
 			return nil, fmt.Errorf("could not get image: %v", err)
+		}
+
+		// checking to see if the original value is certified and the previous value is not certified,
+		// this would indicate that a partner is running preflight again, and during the first run there was a timeout/error
+		// in a check that interacts with pyxis and we need to correct the certified value for the image
+		if certified && !certImage.Certified {
+			// change the certified value to `true`
+			certImage.Certified = certified
+
+			certImage, err = p.updateImage(ctx, certImage)
+			if err != nil {
+				return nil, fmt.Errorf("could not update image: %v", err)
+			}
 		}
 	}
 
