@@ -1,5 +1,5 @@
 Vagrant.configure("2") do |config|
-  config.vm.box = "generic/fedora35"
+  config.vm.box = "generic/fedora36"
   config.vm.synced_folder ".", "/home/vagrant/preflight"
   config.vm.network :forwarded_port, guest: 22, host: 2322, id: "ssh"
   config.vm.provision "shell", inline: <<-SHELL
@@ -23,9 +23,9 @@ Vagrant.configure("2") do |config|
     containers-common \
     openscap-containers
 
-    curl -L https://go.dev/dl/go1.17.6.linux-amd64.tar.gz --output go1.17.6.linux-amd64.tar.gz
-    rm -rf /usr/local/go && tar -C /usr/local -xzf go1.17.6.linux-amd64.tar.gz
-    rm go1.17.6.linux-amd64.tar.gz
+    curl -L https://go.dev/dl/go1.19.1.linux-amd64.tar.gz --output go1.19.1.linux-amd64.tar.gz
+    rm -rf /usr/local/go && tar -C /usr/local -xzf go1.19.1.linux-amd64.tar.gz
+    rm go1.19.1.linux-amd64.tar.gz
 
     curl -L https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz --output oc.tar.gz
     tar -C /usr/local/bin -xzf oc.tar.gz
