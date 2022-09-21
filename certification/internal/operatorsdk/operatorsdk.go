@@ -164,7 +164,7 @@ func (o operatorSdk) BundleValidate(ctx context.Context, image string, opts Oper
 }
 
 func (o operatorSdk) writeScorecardFile(resultFile, stdout string) error {
-	_, err := artifacts.WriteFile(resultFile, stdout)
+	_, err := artifacts.WriteFile(resultFile, strings.NewReader(stdout))
 	return err
 }
 
