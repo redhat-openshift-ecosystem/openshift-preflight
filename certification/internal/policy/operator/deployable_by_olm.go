@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -612,7 +613,7 @@ func (p *DeployableByOlmCheck) writeToFile(data interface{}) error {
 	}
 
 	filename := fmt.Sprintf("%s-%s.json", u.GetName(), u.GetKind())
-	if _, err := artifacts.WriteFile(filename, string(jsonManifest)); err != nil {
+	if _, err := artifacts.WriteFile(filename, bytes.NewReader(jsonManifest)); err != nil {
 		return fmt.Errorf("failed to write the k8s object to the file: %w", err)
 	}
 	return nil

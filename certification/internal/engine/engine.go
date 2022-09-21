@@ -293,7 +293,7 @@ func generateBundleHash(bundlePath string) (string, error) {
 		hashBuffer.WriteString(fmt.Sprintf("%s  %s\n", k, files[k]))
 	}
 
-	_, err := artifacts.WriteFile("hashes.txt", hashBuffer.String())
+	_, err := artifacts.WriteFile("hashes.txt", &hashBuffer)
 	if err != nil {
 		return "", fmt.Errorf("could not write hash file to artifacts dir: %w", err)
 	}
@@ -484,7 +484,7 @@ func writeCertImage(ctx context.Context, imageRef certification.ImageReference) 
 		return fmt.Errorf("could not marshal cert image: %w", err)
 	}
 
-	fileName, err := artifacts.WriteFile(certification.DefaultCertImageFilename, string(certImageJSON))
+	fileName, err := artifacts.WriteFile(certification.DefaultCertImageFilename, bytes.NewReader(certImageJSON))
 	if err != nil {
 		return fmt.Errorf("failed to save file to artifacts directory: %w", err)
 	}
@@ -553,7 +553,7 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 		return fmt.Errorf("could not marshal rpm manifest: %w", err)
 	}
 
-	fileName, err := artifacts.WriteFile(certification.DefaultRPMManifestFilename, string(rpmManifestJSON))
+	fileName, err := artifacts.WriteFile(certification.DefaultRPMManifestFilename, bytes.NewReader(rpmManifestJSON))
 	if err != nil {
 		return fmt.Errorf("failed to save file to artifacts directory: %w", err)
 	}

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -49,7 +50,7 @@ func writeJUnit(ctx context.Context, results runtime.Results) error {
 		return err
 	}
 
-	junitFilename, err := artifacts.WriteFile("results-junit.xml", string(junitResults))
+	junitFilename, err := artifacts.WriteFile("results-junit.xml", bytes.NewReader((junitResults)))
 	if err != nil {
 		return err
 	}

@@ -6,11 +6,16 @@ package artifacts
 
 import (
 	"fmt"
-	"log"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/spf13/afero"
 )
+
+// appFS is the base path FS to base writes on
+var appFS = afero.NewOsFs()
 
 // ads is the artifacts directory singleton.
 var ads string
@@ -19,58 +24,38 @@ var ads string
 const DefaultArtifactsDir = "artifacts"
 
 func init() {
-	// set the singleton to the default value.
-	ads = DefaultArtifactsDir
+	Reset()
 }
 
 // SetDir sets the package level artifacts directory. This
 // can be a relative path or a full path.
 func SetDir(s string) {
-	ads = s
+	fullPath := s
+	if !strings.HasPrefix(s, "/") {
+		cwd, _ := os.Getwd()
+		fullPath = filepath.Join(cwd, s)
+	}
+	ads = fullPath
 }
 
 // Reset restores the default value for the Artifacts Directory.
 func Reset() {
-	ads = DefaultArtifactsDir
+	// set the singleton to the default value.
+	cwd, _ := os.Getwd()
+	ads = filepath.Join(cwd, DefaultArtifactsDir)
 }
 
 // WriteFile will write contents of the string to a file in
 // the artifacts directory. It will create the artifacts dir
 // if necessary.
 // Returns the full path (including the artifacts dir)
-func WriteFile(filename, contents string) (string, error) {
-	artifactDir := ads
-	_, err := createArtifactsDir(artifactDir)
-	if err != nil {
-		// Fatal does an os.Exit. If we can't create the artifacts directory,
-		// we can't continue.
-		log.Fatal(fmt.Errorf("could not create artifact path: %v", err))
-	}
+func WriteFile(filename string, contents io.Reader) (string, error) {
 	fullFilePath := filepath.Join(Path(), filename)
 
-	if err := os.WriteFile(fullFilePath, []byte(contents), 0o644); err != nil {
-		return fullFilePath, fmt.Errorf("could not write file to artifacts diretory: %v", err)
+	if err := afero.SafeWriteReader(appFS, fullFilePath, contents); err != nil {
+		return fullFilePath, fmt.Errorf("could not write file to artifacts directory: %v", err)
 	}
 	return fullFilePath, nil
-}
-
-// createArtifactsDir creates the artifacts directory at path artifactsDir.
-// If the path is not a full path, this will resolve the full path.
-func createArtifactsDir(artifactsDir string) (string, error) {
-	if !strings.HasPrefix(artifactsDir, "/") {
-		currentDir, err := os.Getwd()
-		if err != nil {
-			return "", fmt.Errorf("unable to get current directory: %w", err)
-		}
-
-		artifactsDir = filepath.Join(currentDir, artifactsDir)
-	}
-
-	err := os.MkdirAll(artifactsDir, 0o777)
-	if err != nil {
-		return "", fmt.Errorf("unable to create artifactsDir: %w", err)
-	}
-	return artifactsDir, nil
 }
 
 // Path will return the artifacts directory.
