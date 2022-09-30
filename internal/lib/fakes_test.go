@@ -1,4 +1,4 @@
-package cmd
+package lib
 
 import (
 	"context"
@@ -19,9 +19,17 @@ type (
 	srFunc   func(context.Context, *pyxis.CertificationInput) (*pyxis.CertificationResults, error)
 )
 
-// fakePyxisClient is a configurable pyxisClient for use in testing. It accepts function definitions to
+func NewFakePyxisClientNoop() *FakePyxisClient {
+	return &FakePyxisClient{
+		findImagesByDigestFunc: fidbFuncNoop,
+		getProjectsFunc:        gpFuncNoop,
+		submitResultsFunc:      srFuncNoop,
+	}
+}
+
+// FakePyxisClient is a configurable pyxisClient for use in testing. It accepts function definitions to
 // use to implement a cmd.pyxisClient.
-type fakePyxisClient struct {
+type FakePyxisClient struct {
 	findImagesByDigestFunc fibdFunc
 	getProjectsFunc        gpFunc
 	submitResultsFunc      srFunc
@@ -29,7 +37,7 @@ type fakePyxisClient struct {
 
 // baseProject returns a pyxis.CertProject with an id of projectID, or a base value
 // if none is provided.
-func (pc *fakePyxisClient) baseProject(projectID string) pyxis.CertProject {
+func (pc *FakePyxisClient) baseProject(projectID string) pyxis.CertProject {
 	pid := "000000000000"
 	if len(projectID) > 0 {
 		pid = projectID
@@ -44,7 +52,7 @@ func (pc *fakePyxisClient) baseProject(projectID string) pyxis.CertProject {
 
 // successfulCertResults returns a pyxis.CertificationResults for use in tests emulating successful
 // submission.
-func (pc *fakePyxisClient) successfulCertResults(projectID, certImageID string) pyxis.CertificationResults {
+func (pc *FakePyxisClient) successfulCertResults(projectID, certImageID string) pyxis.CertificationResults {
 	pid := "000000000000"
 	if len(projectID) > 0 {
 		pid = projectID
@@ -65,14 +73,14 @@ func (pc *fakePyxisClient) successfulCertResults(projectID, certImageID string) 
 }
 
 // setGPFuncReturnBaseProject sets pc.getProjectFunc to a function that returns baseProject.
-// This is a fakePyxisClient method because it enables standardizing on a single value of
-// a CertificationProject for GetProject calls, tied to the instance of fakePyxisClient
-func (pc *fakePyxisClient) setGPFuncReturnBaseProject(projectID string) {
+// This is a FakePyxisClient method because it enables standardizing on a single value of
+// a CertificationProject for GetProject calls, tied to the instance of FakePyxisClient
+func (pc *FakePyxisClient) setGPFuncReturnBaseProject(projectID string) {
 	baseproj := pc.baseProject(projectID)
 	pc.getProjectsFunc = func(context.Context) (*pyxis.CertProject, error) { return &baseproj, nil }
 }
 
-func (pc *fakePyxisClient) setSRFuncSubmitSuccessfully(projectID, certImageID string) {
+func (pc *FakePyxisClient) setSRFuncSubmitSuccessfully(projectID, certImageID string) {
 	baseproj := pc.baseProject(projectID)
 	certresults := pc.successfulCertResults(baseproj.ID, certImageID)
 	pc.submitResultsFunc = func(context.Context, *pyxis.CertificationInput) (*pyxis.CertificationResults, error) {
@@ -80,15 +88,15 @@ func (pc *fakePyxisClient) setSRFuncSubmitSuccessfully(projectID, certImageID st
 	}
 }
 
-func (pc *fakePyxisClient) FindImagesByDigest(ctx context.Context, digests []string) ([]pyxis.CertImage, error) {
+func (pc *FakePyxisClient) FindImagesByDigest(ctx context.Context, digests []string) ([]pyxis.CertImage, error) {
 	return pc.findImagesByDigestFunc(ctx, digests)
 }
 
-func (pc *fakePyxisClient) GetProject(ctx context.Context) (*pyxis.CertProject, error) {
+func (pc *FakePyxisClient) GetProject(ctx context.Context) (*pyxis.CertProject, error) {
 	return pc.getProjectsFunc(ctx)
 }
 
-func (pc *fakePyxisClient) SubmitResults(ctx context.Context, ci *pyxis.CertificationInput) (*pyxis.CertificationResults, error) {
+func (pc *FakePyxisClient) SubmitResults(ctx context.Context, ci *pyxis.CertificationInput) (*pyxis.CertificationResults, error) {
 	return pc.submitResultsFunc(ctx, ci)
 }
 
@@ -131,17 +139,17 @@ func srFuncReturnError(ctx context.Context, ci *pyxis.CertificationInput) (*pyxi
 	return nil, errors.New("some submission error")
 }
 
-// fidbFuncNoop implements a fidbFunc, best to use while instantiating fakePyxisClient.
+// fidbFuncNoop implements a fidbFunc, best to use while instantiating FakePyxisClient.
 func fidbFuncNoop(ctx context.Context, digests []string) ([]pyxis.CertImage, error) {
 	return nil, nil
 }
 
-// gpFuncNoop implements a gpFunc, best to use while instantiating fakePyxisClient.
+// gpFuncNoop implements a gpFunc, best to use while instantiating FakePyxisClient.
 func gpFuncNoop(ctx context.Context) (*pyxis.CertProject, error) {
 	return nil, nil
 }
 
-// srFuncNoop implements a srFuncNoop, best to use while instantiating fakePyxisClient.
+// srFuncNoop implements a srFuncNoop, best to use while instantiating FakePyxisClient.
 func srFuncNoop(ctx context.Context, ci *pyxis.CertificationInput) (*pyxis.CertificationResults, error) {
 	return nil, nil
 }
@@ -190,7 +198,7 @@ func (e fakeCheckEngine) Results(ctx context.Context) runtime.Results {
 	}
 }
 
-// badResultWriter implements resultWriter and will automatically fail with the
+// badResultWriter implements ResultWriter and will automatically fail with the
 // provided errmsg.
 type badResultWriter struct {
 	errmsg string
@@ -225,7 +233,7 @@ func (f *badFormatter) Format(ctx context.Context, r runtime.Results) ([]byte, e
 	return nil, errors.New(f.errormsg)
 }
 
-// badResultSubmitter implements resultSubmitter and fails to submit with the included errmsg.
+// badResultSubmitter implements ResultSubmitter and fails to submit with the included errmsg.
 type badResultSubmitter struct {
 	errmsg string
 }

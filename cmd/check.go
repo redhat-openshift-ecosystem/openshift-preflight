@@ -1,16 +1,8 @@
 package cmd
 
 import (
-	"bytes"
-	"context"
-	"fmt"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
-
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -36,50 +28,8 @@ func checkCmd() *cobra.Command {
 	return checkCmd
 }
 
-// writeJUnit will write results as JUnit XML using the built-in formatter.
-func writeJUnit(ctx context.Context, results runtime.Results) error {
-	var cfg runtime.Config
-	cfg.ResponseFormat = "junitxml"
-
-	junitformatter, err := formatters.NewForConfig(cfg.ReadOnly())
-	if err != nil {
-		return err
-	}
-	junitResults, err := junitformatter.Format(ctx, results)
-	if err != nil {
-		return err
-	}
-
-	junitFilename, err := artifacts.WriteFile("results-junit.xml", bytes.NewReader((junitResults)))
-	if err != nil {
-		return err
-	}
-	log.Tracef("JUnitXML written to %s", junitFilename)
-
-	return nil
-}
-
 func resultsFilenameWithExtension(ext string) string {
 	return strings.Join([]string{"results", ext}, ".")
-}
-
-func buildConnectURL(projectID string) string {
-	connectURL := fmt.Sprintf("https://connect.redhat.com/projects/%s", projectID)
-
-	pyxisEnv := viper.GetString("pyxis_env")
-	if len(pyxisEnv) > 0 && pyxisEnv != "prod" {
-		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s", viper.GetString("pyxis_env"), projectID)
-	}
-
-	return connectURL
-}
-
-func buildOverviewURL(projectID string) string {
-	return fmt.Sprintf("%s/overview", buildConnectURL(projectID))
-}
-
-func buildScanResultsURL(projectID string, imageID string) string {
-	return fmt.Sprintf("%s/images/%s/scan-results", buildConnectURL(projectID), imageID)
 }
 
 func convertPassedOverall(passedOverall bool) string {
