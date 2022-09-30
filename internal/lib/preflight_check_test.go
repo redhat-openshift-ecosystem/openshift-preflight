@@ -1,4 +1,4 @@
-package cmd
+package lib
 
 import (
 	"context"
@@ -23,11 +23,11 @@ var _ = Describe("Preflight Check Func", func() {
 		var localArtifactsDir string
 
 		var cfg *runtime.Config
-		var pc pyxisClient
+		var pc PyxisClient
 		var eng engine.CheckEngine
 		var fmttr formatters.ResponseFormatter
-		var rw resultWriter
-		var rs resultSubmitter
+		var rw ResultWriter
+		var rs ResultSubmitter
 
 		BeforeEach(func() {
 			// instantiate err to make sure we can equal-assign in the following line.
@@ -45,7 +45,7 @@ var _ = Describe("Preflight Check Func", func() {
 				Artifacts: localArtifactsDir,
 			}
 
-			pc = &fakePyxisClient{
+			pc = &FakePyxisClient{
 				findImagesByDigestFunc: fidbFuncNoop,
 				getProjectsFunc:        gpFuncNoop,
 				submitResultsFunc:      srFuncNoop,
@@ -58,7 +58,7 @@ var _ = Describe("Preflight Check Func", func() {
 
 			fmttr, _ = formatters.NewByName(formatters.DefaultFormat)
 			rw = &runtime.ResultWriterFile{}
-			rs = &noopSubmitter{}
+			rs = NewNoopSubmitter(false, "", nil)
 
 			DeferCleanup(os.RemoveAll, localTempDir)
 			DeferCleanup(os.RemoveAll, localArtifactsDir)
@@ -68,7 +68,7 @@ var _ = Describe("Preflight Check Func", func() {
 		Context("with a customized artifacts directory", func() {
 			It("should set the artifacts directory accordingly", func() {
 				// it's possible this will throw an error, but we dont' care for this test.
-				_ = preflightCheck(context.TODO(), cfg, pc, eng, fmttr, rw, rs)
+				_ = PreflightCheck(context.TODO(), cfg, pc, eng, fmttr, rw, rs)
 				Expect(artifacts.Path()).To(Equal(localArtifactsDir))
 			})
 		})
@@ -79,7 +79,7 @@ var _ = Describe("Preflight Check Func", func() {
 			})
 
 			It("should throw an error", func() {
-				err := preflightCheck(context.TODO(), cfg, pc, eng, fmttr, rw, rs)
+				err := PreflightCheck(context.TODO(), cfg, pc, eng, fmttr, rw, rs)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("some result writer error"))
 			})
@@ -92,7 +92,7 @@ var _ = Describe("Preflight Check Func", func() {
 				eng = fakeCheckEngine{errorRunningChecks: true, errorMsg: msg}
 			})
 			It("should thrown an error", func() {
-				err := preflightCheck(context.TODO(), cfg, pc, eng, fmttr, rw, rs)
+				err := PreflightCheck(context.TODO(), cfg, pc, eng, fmttr, rw, rs)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring(msg))
 			})
@@ -106,7 +106,7 @@ var _ = Describe("Preflight Check Func", func() {
 			})
 
 			It("should throw an error", func() {
-				err := preflightCheck(context.TODO(), cfg, pc, eng, fmttr, rw, rs)
+				err := PreflightCheck(context.TODO(), cfg, pc, eng, fmttr, rw, rs)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring(msg))
 			})
@@ -117,7 +117,7 @@ var _ = Describe("Preflight Check Func", func() {
 				cfg.WriteJUnit = true
 			})
 			It("should write a junit file in the artifacts directory", func() {
-				err := preflightCheck(context.TODO(), cfg, pc, eng, fmttr, rw, rs)
+				err := PreflightCheck(context.TODO(), cfg, pc, eng, fmttr, rw, rs)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(path.Join(artifacts.Path(), "results-junit.xml")).To(BeAnExistingFile())
 			})
@@ -134,7 +134,7 @@ var _ = Describe("Preflight Check Func", func() {
 			})
 
 			It("should throw an error", func() {
-				err := preflightCheck(context.TODO(), cfg, pc, eng, fmttr, rw, rs)
+				err := PreflightCheck(context.TODO(), cfg, pc, eng, fmttr, rw, rs)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring(msg))
 			})
@@ -146,7 +146,7 @@ var _ = Describe("Preflight Check Func", func() {
 			})
 
 			It("should complete with no errors", func() {
-				err := preflightCheck(context.TODO(), cfg, pc, eng, fmttr, rw, rs)
+				err := PreflightCheck(context.TODO(), cfg, pc, eng, fmttr, rw, rs)
 				Expect(err).ToNot(HaveOccurred())
 			})
 		})

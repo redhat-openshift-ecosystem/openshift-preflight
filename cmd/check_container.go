@@ -1,15 +1,13 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
 	log "github.com/sirupsen/logrus"
@@ -52,53 +50,6 @@ func checkContainerCmd() *cobra.Command {
 	return checkContainerCmd
 }
 
-// checkContainerRunner contains all of the components necessary to run checkContainer.
-type checkContainerRunner struct {
-	cfg       *runtime.Config
-	pc        pyxisClient
-	eng       engine.CheckEngine
-	formatter formatters.ResponseFormatter
-	rw        resultWriter
-	rs        resultSubmitter
-}
-
-func newCheckContainerRunner(ctx context.Context, cfg *runtime.Config) (*checkContainerRunner, error) {
-	cfg.Policy = policy.PolicyContainer
-	cfg.Submit = submit
-
-	pyxisClient := newPyxisClient(ctx, cfg.ReadOnly())
-	// If we have a pyxisClient, we can query for container policy exceptions.
-	if pyxisClient != nil {
-		policy, err := getContainerPolicyExceptions(ctx, pyxisClient)
-		if err != nil {
-			return nil, err
-		}
-
-		cfg.Policy = policy
-	}
-
-	engine, err := engine.NewForConfig(ctx, cfg.ReadOnly())
-	if err != nil {
-		return nil, err
-	}
-
-	fmttr, err := formatters.NewForConfig(cfg.ReadOnly())
-	if err != nil {
-		return nil, err
-	}
-
-	rs := resolveSubmitter(pyxisClient, cfg.ReadOnly())
-
-	return &checkContainerRunner{
-		cfg:       cfg,
-		pc:        pyxisClient,
-		eng:       engine,
-		formatter: fmttr,
-		rw:        &runtime.ResultWriterFile{},
-		rs:        rs,
-	}, nil
-}
-
 // checkContainerRunE executes checkContainer using the user args to inform the execution.
 func checkContainerRunE(cmd *cobra.Command, args []string) error {
 	log.Info("certification library version ", version.Version.String())
@@ -114,60 +65,21 @@ func checkContainerRunE(cmd *cobra.Command, args []string) error {
 	cfg.Image = containerImage
 	cfg.ResponseFormat = formatters.DefaultFormat
 
-	checkContainer, err := newCheckContainerRunner(ctx, cfg)
+	checkContainer, err := lib.NewCheckContainerRunner(ctx, cfg, submit)
 	if err != nil {
 		return err
 	}
 
 	// Run the  container check.
 	cmd.SilenceUsage = true
-	return preflightCheck(ctx,
-		checkContainer.cfg,
-		checkContainer.pc,
-		checkContainer.eng,
-		checkContainer.formatter,
-		checkContainer.rw,
-		checkContainer.rs,
+	return lib.PreflightCheck(ctx,
+		checkContainer.Cfg,
+		checkContainer.Pc,
+		checkContainer.Eng,
+		checkContainer.Formatter,
+		checkContainer.Rw,
+		checkContainer.Rs,
 	)
-}
-
-// resolveSubmitter will build out a resultSubmitter if the provided pyxisClient, pc, is not nil.
-// The pyxisClient is a required component of the submitter. If pc is nil, then a noop submitter
-// is returned instead, which does nothing.
-func resolveSubmitter(pc pyxisClient, cfg certification.Config) resultSubmitter {
-	if pc != nil {
-		return &containerCertificationSubmitter{
-			certificationProjectID: cfg.CertificationProjectID(),
-			pyxis:                  pc,
-			dockerConfig:           cfg.DockerConfig(),
-			preflightLogFile:       cfg.LogFile(),
-		}
-	}
-
-	return &noopSubmitter{emitLog: true}
-}
-
-// getContainerPolicyExceptions will query Pyxis to determine if
-// a given project has a certification excemptions, such as root or scratch.
-// This will then return the corresponding policy.
-//
-// If no policy exception flags are found on the project, the standard
-// container policy is returned.
-func getContainerPolicyExceptions(ctx context.Context, pc pyxisClient) (policy.Policy, error) {
-	certProject, err := pc.GetProject(ctx)
-	if err != nil {
-		return "", fmt.Errorf("could not retrieve project: %w", err)
-	}
-	log.Debugf("Certification project name is: %s", certProject.Name)
-	if certProject.Container.Type == "scratch" {
-		return policy.PolicyScratch, nil
-	}
-
-	// if a partner sets `Host Level Access` in connect to `Privileged`, enable RootExceptionContainerPolicy checks
-	if certProject.Container.Privileged {
-		return policy.PolicyRoot, nil
-	}
-	return policy.PolicyContainer, nil
 }
 
 func checkContainerPositionalArgs(cmd *cobra.Command, args []string) error {

@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-// ResultWriterFile implements a resultWriter for use at preflight runtime.
+// ResultWriterFile implements a ResultWriter for use at preflight runtime.
 type ResultWriterFile struct {
 	file *os.File
 }
