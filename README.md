@@ -8,6 +8,8 @@
 requirements for [Red Hat OpenShift
 Certification](https://connect.redhat.com/en/partner-with-us/red-hat-openshift-certification).
 
+Running Preflight is also a required step in certifying all containers that are part of an [OpenStack](https://www.redhat.com/en/technologies/linux-platforms/openstack-platform) or [Red Hat Enterprise Linux](https://connect.redhat.com/partner-with-us/red-hat-enterprise-linux-certification) partner product.
+
 This project is in active and rapid development! Many facets of this project are
 subject to change, and some features are not fully implemented.
 
