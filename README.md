@@ -3,12 +3,12 @@
 [![Build Status](https://github.com/redhat-openshift-ecosystem/openshift-preflight/actions/workflows/go.yml/badge.svg)](https://github.com/redhat-openshift-ecosystem/openshift-preflight/actions?workflow=go)
 [![Coverage Status](https://coveralls.io/repos/github/redhat-openshift-ecosystem/openshift-preflight/badge.svg?branch=main)](https://coveralls.io/github/redhat-openshift-ecosystem/openshift-preflight?branch=main)
 
-**Preflight** is a commandline interface for validating if
-[OpenShift](https://www.openshift.com/) operator bundles and containers meet minimum
-requirements for [Red Hat OpenShift
-Certification](https://connect.redhat.com/en/partner-with-us/red-hat-openshift-certification).
+**Preflight** is a command line (CLI) tool to verify that partner-submitted containers meet minimum requirements for Red Hat Software Certification. These include:
 
-Running Preflight is also a required step in certifying all containers that are part of an [OpenStack](https://www.redhat.com/en/technologies/linux-platforms/openstack-platform) or [Red Hat Enterprise Linux](https://connect.redhat.com/partner-with-us/red-hat-enterprise-linux-certification) partner product.
+- [OpenShift](https://www.openshift.com) Operator Bundles
+- OpenShift containers
+- [OpenStack](https://www.redhat.com/en/technologies/linux-platforms/openstack-platform) containers
+- [Red Hat Enterprise Linux](https://connect.redhat.com/partner-with-us/red-hat-enterprise-linux-certification) application containers
 
 This project is in active and rapid development! Many facets of this project are
 subject to change, and some features are not fully implemented.
