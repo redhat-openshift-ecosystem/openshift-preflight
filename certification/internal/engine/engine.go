@@ -29,6 +29,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/cache"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -75,6 +76,7 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 				authn.WithDockerConfig(c.Config.DockerConfig()),
 			),
 		),
+		retryOnceAfter(5 * time.Second),
 	}
 
 	// pull the image and save to fs
@@ -584,4 +586,16 @@ func convertLabels(imageLabels map[string]string) []pyxis.Label {
 	}
 
 	return pyxisLabels
+}
+
+// retryOnceAfter is a crane option that retries once after t duration.
+func retryOnceAfter(t time.Duration) crane.Option {
+	return func(o *crane.Options) {
+		o.Remote = append(o.Remote, remote.WithRetryBackoff(remote.Backoff{
+			Duration: t,
+			Factor:   1.0,
+			Jitter:   0.1,
+			Steps:    2,
+		}))
+	}
 }
