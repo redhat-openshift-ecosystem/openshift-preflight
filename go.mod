@@ -128,6 +128,6 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
 
-replace github.com/knqyf263/go-rpmdb => github.com/opdev/go-rpmdb v0.0.0-20220719131451-751902254f35
+replace github.com/knqyf263/go-rpmdb => github.com/opdev/go-rpmdb v0.0.0-20221018185711-14b35b3a2b76
 
 replace github.com/operator-framework/api v0.16.0 => github.com/operator-framework/api v0.16.1-0.20220823134246-5f99430d4ec4
