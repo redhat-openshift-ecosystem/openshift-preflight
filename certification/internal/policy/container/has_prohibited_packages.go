@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
+	"github.com/redhat-openshift-ecosystem/preflight/certification"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/internal/rpm"
 
 	log "github.com/sirupsen/logrus"
 )

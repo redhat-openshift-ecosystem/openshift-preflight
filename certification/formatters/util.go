@@ -1,8 +1,8 @@
 package formatters
 
 import (
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/preflight/version"
 )
 
 // getResponse will extract the runtime's results and format it to fit the

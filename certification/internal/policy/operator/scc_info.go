@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
+	"github.com/redhat-openshift-ecosystem/preflight/certification"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/internal/bundle"
 
 	log "github.com/sirupsen/logrus"
 )

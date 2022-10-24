@@ -3,7 +3,7 @@ package operator
 import (
 	"context"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/preflight/certification"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

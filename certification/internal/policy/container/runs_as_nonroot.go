@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/preflight/certification"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	log "github.com/sirupsen/logrus"

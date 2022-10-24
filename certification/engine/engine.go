@@ -8,14 +8,14 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	internal "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/engine"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
-	containerpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/container"
-	operatorpol "github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/policy/operator"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/preflight/certification"
+	internal "github.com/redhat-openshift-ecosystem/preflight/certification/internal/engine"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/internal/operatorsdk"
+	containerpol "github.com/redhat-openshift-ecosystem/preflight/certification/internal/policy/container"
+	operatorpol "github.com/redhat-openshift-ecosystem/preflight/certification/internal/policy/operator"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/policy"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/pyxis"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/runtime"
 )
 
 // CheckEngine defines the functionality necessary to run all checks for a policy,

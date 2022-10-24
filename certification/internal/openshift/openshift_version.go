@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/runtime"
 
 	configv1Client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	log "github.com/sirupsen/logrus"

@@ -4,7 +4,7 @@ import (
 	"context"
 	"path"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/preflight/certification"
 
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	. "github.com/onsi/ginkgo/v2"

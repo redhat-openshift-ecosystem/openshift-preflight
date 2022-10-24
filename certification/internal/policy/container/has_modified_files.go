@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
+	"github.com/redhat-openshift-ecosystem/preflight/certification"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/internal/rpm"
 
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	log "github.com/sirupsen/logrus"

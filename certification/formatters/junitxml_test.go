@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/preflight/certification"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/runtime"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

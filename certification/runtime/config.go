@@ -3,7 +3,7 @@ package runtime
 import (
 	"os"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/policy"
 
 	"github.com/spf13/viper"
 )

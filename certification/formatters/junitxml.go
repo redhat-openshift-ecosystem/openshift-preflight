@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/runtime"
 )
 
 type JUnitTestSuites struct {

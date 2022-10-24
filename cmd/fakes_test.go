@@ -8,9 +8,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/preflight/certification"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/pyxis"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/runtime"
 )
 
 type (

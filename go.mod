@@ -1,4 +1,4 @@
-module github.com/redhat-openshift-ecosystem/openshift-preflight
+module github.com/redhat-openshift-ecosystem/preflight
 
 go 1.19
 

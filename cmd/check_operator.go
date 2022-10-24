@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/engine"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/formatters"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/policy"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/preflight/version"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

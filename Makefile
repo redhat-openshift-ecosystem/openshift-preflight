@@ -11,7 +11,7 @@ ARCHITECTURES=amd64 arm64 ppc64le s390x
 
 .PHONY: build
 build:
-	go build -o $(BINARY) -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG)" main.go
+	go build -o $(BINARY) -ldflags "-X github.com/redhat-openshift-ecosystem/preflight/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/preflight/version.version=$(RELEASE_TAG)" main.go
 	@ls | grep -e '^preflight$$' &> /dev/null
 
 .PHONY: build-multi-arch
@@ -47,12 +47,12 @@ image-push:
 .PHONY: test
 test:
 	go test -v $$(go list ./... | grep -v e2e) \
-	-ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo"
+	-ldflags "-X github.com/redhat-openshift-ecosystem/preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/preflight/version.version=foo"
 
 .PHONY: cover
 cover:
 	go test -v \
-	 -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo" \
+	 -ldflags "-X github.com/redhat-openshift-ecosystem/preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/preflight/version.version=foo" \
 	 $$(go list ./... | grep -v e2e) \
 	 -race \
 	 -cover -coverprofile=coverage.out

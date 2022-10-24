@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/artifacts"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/formatters"
+	"github.com/redhat-openshift-ecosystem/preflight/certification/runtime"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
