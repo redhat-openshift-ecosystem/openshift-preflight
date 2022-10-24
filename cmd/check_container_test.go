@@ -158,7 +158,7 @@ certification_project_id: mycertid`
 			AfterEach(func() {
 				submit = origSubmitValue
 			})
-			It("should return a noopSubmitter ResultSubmitter", func() {
+			It("should return a NoopSubmitter ResultSubmitter", func() {
 				runner, err := lib.NewCheckContainerRunner(context.TODO(), cfg, false)
 				Expect(err).ToNot(HaveOccurred())
 				_, rsIsCorrectType := runner.Rs.(*lib.NoopSubmitter)

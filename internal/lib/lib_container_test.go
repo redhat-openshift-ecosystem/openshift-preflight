@@ -254,7 +254,7 @@ var _ = Describe("Lib Container Functions", func() {
 			bf = bytes.NewBuffer([]byte{})
 			bufferLogger.SetOutput(bf)
 
-			noop = NewNoopSubmitter(false, "", bufferLogger)
+			noop = NewNoopSubmitter(false, bufferLogger)
 		})
 
 		Context("and enabling log emitting", func() {

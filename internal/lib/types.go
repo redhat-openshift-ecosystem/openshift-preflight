@@ -186,10 +186,9 @@ type NoopSubmitter struct {
 	log     *log.Logger
 }
 
-func NewNoopSubmitter(emitLog bool, reason string, log *log.Logger) *NoopSubmitter {
+func NewNoopSubmitter(emitLog bool, log *log.Logger) *NoopSubmitter {
 	return &NoopSubmitter{
 		emitLog: emitLog,
-		reason:  reason,
 		log:     log,
 	}
 }

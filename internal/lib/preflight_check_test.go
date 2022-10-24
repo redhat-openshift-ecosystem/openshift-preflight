@@ -58,7 +58,7 @@ var _ = Describe("Preflight Check Func", func() {
 
 			fmttr, _ = formatters.NewByName(formatters.DefaultFormat)
 			rw = &runtime.ResultWriterFile{}
-			rs = NewNoopSubmitter(false, "", nil)
+			rs = NewNoopSubmitter(false, nil)
 
 			DeferCleanup(os.RemoveAll, localTempDir)
 			DeferCleanup(os.RemoveAll, localArtifactsDir)
