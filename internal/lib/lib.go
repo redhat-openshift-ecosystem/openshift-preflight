@@ -109,7 +109,7 @@ func ResolveSubmitter(pc PyxisClient, cfg certification.Config) ResultSubmitter 
 			PreflightLogFile:       cfg.LogFile(),
 		}
 	}
-	return NewNoopSubmitter(true, "", nil)
+	return NewNoopSubmitter(true, nil)
 }
 
 // GetContainerPolicyExceptions will query Pyxis to determine if
