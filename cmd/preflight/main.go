@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/cmd"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/cmd/preflight/cmd"
 )
 
 func main() {
