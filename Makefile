@@ -11,7 +11,7 @@ ARCHITECTURES=amd64 arm64 ppc64le s390x
 
 .PHONY: build
 build:
-	go build -o $(BINARY) -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG)" main.go
+	go build -o $(BINARY) -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG)" cmd/preflight/main.go
 	@ls | grep -e '^preflight$$' &> /dev/null
 
 .PHONY: build-multi-arch
@@ -21,7 +21,7 @@ define ARCHITECTURE_template
 .PHONY: build-linux-$(1)
 build-linux-$(1):
 	GOOS=linux GOARCH=$(1) go build -o $(BINARY)-linux-$(1) -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) \
-				-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG)" main.go
+				-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG)" cmd/preflight/main.go
 endef
 
 $(foreach arch,$(ARCHITECTURES),$(eval $(call ARCHITECTURE_template,$(arch))))

@@ -15,6 +15,7 @@ vuln.html
 *.dylib
 bin
 preflight
+!cmd/preflight
 openshift-preflight
 preflight-*
 
