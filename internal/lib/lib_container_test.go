@@ -154,6 +154,17 @@ var _ = Describe("Lib Container Functions", func() {
 			})
 		})
 
+		Context("and certProject.Container.hosted_registry=true", func() {
+			BeforeEach(func() {
+				fakePC.setSRFuncSubmitSuccessfully("", "")
+				fakePC.getProjectsFunc = gpFuncReturnHostedRegistry
+			})
+			It("should not throw an error", func() {
+				err := sbmt.Submit(context.TODO())
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
 		Context("and the cert image cannot be read from disk", func() {
 			It("should throw an error", func() {
 				err := os.Remove(path.Join(artifacts.Path(), certification.DefaultCertImageFilename))

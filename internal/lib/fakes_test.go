@@ -105,6 +105,18 @@ func gpFuncReturnError(ctx context.Context) (*pyxis.CertProject, error) {
 	return nil, errors.New("some error returned from the api")
 }
 
+// gpFuncReturnHostedRegistry implements gpFunc and returns hosted_registry=true.
+func gpFuncReturnHostedRegistry(ctx context.Context) (*pyxis.CertProject, error) {
+	return &pyxis.CertProject{
+		ID:                  "000000000000",
+		CertificationStatus: "false",
+		Name:                "some-project",
+		Container: pyxis.Container{
+			HostedRegistry: true,
+		},
+	}, nil
+}
+
 // gpFuncReturnScratchException implements gpFunc and returns a scratch exception.
 func gpFuncReturnScratchException(ctx context.Context) (*pyxis.CertProject, error) {
 	return &pyxis.CertProject{
