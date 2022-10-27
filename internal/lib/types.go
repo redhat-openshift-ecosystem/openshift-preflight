@@ -106,6 +106,12 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 		certProject.Container.DockerConfigJSON = ""
 	}
 
+	// no longer set DockerConfigJSON for registries which Red Hat hosts, this prevents the user from sending an invalid
+	// docker file that systems like clair and registry-proxy cannot use to pull the image
+	if certProject.Container.HostedRegistry {
+		certProject.Container.DockerConfigJSON = ""
+	}
+
 	// prepare submission. We ignore the error because nil checks for the certProject
 	// are done earlier to prevent panics, and that's the only error case for this function.
 	submission, _ := pyxis.NewCertificationInput(certProject)
