@@ -8,7 +8,7 @@ require (
 	github.com/google/go-containerregistry v0.12.0
 	github.com/knqyf263/go-rpmdb v0.0.0-20220629110411-9a3bd2ebb923
 	github.com/onsi/ginkgo/v2 v2.4.0
-	github.com/onsi/gomega v1.23.0
+	github.com/onsi/gomega v1.24.0
 	github.com/openshift/api v0.0.0-20210910062324-a41d3573a3ba
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/operator-framework/api v0.16.0
