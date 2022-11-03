@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	goruntime "runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -28,8 +29,10 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
+	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/cache"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -76,6 +79,10 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 				authn.WithDockerConfig(c.Config.DockerConfig()),
 			),
 		),
+		crane.WithPlatform(&cranev1.Platform{
+			OS:           "linux",
+			Architecture: goruntime.GOARCH,
+		}),
 		retryOnceAfter(5 * time.Second),
 	}
 
