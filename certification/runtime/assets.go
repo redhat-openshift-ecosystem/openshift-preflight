@@ -3,11 +3,13 @@ package runtime
 import (
 	"context"
 	"fmt"
+	goruntime "runtime"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/authn"
 
 	"github.com/google/go-containerregistry/pkg/crane"
+	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -26,6 +28,10 @@ func imageList(ctx context.Context) []string {
 	options := []crane.Option{
 		crane.WithContext(ctx),
 		crane.WithAuthFromKeychain(authn.PreflightKeychain()),
+		crane.WithPlatform(&cranev1.Platform{
+			OS:           "linux",
+			Architecture: goruntime.GOARCH,
+		}),
 	}
 
 	imageList := make([]string, 0, len(images))
