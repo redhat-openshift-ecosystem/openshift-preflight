@@ -19,7 +19,7 @@ require (
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.13.0
+	github.com/spf13/viper v1.14.0
 	gotest.tools/v3 v3.4.0
 	k8s.io/api v0.25.3
 	k8s.io/apimachinery v0.25.3
@@ -44,7 +44,7 @@ require (
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.5 // indirect
@@ -86,7 +86,7 @@ require (
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
-	github.com/stretchr/testify v1.8.0 // indirect
+	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/vbatts/tar-split v0.11.2 // indirect
 	go.opentelemetry.io/contrib v0.20.0 // indirect
@@ -106,11 +106,11 @@ require (
 	golang.org/x/term v0.1.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
-	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
+	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd // indirect
-	google.golang.org/grpc v1.47.0 // indirect
+	google.golang.org/genproto v0.0.0-20221024183307-1bc688fe9f3e // indirect
+	google.golang.org/grpc v1.50.1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
