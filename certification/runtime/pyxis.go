@@ -1,6 +1,6 @@
 package runtime
 
-func pyxisHostLookup(pyxisEnv, hostOverride string) string {
+func PyxisHostLookup(pyxisEnv, hostOverride string) string {
 	envs := map[string]string{
 		"prod":  "catalog.redhat.com/api/containers",
 		"uat":   "catalog.uat.redhat.com/api/containers",

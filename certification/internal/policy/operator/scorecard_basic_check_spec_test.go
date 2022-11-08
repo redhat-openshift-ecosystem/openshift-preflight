@@ -16,6 +16,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 	var (
 		scorecardBasicCheck ScorecardBasicSpecCheck
 		fakeEngine          operatorSdk
+		testcontext         context.Context
 	)
 
 	BeforeEach(func() {
@@ -77,9 +78,11 @@ var _ = Describe("ScorecardBasicCheck", func() {
 		tmpDir, err := os.MkdirTemp("", "artifacts-*")
 		Expect(err).ToNot(HaveOccurred())
 
-		artifacts.SetDir(tmpDir)
+		aw, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(tmpDir))
+		Expect(err).ToNot(HaveOccurred())
+		testcontext = artifacts.ContextWithWriter(context.Background(), aw)
+
 		DeferCleanup(os.RemoveAll, tmpDir)
-		DeferCleanup(artifacts.Reset)
 	})
 
 	AssertMetaData(&scorecardBasicCheck)
@@ -87,7 +90,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 	Describe("Operator Bundle Scorecard", func() {
 		Context("When Operator Bundle Scorecard Basic Check has a pass", func() {
 			It("Should pass Validate", func() {
-				ok, err := scorecardBasicCheck.Validate(context.TODO(), certification.ImageReference{ImageURI: "dummy/image"})
+				ok, err := scorecardBasicCheck.Validate(testcontext, certification.ImageReference{ImageURI: "dummy/image"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -100,7 +103,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 				scorecardBasicCheck = *NewScorecardBasicSpecCheck(fakeEngine, "myns", "mysa", "", "20")
 			})
 			It("Should not pass Validate", func() {
-				ok, err := scorecardBasicCheck.Validate(context.TODO(), certification.ImageReference{ImageURI: "dummy/image"})
+				ok, err := scorecardBasicCheck.Validate(testcontext, certification.ImageReference{ImageURI: "dummy/image"})
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -113,7 +116,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 		})
 		Context("When OperatorSdk throws an error", func() {
 			It("should fail Validate and return an error", func() {
-				ok, err := scorecardBasicCheck.Validate(context.TODO(), certification.ImageReference{ImageURI: "dummy/image"})
+				ok, err := scorecardBasicCheck.Validate(testcontext, certification.ImageReference{ImageURI: "dummy/image"})
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

@@ -24,6 +24,7 @@ import (
 var _ = Describe("Execute Checks tests", func() {
 	var src string
 	var engine CraneEngine
+	var testcontext context.Context
 	BeforeEach(func() {
 		// Set up a fake registry.
 		registryLogger := log.New(io.Discard, "", log.Ldate)
@@ -46,7 +47,9 @@ var _ = Describe("Execute Checks tests", func() {
 		tmpDir, err := os.MkdirTemp("", "preflight-engine-test-*")
 		Expect(err).ToNot(HaveOccurred())
 		DeferCleanup(os.RemoveAll, tmpDir)
-		artifacts.SetDir(tmpDir)
+		aw, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(tmpDir))
+		Expect(err).ToNot(HaveOccurred())
+		testcontext = artifacts.ContextWithWriter(context.Background(), aw)
 
 		goodCheck := certification.NewGenericCheck(
 			"testcheck",
@@ -95,8 +98,8 @@ var _ = Describe("Execute Checks tests", func() {
 
 		emptyConfig := runtime.Config{}
 		engine = CraneEngine{
-			Config: emptyConfig.ReadOnly(), // must pass a config to avoid nil pointer errors
-			Image:  src,
+			DockerConfig: emptyConfig.DockerConfig,
+			Image:        src,
 			Checks: []certification.Check{
 				goodCheck,
 				errorCheck,
@@ -108,10 +111,9 @@ var _ = Describe("Execute Checks tests", func() {
 			IsScratch: false,
 		}
 	})
-	AfterEach(func() { artifacts.Reset() }) // reset the artifacts dir back to defaults.
 	Context("Run the checks", func() {
 		It("should succeed", func() {
-			err := engine.ExecuteChecks(context.TODO())
+			err := engine.ExecuteChecks(testcontext)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(engine.results.Passed).To(HaveLen(1))
 			Expect(engine.results.Failed).To(HaveLen(1))
@@ -121,7 +123,7 @@ var _ = Describe("Execute Checks tests", func() {
 		Context("it is a bundle", func() {
 			It("should succeed and generate a bundle hash", func() {
 				engine.IsBundle = true
-				err := engine.ExecuteChecks(context.TODO())
+				err := engine.ExecuteChecks(testcontext)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(engine.results.CertificationHash).ToNot(BeEmpty())
 			})
@@ -129,7 +131,7 @@ var _ = Describe("Execute Checks tests", func() {
 		Context("the image is invalid", func() {
 			It("should throw a crane error on pull", func() {
 				engine.Image = "does.not/exist/anywhere:ever"
-				err := engine.ExecuteChecks(context.TODO())
+				err := engine.ExecuteChecks(testcontext)
 				Expect(err).To(HaveOccurred())
 			})
 		})
