@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -69,8 +68,7 @@ func (p *ScorecardOlmSuiteCheck) Help() certification.HelpText {
 		}
 	}
 	return certification.HelpText{
-		Message: "Check ScorecardOlmSuiteCheck encountered an error. Please review the " +
-			artifacts.Path() + "/" + scorecardOlmSuiteResult + " file for more information.",
+		Message:    "Check ScorecardOlmSuiteCheck encountered an error. Please review the " + scorecardOlmSuiteResult + " file in your execution artifacts for more information.",
 		Suggestion: "See scorecard output for details, artifacts/operator_bundle_scorecard_OlmSuiteCheck.json",
 	}
 }

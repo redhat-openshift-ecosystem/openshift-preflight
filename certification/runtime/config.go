@@ -63,7 +63,7 @@ func NewConfigFrom(vcfg viper.Viper) (*Config, error) {
 func (c *Config) storeContainerPolicyConfiguration(vcfg viper.Viper) {
 	c.PyxisAPIToken = vcfg.GetString("pyxis_api_token")
 	c.Submit = vcfg.GetBool("submit")
-	c.PyxisHost = pyxisHostLookup(vcfg.GetString("pyxis_env"), vcfg.GetString("pyxis_host"))
+	c.PyxisHost = PyxisHostLookup(vcfg.GetString("pyxis_env"), vcfg.GetString("pyxis_host"))
 	c.CertificationProjectID = vcfg.GetString("certification_project_id")
 	c.Platform = vcfg.GetString("platform")
 	c.Insecure = vcfg.GetBool("insecure")
