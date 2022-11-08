@@ -6,8 +6,11 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/container"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
@@ -74,23 +77,41 @@ func checkContainerRunE(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	cfg.Image = containerImage
-	cfg.ResponseFormat = formatters.DefaultFormat
-
-	checkContainer, err := lib.NewCheckContainerRunner(ctx, cfg, submit)
+	artifactsWriter, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(cfg.Artifacts))
 	if err != nil {
 		return err
 	}
 
+	// Add the artifact writer to the context for use by checks.
+	ctx = artifacts.ContextWithWriter(ctx, artifactsWriter)
+
+	formatter, err := formatters.NewByName(formatters.DefaultFormat)
+	if err != nil {
+		return err
+	}
+
+	opts := generateContainerCheckOptions(cfg)
+
+	checkcontainer := container.NewCheck(
+		containerImage,
+		opts...,
+	)
+
+	pc := lib.NewPyxisClient(ctx, cfg.CertificationProjectID, cfg.PyxisAPIToken, cfg.PyxisHost)
+	resultSubmitter := lib.ResolveSubmitter(pc, cfg.CertificationProjectID, cfg.DockerConfig, cfg.LogFile)
+
 	// Run the  container check.
 	cmd.SilenceUsage = true
-	return lib.PreflightCheck(ctx,
-		checkContainer.Cfg,
-		checkContainer.Pc,
-		checkContainer.Eng,
-		checkContainer.Formatter,
-		checkContainer.Rw,
-		checkContainer.Rs,
+	return cli.RunPreflight(
+		lib.SetCallerToCLI(ctx),
+		checkcontainer.Run,
+		cli.CheckConfig{
+			IncludeJUnitResults: cfg.WriteJUnit,
+			SubmitResults:       cfg.Submit,
+		},
+		formatter,
+		&runtime.ResultWriterFile{},
+		resultSubmitter,
 	)
 }
 
@@ -151,4 +172,28 @@ func validateCertificationProjectID(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// generateContainerCheckOptions returns appropriate container.Options based on cfg.
+func generateContainerCheckOptions(cfg *runtime.Config) []container.Option {
+	o := []container.Option{
+		container.WithCertificationProject(cfg.CertificationProjectID, cfg.PyxisAPIToken),
+		container.WithDockerConfigJSONFromFile(cfg.DockerConfig),
+		// Always add PyxisHost, since the value is always set in viper config parsing.
+		container.WithPyxisHost(cfg.PyxisHost),
+	}
+
+	// set auth information if both are present in config.
+	if cfg.PyxisAPIToken != "" && cfg.CertificationProjectID != "" {
+		o = append(o, container.WithCertificationProject(cfg.CertificationProjectID, cfg.PyxisAPIToken))
+	}
+
+	if cfg.Insecure {
+		// Do not allow for submission if Insecure is set.
+		// This is a secondary check to be safe.
+		cfg.Submit = false
+		o = append(o, container.WithInsecureConnection())
+	}
+
+	return o
 }

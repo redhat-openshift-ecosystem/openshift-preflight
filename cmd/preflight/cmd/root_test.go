@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -45,7 +46,7 @@ var _ = Describe("cmd package utility functions", func() {
 			// Ensure resultsFilenameWithExtension accurately joins the
 			// expected default filename of "results" with the extension
 			// that is provided.
-			actual := resultsFilenameWithExtension(extension)
+			actual := cli.ResultsFilenameWithExtension(extension)
 			Expect(expected).To(Equal(actual))
 		},
 		Entry("with an extension of txt", "txt", "results.txt"),

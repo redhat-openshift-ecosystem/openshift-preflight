@@ -17,7 +17,7 @@ func GetOpenshiftClusterVersion() (runtime.OpenshiftClusterVersion, error) {
 	if _, ok := os.LookupEnv("KUBECONFIG"); !ok {
 		return runtime.UnknownOpenshiftClusterVersion(), fmt.Errorf("KUBECONFIG not specified")
 	}
-	kubeConfig, err := ctrl.GetConfig()
+	kubeConfig, err := ctrl.GetConfig() // TODO(): Identify how to get the config/rest client using an io.Reader or similar instead of this.
 	if err != nil {
 		return runtime.UnknownOpenshiftClusterVersion(), fmt.Errorf("unable to load the config, check if KUBECONFIG is set correctly: %v", err)
 	}
