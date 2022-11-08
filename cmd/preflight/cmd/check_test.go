@@ -3,7 +3,6 @@ package cmd
 import (
 	"os"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -12,21 +11,7 @@ import (
 )
 
 var _ = Describe("cmd package check command", func() {
-	BeforeEach(func() {
-		artifactsDir, err := os.MkdirTemp("", "cmd-test-*")
-		Expect(err).ToNot(HaveOccurred())
-		// change the artifacts dir to our test dir
-		artifacts.SetDir(artifactsDir)
-		DeferCleanup(os.RemoveAll, artifactsDir)
-		DeferCleanup(artifacts.Reset)
-	})
-	DescribeTable("Checking overall pass/fail",
-		func(result bool, expected string) {
-			Expect(convertPassedOverall(result)).To(Equal(expected))
-		},
-		Entry("when passing true", true, "PASSED"),
-		Entry("when passing false", false, "FAILED"),
-	)
+	BeforeEach(createAndCleanupDirForArtifactsAndLogs)
 
 	Describe("Test Connect URL builders", func() {
 		var (

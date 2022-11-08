@@ -1,41 +1,28 @@
-package artifacts
+package artifacts_test
 
 import (
-	"os"
-	"strings"
+	"context"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 )
 
-var _ = Describe("Artifacts package utility functions", func() {
-	BeforeEach(func() {
-		// clean up the artifacts directory that might be created
-		// in each of these tests. This removes only the artifacts
-		// directory value, not the temporary dir established in
-		// BeforeSuite.
+var _ = Describe("Artifacts package context management", func() {
+	Context("When working with an ArtifactWriter from context", func() {
+		It("Should be settable and retrievable using helper functions", func() {
+			aw, err := artifacts.NewMapWriter()
+			Expect(err).ToNot(HaveOccurred())
 
-		Expect(os.RemoveAll(Path())).To(Succeed())
+			ctx := artifacts.ContextWithWriter(context.Background(), aw)
+			awRetrieved := artifacts.WriterFromContext(ctx)
+			Expect(awRetrieved).ToNot(BeNil())
+			Expect(awRetrieved).To(BeEquivalentTo(aw))
+		})
 	})
-
-	Context("With an artifacts directory provided via configuration", func() {
-		It("should write the provided contents to the file with the provided name", func() {
-			contents := "hello world"
-			fullFilePath, err := WriteFile("test.txt", strings.NewReader(contents))
-			Expect(err).ToNot(HaveOccurred())
-
-			bcontents, err := os.ReadFile(fullFilePath)
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(string(bcontents)).To(Equal(contents))
-		})
-		It("should be created by the exported WriteFile() function", func() {
-			createdDir := Path()
-			Expect(WriteFile("test.txt", strings.NewReader("foo")))
-			dirInfo, err := os.Stat(createdDir)
-			// if it doesn't exist, this error will capture it.
-			Expect(err).ToNot(HaveOccurred())
-			Expect(dirInfo.IsDir()).To(BeTrue())
-		})
+	It("Should return nil when there is no ArtifactWriter found in the context", func() {
+		awRetrieved := artifacts.WriterFromContext(context.Background())
+		Expect(awRetrieved).To(BeNil())
 	})
 })

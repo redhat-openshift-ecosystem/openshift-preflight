@@ -30,33 +30,39 @@ type CheckEngine interface {
 	Results(context.Context) runtime.Results
 }
 
-func NewForConfig(ctx context.Context, cfg certification.Config) (CheckEngine, error) {
-	checks, err := initializeChecks(ctx, cfg.Policy(), cfg)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing checks: %v", err)
-	}
-
-	engine := &internal.CraneEngine{
-		Config:    cfg,
-		Image:     cfg.Image(),
-		Checks:    checks,
-		IsBundle:  cfg.IsBundle(),
-		IsScratch: cfg.IsScratch(),
-	}
-
-	return engine, nil
+func New(ctx context.Context,
+	image string,
+	checks []certification.Check,
+	dockerconfig string,
+	isBundle,
+	isScratch bool,
+	insecure bool,
+	platform string,
+) (CheckEngine, error) {
+	return &internal.CraneEngine{
+		DockerConfig: dockerconfig,
+		Image:        image,
+		Checks:       checks,
+		IsBundle:     isBundle,
+		IsScratch:    isScratch,
+		Platform:     platform,
+	}, nil
 }
 
-// initializeChecks configures checks for a given policy p using cfg as needed.
-//
-//nolint:unparam // ctx is unused. Keep for future use.
-func initializeChecks(ctx context.Context, p policy.Policy, cfg certification.Config) ([]certification.Check, error) {
+// OperatorCheckConfig contains configuration relevant to an individual check's execution.
+type OperatorCheckConfig struct {
+	ScorecardImage, ScorecardWaitTime, ScorecardNamespace, ScorecardServiceAccount string
+	IndexImage, DockerConfig, Channel, Kubeconfig                                  string
+}
+
+// InitializeOperatorChecks returns opeartor checks for policy p give cfg.
+func InitializeOperatorChecks(ctx context.Context, p policy.Policy, cfg OperatorCheckConfig) ([]certification.Check, error) {
 	switch p {
 	case policy.PolicyOperator:
 		return []certification.Check{
-			operatorpol.NewScorecardBasicSpecCheck(operatorsdk.New(cfg.ScorecardImage(), exec.Command), cfg.Namespace(), cfg.ServiceAccount(), cfg.Kubeconfig(), cfg.ScorecardWaitTime()),
-			operatorpol.NewScorecardOlmSuiteCheck(operatorsdk.New(cfg.ScorecardImage(), exec.Command), cfg.Namespace(), cfg.ServiceAccount(), cfg.Kubeconfig(), cfg.ScorecardWaitTime()),
-			operatorpol.NewDeployableByOlmCheck(cfg.IndexImage(), cfg.DockerConfig(), cfg.Channel()),
+			operatorpol.NewScorecardBasicSpecCheck(operatorsdk.New(cfg.ScorecardImage, exec.Command), cfg.ScorecardNamespace, cfg.ScorecardServiceAccount, cfg.Kubeconfig, cfg.ScorecardWaitTime),
+			operatorpol.NewScorecardOlmSuiteCheck(operatorsdk.New(cfg.ScorecardImage, exec.Command), cfg.ScorecardNamespace, cfg.ScorecardServiceAccount, cfg.Kubeconfig, cfg.ScorecardWaitTime),
+			operatorpol.NewDeployableByOlmCheck(cfg.IndexImage, cfg.DockerConfig, cfg.Channel),
 			operatorpol.NewValidateOperatorBundleCheck(),
 			operatorpol.NewCertifiedImagesCheck(pyxis.NewPyxisClient(
 				certification.DefaultPyxisHost,
@@ -67,10 +73,23 @@ func initializeChecks(ctx context.Context, p policy.Policy, cfg certification.Co
 			operatorpol.NewSecurityContextConstraintsCheck(),
 			&operatorpol.RelatedImagesCheck{},
 		}, nil
+	}
+
+	return nil, fmt.Errorf("provided operator policy %s is unknown", p)
+}
+
+// ContainerCheckConfig contains configuration relevant to an individual check's execution.
+type ContainerCheckConfig struct {
+	DockerConfig, PyxisAPIToken, CertificationProjectID string
+}
+
+// InitializeContainerChecks returns the appropriate checks for policy p given cfg.
+func InitializeContainerChecks(ctx context.Context, p policy.Policy, cfg ContainerCheckConfig) ([]certification.Check, error) {
+	switch p {
 	case policy.PolicyContainer:
 		return []certification.Check{
 			&containerpol.HasLicenseCheck{},
-			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig()),
+			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig),
 			&containerpol.MaxLayersCheck{},
 			&containerpol.HasNoProhibitedPackagesCheck{},
 			&containerpol.HasRequiredLabelsCheck{},
@@ -78,35 +97,35 @@ func initializeChecks(ctx context.Context, p policy.Policy, cfg certification.Co
 			&containerpol.HasModifiedFilesCheck{},
 			containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisClient(
 				certification.DefaultPyxisHost,
-				cfg.PyxisAPIToken(),
-				cfg.CertificationProjectID(),
+				cfg.PyxisAPIToken,
+				cfg.CertificationProjectID,
 				&http.Client{Timeout: 60 * time.Second})),
 		}, nil
 	case policy.PolicyRoot:
 		return []certification.Check{
 			&containerpol.HasLicenseCheck{},
-			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig()),
+			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig),
 			&containerpol.MaxLayersCheck{},
 			&containerpol.HasNoProhibitedPackagesCheck{},
 			&containerpol.HasRequiredLabelsCheck{},
 			&containerpol.HasModifiedFilesCheck{},
 			containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisClient(
 				certification.DefaultPyxisHost,
-				cfg.PyxisAPIToken(),
-				cfg.CertificationProjectID(),
+				cfg.PyxisAPIToken,
+				cfg.CertificationProjectID,
 				&http.Client{Timeout: 60 * time.Second})),
 		}, nil
 	case policy.PolicyScratch:
 		return []certification.Check{
 			&containerpol.HasLicenseCheck{},
-			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig()),
+			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig),
 			&containerpol.MaxLayersCheck{},
 			&containerpol.HasRequiredLabelsCheck{},
 			&containerpol.RunAsNonRootCheck{},
 		}, nil
 	}
 
-	return nil, fmt.Errorf("provided policy %s is unknown", p)
+	return nil, fmt.Errorf("provided container policy %s is unknown", p)
 }
 
 // makeCheckList returns a list of check names.
@@ -122,10 +141,17 @@ func makeCheckList(checks []certification.Check) []string {
 
 // checkNamesFor produces a slice of names for checks in the requested policy.
 func checkNamesFor(ctx context.Context, p policy.Policy) []string {
-	// stub the config. We don't technically need the policy here, but why not.
-	c := &runtime.Config{Policy: p}
-	checks, _ := initializeChecks(ctx, p, c.ReadOnly())
-	return makeCheckList(checks)
+	var c []certification.Check
+	switch p {
+	case policy.PolicyContainer, policy.PolicyRoot, policy.PolicyScratch:
+		c, _ = InitializeContainerChecks(ctx, p, ContainerCheckConfig{})
+	case policy.PolicyOperator:
+		c, _ = InitializeOperatorChecks(ctx, p, OperatorCheckConfig{})
+	default:
+		return []string{}
+	}
+
+	return makeCheckList(c)
 }
 
 // OperatorPolicy returns the names of checks in the operator policy.

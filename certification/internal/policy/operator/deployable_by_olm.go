@@ -66,6 +66,10 @@ func (p *DeployableByOlmCheck) initClient() error {
 	if err := openshift.AddSchemes(scheme); err != nil {
 		return fmt.Errorf("could not add new schemes to client: %w", err)
 	}
+
+	// TODO(): GetConfig generates a rest config from environment paths. We already have
+	// the Kubeconfig at this point, so we should potentially find another way to generate
+	// a rest config that doesn't rely on ctrl's implicit locations for it.
 	kubeconfig, err := ctrl.GetConfig()
 	if err != nil {
 		return fmt.Errorf("could not get kubeconfig: %w", err)
@@ -522,7 +526,7 @@ func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData operato
 	if err != nil {
 		log.Warn("unable to retrieve the subscription")
 	} else {
-		err := p.writeToFile(subs)
+		err := p.writeToFile(ctx, subs)
 		if err != nil {
 			log.Errorf("could not write subscription to storage")
 		}
@@ -532,7 +536,7 @@ func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData operato
 	if err != nil {
 		log.Warn("unable to retrieve the catalogsource")
 	} else {
-		if err := p.writeToFile(cs); err != nil {
+		if err := p.writeToFile(ctx, cs); err != nil {
 			log.Errorf("could not write catalogsource to storage")
 		}
 	}
@@ -541,7 +545,7 @@ func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData operato
 	if err != nil {
 		log.Warn("unable to retrieve the operatorgroup")
 	} else {
-		if err := p.writeToFile(og); err != nil {
+		if err := p.writeToFile(ctx, og); err != nil {
 			log.Errorf("could not write operatorgroup to storage")
 		}
 	}
@@ -550,7 +554,7 @@ func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData operato
 	if err != nil {
 		log.Warn("unable to retrieve the install namespace")
 	} else {
-		if err := p.writeToFile(installNamespace); err != nil {
+		if err := p.writeToFile(ctx, installNamespace); err != nil {
 			log.Errorf("could not write install namespace to storage")
 		}
 	}
@@ -559,7 +563,7 @@ func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData operato
 	if err != nil {
 		log.Warn("unable to retrieve the target namespace")
 	} else {
-		if err := p.writeToFile(targetNamespace); err != nil {
+		if err := p.writeToFile(ctx, targetNamespace); err != nil {
 			log.Errorf("could not write target namespace to storage")
 		}
 	}
@@ -588,7 +592,7 @@ func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData operato
 	_ = p.openshiftClient.DeleteNamespace(ctx, operatorData.TargetNamespace)
 }
 
-func (p *DeployableByOlmCheck) writeToFile(data interface{}) error {
+func (p *DeployableByOlmCheck) writeToFile(ctx context.Context, data interface{}) error {
 	obj, err := apiruntime.DefaultUnstructuredConverter.ToUnstructured(data)
 	if err != nil {
 		return fmt.Errorf("unable to convert the object to unstructured.Unstructured: %w", err)
@@ -626,9 +630,12 @@ func (p *DeployableByOlmCheck) writeToFile(data interface{}) error {
 	}
 
 	filename := fmt.Sprintf("%s-%s.json", u.GetName(), u.GetKind())
-	if _, err := artifacts.WriteFile(filename, bytes.NewReader(jsonManifest)); err != nil {
-		return fmt.Errorf("failed to write the k8s object to the file: %w", err)
+	if artifactWriter := artifacts.WriterFromContext(ctx); artifactWriter != nil {
+		if _, err := artifactWriter.WriteFile(filename, bytes.NewReader(jsonManifest)); err != nil {
+			return fmt.Errorf("failed to write the k8s object to the file: %w", err)
+		}
 	}
+
 	return nil
 }
 
