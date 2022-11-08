@@ -1,4 +1,4 @@
-package artifacts
+package container
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestArtifacts(t *testing.T) {
+func TestContainerLib(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Artifacts Suite")
+	RunSpecs(t, "lib container suite")
 }

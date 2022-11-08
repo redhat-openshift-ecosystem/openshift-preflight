@@ -2,6 +2,7 @@ package lib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,20 +38,18 @@ type PyxisClient interface {
 	SubmitResults(context.Context, *pyxis.CertificationInput) (*pyxis.CertificationResults, error)
 }
 
-// newPyxisClient initializes a pyxisClient with relevant information from cfg.
+// NewPyxisClient initializes a pyxisClient with relevant information from cfg.
 // If the the CertificationProjectID, PyxisAPIToken, or PyxisHost are empty, then nil is returned.
 // Callers should treat a nil pyxis client as an indicator that pyxis calls should not be made.
-//
-//nolint:unparam // ctx is unused. Keep for future use.
-func NewPyxisClient(ctx context.Context, cfg certification.Config) PyxisClient {
-	if cfg.CertificationProjectID() == "" || cfg.PyxisAPIToken() == "" || cfg.PyxisHost() == "" {
+func NewPyxisClient(ctx context.Context, projectID, token, host string) PyxisClient {
+	if projectID == "" || token == "" || host == "" {
 		return nil
 	}
 
 	return pyxis.NewPyxisClient(
-		cfg.PyxisHost(),
-		cfg.PyxisAPIToken(),
-		cfg.CertificationProjectID(),
+		host,
+		token,
+		projectID,
 		&http.Client{Timeout: 60 * time.Second},
 	)
 }
@@ -116,7 +115,17 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 	// are done earlier to prevent panics, and that's the only error case for this function.
 	submission, _ := pyxis.NewCertificationInput(certProject)
 
-	certImage, err := os.Open(path.Join(artifacts.Path(), certification.DefaultCertImageFilename))
+	// We need to get the artifact writer to know where our artifacts were written. We also need the
+	// Filesystem Writer here to make sure we can get the configured path.
+	// TODO: This needs to be rethought. Submission is not currently in scope for library implementations
+	// but the current implementation of this makes it impossible because the MapWriter would obviously
+	// not work here.
+	artifactWriter, ok := artifacts.WriterFromContext(ctx).(*artifacts.FilesystemWriter)
+	if artifactWriter == nil || !ok {
+		return errors.New("the artifact writer was either missing or was not supported, so results cannot be submitted")
+	}
+
+	certImage, err := os.Open(path.Join(artifactWriter.Path(), certification.DefaultCertImageFilename))
 	if err != nil {
 		return fmt.Errorf("could not open file for submission: %s: %w",
 			certification.DefaultCertImageFilename,
@@ -125,7 +134,7 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 	}
 	defer certImage.Close()
 
-	preflightResults, err := os.Open(path.Join(artifacts.Path(), certification.DefaultTestResultsFilename))
+	preflightResults, err := os.Open(path.Join(artifactWriter.Path(), certification.DefaultTestResultsFilename))
 	if err != nil {
 		return fmt.Errorf(
 			"could not open file for submission: %s: %w",
@@ -135,7 +144,7 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 	}
 	defer preflightResults.Close()
 
-	rpmManifest, err := os.Open(path.Join(artifacts.Path(), certification.DefaultRPMManifestFilename))
+	rpmManifest, err := os.Open(path.Join(artifactWriter.Path(), certification.DefaultRPMManifestFilename))
 	if err != nil {
 		return fmt.Errorf(
 			"could not open file for submission: %s: %w",

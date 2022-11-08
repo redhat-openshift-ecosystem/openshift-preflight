@@ -20,17 +20,21 @@ const (
 
 var _ = Describe("OperatorSdk", func() {
 	var tmpdir string
+	var testcontext context.Context
 	BeforeEach(func() {
 		var err error
 		tmpdir, err = os.MkdirTemp("", "operatorsdk-test-artifacts-*")
 		Expect(err).ToNot(HaveOccurred())
 		DeferCleanup(os.RemoveAll, tmpdir)
-		artifacts.SetDir(tmpdir)
+		aw, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(tmpdir))
+		Expect(err).ToNot(HaveOccurred())
+
+		testcontext = artifacts.ContextWithWriter(context.Background(), aw)
 	})
 	When("The Scorecard result is good", func() {
 		It("should succeed", func() {
 			operatorSdk := New("foo.image", fakeExecCommandSuccess)
-			_, err := operatorSdk.Scorecard(context.TODO(), "foo.image", OperatorSdkScorecardOptions{
+			_, err := operatorSdk.Scorecard(testcontext, "foo.image", OperatorSdkScorecardOptions{
 				ResultFile:     "success.txt",
 				OutputFormat:   "json",
 				Selector:       []string{"selector1", "selector2"},
@@ -46,7 +50,7 @@ var _ = Describe("OperatorSdk", func() {
 	When("The Scorecard result is a failure", func() {
 		It("should fail", func() {
 			operatorSdk := New("foo.image", fakeExecCommandFailure)
-			_, err := operatorSdk.Scorecard(context.TODO(), "foo.image", OperatorSdkScorecardOptions{
+			_, err := operatorSdk.Scorecard(testcontext, "foo.image", OperatorSdkScorecardOptions{
 				ResultFile:   "failure.txt",
 				OutputFormat: "text",
 			})
@@ -56,7 +60,7 @@ var _ = Describe("OperatorSdk", func() {
 	When("The Bundle Validate result is good", func() {
 		It("should succeed", func() {
 			operatorSdk := New("foo.image", fakeExecValidateCommandSuccess)
-			_, err := operatorSdk.BundleValidate(context.TODO(), "foo.image", OperatorSdkBundleValidateOptions{
+			_, err := operatorSdk.BundleValidate(testcontext, "foo.image", OperatorSdkBundleValidateOptions{
 				OutputFormat:    "json",
 				LogLevel:        "debug",
 				ContainerEngine: "podman",
@@ -71,7 +75,7 @@ var _ = Describe("OperatorSdk", func() {
 	When("The scorecard result has an error", func() {
 		It("should return result == failed", func() {
 			operatoSdk := New("foo.image", fakeExecValidateCommandError)
-			result, err := operatoSdk.BundleValidate(context.TODO(), "foo.image", OperatorSdkBundleValidateOptions{
+			result, err := operatoSdk.BundleValidate(testcontext, "foo.image", OperatorSdkBundleValidateOptions{
 				OutputFormat: "text",
 			})
 			Expect(err).ToNot(HaveOccurred())
@@ -81,7 +85,7 @@ var _ = Describe("OperatorSdk", func() {
 	When("The Bundle Validate result is bad", func() {
 		It("should fail", func() {
 			operatorSdk := New("foo.image", fakeExecValidateCommandFailure)
-			_, err := operatorSdk.BundleValidate(context.TODO(), "foo.image", OperatorSdkBundleValidateOptions{})
+			_, err := operatorSdk.BundleValidate(testcontext, "foo.image", OperatorSdkBundleValidateOptions{})
 			Expect(err).To(HaveOccurred())
 		})
 	})
