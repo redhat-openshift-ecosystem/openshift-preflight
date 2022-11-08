@@ -22,6 +22,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 	var (
 		deployableByOLMCheck DeployableByOlmCheck
 		imageRef             certification.ImageReference
+		testcontext          context.Context
 	)
 
 	BeforeEach(func() {
@@ -49,15 +50,16 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		// Temp artifacts dir
 		tmpDir, err := os.MkdirTemp("", "deployable-by-olm-*")
 		Expect(err).ToNot(HaveOccurred())
-		artifacts.SetDir(tmpDir)
+		aw, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(tmpDir))
+		Expect(err).ToNot(HaveOccurred())
+		testcontext = artifacts.ContextWithWriter(context.Background(), aw)
 		DeferCleanup(os.RemoveAll, tmpDir)
-		DeferCleanup(artifacts.Reset)
 	})
 
 	Describe("When deploying an operator using OLM", func() {
 		Context("When CSV has been created successfully", func() {
 			It("Should pass Validate", func() {
-				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
+				ok, err := deployableByOLMCheck.Validate(testcontext, imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -65,15 +67,15 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		Context("When installedCSV field of Subscription is not set", func() {
 			BeforeEach(func() {
 				badSub := sub
-				Expect(deployableByOLMCheck.client.Get(context.TODO(), crclient.ObjectKey{
+				Expect(deployableByOLMCheck.client.Get(testcontext, crclient.ObjectKey{
 					Name:      "testPackage",
 					Namespace: "testPackage",
 				}, &badSub)).To(Succeed())
 				badSub.Status.InstalledCSV = ""
-				Expect(deployableByOLMCheck.client.Update(context.TODO(), &badSub, &crclient.UpdateOptions{})).To(Succeed())
+				Expect(deployableByOLMCheck.client.Update(testcontext, &badSub, &crclient.UpdateOptions{})).To(Succeed())
 			})
 			It("Should fail Validate", func() {
-				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
+				ok, err := deployableByOLMCheck.Validate(testcontext, imageRef)
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -83,7 +85,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				deployableByOLMCheck.indexImage = "image-registry.openshift-image-registry.svc/namespace/indeximage:v0.0.0"
 			})
 			It("Should pass Validate", func() {
-				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
+				ok, err := deployableByOLMCheck.Validate(testcontext, imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -94,14 +96,14 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				deployableByOLMCheck.dockerConfig = "./testdata/dockerconfig.json"
 			})
 			It("Should pass Validate", func() {
-				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
+				ok, err := deployableByOLMCheck.Validate(testcontext, imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
 		})
 		Context("When the only supported install mode is AllNamespaces", func() {
 			It("Should pass Validate", func() {
-				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
+				ok, err := deployableByOLMCheck.Validate(testcontext, imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -111,7 +113,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				deployableByOLMCheck.channel = "non-default-channel"
 			})
 			It("Should pass Validate", func() {
-				ok, err := deployableByOLMCheck.Validate(context.TODO(), imageRef)
+				ok, err := deployableByOLMCheck.Validate(testcontext, imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})

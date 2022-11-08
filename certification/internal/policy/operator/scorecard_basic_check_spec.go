@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -69,8 +68,7 @@ func (p *ScorecardBasicSpecCheck) Help() certification.HelpText {
 		}
 	}
 	return certification.HelpText{
-		Message: "Check ScorecardBasicSpecCheck encountered an error. Please review the " +
-			artifacts.Path() + "/" + scorecardBasicCheckResult + " file for more information.",
+		Message:    "Check ScorecardBasicSpecCheck encountered an error. Please review the " + scorecardBasicCheckResult + " file in your execution artifacts for more information.",
 		Suggestion: "Make sure that all CRs have a spec block",
 	}
 }
