@@ -3,126 +3,104 @@ package engine
 import (
 	"context"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	goruntime "runtime"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
 )
 
-var _ = Describe("Engine Creation", func() {
-	When("getting a new engine for a configuration", func() {
-		Context("with a valid configurations", func() {
-			Context("for the container policy", func() {
-				cfg := runtime.Config{
-					Image:          "dummy/image",
-					Policy:         policy.PolicyContainer,
-					ResponseFormat: "json",
-				}
-
-				It("should return an engine and no error", func() {
-					engine, err := NewForConfig(context.TODO(), cfg.ReadOnly())
-					Expect(err).ToNot(HaveOccurred())
-					Expect(engine).ToNot(BeNil())
-				})
-				It("should return the correct names", func() {
-					names := ContainerPolicy(context.TODO())
-					Expect(names).To(ContainElements([]string{
-						"HasLicense",
-						"HasUniqueTag",
-						"LayerCountAcceptable",
-						"HasNoProhibitedPackages",
-						"HasRequiredLabel",
-						"RunAsNonRoot",
-						"HasModifiedFiles",
-						"BasedOnUbi",
-					}))
-				})
-			})
-			Context("for the operator policy", func() {
-				cfg := runtime.Config{
-					Image:          "dummy/image",
-					Policy:         policy.PolicyOperator,
-					ResponseFormat: "json",
-				}
-				It("should return an engine and no error", func() {
-					engine, err := NewForConfig(context.TODO(), cfg.ReadOnly())
-					Expect(err).ToNot(HaveOccurred())
-					Expect(engine).ToNot(BeNil())
-				})
-				It("should return the correct names", func() {
-					names := OperatorPolicy(context.TODO())
-					Expect(names).To(ContainElements([]string{
-						"ScorecardBasicSpecCheck",
-						"ScorecardOlmSuiteCheck",
-						"DeployableByOLM",
-						"ValidateOperatorBundle",
-					}))
-				})
-			})
-
-			Context("for the scratch policy", func() {
-				cfg := runtime.Config{
-					Image:          "dummy/image",
-					Policy:         policy.PolicyScratch,
-					ResponseFormat: "json",
-				}
-
-				It("should return an engine and no error", func() {
-					engine, err := NewForConfig(context.TODO(), cfg.ReadOnly())
-					Expect(err).ToNot(HaveOccurred())
-					Expect(engine).ToNot(BeNil())
-				})
-				It("should return the correct names", func() {
-					names := ScratchContainerPolicy(context.TODO())
-					Expect(names).To(ContainElements([]string{
-						"HasLicense",
-						"HasUniqueTag",
-						"LayerCountAcceptable",
-						"HasRequiredLabel",
-						"RunAsNonRoot",
-					}))
-				})
-			})
-
-			Context("for the Root policy", func() {
-				cfg := runtime.Config{
-					Image:          "dummy/image",
-					Policy:         policy.PolicyRoot,
-					ResponseFormat: "json",
-				}
-
-				It("should return an engine and no error", func() {
-					engine, err := NewForConfig(context.TODO(), cfg.ReadOnly())
-					Expect(err).ToNot(HaveOccurred())
-					Expect(engine).ToNot(BeNil())
-				})
-				It("should return the correct names", func() {
-					names := RootExceptionContainerPolicy(context.TODO())
-					Expect(names).To(ContainElements([]string{
-						"HasLicense",
-						"HasUniqueTag",
-						"LayerCountAcceptable",
-						"HasNoProhibitedPackages",
-						"HasRequiredLabel",
-						"HasModifiedFiles",
-					}))
-				})
-			})
+var _ = Describe("CheckInitialization", func() {
+	When("initializing the engine", func() {
+		It("should not return an error", func() {
+			_, err := New(context.TODO(), "example.com/some/image:latest", []certification.Check{}, "", false, false, false, goruntime.GOARCH)
+			Expect(err).ToNot(HaveOccurred())
 		})
+	})
+})
 
-		Context("with an invalid policy", func() {
-			cfg := runtime.Config{
-				Image:          "dummy/image",
-				Policy:         "invalid",
-				ResponseFormat: "json",
-			}
+var _ = Describe("Check Initialization", func() {
+	When("initializing container checks", func() {
+		It("should properly return checks for default container policy", func() {
+			_, err := InitializeContainerChecks(context.TODO(), policy.PolicyContainer, ContainerCheckConfig{})
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("should properly return checks for the scratch policy", func() {
+			_, err := InitializeContainerChecks(context.TODO(), policy.PolicyScratch, ContainerCheckConfig{})
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("should properly return checks for the root policy", func() {
+			_, err := InitializeContainerChecks(context.TODO(), policy.PolicyRoot, ContainerCheckConfig{})
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("should throw an error if the policy is unknown", func() {
+			_, err := InitializeContainerChecks(context.TODO(), policy.Policy("foo"), ContainerCheckConfig{})
+			Expect(err).To(HaveOccurred())
+		})
+	})
 
-			It("should return an error and no engine", func() {
-				engine, err := NewForConfig(context.TODO(), cfg.ReadOnly())
-				Expect(err).To(HaveOccurred())
-				Expect(engine).To(BeNil())
-			})
+	When("initializing operator checks", func() {
+		It("should properly return checks for the root policy", func() {
+			_, err := InitializeOperatorChecks(context.TODO(), policy.PolicyOperator, OperatorCheckConfig{})
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("should throw an error if the policy is unknown", func() {
+			_, err := InitializeOperatorChecks(context.TODO(), policy.Policy("bar"), OperatorCheckConfig{})
+			Expect(err).To(HaveOccurred())
+		})
+	})
+})
+
+var _ = Describe("Check Name Queries", func() {
+	DescribeTable("The checks associated with valid policy should return the expected check names",
+		func(queryFunc func(context.Context) []string, expected []string) {
+			c := queryFunc(context.TODO())
+			Expect(queryFunc(context.TODO())).To(ContainElements(expected))
+			Expect(len(c)).To(Equal(len(expected)))
+		},
+		Entry("default container policy", ContainerPolicy, []string{
+			"HasLicense",
+			"HasUniqueTag",
+			"LayerCountAcceptable",
+			"HasNoProhibitedPackages",
+			"HasRequiredLabel",
+			"RunAsNonRoot",
+			"HasModifiedFiles",
+			"BasedOnUbi",
+		}),
+		Entry("default operator policy", OperatorPolicy, []string{
+			"ScorecardBasicSpecCheck",
+			"ScorecardOlmSuiteCheck",
+			"DeployableByOLM",
+			"ValidateOperatorBundle",
+			"BundleImageRefsAreCertified",
+			"SecurityContextConstraintsInCSV",
+			"AllImageRefsInRelatedImages",
+		}),
+		Entry("scratch container policy", ScratchContainerPolicy, []string{
+			"HasLicense",
+			"HasUniqueTag",
+			"LayerCountAcceptable",
+			"HasRequiredLabel",
+			"RunAsNonRoot",
+		}),
+		Entry("root container policy", RootExceptionContainerPolicy, []string{
+			"HasLicense",
+			"HasUniqueTag",
+			"LayerCountAcceptable",
+			"HasNoProhibitedPackages",
+			"HasRequiredLabel",
+			"HasModifiedFiles",
+			"BasedOnUbi",
+		}),
+	)
+
+	When("the policy is unknown", func() {
+		It("should return an empty list", func() {
+			c := checkNamesFor(context.TODO(), policy.Policy("does not exist"))
+			Expect(c).To(Equal([]string{}))
 		})
 	})
 })

@@ -88,7 +88,7 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 		}
 	}
 
-	if err := o.writeScorecardFile(opts.ResultFile, stdout.String()); err != nil {
+	if err := o.writeScorecardFile(ctx, opts.ResultFile, stdout.String()); err != nil {
 		return nil, fmt.Errorf("unable to copy result to artifacts directory: %v", err)
 	}
 
@@ -163,9 +163,13 @@ func (o operatorSdk) BundleValidate(ctx context.Context, image string, opts Oper
 	return &bundleValidateData, nil
 }
 
-func (o operatorSdk) writeScorecardFile(resultFile, stdout string) error {
-	_, err := artifacts.WriteFile(resultFile, strings.NewReader(stdout))
-	return err
+func (o operatorSdk) writeScorecardFile(ctx context.Context, resultFile, stdout string) error {
+	if artifactsWriter := artifacts.WriterFromContext(ctx); artifactsWriter != nil {
+		_, err := artifactsWriter.WriteFile(resultFile, strings.NewReader(stdout))
+		return err
+	}
+
+	return nil
 }
 
 func (o operatorSdk) createScorecardConfigFile() (string, error) {
