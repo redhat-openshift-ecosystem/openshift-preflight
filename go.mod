@@ -8,7 +8,7 @@ require (
 	github.com/google/go-containerregistry v0.12.0
 	github.com/knqyf263/go-rpmdb v0.0.0-20220629110411-9a3bd2ebb923
 	github.com/onsi/ginkgo/v2 v2.5.0
-	github.com/onsi/gomega v1.24.0
+	github.com/onsi/gomega v1.24.1
 	github.com/openshift/api v0.0.0-20210910062324-a41d3573a3ba
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/operator-framework/api v0.16.0
@@ -99,11 +99,11 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.20.0 // indirect
 	go.opentelemetry.io/otel/trace v0.20.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.7.0 // indirect
-	golang.org/x/net v0.1.0 // indirect
+	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/oauth2 v0.1.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.1.0 // indirect
-	golang.org/x/term v0.1.0 // indirect
+	golang.org/x/sys v0.2.0 // indirect
+	golang.org/x/term v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
