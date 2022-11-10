@@ -39,6 +39,8 @@ var _ = Describe("Viper to Runtime Config", func() {
 		expectedRuntimeCfg.CertificationProjectID = "000000000000"
 		baseViperCfg.Set("platform", "s390x")
 		expectedRuntimeCfg.Platform = "s390x"
+		baseViperCfg.Set("insecure", true)
+		expectedRuntimeCfg.Insecure = true
 
 		baseViperCfg.Set("namespace", "myns")
 		expectedRuntimeCfg.Namespace = "myns"
@@ -68,6 +70,6 @@ var _ = Describe("Viper to Runtime Config", func() {
 		// accurate in confirming that the derived configuration from viper
 		// matches.
 		keys := reflect.TypeOf(Config{}).NumField()
-		Expect(keys).To(Equal(21))
+		Expect(keys).To(Equal(22))
 	})
 })

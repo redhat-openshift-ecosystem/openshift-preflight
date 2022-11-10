@@ -30,6 +30,7 @@ type containerConfig interface {
 	PyxisAPIToken() string
 	Submit() bool
 	Platform() string
+	Insecure() bool
 }
 
 // operatorConfig are configurables relevant to

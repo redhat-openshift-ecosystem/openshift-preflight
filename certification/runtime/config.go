@@ -25,6 +25,7 @@ type Config struct {
 	DockerConfig           string
 	Submit                 bool
 	Platform               string
+	Insecure               bool
 	// Operator-Specific Fields
 	Namespace         string
 	ServiceAccount    string
@@ -65,6 +66,7 @@ func (c *Config) storeContainerPolicyConfiguration(vcfg viper.Viper) {
 	c.PyxisHost = pyxisHostLookup(vcfg.GetString("pyxis_env"), vcfg.GetString("pyxis_host"))
 	c.CertificationProjectID = vcfg.GetString("certification_project_id")
 	c.Platform = vcfg.GetString("platform")
+	c.Insecure = vcfg.GetBool("insecure")
 }
 
 // storeOperatorPolicyConfiguration reads operator-policy-specific config

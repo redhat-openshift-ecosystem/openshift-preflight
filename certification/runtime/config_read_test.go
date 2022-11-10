@@ -22,6 +22,7 @@ var _ = Describe("Runtime ReadOnlyConfig test", func() {
 			DockerConfig:           "dockercfg",
 			Submit:                 true,
 			Platform:               "s390x",
+			Insecure:               true,
 			Namespace:              "ns",
 			ServiceAccount:         "sa",
 			ScorecardImage:         "scorecardimg",
@@ -46,6 +47,7 @@ var _ = Describe("Runtime ReadOnlyConfig test", func() {
 			Expect(cro.DockerConfig()).To(Equal("dockercfg"))
 			Expect(cro.Submit()).To(Equal(true))
 			Expect(cro.Platform()).To(Equal("s390x"))
+			Expect(cro.Insecure()).To(BeTrue())
 			Expect(cro.Namespace()).To(Equal("ns"))
 			Expect(cro.ServiceAccount()).To(Equal("sa"))
 			Expect(cro.ScorecardImage()).To(Equal("scorecardimg"))
