@@ -37,6 +37,8 @@ var _ = Describe("Viper to Runtime Config", func() {
 		expectedRuntimeCfg.PyxisHost = "catalog.redhat.com/api/containers"
 		baseViperCfg.Set("certification_project_id", "000000000000")
 		expectedRuntimeCfg.CertificationProjectID = "000000000000"
+		baseViperCfg.Set("platform", "s390x")
+		expectedRuntimeCfg.Platform = "s390x"
 
 		baseViperCfg.Set("namespace", "myns")
 		expectedRuntimeCfg.Namespace = "myns"
@@ -66,6 +68,6 @@ var _ = Describe("Viper to Runtime Config", func() {
 		// accurate in confirming that the derived configuration from viper
 		// matches.
 		keys := reflect.TypeOf(Config{}).NumField()
-		Expect(keys).To(Equal(20))
+		Expect(keys).To(Equal(21))
 	})
 })

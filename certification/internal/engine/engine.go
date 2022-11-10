@@ -13,7 +13,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	goruntime "runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -81,7 +80,7 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 		),
 		crane.WithPlatform(&cranev1.Platform{
 			OS:           "linux",
-			Architecture: goruntime.GOARCH,
+			Architecture: c.Config.Platform(),
 		}),
 		retryOnceAfter(5 * time.Second),
 	}

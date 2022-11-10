@@ -93,3 +93,7 @@ func (ro *ReadOnlyConfig) Kubeconfig() string {
 func (ro *ReadOnlyConfig) IndexImage() string {
 	return ro.cfg.IndexImage
 }
+
+func (ro *ReadOnlyConfig) Platform() string {
+	return ro.cfg.Platform
+}

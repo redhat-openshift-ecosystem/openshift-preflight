@@ -29,7 +29,8 @@ func imageList(ctx context.Context) []string {
 		crane.WithContext(ctx),
 		crane.WithAuthFromKeychain(authn.PreflightKeychain()),
 		crane.WithPlatform(&cranev1.Platform{
-			OS:           "linux",
+			OS: "linux",
+			// This remains the runtime arch, as we don't specify the arch for operators
 			Architecture: goruntime.GOARCH,
 		}),
 	}
