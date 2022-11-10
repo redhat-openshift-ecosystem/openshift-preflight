@@ -97,3 +97,7 @@ func (ro *ReadOnlyConfig) IndexImage() string {
 func (ro *ReadOnlyConfig) Platform() string {
 	return ro.cfg.Platform
 }
+
+func (ro *ReadOnlyConfig) Insecure() bool {
+	return ro.cfg.Insecure
+}

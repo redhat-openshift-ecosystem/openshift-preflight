@@ -85,6 +85,10 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 		retryOnceAfter(5 * time.Second),
 	}
 
+	if c.Config.Insecure() {
+		options = append(options, crane.Insecure)
+	}
+
 	// pull the image and save to fs
 	log.Debug("pulling image from target registry")
 	img, err := crane.Pull(c.Image, options...)

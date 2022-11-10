@@ -31,22 +31,30 @@ func checkContainerCmd() *cobra.Command {
 		RunE:    checkContainerRunE,
 	}
 
-	checkContainerCmd.Flags().BoolVarP(&submit, "submit", "s", false, "submit check container results to red hat")
-	_ = viper.BindPFlag("submit", checkContainerCmd.Flags().Lookup("submit"))
+	flags := checkContainerCmd.Flags()
 
-	checkContainerCmd.Flags().String("pyxis-api-token", "", "API token for Pyxis authentication (env: PFLT_PYXIS_API_TOKEN)")
-	_ = viper.BindPFlag("pyxis_api_token", checkContainerCmd.Flags().Lookup("pyxis-api-token"))
+	flags.BoolVarP(&submit, "submit", "s", false, "submit check container results to Red Hat")
+	_ = viper.BindPFlag("submit", flags.Lookup("submit"))
 
-	checkContainerCmd.Flags().String("pyxis-host", "", fmt.Sprintf("Host to use for Pyxis submissions. This will override Pyxis Env. Only set this if you know what you are doing.\n"+
+	flags.Bool("insecure", false, "Use insecure protocol for the registry. Default is False. Cannot be used with submit.")
+	_ = viper.BindPFlag("insecure", flags.Lookup("insecure"))
+
+	// Make --submit mutually exclusive to --insecure
+	checkContainerCmd.MarkFlagsMutuallyExclusive("submit", "insecure")
+
+	flags.String("pyxis-api-token", "", "API token for Pyxis authentication (env: PFLT_PYXIS_API_TOKEN)")
+	_ = viper.BindPFlag("pyxis_api_token", flags.Lookup("pyxis-api-token"))
+
+	flags.String("pyxis-host", "", fmt.Sprintf("Host to use for Pyxis submissions. This will override Pyxis Env. Only set this if you know what you are doing.\n"+
 		"If you do set it, it should include just the host, and the URI path. (env: PFLT_PYXIS_HOST)"))
-	_ = viper.BindPFlag("pyxis_host", checkContainerCmd.Flags().Lookup("pyxis-host"))
+	_ = viper.BindPFlag("pyxis_host", flags.Lookup("pyxis-host"))
 
-	checkContainerCmd.Flags().String("pyxis-env", certification.DefaultPyxisEnv, "Env to use for Pyxis submissions.")
-	_ = viper.BindPFlag("pyxis_env", checkContainerCmd.Flags().Lookup("pyxis-env"))
+	flags.String("pyxis-env", certification.DefaultPyxisEnv, "Env to use for Pyxis submissions.")
+	_ = viper.BindPFlag("pyxis_env", flags.Lookup("pyxis-env"))
 
-	checkContainerCmd.Flags().String("certification-project-id", "", fmt.Sprintf("Certification Project ID from connect.redhat.com/projects/{certification-project-id}/overview\n"+
+	flags.String("certification-project-id", "", fmt.Sprintf("Certification Project ID from connect.redhat.com/projects/{certification-project-id}/overview\n"+
 		"URL paramater. This value may differ from the PID on the overview page. (env: PFLT_CERTIFICATION_PROJECT_ID)"))
-	_ = viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
+	_ = viper.BindPFlag("certification_project_id", flags.Lookup("certification-project-id"))
 
 	checkContainerCmd.Flags().String("platform", rt.GOARCH, "Architecture of image to pull. Defaults to current platform.")
 	_ = viper.BindPFlag("platform", checkContainerCmd.Flags().Lookup("platform"))

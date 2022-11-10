@@ -229,3 +229,19 @@ $CONTAINER_TOOL run \
   -v ./temp-authfile.json:/temp-authfile.json:ro \
   quay.io/opdev/preflight:stable check container registry.example.org/your-namespace/your-bundle-image:sometag --submit
 ```
+
+### Testing a local container, i.e. not yet pushed to a registry
+
+Preflight does not support certifying against a local image, that is not pushed to
+a registry. In some cases, like a CI system, it is desirable to run preflight against
+an image BEFORE pushing to a public registry. In order to support that, one should
+start a local registry, push to it, and point preflight at the local registry.
+
+```bash
+podman run -p 5000:5000 docker.io/library/registry
+podman push --tls-verify=false localhost/myrepo/mycontainer:v1.0 localhost:5000/myrepo/mycontainer:v1.0
+preflight check container --insecure localhost:5000/myrepo/mycontainer:v1.0
+```
+
+Note: --submit and --insecure are mutually exclusive. A container cannot be fully
+certified and submitted unless it is on a secure registry.
