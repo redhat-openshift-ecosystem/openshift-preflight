@@ -29,6 +29,7 @@ type containerConfig interface {
 	PyxisHost() string
 	PyxisAPIToken() string
 	Submit() bool
+	Platform() string
 }
 
 // operatorConfig are configurables relevant to

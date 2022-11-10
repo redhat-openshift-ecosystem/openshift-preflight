@@ -3,14 +3,12 @@ package container
 import (
 	"context"
 	"fmt"
-	goruntime "runtime"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/authn"
 
 	"github.com/google/go-containerregistry/pkg/crane"
-	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 var _ certification.Check = &hasUniqueTagCheck{}
@@ -59,10 +57,6 @@ func (p *hasUniqueTagCheck) getDataToValidate(ctx context.Context, image string)
 	options := []crane.Option{
 		crane.WithContext(ctx),
 		crane.WithAuthFromKeychain(authn.PreflightKeychain(authn.WithDockerConfig(p.dockercfg))),
-		crane.WithPlatform(&cranev1.Platform{
-			OS:           "linux",
-			Architecture: goruntime.GOARCH,
-		}),
 	}
 
 	return crane.ListTags(image, options...)

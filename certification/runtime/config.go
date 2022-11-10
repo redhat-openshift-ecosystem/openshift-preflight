@@ -24,6 +24,7 @@ type Config struct {
 	PyxisAPIToken          string
 	DockerConfig           string
 	Submit                 bool
+	Platform               string
 	// Operator-Specific Fields
 	Namespace         string
 	ServiceAccount    string
@@ -63,6 +64,7 @@ func (c *Config) storeContainerPolicyConfiguration(vcfg viper.Viper) {
 	c.Submit = vcfg.GetBool("submit")
 	c.PyxisHost = pyxisHostLookup(vcfg.GetString("pyxis_env"), vcfg.GetString("pyxis_host"))
 	c.CertificationProjectID = vcfg.GetString("certification_project_id")
+	c.Platform = vcfg.GetString("platform")
 }
 
 // storeOperatorPolicyConfiguration reads operator-policy-specific config

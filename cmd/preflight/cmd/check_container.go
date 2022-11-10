@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	rt "runtime"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -46,6 +47,9 @@ func checkContainerCmd() *cobra.Command {
 	checkContainerCmd.Flags().String("certification-project-id", "", fmt.Sprintf("Certification Project ID from connect.redhat.com/projects/{certification-project-id}/overview\n"+
 		"URL paramater. This value may differ from the PID on the overview page. (env: PFLT_CERTIFICATION_PROJECT_ID)"))
 	_ = viper.BindPFlag("certification_project_id", checkContainerCmd.Flags().Lookup("certification-project-id"))
+
+	checkContainerCmd.Flags().String("platform", rt.GOARCH, "Architecture of image to pull. Defaults to current platform.")
+	_ = viper.BindPFlag("platform", checkContainerCmd.Flags().Lookup("platform"))
 
 	return checkContainerCmd
 }
