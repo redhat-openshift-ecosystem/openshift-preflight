@@ -38,7 +38,7 @@ var _ = Describe("OperatorSdk", func() {
 				ResultFile:     "success.txt",
 				OutputFormat:   "json",
 				Selector:       []string{"selector1", "selector2"},
-				Kubeconfig:     "/my/kubeconfig",
+				Kubeconfig:     []byte("fake kubeconfig contents"),
 				Namespace:      "awesome-namespace",
 				ServiceAccount: "this-service-account",
 				Verbose:        true,

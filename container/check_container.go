@@ -75,7 +75,7 @@ func (c *containerCheck) Run(ctx context.Context) (runtime.Results, error) {
 		return runtime.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
 	}
 
-	eng, err := engine.New(ctx, c.image, checks, c.dockerconfigjson, false, pol == policy.PolicyScratch, c.insecure, c.platform)
+	eng, err := engine.New(ctx, c.image, checks, nil, c.dockerconfigjson, false, pol == policy.PolicyScratch, c.insecure, c.platform)
 	if err != nil {
 		return runtime.Results{}, err
 	}
