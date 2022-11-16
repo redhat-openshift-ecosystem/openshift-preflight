@@ -33,6 +33,7 @@ type CheckEngine interface {
 func New(ctx context.Context,
 	image string,
 	checks []certification.Check,
+	kubeconfig []byte,
 	dockerconfig string,
 	isBundle,
 	isScratch bool,
@@ -40,6 +41,7 @@ func New(ctx context.Context,
 	platform string,
 ) (CheckEngine, error) {
 	return &internal.CraneEngine{
+		Kubeconfig:   kubeconfig,
 		DockerConfig: dockerconfig,
 		Image:        image,
 		Checks:       checks,
@@ -52,7 +54,8 @@ func New(ctx context.Context,
 // OperatorCheckConfig contains configuration relevant to an individual check's execution.
 type OperatorCheckConfig struct {
 	ScorecardImage, ScorecardWaitTime, ScorecardNamespace, ScorecardServiceAccount string
-	IndexImage, DockerConfig, Channel, Kubeconfig                                  string
+	IndexImage, DockerConfig, Channel                                              string
+	Kubeconfig                                                                     []byte
 }
 
 // InitializeOperatorChecks returns opeartor checks for policy p give cfg.
