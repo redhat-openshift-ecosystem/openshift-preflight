@@ -15,7 +15,7 @@ import (
 var _ = Describe("CheckInitialization", func() {
 	When("initializing the engine", func() {
 		It("should not return an error", func() {
-			_, err := New(context.TODO(), "example.com/some/image:latest", []certification.Check{}, "", false, false, false, goruntime.GOARCH)
+			_, err := New(context.TODO(), "example.com/some/image:latest", []certification.Check{}, nil, "", false, false, false, goruntime.GOARCH)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})

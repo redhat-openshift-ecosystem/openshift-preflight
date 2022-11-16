@@ -3,7 +3,6 @@ package operator
 import (
 	"context"
 	"fmt"
-	"os"
 	goruntime "runtime"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
@@ -19,7 +18,7 @@ type Option = func(*operatorCheck)
 const defaultScorecardWaitTime = "240"
 
 // NewCheck is a check runner that executes the Operator Policy.
-func NewCheck(image, kubeconfig, indeximage string, opts ...Option) *operatorCheck {
+func NewCheck(image, indeximage string, kubeconfig []byte, opts ...Option) *operatorCheck {
 	c := &operatorCheck{
 		image:             image,
 		kubeconfig:        kubeconfig,
@@ -39,7 +38,7 @@ func (c operatorCheck) Run(ctx context.Context) (runtime.Results, error) {
 	switch {
 	case c.image == "":
 		return runtime.Results{}, preflighterr.ErrImageEmpty
-	case c.kubeconfig == "":
+	case c.kubeconfig == nil:
 		return runtime.Results{}, preflighterr.ErrKubeconfigEmpty
 	case c.indeximage == "":
 		return runtime.Results{}, preflighterr.ErrIndexImageEmpty
@@ -50,11 +49,6 @@ func (c operatorCheck) Run(ctx context.Context) (runtime.Results, error) {
 	// NOTE(from Jose): workaround to handle preflight.log writing for lib callers.
 	if !lib.CallerIsCLI(ctx) {
 		lib.LogThroughArtifactWriterIfSet(ctx)
-	}
-
-	// NOTE(from Jose): Workaround for DeployableByOLM which relies on ctrl.GetConfig()
-	if _, isSet := os.LookupEnv("KUBECONFIG"); !isSet {
-		os.Setenv("KUBECONFIG", c.kubeconfig)
 	}
 
 	checks, err := engine.InitializeOperatorChecks(ctx, pol, engine.OperatorCheckConfig{
@@ -71,7 +65,7 @@ func (c operatorCheck) Run(ctx context.Context) (runtime.Results, error) {
 		return runtime.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
 	}
 
-	eng, err := engine.New(ctx, c.image, checks, c.dockerConfigFilePath, true, true, c.insecure, goruntime.GOARCH)
+	eng, err := engine.New(ctx, c.image, checks, c.kubeconfig, c.dockerConfigFilePath, true, true, c.insecure, goruntime.GOARCH)
 	if err != nil {
 		return runtime.Results{}, err
 	}
@@ -154,7 +148,7 @@ func WithInsecureConnection() Option {
 type operatorCheck struct {
 	// required
 	image      string
-	kubeconfig string
+	kubeconfig []byte
 	indeximage string
 	// optional
 	scorecardImage          string
