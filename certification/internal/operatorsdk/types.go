@@ -4,7 +4,7 @@ type OperatorSdkScorecardOptions struct {
 	OutputFormat   string
 	Selector       []string
 	ResultFile     string
-	Kubeconfig     string
+	Kubeconfig     []byte
 	Namespace      string
 	ServiceAccount string
 	Verbose        bool
