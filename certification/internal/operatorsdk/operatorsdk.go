@@ -41,9 +41,21 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 			cmdArgs = append(cmdArgs, fmt.Sprintf("--selector=%s", selector))
 		}
 	}
-	if opts.Kubeconfig != "" {
-		cmdArgs = append(cmdArgs, "--kubeconfig", opts.Kubeconfig)
+
+	if opts.Kubeconfig != nil {
+		kcf, err := os.CreateTemp("", "")
+		if err != nil {
+			return nil, fmt.Errorf("unable to create a temporary kubeconfig file for use with scorecard: %s", err)
+		}
+		log.Trace("created temporary kubeconfig for use with scorecard at path: ", kcf.Name())
+		defer os.Remove(kcf.Name())
+		_, err = kcf.Write(opts.Kubeconfig)
+		if err != nil {
+			return nil, fmt.Errorf("unable to write a temporary kubeconfig for use with scorecard: %s", err)
+		}
+		cmdArgs = append(cmdArgs, "--kubeconfig", kcf.Name())
 	}
+
 	if opts.WaitTime != "" {
 		cmdArgs = append(cmdArgs, "--wait-time", opts.WaitTime)
 	}

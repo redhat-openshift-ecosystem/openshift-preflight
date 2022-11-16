@@ -15,7 +15,7 @@ type scorecardCheck struct {
 
 	namespace      string
 	serviceAccount string
-	kubeconfig     string
+	kubeconfig     []byte
 	waitTime       string
 }
 

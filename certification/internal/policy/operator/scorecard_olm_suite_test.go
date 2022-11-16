@@ -73,7 +73,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 		fakeEngine = FakeOperatorSdk{
 			OperatorSdkReport: report,
 		}
-		scorecardOlmSuiteCheck = *NewScorecardOlmSuiteCheck(fakeEngine, "myns", "mysa", "", "20")
+		scorecardOlmSuiteCheck = *NewScorecardOlmSuiteCheck(fakeEngine, "myns", "mysa", []byte("fake kubeconfig contents"), "20")
 
 		tmpDir, err := os.MkdirTemp("", "artifacts-*")
 		Expect(err).ToNot(HaveOccurred())
@@ -100,7 +100,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 				engine := fakeEngine.(FakeOperatorSdk)
 				engine.OperatorSdkReport.Items[0].Status.Results[0].State = "fail"
 				fakeEngine = engine
-				scorecardOlmSuiteCheck = *NewScorecardOlmSuiteCheck(fakeEngine, "myns", "mysa", "", "20")
+				scorecardOlmSuiteCheck = *NewScorecardOlmSuiteCheck(fakeEngine, "myns", "mysa", []byte("fake kubeconfig contents"), "20")
 			})
 			It("Should not pass Validate", func() {
 				ok, err := scorecardOlmSuiteCheck.Validate(testcontext, certification.ImageReference{ImageURI: "dummy/image"})
@@ -112,7 +112,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 	Describe("Checking that OperatorSdk errors are handled correctly", func() {
 		BeforeEach(func() {
 			fakeEngine = BadOperatorSdk{}
-			scorecardOlmSuiteCheck = *NewScorecardOlmSuiteCheck(fakeEngine, "myns", "mysa", "", "20")
+			scorecardOlmSuiteCheck = *NewScorecardOlmSuiteCheck(fakeEngine, "myns", "mysa", []byte("fake kubeconfig contents"), "20")
 		})
 		Context("When OperatorSdk throws an error", func() {
 			It("should fail Validate and return an error", func() {

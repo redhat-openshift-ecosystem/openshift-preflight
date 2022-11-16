@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
@@ -93,7 +94,19 @@ func checkOperatorRunE(cmd *cobra.Command, args []string) error {
 
 	opts := generateOperatorCheckOptions(cfg)
 
-	checkoperator := operator.NewCheck(operatorImage, cfg.Kubeconfig, cfg.IndexImage, opts...)
+	kubeconfig, err := func() ([]byte, error) {
+		kubeconfigFile, err := os.Open(cfg.Kubeconfig)
+		if err != nil {
+			return nil, fmt.Errorf("unable to open provided kubeconfig file: %s", err)
+		}
+		defer kubeconfigFile.Close()
+		return io.ReadAll(kubeconfigFile)
+	}()
+	if err != nil {
+		return fmt.Errorf("unable to read provided kubeconfig file's contents: %s", err)
+	}
+
+	checkoperator := operator.NewCheck(operatorImage, cfg.IndexImage, kubeconfig, opts...)
 
 	cmd.SilenceUsage = true
 	return cli.RunPreflight(
