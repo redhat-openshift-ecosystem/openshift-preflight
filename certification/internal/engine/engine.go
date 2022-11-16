@@ -38,6 +38,8 @@ import (
 // CraneEngine implements a certification.CheckEngine, and leverage crane to interact with
 // the container registry and target image.
 type CraneEngine struct {
+	// Kubeconfig is a byte slice containing a valid Kubeconfig to be used by checks.
+	Kubeconfig []byte
 	// DockerConfig is the credential required to pull the image.
 	DockerConfig string
 	// Image is what is being tested, and should contain the
@@ -175,7 +177,7 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 
 	if c.IsBundle {
 		// Record test cluster version
-		c.results.TestedOn, err = openshift.GetOpenshiftClusterVersion()
+		c.results.TestedOn, err = openshift.GetOpenshiftClusterVersion(c.Kubeconfig)
 		if err != nil {
 			log.Errorf("could not determine test cluster version: %v", err)
 		}

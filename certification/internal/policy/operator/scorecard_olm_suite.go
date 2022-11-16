@@ -20,7 +20,7 @@ type ScorecardOlmSuiteCheck struct {
 
 const scorecardOlmSuiteResult string = "operator_bundle_scorecard_OlmSuiteCheck.json"
 
-func NewScorecardOlmSuiteCheck(operatorSdk operatorSdk, ns, sa, kubeconfig, waittime string) *ScorecardOlmSuiteCheck {
+func NewScorecardOlmSuiteCheck(operatorSdk operatorSdk, ns, sa string, kubeconfig []byte, waittime string) *ScorecardOlmSuiteCheck {
 	return &ScorecardOlmSuiteCheck{
 		scorecardCheck: scorecardCheck{
 			OperatorSdk:    operatorSdk,

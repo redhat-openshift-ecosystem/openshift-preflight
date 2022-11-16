@@ -13,7 +13,8 @@ var _ = Describe("Operator Check initialization", func() {
 	When("Using options to initialize a check", func() {
 		It("Should properly store the options with their correct values", func() {
 			image := "placeholder"
-			kubeconfig := "/some/path/to/kubeconfig"
+			kubeconfigContents := "kubeconfig contents"
+			kubeconfig := []byte(kubeconfigContents)
 			indeximage := "indeximage:latest"
 			scorecardImage := "scorecardimage:latest"
 			scorecardNamespace := "scorecardnamespace"
@@ -22,7 +23,7 @@ var _ = Describe("Operator Check initialization", func() {
 			operatorChannel := "operatorchannel"
 			dockerConfigFilePath := "dockerconfigfilepath"
 			insecure := true
-			c := NewCheck(image, kubeconfig, indeximage,
+			c := NewCheck(image, indeximage, kubeconfig,
 				WithScorecardImage(scorecardImage),
 				WithScorecardNamespace(scorecardNamespace),
 				WithScorecardServiceAccount(scorecardServiceAccount),
@@ -33,6 +34,7 @@ var _ = Describe("Operator Check initialization", func() {
 			)
 			Expect(c.image).To(Equal(image))
 			Expect(c.kubeconfig).To(Equal(kubeconfig))
+			Expect(c.kubeconfig).To(Equal([]byte(kubeconfigContents)))
 			Expect(c.indeximage).To(Equal(indeximage))
 			Expect(c.scorecardImage).To(Equal(scorecardImage))
 			Expect(c.scorecardNamespace).To(Equal(scorecardNamespace))
@@ -50,19 +52,19 @@ var _ = Describe("Operator Check Execution", func() {
 
 	When("Calling the check", func() {
 		It("should fail if you passed an empty image", func() {
-			chk := NewCheck("", "kubeconfig", "indeximage")
+			chk := NewCheck("", "indeximage", []byte{})
 			_, err := chk.Run(context.TODO())
 			Expect(err).To(MatchError(preflighterr.ErrImageEmpty))
 		})
 
 		It("should fail if you passed an empty kubeconfig", func() {
-			chk := NewCheck("image", "", "indeximage")
+			chk := NewCheck("image", "indeximage", nil)
 			_, err := chk.Run(context.TODO())
 			Expect(err).To(MatchError(preflighterr.ErrKubeconfigEmpty))
 		})
 
 		It("should fail if you passed an empty index image", func() {
-			chk := NewCheck("image", "kubeconfig", "")
+			chk := NewCheck("image", "", []byte{})
 			_, err := chk.Run(context.TODO())
 			Expect(err).To(MatchError(preflighterr.ErrIndexImageEmpty))
 		})
