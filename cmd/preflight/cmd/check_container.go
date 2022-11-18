@@ -5,14 +5,14 @@ import (
 	rt "runtime"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/container"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
 	"github.com/spf13/cobra"
@@ -52,7 +52,7 @@ func checkContainerCmd() *cobra.Command {
 		"If you do set it, it should include just the host, and the URI path. (env: PFLT_PYXIS_HOST)"))
 	_ = viper.BindPFlag("pyxis_host", flags.Lookup("pyxis-host"))
 
-	flags.String("pyxis-env", certification.DefaultPyxisEnv, "Env to use for Pyxis submissions.")
+	flags.String("pyxis-env", check.DefaultPyxisEnv, "Env to use for Pyxis submissions.")
 	_ = viper.BindPFlag("pyxis_env", flags.Lookup("pyxis-env"))
 
 	flags.String("certification-project-id", "", fmt.Sprintf("Certification Project ID from connect.redhat.com/projects/{certification-project-id}/overview\n"+

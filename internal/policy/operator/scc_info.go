@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/bundle"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
-var _ certification.Check = &securityContextConstraintsInCSV{}
+var _ check.Check = &securityContextConstraintsInCSV{}
 
 // securityContextConstraintsInCSV evaluates the csv and logs a message if a non default security context constraint is
 // needed by the operator
@@ -23,7 +24,7 @@ func NewSecurityContextConstraintsCheck() *securityContextConstraintsInCSV {
 	}
 }
 
-func (p *securityContextConstraintsInCSV) Validate(ctx context.Context, bundleRef certification.ImageReference) (bool, error) {
+func (p *securityContextConstraintsInCSV) Validate(ctx context.Context, bundleRef image.ImageReference) (bool, error) {
 	requestedSCCList, err := p.dataToValidate(ctx, bundleRef.ImageFSPath)
 	if err != nil {
 		return false, err
@@ -63,8 +64,8 @@ func (p *securityContextConstraintsInCSV) Name() string {
 	return "SecurityContextConstraintsInCSV"
 }
 
-func (p *securityContextConstraintsInCSV) Metadata() certification.Metadata {
-	return certification.Metadata{
+func (p *securityContextConstraintsInCSV) Metadata() check.Metadata {
+	return check.Metadata{
 		Description:      "Evaluates the csv and logs a message if a non default security context constraint is needed by the operator",
 		Level:            "optional",
 		KnowledgeBaseURL: "https://redhat-connect.gitbook.io/certified-operator-guide/troubleshooting-and-resources/sccs", // Placeholder
@@ -72,20 +73,20 @@ func (p *securityContextConstraintsInCSV) Metadata() certification.Metadata {
 	}
 }
 
-func (p *securityContextConstraintsInCSV) Help() certification.HelpText {
+func (p *securityContextConstraintsInCSV) Help() check.HelpText {
 	// TODO implement a way to display help text for informational checks
 	// Currently this bool triggered customized help is not shown anywhere since this check is purely informational
 	// and always passes. Since the ask is to indicate this information to the user it should eventually be shown in the
 	// output rather than just logs
 	if p.customSCCSpecified {
-		return certification.HelpText{
+		return check.HelpText{
 			Message: "A custom security context constraint was detected in the csv. " +
 				"Please see the operators documentation for details.",
 			Suggestion: "A custom security context constraint may need to be applied by a cluster admin.",
 		}
 	}
 	// This is the default help text returned in case the check fails
-	return certification.HelpText{
+	return check.HelpText{
 		Message: "The securityContextConstraintsInCSV logs a message if the operator requests a " +
 			"security context constraint. Please review the operators documentation to see if this is needed.",
 		Suggestion: "If no scc is detected the default restricted scc will be used.",

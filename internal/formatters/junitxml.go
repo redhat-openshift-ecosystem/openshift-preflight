@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 )
 
 type JUnitTestSuites struct {
@@ -50,7 +50,7 @@ type JUnitFailure struct {
 	Contents string `xml:",chardata"`
 }
 
-func junitXMLFormatter(ctx context.Context, r runtime.Results) ([]byte, error) {
+func junitXMLFormatter(ctx context.Context, r certification.Results) ([]byte, error) {
 	response := getResponse(r)
 	suites := JUnitTestSuites{}
 	testsuite := JUnitTestSuite{

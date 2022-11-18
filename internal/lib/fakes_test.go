@@ -10,8 +10,10 @@ import (
 	"time"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 )
 
 type (
@@ -176,17 +178,17 @@ type fakeCheckEngine struct {
 }
 
 // generateCheck generates a check with a randomized name
-func (e fakeCheckEngine) generateCheck() certification.Check {
+func (e fakeCheckEngine) generateCheck() check.Check {
 	generatedName := fmt.Sprintf("test-rand-%d", rand.Int())
 
-	doNothing := func(c context.Context, i certification.ImageReference) (bool, error) {
+	doNothing := func(c context.Context, i image.ImageReference) (bool, error) {
 		return true, nil
 	}
 
-	return certification.NewGenericCheck(generatedName,
+	return check.NewGenericCheck(generatedName,
 		doNothing,
-		certification.Metadata{},
-		certification.HelpText{},
+		check.Metadata{},
+		check.HelpText{},
 	)
 }
 
@@ -197,17 +199,20 @@ func (e fakeCheckEngine) ExecuteChecks(ctx context.Context) error {
 	return nil
 }
 
-func (e fakeCheckEngine) Results(ctx context.Context) runtime.Results {
-	return runtime.Results{
-		TestedImage:       "",
-		PassedOverall:     false,
-		TestedOn:          runtime.OpenshiftClusterVersion{},
+func (e fakeCheckEngine) Results(ctx context.Context) certification.Results {
+	return certification.Results{
+		TestedImage:   "",
+		PassedOverall: false,
+		TestedOn: runtime.OpenshiftClusterVersion{
+			Name:    "FakeName",
+			Version: "FakeVersion",
+		},
 		CertificationHash: "",
-		Passed: []runtime.Result{
+		Passed: []certification.Result{
 			{Check: e.generateCheck(), ElapsedTime: 20 * time.Millisecond},
 		},
-		Failed: []runtime.Result{},
-		Errors: []runtime.Result{},
+		Failed: []certification.Result{},
+		Errors: []certification.Result{},
 	}
 }
 
@@ -242,7 +247,7 @@ func (f *badFormatter) PrettyName() string {
 	return "Fake"
 }
 
-func (f *badFormatter) Format(ctx context.Context, r runtime.Results) ([]byte, error) {
+func (f *badFormatter) Format(ctx context.Context, r certification.Results) ([]byte, error) {
 	return nil, errors.New(f.errormsg)
 }
 

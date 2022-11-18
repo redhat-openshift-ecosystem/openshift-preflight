@@ -1,10 +1,14 @@
-package certification
+package check
 
-import "context"
+import (
+	"context"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
+)
 
 // ValidatorFunc describes a function that, when executed, will check that an
 // artifact (e.g. operator bundle) complies with a given check.
-type ValidatorFunc = func(context.Context, ImageReference) (bool, error)
+type ValidatorFunc = func(context.Context, image.ImageReference) (bool, error)
 
 type genericCheckDefinition struct {
 	name        string
@@ -17,7 +21,7 @@ func (pd *genericCheckDefinition) Name() string {
 	return pd.name
 }
 
-func (pd *genericCheckDefinition) Validate(ctx context.Context, imgRef ImageReference) (bool, error) {
+func (pd *genericCheckDefinition) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	return pd.validatorFn(ctx, imgRef)
 }
 
