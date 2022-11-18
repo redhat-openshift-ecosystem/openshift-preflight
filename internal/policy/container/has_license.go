@@ -8,7 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
@@ -19,13 +20,13 @@ const (
 
 var errLicensesNotADir = errors.New("licenses is not a directory")
 
-var _ certification.Check = &HasLicenseCheck{}
+var _ check.Check = &HasLicenseCheck{}
 
 // HasLicenseCheck evaluates that the image contains a license definition available at
 // /licenses.
 type HasLicenseCheck struct{}
 
-func (p *HasLicenseCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
+func (p *HasLicenseCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	licenseFileList, err := p.getDataToValidate(ctx, imgRef.ImageFSPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) || errors.Is(err, errLicensesNotADir) {
@@ -75,8 +76,8 @@ func (p *HasLicenseCheck) Name() string {
 	return "HasLicense"
 }
 
-func (p *HasLicenseCheck) Metadata() certification.Metadata {
-	return certification.Metadata{
+func (p *HasLicenseCheck) Metadata() check.Metadata {
+	return check.Metadata{
 		Description:      "Checking if terms and conditions applicable to the software including open source licensing information are present. The license must be at /licenses",
 		Level:            "best",
 		KnowledgeBaseURL: certDocumentationURL,
@@ -84,8 +85,8 @@ func (p *HasLicenseCheck) Metadata() certification.Metadata {
 	}
 }
 
-func (p *HasLicenseCheck) Help() certification.HelpText {
-	return certification.HelpText{
+func (p *HasLicenseCheck) Help() check.HelpText {
+	return check.HelpText{
 		Message:    "Check HasLicense encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Create a directory named /licenses and include all relevant licensing and/or terms and conditions as text file(s) in that directory.",
 	}

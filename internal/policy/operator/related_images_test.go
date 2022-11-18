@@ -5,10 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 
 var _ = Describe("RelatedImages", func() {
@@ -18,7 +17,7 @@ var _ = Describe("RelatedImages", func() {
 	)
 	var (
 		relatedImagesCheck *RelatedImagesCheck
-		imageRef           certification.ImageReference
+		imageRef           image.ImageReference
 		csvContents        = `kind: ClusterServiceVersion
 apiVersion: operators.coreos.com/v1alpha1
 spec:

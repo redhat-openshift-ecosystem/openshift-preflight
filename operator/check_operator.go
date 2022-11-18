@@ -5,11 +5,11 @@ import (
 	"fmt"
 	goruntime "runtime"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	preflighterr "github.com/redhat-openshift-ecosystem/openshift-preflight/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 )
 
 type Option = func(*operatorCheck)
@@ -34,14 +34,14 @@ func NewCheck(image, indeximage string, kubeconfig []byte, opts ...Option) *oper
 }
 
 // Run executes the check and returns the results.
-func (c operatorCheck) Run(ctx context.Context) (runtime.Results, error) {
+func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
 	switch {
 	case c.image == "":
-		return runtime.Results{}, preflighterr.ErrImageEmpty
+		return certification.Results{}, preflighterr.ErrImageEmpty
 	case c.kubeconfig == nil:
-		return runtime.Results{}, preflighterr.ErrKubeconfigEmpty
+		return certification.Results{}, preflighterr.ErrKubeconfigEmpty
 	case c.indeximage == "":
-		return runtime.Results{}, preflighterr.ErrIndexImageEmpty
+		return certification.Results{}, preflighterr.ErrIndexImageEmpty
 	}
 
 	pol := policy.PolicyOperator
@@ -62,12 +62,12 @@ func (c operatorCheck) Run(ctx context.Context) (runtime.Results, error) {
 		Kubeconfig:              c.kubeconfig,
 	})
 	if err != nil {
-		return runtime.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
+		return certification.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
 	}
 
 	eng, err := engine.New(ctx, c.image, checks, c.kubeconfig, c.dockerConfigFilePath, true, true, c.insecure, goruntime.GOARCH)
 	if err != nil {
-		return runtime.Results{}, err
+		return certification.Results{}, err
 	}
 
 	// NOTE(): The engine reads the cluster's version, but requires the KUBECONFIG
@@ -78,11 +78,11 @@ func (c operatorCheck) Run(ctx context.Context) (runtime.Results, error) {
 	// See: https://github.com/redhat-openshift-ecosystem/openshift-preflight/pull/322
 
 	if err := eng.ExecuteChecks(ctx); err != nil {
-		return runtime.Results{}, err
+		return certification.Results{}, err
 	}
 
 	if err != nil {
-		return runtime.Results{}, err
+		return certification.Results{}, err
 	}
 
 	return eng.Results(ctx), nil

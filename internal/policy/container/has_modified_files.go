@@ -8,14 +8,15 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/rpm"
 
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 )
 
-var _ certification.Check = &HasModifiedFilesCheck{}
+var _ check.Check = &HasModifiedFilesCheck{}
 
 // HasModifiedFilesCheck evaluates that no files from the base layer have been modified by
 // subsequent layers by comparing the file list installed by Packages against the file list
@@ -31,7 +32,7 @@ type packageFilesRef struct {
 	PackageFiles map[string]struct{}
 }
 
-func (p *HasModifiedFilesCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
+func (p *HasModifiedFilesCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	packageFiles, err := p.getDataToValidate(ctx, imgRef)
 	if err != nil {
 		return false, fmt.Errorf("could not generate modified files list: %v", err)
@@ -42,7 +43,7 @@ func (p *HasModifiedFilesCheck) Validate(ctx context.Context, imgRef certificati
 // getDataToValidate returns the list of files (packageFilesRef.PackageFiles)
 // installed via packages from the container image,and the list of files (packageFilesRef.LayerFiles)
 // modified/added via layers in the image.
-func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef certification.ImageReference) (*packageFilesRef, error) {
+func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef image.ImageReference) (*packageFilesRef, error) {
 	// Get a list of packages from the RPM database. This avoids having to rely on
 	// rpm, dnf, yum, etc. being installed in the image.
 	pkgList, err := rpm.GetPackageList(ctx, imgRef.ImageFSPath)
@@ -158,15 +159,15 @@ func (p HasModifiedFilesCheck) Name() string {
 	return "HasModifiedFiles"
 }
 
-func (p HasModifiedFilesCheck) Help() certification.HelpText {
-	return certification.HelpText{
+func (p HasModifiedFilesCheck) Help() check.HelpText {
+	return check.HelpText{
 		Message:    "Check HasModifiedFiles encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Do not modify any files installed by RPM in the base Red Hat layer",
 	}
 }
 
-func (p HasModifiedFilesCheck) Metadata() certification.Metadata {
-	return certification.Metadata{
+func (p HasModifiedFilesCheck) Metadata() check.Metadata {
+	return check.Metadata{
 		Description:      "Checks that no files installed via RPM in the base Red Hat layer have been modified",
 		Level:            "best",
 		KnowledgeBaseURL: certDocumentationURL,

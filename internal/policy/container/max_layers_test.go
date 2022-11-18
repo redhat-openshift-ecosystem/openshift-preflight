@@ -3,12 +3,11 @@ package container
 import (
 	"context"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 
 func generateLayers(layerCount int) []cranev1.Layer {
@@ -30,7 +29,7 @@ func generateTooManyLayers() ([]cranev1.Layer, error) {
 var _ = Describe("LessThanMaxLayers", func() {
 	var (
 		maxLayersCheck MaxLayersCheck
-		imgRef         certification.ImageReference
+		imgRef         image.ImageReference
 	)
 
 	BeforeEach(func() {

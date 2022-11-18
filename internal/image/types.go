@@ -1,4 +1,4 @@
-package certification
+package image
 
 import v1 "github.com/google/go-containerregistry/pkg/v1"
 

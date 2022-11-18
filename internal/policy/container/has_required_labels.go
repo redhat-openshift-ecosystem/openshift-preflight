@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
@@ -12,13 +13,13 @@ import (
 
 var requiredLabels = []string{"name", "vendor", "version", "release", "summary", "description"}
 
-var _ certification.Check = &HasRequiredLabelsCheck{}
+var _ check.Check = &HasRequiredLabelsCheck{}
 
 // HasRequiredLabelsCheck evaluates the image manifest to ensure that the appropriate metadata
 // labels are present on the image asset as it exists in its current container registry.
 type HasRequiredLabelsCheck struct{}
 
-func (p *HasRequiredLabelsCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
+func (p *HasRequiredLabelsCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	labels, err := p.getDataForValidate(imgRef.ImageInfo)
 	if err != nil {
 		return false, fmt.Errorf("could not retrieve image labels: %v", err)
@@ -52,8 +53,8 @@ func (p *HasRequiredLabelsCheck) Name() string {
 	return "HasRequiredLabel"
 }
 
-func (p *HasRequiredLabelsCheck) Metadata() certification.Metadata {
-	return certification.Metadata{
+func (p *HasRequiredLabelsCheck) Metadata() check.Metadata {
+	return check.Metadata{
 		Description:      "Checking if the required labels (name, vendor, version, release, summary, description) are present in the container metadata.",
 		Level:            "good",
 		KnowledgeBaseURL: certDocumentationURL,
@@ -61,8 +62,8 @@ func (p *HasRequiredLabelsCheck) Metadata() certification.Metadata {
 	}
 }
 
-func (p *HasRequiredLabelsCheck) Help() certification.HelpText {
-	return certification.HelpText{
+func (p *HasRequiredLabelsCheck) Help() check.HelpText {
+	return check.HelpText{
 		Message:    "Check Check HasRequiredLabel encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Add the following labels to your Dockerfile or Containerfile: name, vendor, version, release, summary, description",
 	}

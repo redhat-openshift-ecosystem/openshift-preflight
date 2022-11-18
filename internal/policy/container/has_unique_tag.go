@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/authn"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 )
 
-var _ certification.Check = &hasUniqueTagCheck{}
+var _ check.Check = &hasUniqueTagCheck{}
 
 func NewHasUniqueTagCheck(dockercfg string) *hasUniqueTagCheck {
 	return &hasUniqueTagCheck{
@@ -26,7 +27,7 @@ type hasUniqueTagCheck struct {
 	dockercfg string
 }
 
-func (p *hasUniqueTagCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
+func (p *hasUniqueTagCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	imgRepo := fmt.Sprintf("%s/%s", imgRef.ImageRegistry, imgRef.ImageRepository)
 
 	tags := make([]string, 0)
@@ -74,8 +75,8 @@ func (p *hasUniqueTagCheck) Name() string {
 	return "HasUniqueTag"
 }
 
-func (p *hasUniqueTagCheck) Metadata() certification.Metadata {
-	return certification.Metadata{
+func (p *hasUniqueTagCheck) Metadata() check.Metadata {
+	return check.Metadata{
 		Description:      "Checking if container has a tag other than 'latest', so that the image can be uniquely identified.",
 		Level:            "best",
 		KnowledgeBaseURL: certDocumentationURL,
@@ -83,8 +84,8 @@ func (p *hasUniqueTagCheck) Metadata() certification.Metadata {
 	}
 }
 
-func (p *hasUniqueTagCheck) Help() certification.HelpText {
-	return certification.HelpText{
+func (p *hasUniqueTagCheck) Help() check.HelpText {
+	return check.HelpText{
 		Message:    "Check HasUniqueTag encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Add a tag to your image. Consider using Semantic Versioning. https://semver.org/",
 	}

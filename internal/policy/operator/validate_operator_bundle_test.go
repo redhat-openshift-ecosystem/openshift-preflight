@@ -3,10 +3,9 @@ package operator
 import (
 	"context"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 
 var _ = Describe("BundleValidateCheck", func() {
@@ -23,7 +22,7 @@ var _ = Describe("BundleValidateCheck", func() {
 	Describe("Operator Bundle Validate", func() {
 		Context("When Operator Bundle Validate passes", func() {
 			It("Should pass Validate", func() {
-				imageRef := certification.ImageReference{
+				imageRef := image.ImageReference{
 					ImageFSPath: "./testdata/valid_bundle",
 				}
 				ok, err := bundleValidateCheck.Validate(context.TODO(), imageRef)
@@ -33,7 +32,7 @@ var _ = Describe("BundleValidateCheck", func() {
 		})
 		Context("When Operator Bundle Validate does not Pass", func() {
 			It("Should not pass Validate", func() {
-				imageRef := certification.ImageReference{
+				imageRef := image.ImageReference{
 					ImageFSPath: "./testdata/invalid_bundle",
 				}
 				ok, err := bundleValidateCheck.Validate(context.TODO(), imageRef)

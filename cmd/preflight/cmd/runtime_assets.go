@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 
 	"github.com/spf13/cobra"
 )

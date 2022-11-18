@@ -1,15 +1,17 @@
-package certification
+package check
 
 import (
 	"context"
 	"errors"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 
 	. "github.com/onsi/ginkgo/v2/dsl/core"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Generic check tests", func() {
-	validatorFn := func(ctx context.Context, imageRef ImageReference) (bool, error) { //nolint:unparam // ctx param is unused
+	validatorFn := func(ctx context.Context, imageRef image.ImageReference) (bool, error) { //nolint:unparam // ctx param is unused
 		switch imageRef.ImageFSPath {
 		case "error":
 			return false, errors.New("invalid validator")
@@ -27,7 +29,7 @@ var _ = Describe("Generic check tests", func() {
 	}
 	When("A generic check is created", func() {
 		var testCheck Check
-		var imgRef ImageReference
+		var imgRef image.ImageReference
 		BeforeEach(func() {
 			testCheck = NewGenericCheck(
 				"testname",
@@ -35,7 +37,7 @@ var _ = Describe("Generic check tests", func() {
 				metadata,
 				helpText,
 			)
-			imgRef = ImageReference{}
+			imgRef = image.ImageReference{}
 		})
 		It("should return the correct name", func() {
 			Expect(testCheck.Name()).To(Equal("testname"))

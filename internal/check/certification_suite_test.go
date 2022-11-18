@@ -1,4 +1,4 @@
-package certification
+package check
 
 import (
 	"testing"

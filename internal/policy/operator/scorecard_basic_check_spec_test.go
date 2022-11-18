@@ -4,8 +4,8 @@ import (
 	"context"
 	"os"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -90,7 +90,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 	Describe("Operator Bundle Scorecard", func() {
 		Context("When Operator Bundle Scorecard Basic Check has a pass", func() {
 			It("Should pass Validate", func() {
-				ok, err := scorecardBasicCheck.Validate(testcontext, certification.ImageReference{ImageURI: "dummy/image"})
+				ok, err := scorecardBasicCheck.Validate(testcontext, image.ImageReference{ImageURI: "dummy/image"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -103,7 +103,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 				scorecardBasicCheck = *NewScorecardBasicSpecCheck(fakeEngine, "myns", "mysa", []byte("fake kubeconfig contents"), "20")
 			})
 			It("Should not pass Validate", func() {
-				ok, err := scorecardBasicCheck.Validate(testcontext, certification.ImageReference{ImageURI: "dummy/image"})
+				ok, err := scorecardBasicCheck.Validate(testcontext, image.ImageReference{ImageURI: "dummy/image"})
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
@@ -116,7 +116,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 		})
 		Context("When OperatorSdk throws an error", func() {
 			It("should fail Validate and return an error", func() {
-				ok, err := scorecardBasicCheck.Validate(testcontext, certification.ImageReference{ImageURI: "dummy/image"})
+				ok, err := scorecardBasicCheck.Validate(testcontext, image.ImageReference{ImageURI: "dummy/image"})
 				Expect(err).To(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

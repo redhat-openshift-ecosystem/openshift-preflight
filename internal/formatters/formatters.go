@@ -7,7 +7,8 @@ import (
 	"fmt"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/formatters"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/config"
 )
 
 // ResponseFormatter describes the expected methods a formatter
@@ -20,16 +21,12 @@ type ResponseFormatter interface {
 	FileExtension() string
 	// Format takes Results, formats it as needed, and returns the formatted
 	// results ready to write as a byte slice.
-	Format(context.Context, runtime.Results) (response []byte, formattingError error)
+	Format(context.Context, certification.Results) (response []byte, formattingError error)
 }
-
-// FormatterFunc describes a function that formats the check validation
-// results.
-type FormatterFunc = func(context.Context, runtime.Results) (response []byte, formattingError error)
 
 // NewForConfig returns a new formatter based on the user-provided configuration. It relies
 // on config values which should align with known/supported/built-in formatters.
-func NewForConfig(cfg certification.Config) (ResponseFormatter, error) {
+func NewForConfig(cfg config.Config) (ResponseFormatter, error) {
 	return NewByName(cfg.ResponseFormat())
 }
 
@@ -48,7 +45,7 @@ func NewByName(name string) (ResponseFormatter, error) {
 }
 
 // New returns a new formatter with the provided name and FormatterFunc.
-func New(name, extension string, fn FormatterFunc) (ResponseFormatter, error) {
+func New(name, extension string, fn formatters.FormatterFunc) (ResponseFormatter, error) {
 	if len(name) == 0 {
 		return nil, fmt.Errorf(
 			"failed to create a new generic formatter: formatter name is required",
@@ -69,7 +66,7 @@ func New(name, extension string, fn FormatterFunc) (ResponseFormatter, error) {
 type genericFormatter struct {
 	name          string
 	fileExtension string
-	formatterFunc FormatterFunc
+	formatterFunc formatters.FormatterFunc
 }
 
 // Name returns a string identification of the formatter that's in use.
@@ -78,7 +75,7 @@ func (f *genericFormatter) PrettyName() string {
 }
 
 // Format returns the formatted results as a byte slice.
-func (f *genericFormatter) Format(ctx context.Context, r runtime.Results) ([]byte, error) {
+func (f *genericFormatter) Format(ctx context.Context, r certification.Results) ([]byte, error) {
 	return f.formatterFunc(ctx, r)
 }
 

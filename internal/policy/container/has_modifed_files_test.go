@@ -4,11 +4,10 @@ import (
 	"context"
 	"path"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 
 var _ = Describe("HasModifiedFiles", func() {
@@ -128,7 +127,7 @@ var _ = Describe("HasModifiedFiles", func() {
 
 	Context("When calling the top level Validate", func() {
 		It("should fail with an invalid ImageReference", func() {
-			passed, err := hasModifiedFiles.Validate(context.TODO(), certification.ImageReference{})
+			passed, err := hasModifiedFiles.Validate(context.TODO(), image.ImageReference{})
 			Expect(err).To(HaveOccurred())
 			Expect(passed).To(BeFalse())
 		})
