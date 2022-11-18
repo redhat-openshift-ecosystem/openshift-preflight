@@ -5,18 +5,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/rpm"
 )
 
-var _ certification.Check = &HasNoProhibitedPackagesCheck{}
+var _ check.Check = &HasNoProhibitedPackagesCheck{}
 
 // HasProhibitedPackages evaluates that the image does not contain prohibited packages,
 // which refers to packages that are not redistributable without an appropriate license.
 type HasNoProhibitedPackagesCheck struct{}
 
-func (p *HasNoProhibitedPackagesCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
+func (p *HasNoProhibitedPackagesCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	pkgList, err := p.getDataToValidate(ctx, imgRef.ImageFSPath)
 	if err != nil {
 		return false, fmt.Errorf("unable to get a list of all packages in the image: %v", err)
@@ -66,8 +67,8 @@ func (p *HasNoProhibitedPackagesCheck) Name() string {
 	return "HasNoProhibitedPackages"
 }
 
-func (p *HasNoProhibitedPackagesCheck) Metadata() certification.Metadata {
-	return certification.Metadata{
+func (p *HasNoProhibitedPackagesCheck) Metadata() check.Metadata {
+	return check.Metadata{
 		Description:      "Checks to ensure that the image in use does not include prohibited packages, such as Red Hat Enterprise Linux (RHEL) kernel packages.",
 		Level:            "best",
 		KnowledgeBaseURL: certDocumentationURL,
@@ -75,8 +76,8 @@ func (p *HasNoProhibitedPackagesCheck) Metadata() certification.Metadata {
 	}
 }
 
-func (p *HasNoProhibitedPackagesCheck) Help() certification.HelpText {
-	return certification.HelpText{
+func (p *HasNoProhibitedPackagesCheck) Help() check.HelpText {
+	return check.HelpText{
 		Message:    "Check HasNoProhibitedPackages encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Remove any RHEL packages that are not distributable outside of UBI",
 	}

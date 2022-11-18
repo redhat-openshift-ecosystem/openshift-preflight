@@ -4,19 +4,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
-var _ certification.Check = &RunAsNonRootCheck{}
+var _ check.Check = &RunAsNonRootCheck{}
 
 // RunAsNonRootCheck evaluates the image to determine that the runtime UID is not 0,
 // which correlates to the root user.
 type RunAsNonRootCheck struct{}
 
-func (p *RunAsNonRootCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
+func (p *RunAsNonRootCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	user, err := p.getDataToValidate(imgRef.ImageInfo)
 	if err != nil {
 		return false, fmt.Errorf("could not get validation data: %v", err)
@@ -54,8 +55,8 @@ func (p *RunAsNonRootCheck) Name() string {
 	return "RunAsNonRoot"
 }
 
-func (p *RunAsNonRootCheck) Metadata() certification.Metadata {
-	return certification.Metadata{
+func (p *RunAsNonRootCheck) Metadata() check.Metadata {
+	return check.Metadata{
 		Description:      "Checking if container runs as the root user because a container that does not specify a non-root user will fail the automatic certification, and will be subject to a manual review before the container can be approved for publication",
 		Level:            "best",
 		KnowledgeBaseURL: certDocumentationURL,
@@ -63,8 +64,8 @@ func (p *RunAsNonRootCheck) Metadata() certification.Metadata {
 	}
 }
 
-func (p *RunAsNonRootCheck) Help() certification.HelpText {
-	return certification.HelpText{
+func (p *RunAsNonRootCheck) Help() check.HelpText {
+	return check.HelpText{
 		Message:    "Check RunAsNonRoot encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Indicate a specific USER in the dockerfile or containerfile",
 	}

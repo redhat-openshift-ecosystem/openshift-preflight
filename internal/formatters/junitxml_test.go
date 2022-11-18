@@ -5,7 +5,9 @@ import (
 	"errors"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -13,9 +15,9 @@ import (
 
 var _ = Describe("JUnitXML Formatter", func() {
 	Context("With a valid UserResponse", func() {
-		var response runtime.Results
+		var response certification.Results
 		BeforeEach(func() {
-			response = runtime.Results{
+			response = certification.Results{
 				TestedImage:   "example.com/repo/image:tag",
 				PassedOverall: true,
 				TestedOn: runtime.OpenshiftClusterVersion{
@@ -23,53 +25,53 @@ var _ = Describe("JUnitXML Formatter", func() {
 					Version: "Clusterversion",
 				},
 				CertificationHash: "",
-				Passed: []runtime.Result{
+				Passed: []certification.Result{
 					{
-						Check: certification.NewGenericCheck(
+						Check: check.NewGenericCheck(
 							"PassedCheck",
-							func(ctx context.Context, ir certification.ImageReference) (bool, error) { return true, nil },
-							certification.Metadata{
+							func(ctx context.Context, ir image.ImageReference) (bool, error) { return true, nil },
+							check.Metadata{
 								Description:      "description",
 								KnowledgeBaseURL: "kburl",
 								CheckURL:         "checkurl",
 							},
-							certification.HelpText{
+							check.HelpText{
 								Message:    "helptext",
 								Suggestion: "suggestion",
 							}),
 						ElapsedTime: 0,
 					},
 				},
-				Failed: []runtime.Result{
+				Failed: []certification.Result{
 					{
-						Check: certification.NewGenericCheck(
+						Check: check.NewGenericCheck(
 							"FailedCheck",
-							func(ctx context.Context, ir certification.ImageReference) (bool, error) { return false, nil },
-							certification.Metadata{
+							func(ctx context.Context, ir image.ImageReference) (bool, error) { return false, nil },
+							check.Metadata{
 								Description:      "description",
 								KnowledgeBaseURL: "kburl",
 								CheckURL:         "checkurl",
 							},
-							certification.HelpText{
+							check.HelpText{
 								Message:    "helptext",
 								Suggestion: "suggestion",
 							}),
 						ElapsedTime: 0,
 					},
 				},
-				Errors: []runtime.Result{
+				Errors: []certification.Result{
 					{
-						Check: certification.NewGenericCheck(
+						Check: check.NewGenericCheck(
 							"ErroredCheck",
-							func(ctx context.Context, ir certification.ImageReference) (bool, error) {
+							func(ctx context.Context, ir image.ImageReference) (bool, error) {
 								return false, errors.New("someerror")
 							},
-							certification.Metadata{
+							check.Metadata{
 								Description:      "description",
 								KnowledgeBaseURL: "kburl",
 								CheckURL:         "checkurl",
 							},
-							certification.HelpText{
+							check.HelpText{
 								Message:    "helptext",
 								Suggestion: "suggestion",
 							}),

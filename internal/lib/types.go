@@ -14,10 +14,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 )
 
 // ResultWriter defines methods associated with writing check results.
@@ -125,30 +125,30 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 		return errors.New("the artifact writer was either missing or was not supported, so results cannot be submitted")
 	}
 
-	certImage, err := os.Open(path.Join(artifactWriter.Path(), certification.DefaultCertImageFilename))
+	certImage, err := os.Open(path.Join(artifactWriter.Path(), check.DefaultCertImageFilename))
 	if err != nil {
 		return fmt.Errorf("could not open file for submission: %s: %w",
-			certification.DefaultCertImageFilename,
+			check.DefaultCertImageFilename,
 			err,
 		)
 	}
 	defer certImage.Close()
 
-	preflightResults, err := os.Open(path.Join(artifactWriter.Path(), certification.DefaultTestResultsFilename))
+	preflightResults, err := os.Open(path.Join(artifactWriter.Path(), check.DefaultTestResultsFilename))
 	if err != nil {
 		return fmt.Errorf(
 			"could not open file for submission: %s: %w",
-			certification.DefaultTestResultsFilename,
+			check.DefaultTestResultsFilename,
 			err,
 		)
 	}
 	defer preflightResults.Close()
 
-	rpmManifest, err := os.Open(path.Join(artifactWriter.Path(), certification.DefaultRPMManifestFilename))
+	rpmManifest, err := os.Open(path.Join(artifactWriter.Path(), check.DefaultRPMManifestFilename))
 	if err != nil {
 		return fmt.Errorf(
 			"could not open file for submission: %s: %w",
-			certification.DefaultRPMManifestFilename,
+			check.DefaultRPMManifestFilename,
 			err,
 		)
 	}

@@ -13,11 +13,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 )
 
 var _ = Describe("Pyxis Client Instantiation", func() {
@@ -206,7 +206,7 @@ var _ = Describe("Container Certification Submitter", func() {
 			})
 			Expect(err).ToNot(HaveOccurred())
 
-			preflightTestResultsJSONBytes, err := json.Marshal(runtime.Results{
+			preflightTestResultsJSONBytes, err := json.Marshal(certification.Results{
 				TestedImage:   "foo",
 				PassedOverall: true,
 			})
@@ -223,9 +223,9 @@ var _ = Describe("Container Certification Submitter", func() {
 			// are not.
 			Expect(aw.WriteFile(dockerconfigFilename, strings.NewReader("dockerconfig")))
 			Expect(aw.WriteFile(preflightLogFilename, strings.NewReader("preflight log")))
-			Expect(aw.WriteFile(certification.DefaultCertImageFilename, bytes.NewReader(certImageJSONBytes)))
-			Expect(aw.WriteFile(certification.DefaultTestResultsFilename, bytes.NewReader(preflightTestResultsJSONBytes)))
-			Expect(aw.WriteFile(certification.DefaultRPMManifestFilename, bytes.NewReader(rpmManifestJSONBytes)))
+			Expect(aw.WriteFile(check.DefaultCertImageFilename, bytes.NewReader(certImageJSONBytes)))
+			Expect(aw.WriteFile(check.DefaultTestResultsFilename, bytes.NewReader(preflightTestResultsJSONBytes)))
+			Expect(aw.WriteFile(check.DefaultRPMManifestFilename, bytes.NewReader(rpmManifestJSONBytes)))
 		})
 
 		Context("and project cannot be obtained from the API", func() {
@@ -276,34 +276,34 @@ var _ = Describe("Container Certification Submitter", func() {
 
 		Context("and the cert image cannot be read from disk", func() {
 			It("should throw an error", func() {
-				err := os.Remove(path.Join(aw.Path(), certification.DefaultCertImageFilename))
+				err := os.Remove(path.Join(aw.Path(), check.DefaultCertImageFilename))
 				Expect(err).ToNot(HaveOccurred())
 
 				err = sbmt.Submit(testcontext)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring(certification.DefaultCertImageFilename))
+				Expect(err.Error()).To(ContainSubstring(check.DefaultCertImageFilename))
 			})
 		})
 
 		Context("and the preflight results cannot be read from disk", func() {
 			It("should throw an error", func() {
-				err := os.Remove(path.Join(aw.Path(), certification.DefaultTestResultsFilename))
+				err := os.Remove(path.Join(aw.Path(), check.DefaultTestResultsFilename))
 				Expect(err).ToNot(HaveOccurred())
 
 				err = sbmt.Submit(testcontext)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring(certification.DefaultTestResultsFilename))
+				Expect(err.Error()).To(ContainSubstring(check.DefaultTestResultsFilename))
 			})
 		})
 
 		Context("and the rpmManifest cannot be read from disk", func() {
 			It("should throw an error", func() {
-				err := os.Remove(path.Join(aw.Path(), certification.DefaultRPMManifestFilename))
+				err := os.Remove(path.Join(aw.Path(), check.DefaultRPMManifestFilename))
 				Expect(err).ToNot(HaveOccurred())
 
 				err = sbmt.Submit(testcontext)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring(certification.DefaultRPMManifestFilename))
+				Expect(err.Error()).To(ContainSubstring(check.DefaultRPMManifestFilename))
 			})
 		})
 
@@ -343,8 +343,8 @@ var _ = Describe("Container Certification Submitter", func() {
 		Context("and one of the submission artifacts is malformed", func() {
 			JustBeforeEach(func() {
 				afs := afero.NewBasePathFs(afero.NewOsFs(), aw.Path())
-				Expect(afs.Remove(certification.DefaultRPMManifestFilename)).To(Succeed())
-				Expect(aw.WriteFile(certification.DefaultRPMManifestFilename, strings.NewReader("malformed"))).To(ContainSubstring(certification.DefaultRPMManifestFilename))
+				Expect(afs.Remove(check.DefaultRPMManifestFilename)).To(Succeed())
+				Expect(aw.WriteFile(check.DefaultRPMManifestFilename, strings.NewReader("malformed"))).To(ContainSubstring(check.DefaultRPMManifestFilename))
 			})
 
 			It("should throw an error finalizing the submission", func() {

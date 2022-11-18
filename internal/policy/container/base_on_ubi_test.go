@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
@@ -44,7 +44,7 @@ func (flhc *fakeLayerHashCheckerTimeout) CertifiedImagesContainingLayers(ctx con
 var _ = Describe("BaseOnUBI", func() {
 	var (
 		basedOnUbiCheck BasedOnUBICheck
-		imageRef        certification.ImageReference
+		imageRef        image.ImageReference
 	)
 
 	BeforeEach(func() {

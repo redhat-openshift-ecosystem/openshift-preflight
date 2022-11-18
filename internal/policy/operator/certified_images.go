@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/operator-framework/operator-manifest-tools/pkg/image"
+	mimage "github.com/operator-framework/operator-manifest-tools/pkg/image"
 	"github.com/operator-framework/operator-manifest-tools/pkg/pullspec"
 )
 
-var _ certification.Check = &certifiedImagesCheck{}
+var _ check.Check = &certifiedImagesCheck{}
 
 // imageFinder interface is used for testing. It represents the FindImagesByDigest
 // function that is part of the Pyxis client.
@@ -36,7 +37,7 @@ func NewCertifiedImagesCheck(imageFinder imageFinder) *certifiedImagesCheck {
 	}
 }
 
-func (p *certifiedImagesCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
+func (p *certifiedImagesCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	imageDigests, err := p.dataToValidate(ctx, filepath.Join(imgRef.ImageFSPath, "manifests"))
 	if err != nil {
 		return false, err
@@ -51,7 +52,7 @@ func (p *certifiedImagesCheck) dataToValidate(ctx context.Context, imagePath str
 	if err != nil {
 		return nil, err
 	}
-	imageNames, err := image.Extract(operatorManifests)
+	imageNames, err := mimage.Extract(operatorManifests)
 	if err != nil {
 		return nil, err
 	}
@@ -101,8 +102,8 @@ func (p *certifiedImagesCheck) Name() string {
 	return "BundleImageRefsAreCertified"
 }
 
-func (p *certifiedImagesCheck) Metadata() certification.Metadata {
-	return certification.Metadata{
+func (p *certifiedImagesCheck) Metadata() check.Metadata {
+	return check.Metadata{
 		Description:      "Checking that all images referenced in the CSV are certified. Currently, this check is not enforced.",
 		Level:            "optional",
 		KnowledgeBaseURL: "https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.45/html/red_hat_openshift_software_certification_policy_guide/assembly-products-managed-by-an-operator_openshift-sw-cert-policy-container-images#con-operand-requirements_openshift-sw-cert-policy-products-managed",
@@ -110,8 +111,8 @@ func (p *certifiedImagesCheck) Metadata() certification.Metadata {
 	}
 }
 
-func (p *certifiedImagesCheck) Help() certification.HelpText {
-	return certification.HelpText{
+func (p *certifiedImagesCheck) Help() check.HelpText {
+	return check.HelpText{
 		Message:    "Check that all images referenced in the CSV are certified.",
 		Suggestion: "Ensure that any images referenced in the CSV, including the relatedImages section, have been certified.",
 	}

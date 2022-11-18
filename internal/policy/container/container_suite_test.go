@@ -4,7 +4,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -50,7 +50,7 @@ func (fl FakeLayer) MediaType() (types.MediaType, error) {
 	return "mediatype", nil
 }
 
-var AssertMetaData = func(check certification.Check) {
+var AssertMetaData = func(check check.Check) {
 	Context("When checking metadata", func() {
 		Context("The check name should not be empty", func() {
 			Expect(check.Name()).ToNot(BeEmpty())

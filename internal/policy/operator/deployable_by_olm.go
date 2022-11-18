@@ -12,9 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/bundle"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/openshift"
 
@@ -30,7 +31,7 @@ import (
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ certification.Check = &DeployableByOlmCheck{}
+var _ check.Check = &DeployableByOlmCheck{}
 
 type operatorData struct {
 	CatalogImage     string
@@ -108,7 +109,7 @@ func NewDeployableByOlmCheck(
 	}
 }
 
-func (p *DeployableByOlmCheck) Validate(ctx context.Context, bundleRef certification.ImageReference) (bool, error) {
+func (p *DeployableByOlmCheck) Validate(ctx context.Context, bundleRef image.ImageReference) (bool, error) {
 	if err := p.initClient(); err != nil {
 		return false, fmt.Errorf("%v", err)
 	}
@@ -207,7 +208,7 @@ func checkImageSource(operatorImages []string) bool {
 	return allApproved
 }
 
-func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef certification.ImageReference) (*operatorData, error) {
+func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef image.ImageReference) (*operatorData, error) {
 	// retrieve the operator metadata from bundle image
 	annotationsFileName := filepath.Join(bundleRef.ImageFSPath, "metadata", "annotations.yaml")
 	annotationsFile, err := os.Open(annotationsFileName)
@@ -655,8 +656,8 @@ func (p *DeployableByOlmCheck) Name() string {
 	return "DeployableByOLM"
 }
 
-func (p *DeployableByOlmCheck) Metadata() certification.Metadata {
-	return certification.Metadata{
+func (p *DeployableByOlmCheck) Metadata() check.Metadata {
+	return check.Metadata{
 		Description:      "Checking if the operator could be deployed by OLM",
 		Level:            "best",
 		KnowledgeBaseURL: "https://sdk.operatorframework.io/docs/olm-integration/testing-deployment/",
@@ -664,8 +665,8 @@ func (p *DeployableByOlmCheck) Metadata() certification.Metadata {
 	}
 }
 
-func (p *DeployableByOlmCheck) Help() certification.HelpText {
-	return certification.HelpText{
+func (p *DeployableByOlmCheck) Help() check.HelpText {
+	return check.HelpText{
 		Message:    "It is required that your operator could be deployed by OLM",
 		Suggestion: "Follow the guidelines on the operator-sdk website to learn how to package your operator https://sdk.operatorframework.io/docs/olm-integration/cli-overview/",
 	}

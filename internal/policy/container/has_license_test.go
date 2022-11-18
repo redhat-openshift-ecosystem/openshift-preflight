@@ -5,10 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 
 const (
@@ -21,7 +20,7 @@ var _ = Describe("HasLicense", func() {
 	var hasLicense HasLicenseCheck
 
 	Describe("Checking if licenses can be found", func() {
-		var imgRef certification.ImageReference
+		var imgRef image.ImageReference
 		BeforeEach(func() {
 			var err error
 			tmpDir, err := os.MkdirTemp("", "license-check-*")

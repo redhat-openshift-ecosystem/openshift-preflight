@@ -6,7 +6,7 @@ import (
 	"encoding/xml"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 )
 
 var (
@@ -15,7 +15,7 @@ var (
 )
 
 // genericJSONFormatter is a FormatterFunc that formats results as JSON
-func genericJSONFormatter(ctx context.Context, r runtime.Results) ([]byte, error) {
+func genericJSONFormatter(ctx context.Context, r certification.Results) ([]byte, error) {
 	response := getResponse(r)
 
 	responseJSON, err := jsonMarshalIndent(response, "", "    ")
@@ -32,7 +32,7 @@ func genericJSONFormatter(ctx context.Context, r runtime.Results) ([]byte, error
 }
 
 // genericXMLFormatter is a FormatterFunc that formats results as XML
-func genericXMLFormatter(ctx context.Context, r runtime.Results) ([]byte, error) {
+func genericXMLFormatter(ctx context.Context, r certification.Results) ([]byte, error) {
 	response := getResponse(r)
 
 	responseXML, err := xmlMarshalIndent(response, "", "    ")

@@ -6,8 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	preflighterr "github.com/redhat-openshift-ecosystem/openshift-preflight/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 )
 
 var _ = Describe("Container Check initialization", func() {
@@ -67,7 +68,7 @@ var _ = Describe("Container Check Execution", func() {
 			ctx := context.TODO()
 			results, err := chk.Run(ctx)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(results).ToNot(Equal(runtime.Results{}))
+			Expect(results).ToNot(Equal(certification.Results{}))
 			Expect(results.TestedImage).To(Equal(goodImage))
 			Expect(len(results.Failed)).To(Equal(0))
 			Expect(len(results.Errors)).To(Equal(0))
