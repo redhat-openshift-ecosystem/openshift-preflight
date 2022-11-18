@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
 
 	log "github.com/sirupsen/logrus"
 )
