@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/bundle"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/bundle"
 
 	log "github.com/sirupsen/logrus"
 )
