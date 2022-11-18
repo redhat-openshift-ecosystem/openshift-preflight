@@ -7,7 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/artifacts"
 )
 
 // LogThroughArtifactWriterIfSet reconfigures the logger used by Preflight to write to

@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 
 	log "github.com/sirupsen/logrus"

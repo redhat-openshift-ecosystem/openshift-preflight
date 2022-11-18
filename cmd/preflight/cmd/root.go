@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
 	log "github.com/sirupsen/logrus"
