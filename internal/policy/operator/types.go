@@ -3,7 +3,7 @@ package operator
 import (
 	"context"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
 )
 
 type operatorSdk interface {
