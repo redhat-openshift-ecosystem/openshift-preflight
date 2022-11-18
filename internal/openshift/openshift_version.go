@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 
 	configv1Client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

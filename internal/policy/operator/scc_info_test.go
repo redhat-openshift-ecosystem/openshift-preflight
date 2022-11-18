@@ -5,10 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 
 var _ = Describe("securityContextConstraintsInCSV", func() {
@@ -21,7 +20,7 @@ var _ = Describe("securityContextConstraintsInCSV", func() {
 	)
 	var (
 		securityContextConstraintsCheck securityContextConstraintsInCSV
-		imageRef                        certification.ImageReference
+		imageRef                        image.ImageReference
 		csvContents                     = buildCsvContent(noSCC)
 	)
 	AssertMetaData(&securityContextConstraintsCheck)

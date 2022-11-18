@@ -31,8 +31,6 @@ results-junit.xml
 # E2E customzied env log file.
 sgol.txt
 
-# Testing dirs
-/artifacts
 # E2E customized env artifacts dir
 stcafitra/
 

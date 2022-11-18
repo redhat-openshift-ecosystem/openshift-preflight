@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
 
@@ -198,7 +198,7 @@ var isList = imagestreamv1.ImageStreamList{
 	},
 }
 
-var AssertMetaData = func(check certification.Check) {
+var AssertMetaData = func(check check.Check) {
 	Context("When checking metadata", func() {
 		Context("The check name should not be empty", func() {
 			Expect(check.Name()).ToNot(BeEmpty())

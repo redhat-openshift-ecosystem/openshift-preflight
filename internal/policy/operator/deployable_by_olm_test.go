@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/openshift"
 
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
@@ -21,7 +21,7 @@ import (
 var _ = Describe("DeployableByOLMCheck", func() {
 	var (
 		deployableByOLMCheck DeployableByOlmCheck
-		imageRef             certification.ImageReference
+		imageRef             image.ImageReference
 		testcontext          context.Context
 	)
 

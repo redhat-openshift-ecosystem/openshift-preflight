@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
 	. "github.com/onsi/ginkgo/v2/dsl/core"

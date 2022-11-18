@@ -1,13 +1,17 @@
-package certification
+package check
 
-import "context"
+import (
+	"context"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
+)
 
 // Check as an interface containing all methods necessary
 // to use and identify a given check.
 type Check interface {
 	// Validate will test the provided image and determine whether the
 	// image complies with the check's requirements.
-	Validate(ctx context.Context, imageReference ImageReference) (result bool, err error)
+	Validate(ctx context.Context, imageReference image.ImageReference) (result bool, err error)
 	// Name returns the name of the check.
 	Name() string
 	// Metadata returns the check's metadata.

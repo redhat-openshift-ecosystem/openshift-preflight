@@ -16,8 +16,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/container"
 )
 

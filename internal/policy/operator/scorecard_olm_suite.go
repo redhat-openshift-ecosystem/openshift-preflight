@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
-var _ certification.Check = &ScorecardOlmSuiteCheck{}
+var _ check.Check = &ScorecardOlmSuiteCheck{}
 
 // ScorecardOlmSuiteCheck evaluates the image to ensure it passes the operator-sdk
 // scorecard check with the olm suite selected.
@@ -32,7 +33,7 @@ func NewScorecardOlmSuiteCheck(operatorSdk operatorSdk, ns, sa string, kubeconfi
 	}
 }
 
-func (p *ScorecardOlmSuiteCheck) Validate(ctx context.Context, bundleRef certification.ImageReference) (bool, error) {
+func (p *ScorecardOlmSuiteCheck) Validate(ctx context.Context, bundleRef image.ImageReference) (bool, error) {
 	log.L().Trace("Running operator-sdk scorecard Check for ", bundleRef.ImageURI)
 	selector := []string{"suite=olm"}
 	log.L().Tracef("--selector=%s", selector)
@@ -49,8 +50,8 @@ func (p *ScorecardOlmSuiteCheck) Name() string {
 	return "ScorecardOlmSuiteCheck"
 }
 
-func (p *ScorecardOlmSuiteCheck) Metadata() certification.Metadata {
-	return certification.Metadata{
+func (p *ScorecardOlmSuiteCheck) Metadata() check.Metadata {
+	return check.Metadata{
 		Description:      "Operator-sdk scorecard OLM Test Suite Check",
 		Level:            "best",
 		KnowledgeBaseURL: "https://sdk.operatorframework.io/docs/advanced-topics/scorecard/scorecard/#overview", // Placeholder
@@ -58,15 +59,15 @@ func (p *ScorecardOlmSuiteCheck) Metadata() certification.Metadata {
 	}
 }
 
-func (p *ScorecardOlmSuiteCheck) Help() certification.HelpText {
+func (p *ScorecardOlmSuiteCheck) Help() check.HelpText {
 	if p.fatalError {
-		return certification.HelpText{
+		return check.HelpText{
 			Message: "There was a fatal error while running operator-sdk scorecard tests. " +
 				"Please see the preflight log for details. If necessary, set logging to be more verbose.",
 			Suggestion: "If the logs are showing a context timeout, try setting wait time to a higher value.",
 		}
 	}
-	return certification.HelpText{
+	return check.HelpText{
 		Message:    "Check ScorecardOlmSuiteCheck encountered an error. Please review the " + scorecardOlmSuiteResult + " file in your execution artifacts for more information.",
 		Suggestion: "See scorecard output for details, artifacts/operator_bundle_scorecard_OlmSuiteCheck.json",
 	}

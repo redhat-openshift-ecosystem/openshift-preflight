@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
-var _ certification.Check = &BasedOnUBICheck{}
+var _ check.Check = &BasedOnUBICheck{}
 
 // BasedOnUBICheck evaluates if the provided image is based on the Red Hat Universal Base Image.
 type BasedOnUBICheck struct {
@@ -25,7 +26,7 @@ func NewBasedOnUbiCheck(layerHashChecker layerHashChecker) *BasedOnUBICheck {
 	return &BasedOnUBICheck{LayerHashCheckEngine: layerHashChecker}
 }
 
-func (p *BasedOnUBICheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
+func (p *BasedOnUBICheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	layerHashes, err := p.getImageLayers(imgRef.ImageInfo)
 	if err != nil {
 		return false, fmt.Errorf("could not get image layers: %v", err)
@@ -72,8 +73,8 @@ func (p *BasedOnUBICheck) Name() string {
 	return "BasedOnUbi"
 }
 
-func (p *BasedOnUBICheck) Metadata() certification.Metadata {
-	return certification.Metadata{
+func (p *BasedOnUBICheck) Metadata() check.Metadata {
+	return check.Metadata{
 		Description:      "Checking if the container's base image is based upon the Red Hat Universal Base Image (UBI)",
 		Level:            "best",
 		KnowledgeBaseURL: certDocumentationURL,
@@ -81,8 +82,8 @@ func (p *BasedOnUBICheck) Metadata() certification.Metadata {
 	}
 }
 
-func (p *BasedOnUBICheck) Help() certification.HelpText {
-	return certification.HelpText{
+func (p *BasedOnUBICheck) Help() check.HelpText {
+	return check.HelpText{
 		Message:    "Check BasedOnUbi encountered an error. Please review the preflight.log file for more information.",
 		Suggestion: "Change the FROM directive in your Dockerfile or Containerfile to FROM registry.access.redhat.com/ubi8/ubi",
 	}
