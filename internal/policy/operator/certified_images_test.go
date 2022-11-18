@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

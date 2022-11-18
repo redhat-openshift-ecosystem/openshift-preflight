@@ -10,23 +10,22 @@ import (
 	"time"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 
 	"gotest.tools/v3/assert"
 )
 
 func TestGenericJSONFormatter(t *testing.T) {
-	generateTestResults := func(image string, passed bool) runtime.Results {
-		return runtime.Results{
+	generateTestResults := func(image string, passed bool) certification.Results {
+		return certification.Results{
 			TestedImage:   image,
 			PassedOverall: passed,
-			Passed: []runtime.Result{
+			Passed: []certification.Result{
 				{
 					Check:       certification.NewGenericCheck("passed1", nil, certification.Metadata{}, certification.HelpText{}),
 					ElapsedTime: 1000 * time.Millisecond,
 				},
 			},
-			Failed: []runtime.Result{
+			Failed: []certification.Result{
 				{
 					Check:       certification.NewGenericCheck("failed1", nil, certification.Metadata{}, certification.HelpText{}),
 					ElapsedTime: 1001 * time.Millisecond,
@@ -36,7 +35,7 @@ func TestGenericJSONFormatter(t *testing.T) {
 	}
 
 	testCases := []struct {
-		results              runtime.Results
+		results              certification.Results
 		marshalIndentFailure bool
 		expectedErrString    string
 	}{
@@ -92,17 +91,17 @@ func TestGenericJSONFormatter(t *testing.T) {
 }
 
 func TestGenericXMLFormatter(t *testing.T) {
-	generateTestResults := func(image string, passed bool) runtime.Results {
-		return runtime.Results{
+	generateTestResults := func(image string, passed bool) certification.Results {
+		return certification.Results{
 			TestedImage:   image,
 			PassedOverall: passed,
-			Passed: []runtime.Result{
+			Passed: []certification.Result{
 				{
 					Check:       certification.NewGenericCheck("passed1", nil, certification.Metadata{}, certification.HelpText{}),
 					ElapsedTime: 1000 * time.Millisecond,
 				},
 			},
-			Failed: []runtime.Result{
+			Failed: []certification.Result{
 				{
 					Check:       certification.NewGenericCheck("failed1", nil, certification.Metadata{}, certification.HelpText{}),
 					ElapsedTime: 1001 * time.Millisecond,
@@ -112,7 +111,7 @@ func TestGenericXMLFormatter(t *testing.T) {
 	}
 
 	testCases := []struct {
-		results              runtime.Results
+		results              certification.Results
 		marshalIndentFailure bool
 		expectedErrString    string
 	}{

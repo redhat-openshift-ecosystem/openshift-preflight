@@ -7,11 +7,11 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/container"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
 	log "github.com/sirupsen/logrus"

@@ -9,13 +9,12 @@ import (
 	goruntime "runtime"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
 	preflighterr "github.com/redhat-openshift-ecosystem/openshift-preflight/errors"
-
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 )
 
 type Option = func(*containerCheck)
@@ -38,9 +37,9 @@ func NewCheck(image string, opts ...Option) *containerCheck {
 // Run executes the check and returns the results. Policy exceptions will be resolved if the proper
 // pyxis information is provided. Calls should add a relevant ArtifactWriter to the context if they
 // wish to work with artifact files written by checks.
-func (c *containerCheck) Run(ctx context.Context) (runtime.Results, error) {
+func (c *containerCheck) Run(ctx context.Context) (certification.Results, error) {
 	if c.image == "" {
-		return runtime.Results{}, preflighterr.ErrImageEmpty
+		return certification.Results{}, preflighterr.ErrImageEmpty
 	}
 
 	if !lib.CallerIsCLI(ctx) {
@@ -60,7 +59,7 @@ func (c *containerCheck) Run(ctx context.Context) (runtime.Results, error) {
 
 		override, err := lib.GetContainerPolicyExceptions(ctx, p)
 		if err != nil {
-			return runtime.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotResolvePolicyException, err)
+			return certification.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotResolvePolicyException, err)
 		}
 
 		pol = override
@@ -72,20 +71,20 @@ func (c *containerCheck) Run(ctx context.Context) (runtime.Results, error) {
 		CertificationProjectID: c.certificationProjectID,
 	})
 	if err != nil {
-		return runtime.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
+		return certification.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
 	}
 
 	eng, err := engine.New(ctx, c.image, checks, nil, c.dockerconfigjson, false, pol == policy.PolicyScratch, c.insecure, c.platform)
 	if err != nil {
-		return runtime.Results{}, err
+		return certification.Results{}, err
 	}
 
 	if err != nil {
-		return runtime.Results{}, err
+		return certification.Results{}, err
 	}
 
 	if err := eng.ExecuteChecks(ctx); err != nil {
-		return runtime.Results{}, err
+		return certification.Results{}, err
 	}
 
 	return eng.Results(ctx), nil

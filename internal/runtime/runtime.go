@@ -2,6 +2,8 @@
 // runtime.
 package runtime
 
+import "fmt"
+
 type OpenshiftClusterVersion struct {
 	Name    string
 	Version string
@@ -12,4 +14,8 @@ func UnknownOpenshiftClusterVersion() OpenshiftClusterVersion {
 		Name:    "unknown",
 		Version: "unknown",
 	}
+}
+
+func (v OpenshiftClusterVersion) String() string {
+	return fmt.Sprintf("%s/%s", v.Name, v.Version)
 }

@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -20,11 +22,15 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/authn"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/openshift"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
+	containerpol "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy/container"
+	operatorpol "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy/operator"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/rpm"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -63,7 +69,7 @@ type CraneEngine struct {
 	Insecure bool
 
 	imageRef certification.ImageReference
-	results  runtime.Results
+	results  certification.Results
 }
 
 func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
@@ -177,13 +183,14 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 
 	if c.IsBundle {
 		// Record test cluster version
-		c.results.TestedOn, err = openshift.GetOpenshiftClusterVersion(c.Kubeconfig)
+		version, err := openshift.GetOpenshiftClusterVersion(c.Kubeconfig)
 		if err != nil {
 			log.Errorf("could not determine test cluster version: %v", err)
 		}
+		c.results.TestedOn = version.String()
 	} else {
 		log.Debug("Container checks do not require a cluster. skipping cluster version check.")
-		c.results.TestedOn = runtime.UnknownOpenshiftClusterVersion()
+		c.results.TestedOn = runtime.UnknownOpenshiftClusterVersion().String()
 	}
 
 	// execute checks
@@ -203,18 +210,18 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 
 		if err != nil {
 			log.WithFields(log.Fields{"result": "ERROR", "err": err}).Info("check completed: ", check.Name())
-			c.results.Errors = appendUnlessOptional(c.results.Errors, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
+			c.results.Errors = appendUnlessOptional(c.results.Errors, certification.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
 		if !checkPassed {
 			log.WithFields(log.Fields{"result": "FAILED"}).Info("check completed: ", check.Name())
-			c.results.Failed = appendUnlessOptional(c.results.Failed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
+			c.results.Failed = appendUnlessOptional(c.results.Failed, certification.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
 		log.WithFields(log.Fields{"result": "PASSED"}).Info("check completed: ", check.Name())
-		c.results.Passed = appendUnlessOptional(c.results.Passed, runtime.Result{Check: check, ElapsedTime: checkElapsedTime})
+		c.results.Passed = appendUnlessOptional(c.results.Passed, certification.Result{Check: check, ElapsedTime: checkElapsedTime})
 	}
 
 	if len(c.results.Errors) > 0 || len(c.results.Failed) > 0 {
@@ -245,7 +252,7 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	return nil
 }
 
-func appendUnlessOptional(results []runtime.Result, result runtime.Result) []runtime.Result {
+func appendUnlessOptional(results []certification.Result, result certification.Result) []certification.Result {
 	if result.Check.Metadata().Level == "optional" {
 		return results
 	}
@@ -326,7 +333,7 @@ func generateBundleHash(ctx context.Context, bundlePath string) (string, error) 
 }
 
 // Results will return the results of check execution.
-func (c *CraneEngine) Results(ctx context.Context) runtime.Results {
+func (c *CraneEngine) Results(ctx context.Context) certification.Results {
 	return c.results
 }
 
@@ -621,4 +628,165 @@ func retryOnceAfter(t time.Duration) crane.Option {
 			Steps:    2,
 		}))
 	}
+}
+
+// CheckEngine defines the functionality necessary to run all checks for a policy,
+// and return the results of that check execution.
+type CheckEngine interface {
+	// ExecuteChecks should execute all checks in a policy and internally
+	// store the results. Errors returned by ExecuteChecks should reflect
+	// errors in pre-validation tasks, and not errors in individual check
+	// execution itself.
+	ExecuteChecks(context.Context) error
+	// Results returns the outcome of executing all checks.
+	Results(context.Context) certification.Results
+}
+
+func New(ctx context.Context,
+	image string,
+	checks []certification.Check,
+	kubeconfig []byte,
+	dockerconfig string,
+	isBundle,
+	isScratch bool,
+	insecure bool,
+	platform string,
+) (CheckEngine, error) {
+	return &CraneEngine{
+		Kubeconfig:   kubeconfig,
+		DockerConfig: dockerconfig,
+		Image:        image,
+		Checks:       checks,
+		IsBundle:     isBundle,
+		IsScratch:    isScratch,
+		Platform:     platform,
+	}, nil
+}
+
+// OperatorCheckConfig contains configuration relevant to an individual check's execution.
+type OperatorCheckConfig struct {
+	ScorecardImage, ScorecardWaitTime, ScorecardNamespace, ScorecardServiceAccount string
+	IndexImage, DockerConfig, Channel                                              string
+	Kubeconfig                                                                     []byte
+}
+
+// InitializeOperatorChecks returns opeartor checks for policy p give cfg.
+func InitializeOperatorChecks(ctx context.Context, p policy.Policy, cfg OperatorCheckConfig) ([]certification.Check, error) {
+	switch p {
+	case policy.PolicyOperator:
+		return []certification.Check{
+			operatorpol.NewScorecardBasicSpecCheck(operatorsdk.New(cfg.ScorecardImage, exec.Command), cfg.ScorecardNamespace, cfg.ScorecardServiceAccount, cfg.Kubeconfig, cfg.ScorecardWaitTime),
+			operatorpol.NewScorecardOlmSuiteCheck(operatorsdk.New(cfg.ScorecardImage, exec.Command), cfg.ScorecardNamespace, cfg.ScorecardServiceAccount, cfg.Kubeconfig, cfg.ScorecardWaitTime),
+			operatorpol.NewDeployableByOlmCheck(cfg.IndexImage, cfg.DockerConfig, cfg.Channel),
+			operatorpol.NewValidateOperatorBundleCheck(),
+			operatorpol.NewCertifiedImagesCheck(pyxis.NewPyxisClient(
+				certification.DefaultPyxisHost,
+				"",
+				"",
+				&http.Client{Timeout: 60 * time.Second}),
+			),
+			operatorpol.NewSecurityContextConstraintsCheck(),
+			&operatorpol.RelatedImagesCheck{},
+		}, nil
+	}
+
+	return nil, fmt.Errorf("provided operator policy %s is unknown", p)
+}
+
+// ContainerCheckConfig contains configuration relevant to an individual check's execution.
+type ContainerCheckConfig struct {
+	DockerConfig, PyxisAPIToken, CertificationProjectID string
+}
+
+// InitializeContainerChecks returns the appropriate checks for policy p given cfg.
+func InitializeContainerChecks(ctx context.Context, p policy.Policy, cfg ContainerCheckConfig) ([]certification.Check, error) {
+	switch p {
+	case policy.PolicyContainer:
+		return []certification.Check{
+			&containerpol.HasLicenseCheck{},
+			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig),
+			&containerpol.MaxLayersCheck{},
+			&containerpol.HasNoProhibitedPackagesCheck{},
+			&containerpol.HasRequiredLabelsCheck{},
+			&containerpol.RunAsNonRootCheck{},
+			&containerpol.HasModifiedFilesCheck{},
+			containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisClient(
+				certification.DefaultPyxisHost,
+				cfg.PyxisAPIToken,
+				cfg.CertificationProjectID,
+				&http.Client{Timeout: 60 * time.Second})),
+		}, nil
+	case policy.PolicyRoot:
+		return []certification.Check{
+			&containerpol.HasLicenseCheck{},
+			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig),
+			&containerpol.MaxLayersCheck{},
+			&containerpol.HasNoProhibitedPackagesCheck{},
+			&containerpol.HasRequiredLabelsCheck{},
+			&containerpol.HasModifiedFilesCheck{},
+			containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisClient(
+				certification.DefaultPyxisHost,
+				cfg.PyxisAPIToken,
+				cfg.CertificationProjectID,
+				&http.Client{Timeout: 60 * time.Second})),
+		}, nil
+	case policy.PolicyScratch:
+		return []certification.Check{
+			&containerpol.HasLicenseCheck{},
+			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig),
+			&containerpol.MaxLayersCheck{},
+			&containerpol.HasRequiredLabelsCheck{},
+			&containerpol.RunAsNonRootCheck{},
+		}, nil
+	}
+
+	return nil, fmt.Errorf("provided container policy %s is unknown", p)
+}
+
+// makeCheckList returns a list of check names.
+func makeCheckList(checks []certification.Check) []string {
+	checkNames := make([]string, len(checks))
+
+	for i, check := range checks {
+		checkNames[i] = check.Name()
+	}
+
+	return checkNames
+}
+
+// checkNamesFor produces a slice of names for checks in the requested policy.
+func checkNamesFor(ctx context.Context, p policy.Policy) []string {
+	var c []certification.Check
+	switch p {
+	case policy.PolicyContainer, policy.PolicyRoot, policy.PolicyScratch:
+		c, _ = InitializeContainerChecks(ctx, p, ContainerCheckConfig{})
+	case policy.PolicyOperator:
+		c, _ = InitializeOperatorChecks(ctx, p, OperatorCheckConfig{})
+	default:
+		return []string{}
+	}
+
+	return makeCheckList(c)
+}
+
+// OperatorPolicy returns the names of checks in the operator policy.
+func OperatorPolicy(ctx context.Context) []string {
+	return checkNamesFor(ctx, policy.PolicyOperator)
+}
+
+// ContainerPolicy returns the names of checks in the container policy.
+func ContainerPolicy(ctx context.Context) []string {
+	return checkNamesFor(ctx, policy.PolicyContainer)
+}
+
+// ScratchContainerPolicy returns the names of checks in the
+// container policy with scratch exception.
+func ScratchContainerPolicy(ctx context.Context) []string {
+	return checkNamesFor(ctx, policy.PolicyScratch)
+}
+
+// RootExceptionContainerPolicy returns the names of checks in the
+// container policy with root exception.
+func RootExceptionContainerPolicy(ctx context.Context) []string {
+	return checkNamesFor(ctx, policy.PolicyRoot)
 }

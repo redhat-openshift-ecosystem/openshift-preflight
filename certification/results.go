@@ -1,20 +1,18 @@
-package runtime
+package certification
 
 import (
 	"time"
-
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 )
 
 type Result struct {
-	certification.Check
+	Check
 	ElapsedTime time.Duration
 }
 
 type Results struct {
 	TestedImage       string
 	PassedOverall     bool
-	TestedOn          OpenshiftClusterVersion
+	TestedOn          string
 	CertificationHash string
 	Passed            []Result
 	Failed            []Result

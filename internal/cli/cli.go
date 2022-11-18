@@ -11,9 +11,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
 )
 
@@ -25,7 +25,7 @@ type CheckConfig struct {
 // RunPreflight executes checks, writes logs, results, and submits results if requested.
 func RunPreflight(
 	ctx context.Context,
-	runChecks func(context.Context) (runtime.Results, error),
+	runChecks func(context.Context) (certification.Results, error),
 	cfg CheckConfig,
 	formatter formatters.ResponseFormatter,
 	rw lib.ResultWriter,
@@ -86,7 +86,7 @@ func RunPreflight(
 
 // writeJUnit will write JUnit results as an artifact using the ArtifactWriter configured
 // in ctx.
-func writeJUnit(ctx context.Context, results runtime.Results) error {
+func writeJUnit(ctx context.Context, results certification.Results) error {
 	junitformatter, err := formatters.NewByName("junitxml")
 	if err != nil {
 		return err

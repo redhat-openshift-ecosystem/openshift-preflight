@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -48,7 +49,7 @@ var _ = Describe("Formatters", func() {
 		Context("with improper arguments", func() {
 			expectedResult := []byte(fmt.Errorf("failed to create a new generic formatter: formatter name is required").Error())
 			var fn FormatterFunc //nolint:gosimple // We want to be explicit here for clarity
-			fn = func(context.Context, runtime.Results) ([]byte, error) {
+			fn = func(context.Context, certification.Results) ([]byte, error) {
 				return expectedResult, nil
 			}
 
@@ -64,7 +65,7 @@ var _ = Describe("Formatters", func() {
 			name := "testFormatter"
 			extension := "txt"
 			var fn FormatterFunc //nolint:gosimple // We want to be explicit here for clarity
-			fn = func(context.Context, runtime.Results) ([]byte, error) {
+			fn = func(context.Context, certification.Results) ([]byte, error) {
 				return expectedResult, nil
 			}
 
@@ -74,7 +75,7 @@ var _ = Describe("Formatters", func() {
 				Expect(formatter).ToNot(BeNil())
 			})
 
-			formattingResult, err := formatter.Format(context.TODO(), runtime.Results{})
+			formattingResult, err := formatter.Format(context.TODO(), certification.Results{})
 			It("should format results as expected", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(formattingResult).To(Equal(expectedResult))

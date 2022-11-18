@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -13,17 +12,14 @@ import (
 
 var _ = Describe("JUnitXML Formatter", func() {
 	Context("With a valid UserResponse", func() {
-		var response runtime.Results
+		var response certification.Results
 		BeforeEach(func() {
-			response = runtime.Results{
-				TestedImage:   "example.com/repo/image:tag",
-				PassedOverall: true,
-				TestedOn: runtime.OpenshiftClusterVersion{
-					Name:    "ClusterName",
-					Version: "Clusterversion",
-				},
+			response = certification.Results{
+				TestedImage:       "example.com/repo/image:tag",
+				PassedOverall:     true,
+				TestedOn:          "ClusterName/Clusterversion",
 				CertificationHash: "",
-				Passed: []runtime.Result{
+				Passed: []certification.Result{
 					{
 						Check: certification.NewGenericCheck(
 							"PassedCheck",
@@ -40,7 +36,7 @@ var _ = Describe("JUnitXML Formatter", func() {
 						ElapsedTime: 0,
 					},
 				},
-				Failed: []runtime.Result{
+				Failed: []certification.Result{
 					{
 						Check: certification.NewGenericCheck(
 							"FailedCheck",
@@ -57,7 +53,7 @@ var _ = Describe("JUnitXML Formatter", func() {
 						ElapsedTime: 0,
 					},
 				},
-				Errors: []runtime.Result{
+				Errors: []certification.Result{
 					{
 						Check: certification.NewGenericCheck(
 							"ErroredCheck",

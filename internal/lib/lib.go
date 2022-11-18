@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 )
 
 // ResolveSubmitter will build out a ResultSubmitter if the provided pyxisClient, pc, is not nil.

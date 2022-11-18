@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/engine"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/engine"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

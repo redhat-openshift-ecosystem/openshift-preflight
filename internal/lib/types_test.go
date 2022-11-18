@@ -15,9 +15,8 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 )
 
 var _ = Describe("Pyxis Client Instantiation", func() {
@@ -206,7 +205,7 @@ var _ = Describe("Container Certification Submitter", func() {
 			})
 			Expect(err).ToNot(HaveOccurred())
 
-			preflightTestResultsJSONBytes, err := json.Marshal(runtime.Results{
+			preflightTestResultsJSONBytes, err := json.Marshal(certification.Results{
 				TestedImage:   "foo",
 				PassedOverall: true,
 			})

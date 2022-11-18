@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/operator-framework/operator-manifest-tools/pkg/image"
