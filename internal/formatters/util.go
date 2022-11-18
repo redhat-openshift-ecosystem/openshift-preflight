@@ -1,13 +1,13 @@
 package formatters
 
 import (
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 )
 
 // getResponse will extract the runtime's results and format it to fit the
 // UserResponse definition in a way that can then be formatted.
-func getResponse(r runtime.Results) UserResponse {
+func getResponse(r certification.Results) UserResponse {
 	passedChecks := make([]checkExecutionInfo, 0, len(r.Passed))
 	failedChecks := make([]checkExecutionInfo, 0, len(r.Failed))
 	erroredChecks := make([]checkExecutionInfo, 0, len(r.Errors))
@@ -52,7 +52,6 @@ func getResponse(r runtime.Results) UserResponse {
 		Passed:            r.PassedOverall,
 		LibraryInfo:       version.Version,
 		CertificationHash: r.CertificationHash,
-		// TestedOn:          r.TestedOn,
 		Results: resultsText{
 			Passed: passedChecks,
 			Failed: failedChecks,
@@ -69,8 +68,7 @@ type UserResponse struct {
 	Passed            bool                   `json:"passed" xml:"passed"`
 	CertificationHash string                 `json:"certification_hash,omitempty" xml:"certification_hash,omitempty"`
 	LibraryInfo       version.VersionContext `json:"test_library" xml:"test_library"`
-	// TestedOn          runtime.OpenshiftClusterVersion `json:"tested_on" xml:"tested_on"`
-	Results resultsText `json:"results" xml:"results"`
+	Results           resultsText            `json:"results" xml:"results"`
 }
 
 // resultsText represents the results of check execution against the asset.

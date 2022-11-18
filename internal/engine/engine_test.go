@@ -9,10 +9,13 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	goruntime "runtime"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/registry"
@@ -51,56 +54,56 @@ var _ = Describe("Execute Checks tests", func() {
 		Expect(err).ToNot(HaveOccurred())
 		testcontext = artifacts.ContextWithWriter(context.Background(), aw)
 
-		goodCheck := certification.NewGenericCheck(
+		goodCheck := check.NewGenericCheck(
 			"testcheck",
-			func(context.Context, certification.ImageReference) (bool, error) {
+			func(context.Context, image.ImageReference) (bool, error) {
 				return true, nil
 			},
-			certification.Metadata{},
-			certification.HelpText{},
+			check.Metadata{},
+			check.HelpText{},
 		)
 
-		errorCheck := certification.NewGenericCheck(
+		errorCheck := check.NewGenericCheck(
 			"errorCheck",
-			func(context.Context, certification.ImageReference) (bool, error) {
+			func(context.Context, image.ImageReference) (bool, error) {
 				return false, errors.New("errorCheck")
 			},
-			certification.Metadata{},
-			certification.HelpText{},
+			check.Metadata{},
+			check.HelpText{},
 		)
 
-		failedCheck := certification.NewGenericCheck(
+		failedCheck := check.NewGenericCheck(
 			"failedCheck",
-			func(context.Context, certification.ImageReference) (bool, error) {
+			func(context.Context, image.ImageReference) (bool, error) {
 				return false, nil
 			},
-			certification.Metadata{},
-			certification.HelpText{},
+			check.Metadata{},
+			check.HelpText{},
 		)
 
-		optionalCheckPassing := certification.NewGenericCheck(
+		optionalCheckPassing := check.NewGenericCheck(
 			"optionalCheckPassing",
-			func(context.Context, certification.ImageReference) (bool, error) {
+			func(context.Context, image.ImageReference) (bool, error) {
 				return true, nil
 			},
-			certification.Metadata{Level: "optional"},
-			certification.HelpText{},
+			check.Metadata{Level: "optional"},
+			check.HelpText{},
 		)
 
-		optionalCheckFailing := certification.NewGenericCheck(
+		optionalCheckFailing := check.NewGenericCheck(
 			"optionalCheckFailing",
-			func(context.Context, certification.ImageReference) (bool, error) {
+			func(context.Context, image.ImageReference) (bool, error) {
 				return false, fmt.Errorf("optionalError")
 			},
-			certification.Metadata{Level: "optional"},
-			certification.HelpText{},
+			check.Metadata{Level: "optional"},
+			check.HelpText{},
 		)
 
 		emptyConfig := runtime.Config{}
 		engine = CraneEngine{
 			DockerConfig: emptyConfig.DockerConfig,
 			Image:        src,
-			Checks: []certification.Check{
+			Checks: []check.Check{
 				goodCheck,
 				errorCheck,
 				failedCheck,
@@ -177,6 +180,99 @@ var _ = Describe("Tag and digest binding information function", func() {
 				m, _ := tagDigestBindingInfo(t, d)
 				Expect(m).To(ContainSubstring(fmt.Sprintf("This image's tag %s will be paired with digest %s", t, d)))
 			})
+		})
+	})
+})
+
+var _ = Describe("CheckInitialization", func() {
+	When("initializing the engine", func() {
+		It("should not return an error", func() {
+			_, err := New(context.TODO(), "example.com/some/image:latest", []check.Check{}, nil, "", false, false, false, goruntime.GOARCH)
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+})
+
+var _ = Describe("Check Initialization", func() {
+	When("initializing container checks", func() {
+		It("should properly return checks for default container policy", func() {
+			_, err := InitializeContainerChecks(context.TODO(), policy.PolicyContainer, ContainerCheckConfig{})
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("should properly return checks for the scratch policy", func() {
+			_, err := InitializeContainerChecks(context.TODO(), policy.PolicyScratch, ContainerCheckConfig{})
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("should properly return checks for the root policy", func() {
+			_, err := InitializeContainerChecks(context.TODO(), policy.PolicyRoot, ContainerCheckConfig{})
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("should throw an error if the policy is unknown", func() {
+			_, err := InitializeContainerChecks(context.TODO(), policy.Policy("foo"), ContainerCheckConfig{})
+			Expect(err).To(HaveOccurred())
+		})
+	})
+
+	When("initializing operator checks", func() {
+		It("should properly return checks for the root policy", func() {
+			_, err := InitializeOperatorChecks(context.TODO(), policy.PolicyOperator, OperatorCheckConfig{})
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("should throw an error if the policy is unknown", func() {
+			_, err := InitializeOperatorChecks(context.TODO(), policy.Policy("bar"), OperatorCheckConfig{})
+			Expect(err).To(HaveOccurred())
+		})
+	})
+})
+
+var _ = Describe("Check Name Queries", func() {
+	DescribeTable("The checks associated with valid policy should return the expected check names",
+		func(queryFunc func(context.Context) []string, expected []string) {
+			c := queryFunc(context.TODO())
+			Expect(queryFunc(context.TODO())).To(ContainElements(expected))
+			Expect(len(c)).To(Equal(len(expected)))
+		},
+		Entry("default container policy", ContainerPolicy, []string{
+			"HasLicense",
+			"HasUniqueTag",
+			"LayerCountAcceptable",
+			"HasNoProhibitedPackages",
+			"HasRequiredLabel",
+			"RunAsNonRoot",
+			"HasModifiedFiles",
+			"BasedOnUbi",
+		}),
+		Entry("default operator policy", OperatorPolicy, []string{
+			"ScorecardBasicSpecCheck",
+			"ScorecardOlmSuiteCheck",
+			"DeployableByOLM",
+			"ValidateOperatorBundle",
+			"BundleImageRefsAreCertified",
+			"SecurityContextConstraintsInCSV",
+			"AllImageRefsInRelatedImages",
+		}),
+		Entry("scratch container policy", ScratchContainerPolicy, []string{
+			"HasLicense",
+			"HasUniqueTag",
+			"LayerCountAcceptable",
+			"HasRequiredLabel",
+			"RunAsNonRoot",
+		}),
+		Entry("root container policy", RootExceptionContainerPolicy, []string{
+			"HasLicense",
+			"HasUniqueTag",
+			"LayerCountAcceptable",
+			"HasNoProhibitedPackages",
+			"HasRequiredLabel",
+			"HasModifiedFiles",
+			"BasedOnUbi",
+		}),
+	)
+
+	When("the policy is unknown", func() {
+		It("should return an empty list", func() {
+			c := checkNamesFor(context.TODO(), policy.Policy("does not exist"))
+			Expect(c).To(Equal([]string{}))
 		})
 	})
 })

@@ -1,12 +1,12 @@
 package runtime
 
 import (
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/policy"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/config"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 )
 
 // ensure ReadOnlyConfig always implements certification.Configurable
-var _ certification.Config = &ReadOnlyConfig{}
+var _ config.Config = &ReadOnlyConfig{}
 
 // ReadOnlyConfig is a Config that cannot be modified. It implements
 // certification.Configurable.

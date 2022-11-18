@@ -16,18 +16,20 @@ import (
 	// for test specs defined here.
 	log "github.com/sirupsen/logrus"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 )
 
 var _ = Describe("CLI Library function", func() {
 	When("invoking preflight using the CLI library", func() {
 		Context("without passing in an artifact writer ", func() {
 			It("should throw an error", func() {
-				err := RunPreflight(context.TODO(), func(ctx context.Context) (runtime.Results, error) { return runtime.Results{}, nil }, CheckConfig{}, nil, nil, nil)
+				err := RunPreflight(context.TODO(), func(ctx context.Context) (certification.Results, error) { return certification.Results{}, nil }, CheckConfig{}, nil, nil, nil)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("no artifact writer"))
 			})
@@ -58,23 +60,25 @@ var _ = Describe("CLI Library function", func() {
 					strings.NewReader("written for cli test case."))
 				Expect(err).ToNot(HaveOccurred())
 
-				err = RunPreflight(testcontext, func(ctx context.Context) (runtime.Results, error) { return runtime.Results{}, nil }, CheckConfig{}, testFormatter, &runtime.ResultWriterFile{}, nil)
+				err = RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) { return certification.Results{}, nil }, CheckConfig{}, testFormatter, &runtime.ResultWriterFile{}, nil)
 				Expect(err).To(HaveOccurred())
 			})
 
 			It("Should return an error if unable to successfully check execution encounters an error", func() {
-				err := RunPreflight(testcontext, func(ctx context.Context) (runtime.Results, error) { return runtime.Results{}, errors.New("some error") }, CheckConfig{}, testFormatter, &runtime.ResultWriterFile{}, nil)
+				err := RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) {
+					return certification.Results{}, errors.New("some error")
+				}, CheckConfig{}, testFormatter, &runtime.ResultWriterFile{}, nil)
 				Expect(err).To(HaveOccurred())
 			})
 
 			It("Should throw an error writing formatted results if the formatter returns an error", func() {
 				var err error
-				testFormatter, err = formatters.New("test", "test", func(ctx context.Context, r runtime.Results) (response []byte, formattingError error) {
+				testFormatter, err = formatters.New("test", "test", func(ctx context.Context, r certification.Results) (response []byte, formattingError error) {
 					return []byte{}, errors.New("unable to format")
 				})
 				Expect(err).ToNot(HaveOccurred())
 
-				err = RunPreflight(testcontext, func(ctx context.Context) (runtime.Results, error) { return runtime.Results{}, nil }, CheckConfig{}, testFormatter, &runtime.ResultWriterFile{}, nil)
+				err = RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) { return certification.Results{}, nil }, CheckConfig{}, testFormatter, &runtime.ResultWriterFile{}, nil)
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -84,23 +88,23 @@ var _ = Describe("CLI Library function", func() {
 						IncludeJUnitResults: true,
 					}
 
-					err := RunPreflight(testcontext, func(ctx context.Context) (runtime.Results, error) {
-						return runtime.Results{
+					err := RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) {
+						return certification.Results{
 							TestedImage:   "testWithJUnit",
 							PassedOverall: true,
-							Passed: []runtime.Result{
+							Passed: []certification.Result{
 								{
-									Check: certification.NewGenericCheck(
+									Check: check.NewGenericCheck(
 										"testJUnitWritten",
-										func(ctx context.Context, ir certification.ImageReference) (bool, error) { return true, nil },
-										certification.Metadata{},
-										certification.HelpText{},
+										func(ctx context.Context, ir image.ImageReference) (bool, error) { return true, nil },
+										check.Metadata{},
+										check.HelpText{},
 									),
 									ElapsedTime: 1,
 								},
 							},
-							Failed: []runtime.Result{},
-							Errors: []runtime.Result{},
+							Failed: []certification.Result{},
+							Errors: []certification.Result{},
 						}, nil
 					}, c, testFormatter, &runtime.ResultWriterFile{}, nil)
 					Expect(err).ToNot(HaveOccurred())
@@ -117,23 +121,23 @@ var _ = Describe("CLI Library function", func() {
 					_, err := artifactWriter.WriteFile("results-junit.xml", strings.NewReader("conflicting junit contents for testing"))
 					Expect(err).ToNot(HaveOccurred())
 
-					err = RunPreflight(testcontext, func(ctx context.Context) (runtime.Results, error) {
-						return runtime.Results{
+					err = RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) {
+						return certification.Results{
 							TestedImage:   "testWithJUnit",
 							PassedOverall: true,
-							Passed: []runtime.Result{
+							Passed: []certification.Result{
 								{
-									Check: certification.NewGenericCheck(
+									Check: check.NewGenericCheck(
 										"testJUnitWritten",
-										func(ctx context.Context, ir certification.ImageReference) (bool, error) { return true, nil },
-										certification.Metadata{},
-										certification.HelpText{},
+										func(ctx context.Context, ir image.ImageReference) (bool, error) { return true, nil },
+										check.Metadata{},
+										check.HelpText{},
 									),
 									ElapsedTime: 1,
 								},
 							},
-							Failed: []runtime.Result{},
-							Errors: []runtime.Result{},
+							Failed: []certification.Result{},
+							Errors: []certification.Result{},
 						}, nil
 					}, c, testFormatter, &runtime.ResultWriterFile{}, nil)
 					Expect(err).To(HaveOccurred())
@@ -153,23 +157,23 @@ var _ = Describe("CLI Library function", func() {
 					submitterTestLogger.SetFormatter(&log.TextFormatter{})
 					testSubmitter := lib.NewNoopSubmitter(true, submitterTestLogger)
 
-					err := RunPreflight(testcontext, func(ctx context.Context) (runtime.Results, error) {
-						return runtime.Results{
+					err := RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) {
+						return certification.Results{
 							TestedImage:   "testSubmission",
 							PassedOverall: true,
-							Passed: []runtime.Result{
+							Passed: []certification.Result{
 								{
-									Check: certification.NewGenericCheck(
+									Check: check.NewGenericCheck(
 										"testSubmission",
-										func(ctx context.Context, ir certification.ImageReference) (bool, error) { return true, nil },
-										certification.Metadata{},
-										certification.HelpText{},
+										func(ctx context.Context, ir image.ImageReference) (bool, error) { return true, nil },
+										check.Metadata{},
+										check.HelpText{},
 									),
 									ElapsedTime: 1,
 								},
 							},
-							Failed: []runtime.Result{},
-							Errors: []runtime.Result{},
+							Failed: []certification.Result{},
+							Errors: []certification.Result{},
 						}, nil
 					}, c, testFormatter, &runtime.ResultWriterFile{}, testSubmitter)
 					Expect(err).ToNot(HaveOccurred())
@@ -186,23 +190,23 @@ var _ = Describe("CLI Library function", func() {
 
 					submissionError := "unable to submit"
 
-					err := RunPreflight(testcontext, func(ctx context.Context) (runtime.Results, error) {
-						return runtime.Results{
+					err := RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) {
+						return certification.Results{
 							TestedImage:   "testSubmission",
 							PassedOverall: true,
-							Passed: []runtime.Result{
+							Passed: []certification.Result{
 								{
-									Check: certification.NewGenericCheck(
+									Check: check.NewGenericCheck(
 										"testSubmission",
-										func(ctx context.Context, ir certification.ImageReference) (bool, error) { return true, nil },
-										certification.Metadata{},
-										certification.HelpText{},
+										func(ctx context.Context, ir image.ImageReference) (bool, error) { return true, nil },
+										check.Metadata{},
+										check.HelpText{},
 									),
 									ElapsedTime: 1,
 								},
 							},
-							Failed: []runtime.Result{},
-							Errors: []runtime.Result{},
+							Failed: []certification.Result{},
+							Errors: []certification.Result{},
 						}, nil
 					}, c, testFormatter, &runtime.ResultWriterFile{}, &badResultSubmitter{submissionError})
 					Expect(err).To(HaveOccurred())
@@ -214,7 +218,7 @@ var _ = Describe("CLI Library function", func() {
 })
 
 var _ = Describe("JUnit", func() {
-	var results *runtime.Results
+	var results *certification.Results
 	var junitfile string
 	var artifactWriter *artifacts.FilesystemWriter
 	var testcontext context.Context
@@ -227,14 +231,14 @@ var _ = Describe("JUnit", func() {
 		testcontext = artifacts.ContextWithWriter(context.Background(), artifactWriter)
 		DeferCleanup(os.RemoveAll, tmpDir)
 
-		results = &runtime.Results{
+		results = &certification.Results{
 			TestedImage:       "registry.example.com/example/image:0.0.1",
 			PassedOverall:     true,
 			TestedOn:          runtime.UnknownOpenshiftClusterVersion(),
 			CertificationHash: "sha256:deadb33f",
-			Passed:            []runtime.Result{},
-			Failed:            []runtime.Result{},
-			Errors:            []runtime.Result{},
+			Passed:            []certification.Result{},
+			Failed:            []certification.Result{},
+			Errors:            []certification.Result{},
 		}
 		junitfile = filepath.Join(artifactWriter.Path(), "results-junit.xml")
 	})

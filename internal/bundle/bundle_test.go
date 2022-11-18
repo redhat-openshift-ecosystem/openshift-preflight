@@ -4,18 +4,17 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-
 	. "github.com/onsi/ginkgo/v2/dsl/core"
 	. "github.com/onsi/ginkgo/v2/dsl/table"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 
 var _ = Describe("BundleValidateCheck", func() {
 	Describe("Bundle validation", func() {
 		Context("the annotations file is valid", func() {
 			It("should pass", func() {
-				imageRef := certification.ImageReference{
+				imageRef := image.ImageReference{
 					ImageFSPath: "./testdata/valid_bundle",
 				}
 				report, err := Validate(context.Background(), imageRef.ImageFSPath)
@@ -26,7 +25,7 @@ var _ = Describe("BundleValidateCheck", func() {
 
 		Context("the annotations file does not exist", func() {
 			It("should error", func() {
-				imageRef := certification.ImageReference{
+				imageRef := image.ImageReference{
 					ImageFSPath: "./testdata/no_annotations_file",
 				}
 				report, err := Validate(context.Background(), imageRef.ImageFSPath)
@@ -37,7 +36,7 @@ var _ = Describe("BundleValidateCheck", func() {
 
 		Context("the annotations file is malformed", func() {
 			It("should error", func() {
-				imageRef := certification.ImageReference{
+				imageRef := image.ImageReference{
 					ImageFSPath: "./testdata/malformed_annotations_file",
 				}
 				report, err := Validate(context.Background(), imageRef.ImageFSPath)
@@ -48,7 +47,7 @@ var _ = Describe("BundleValidateCheck", func() {
 
 		Context("the annotations file is valid but has no annotations", func() {
 			It("should fail gracefully", func() {
-				imageRef := certification.ImageReference{
+				imageRef := image.ImageReference{
 					ImageFSPath: "./testdata/invalid_bundle",
 				}
 				report, err := Validate(context.Background(), imageRef.ImageFSPath)

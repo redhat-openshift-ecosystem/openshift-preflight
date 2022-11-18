@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
-var _ certification.Check = &ScorecardBasicSpecCheck{}
+var _ check.Check = &ScorecardBasicSpecCheck{}
 
 // ScorecardBasicSpecCheck evaluates the image to ensure it passes the operator-sdk
 // scorecard check with the basic-check-spec-test suite selected.
@@ -32,7 +33,7 @@ func NewScorecardBasicSpecCheck(operatorSdk operatorSdk, ns, sa string, kubeconf
 	}
 }
 
-func (p *ScorecardBasicSpecCheck) Validate(ctx context.Context, bundleRef certification.ImageReference) (bool, error) {
+func (p *ScorecardBasicSpecCheck) Validate(ctx context.Context, bundleRef image.ImageReference) (bool, error) {
 	log.L().Trace("Running operator-sdk scorecard check for ", bundleRef.ImageURI)
 	selector := []string{"test=basic-check-spec-test"}
 	log.L().Tracef("--selector=%s", selector)
@@ -49,8 +50,8 @@ func (p *ScorecardBasicSpecCheck) Name() string {
 	return "ScorecardBasicSpecCheck"
 }
 
-func (p *ScorecardBasicSpecCheck) Metadata() certification.Metadata {
-	return certification.Metadata{
+func (p *ScorecardBasicSpecCheck) Metadata() check.Metadata {
+	return check.Metadata{
 		Description:      "Check to make sure that all CRs have a spec block.",
 		Level:            "best",
 		KnowledgeBaseURL: "https://sdk.operatorframework.io/docs/advanced-topics/scorecard/scorecard/#overview", // Placeholder
@@ -58,15 +59,15 @@ func (p *ScorecardBasicSpecCheck) Metadata() certification.Metadata {
 	}
 }
 
-func (p *ScorecardBasicSpecCheck) Help() certification.HelpText {
+func (p *ScorecardBasicSpecCheck) Help() check.HelpText {
 	if p.fatalError {
-		return certification.HelpText{
+		return check.HelpText{
 			Message: "There was a fatal error while running operator-sdk scorecard tests. " +
 				"Please see the preflight log for details. If necessary, set logging to be more verbose.",
 			Suggestion: "If the logs are showing a context timeout, try setting wait time to a higher value.",
 		}
 	}
-	return certification.HelpText{
+	return check.HelpText{
 		Message:    "Check ScorecardBasicSpecCheck encountered an error. Please review the " + scorecardBasicCheckResult + " file in your execution artifacts for more information.",
 		Suggestion: "Make sure that all CRs have a spec block",
 	}

@@ -5,20 +5,21 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/operator-framework/operator-manifest-tools/pkg/image"
+	mimage "github.com/operator-framework/operator-manifest-tools/pkg/image"
 	"github.com/operator-framework/operator-manifest-tools/pkg/pullspec"
 	"sigs.k8s.io/yaml"
 )
 
-var _ certification.Check = &RelatedImagesCheck{}
+var _ check.Check = &RelatedImagesCheck{}
 
 type RelatedImagesCheck struct{}
 
-func (p *RelatedImagesCheck) Validate(ctx context.Context, imgRef certification.ImageReference) (bool, error) {
+func (p *RelatedImagesCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	images, manifests, err := p.dataToValidate(ctx, imgRef.ImageFSPath)
 	if err != nil {
 		return false, err
@@ -34,7 +35,7 @@ func (p *RelatedImagesCheck) dataToValidate(ctx context.Context, imagePath strin
 		return nil, nil, err
 	}
 
-	imageNames, err := image.Extract(operatorManifests)
+	imageNames, err := mimage.Extract(operatorManifests)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -76,8 +77,8 @@ func (p *RelatedImagesCheck) Name() string {
 	return "AllImageRefsInRelatedImages"
 }
 
-func (p *RelatedImagesCheck) Metadata() certification.Metadata {
-	return certification.Metadata{
+func (p *RelatedImagesCheck) Metadata() check.Metadata {
+	return check.Metadata{
 		Description:      "Check that all images in the CSV are listed in RelatedImages section. Currently, this check is not enforced.",
 		Level:            "optional",
 		KnowledgeBaseURL: "https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.45/html/red_hat_openshift_software_certification_policy_guide/assembly-products-managed-by-an-operator_openshift-sw-cert-policy-container-images#con-operator-requirements_openshift-sw-cert-policy-products-managed",
@@ -85,8 +86,8 @@ func (p *RelatedImagesCheck) Metadata() certification.Metadata {
 	}
 }
 
-func (p *RelatedImagesCheck) Help() certification.HelpText {
-	return certification.HelpText{
+func (p *RelatedImagesCheck) Help() check.HelpText {
+	return check.HelpText{
 		Message:    "Check that all images referenced in the CSV are in RelatedImages",
 		Suggestion: "Either manually or with a tool, populate the RelatedImages section of the CSV",
 	}
