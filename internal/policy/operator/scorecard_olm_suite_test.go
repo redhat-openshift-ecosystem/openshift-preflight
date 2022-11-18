@@ -6,7 +6,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/operatorsdk"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

@@ -20,11 +20,11 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/authn"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/openshift"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/internal/rpm"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/authn"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/openshift"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/rpm"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
