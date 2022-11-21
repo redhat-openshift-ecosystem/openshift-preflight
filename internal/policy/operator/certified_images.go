@@ -7,11 +7,11 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/operator-framework/operator-manifest-tools/pkg/image"
 	"github.com/operator-framework/operator-manifest-tools/pkg/pullspec"
-	log "github.com/sirupsen/logrus"
 )
 
 var _ certification.Check = &certifiedImagesCheck{}
@@ -60,7 +60,7 @@ func (p *certifiedImagesCheck) dataToValidate(ctx context.Context, imagePath str
 	for _, img := range imageNames {
 		digest, err := name.NewDigest(img)
 		if err != nil {
-			log.Warningf("Image does not appear to be pinned: %s: %v", img, err)
+			log.L().Warningf("Image does not appear to be pinned: %s: %v", img, err)
 			p.nonCertifiedImages = append(p.nonCertifiedImages, img)
 			continue
 		}
@@ -84,13 +84,13 @@ func (p *certifiedImagesCheck) validate(ctx context.Context, imageDigests []stri
 	for _, digest := range imageDigests {
 		img, ok := foundMap[digest]
 		if !ok {
-			log.Warningf("Image not found in Pyxis, therefore it is not certified: %s", digest)
+			log.L().Warningf("Image not found in Pyxis, therefore it is not certified: %s", digest)
 			p.nonCertifiedImages = append(p.nonCertifiedImages, digest)
 			continue
 		}
 		if !img.Certified {
 			fullImg := fmt.Sprintf("%s/%s@%s", img.Repositories[0].Registry, img.Repositories[0].Repository, img.DockerImageDigest)
-			log.Warningf("Image is not certified: %s", fullImg)
+			log.L().Warningf("Image is not certified: %s", fullImg)
 			p.nonCertifiedImages = append(p.nonCertifiedImages, fullImg)
 		}
 	}

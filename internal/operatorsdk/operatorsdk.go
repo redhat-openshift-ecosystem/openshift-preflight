@@ -11,8 +11,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
-
-	log "github.com/sirupsen/logrus"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 func New(userProvidedScorecardImage string, cmdContext execContext) *operatorSdk {
@@ -47,7 +46,7 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 		if err != nil {
 			return nil, fmt.Errorf("unable to create a temporary kubeconfig file for use with scorecard: %s", err)
 		}
-		log.Trace("created temporary kubeconfig for use with scorecard at path: ", kcf.Name())
+		log.L().Trace("created temporary kubeconfig for use with scorecard at path: ", kcf.Name())
 		defer os.Remove(kcf.Name())
 		_, err = kcf.Write(opts.Kubeconfig)
 		if err != nil {
@@ -79,7 +78,7 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 	cmdArgs = append(cmdArgs, image)
 
 	cmd := o.cmdContext("operator-sdk", cmdArgs...)
-	log.Trace("running scorecard with the following invocation", cmd.Args)
+	log.L().Trace("running scorecard with the following invocation", cmd.Args)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -93,8 +92,8 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 		// We also conclude/assume that "FATA" being in stderr would indicate an error in the
 		// check execution itself.
 		if stderr.Len() != 0 && strings.Contains(strings.ToUpper(stderr.String()), "FATA") {
-			log.Debug("operator-sdk scorecard failed to run properly.")
-			log.Debugf("stderr: %s", stderr.String())
+			log.L().Debug("operator-sdk scorecard failed to run properly.")
+			log.L().Debugf("stderr: %s", stderr.String())
 
 			return nil, fmt.Errorf("failed to run operator-sdk scorecard: %v", err)
 		}
@@ -139,7 +138,7 @@ func (o operatorSdk) BundleValidate(ctx context.Context, image string, opts Oper
 	cmdArgs = append(cmdArgs, image)
 
 	cmd := o.cmdContext("operator-sdk", cmdArgs...)
-	log.Debugf("Command being run: %s", cmd.Args)
+	log.L().Debugf("Command being run: %s", cmd.Args)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -153,8 +152,8 @@ func (o operatorSdk) BundleValidate(ctx context.Context, image string, opts Oper
 		// We also conclude/assume that "FATA" being in stderr would indicate an error in the
 		// check execution itself.
 		if stderr.Len() != 0 && strings.Contains(stderr.String(), "FATA") {
-			log.Debugf("stdout: %s", stdout.String())
-			log.Debugf("stderr: %s", stderr.String())
+			log.L().Debugf("stdout: %s", stdout.String())
+			log.L().Debugf("stderr: %s", stderr.String())
 			return nil, fmt.Errorf("failed to run operator-sdk bundle validate: %v", err)
 		}
 	}

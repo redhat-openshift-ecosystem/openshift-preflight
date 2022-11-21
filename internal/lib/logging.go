@@ -5,28 +5,27 @@ import (
 	"context"
 	"io"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 // LogThroughArtifactWriterIfSet reconfigures the logger used by Preflight to write to
 // the artifact writer if one is configured. If this is called and no Artifact Writer
-// is configured, this forces calls to logrus.StandardLogger to be discarded.
-// This is a workaround for the library implementation because existing checks
-// make calls directly to logrus.
+// is configured, this will set writes to the application's logger to be discarded.
 func LogThroughArtifactWriterIfSet(ctx context.Context) {
 	if w := artifacts.WriterFromContext(ctx); w != nil {
-		log.SetLevel(log.TraceLevel)
-		log.SetFormatter(&log.TextFormatter{})
+		log.L().SetLevel(logrus.TraceLevel)
+		log.L().SetFormatter(&logrus.TextFormatter{})
 		b := bytes.NewBufferString("")
-		log.SetOutput(b)
+		log.L().SetOutput(b)
 
 		w.WriteFile("preflight.log", b) //nolint:errcheck
 		return
 	}
 
-	log.SetOutput(io.Discard)
+	log.L().SetOutput(io.Discard)
 }
 
 type contextKey string

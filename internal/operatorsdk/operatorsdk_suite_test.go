@@ -6,7 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+
+	"github.com/sirupsen/logrus"
 )
 
 func TestOperatorSdk(t *testing.T) {
@@ -15,6 +17,6 @@ func TestOperatorSdk(t *testing.T) {
 }
 
 func init() {
-	log.SetFormatter(&log.TextFormatter{})
-	log.SetLevel(log.TraceLevel)
+	log.L().SetFormatter(&logrus.TextFormatter{})
+	log.L().SetLevel(logrus.TraceLevel)
 }
