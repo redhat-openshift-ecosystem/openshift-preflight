@@ -9,8 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-
-	log "github.com/sirupsen/logrus"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 const (
@@ -68,7 +67,7 @@ func (p *HasLicenseCheck) validate(ctx context.Context, licenseFileList []fs.Dir
 			break
 		}
 	}
-	log.Debugf("%d Licenses found", len(licenseFileList))
+	log.L().Debugf("%d Licenses found", len(licenseFileList))
 	return len(licenseFileList) >= minLicenseFileCount && nonZeroLength, nil
 }
 

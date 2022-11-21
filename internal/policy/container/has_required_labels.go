@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
-	log "github.com/sirupsen/logrus"
 )
 
 var requiredLabels = []string{"name", "vendor", "version", "release", "summary", "description"}
@@ -42,7 +42,7 @@ func (p *HasRequiredLabelsCheck) validate(labels map[string]string) (bool, error
 
 	// TODO: We should be reporting this in the results, not in a log message
 	if len(missingLabels) > 0 {
-		log.Debugf("expected labels are missing: %+v", missingLabels)
+		log.L().Debugf("expected labels are missing: %+v", missingLabels)
 	}
 
 	return len(missingLabels) == 0, nil

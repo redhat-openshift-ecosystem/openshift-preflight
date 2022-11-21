@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type scorecardCheck struct {
@@ -25,7 +24,7 @@ func (p *scorecardCheck) validate(ctx context.Context, items []operatorsdk.Opera
 	var err error
 
 	if len(items) == 0 {
-		log.Warn("Did not receive any test result information from scorecard output")
+		log.L().Warn("Did not receive any test result information from scorecard output")
 	}
 	for _, item := range items {
 		for _, result := range item.Status.Results {

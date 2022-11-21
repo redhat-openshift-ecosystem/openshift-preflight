@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-manifest-tools/pkg/image"
 	"github.com/operator-framework/operator-manifest-tools/pkg/pullspec"
-	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 )
 
@@ -66,7 +66,7 @@ func (p *RelatedImagesCheck) dataToValidate(ctx context.Context, imagePath strin
 func (p *RelatedImagesCheck) validate(ctx context.Context, images []string, relatedImages map[string]struct{}) (bool, error) {
 	for _, image := range images {
 		if _, ok := relatedImages[image]; !ok {
-			log.Warningf("Image %s is not in relatedImages. This will eventually cause this check to fail", image)
+			log.L().Warningf("Image %s is not in relatedImages. This will eventually cause this check to fail", image)
 		}
 	}
 	return true, nil

@@ -24,7 +24,9 @@ import (
 
 	craneauthn "github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 var (
@@ -201,6 +203,6 @@ func TestVariousPaths(t *testing.T) {
 }
 
 func init() {
-	log.SetFormatter(&log.TextFormatter{})
-	log.SetLevel(log.TraceLevel)
+	log.L().SetFormatter(&logrus.TextFormatter{})
+	log.L().SetLevel(logrus.TraceLevel)
 }

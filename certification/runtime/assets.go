@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/authn"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
-	log "github.com/sirupsen/logrus"
 )
 
 // images maps the images use by preflight with their purpose.
@@ -41,7 +41,7 @@ func imageList(ctx context.Context) []string {
 		base := strings.Split(image, ":")[0]
 		digest, err := crane.Digest(image, options...)
 		if err != nil {
-			log.Error(fmt.Errorf("could not retrieve image digest: %w", err))
+			log.L().Error(fmt.Errorf("could not retrieve image digest: %w", err))
 			// Skip this entry
 			continue
 		}
@@ -63,7 +63,7 @@ func Assets(ctx context.Context) AssetData {
 // returned, otherwise, the default is returned.
 func ScorecardImage(userProvidedScorecardImage string) string {
 	if userProvidedScorecardImage != "" {
-		log.Debugf("Using %s as the scorecard test image", userProvidedScorecardImage)
+		log.L().Debugf("Using %s as the scorecard test image", userProvidedScorecardImage)
 		return userProvidedScorecardImage
 	}
 	return images["scorecard"]

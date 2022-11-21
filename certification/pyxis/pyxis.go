@@ -9,7 +9,8 @@ import (
 	"net/http"
 
 	"github.com/shurcooL/graphql"
-	log "github.com/sirupsen/logrus"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 const (
@@ -54,7 +55,7 @@ func (p *pyxisClient) createImage(ctx context.Context, certImage *CertImage) (*C
 		return nil, err
 	}
 
-	log.Debugf("URL is: %s", req.URL)
+	log.L().Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -94,7 +95,7 @@ func (p *pyxisClient) getImage(ctx context.Context, dockerImageDigest string) (*
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
-	log.Debugf("URL is: %s", req.URL)
+	log.L().Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -241,7 +242,7 @@ func (p *pyxisClient) createRPMManifest(ctx context.Context, rpmManifest *RPMMan
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
-	log.Debugf("URL is: %s", req.URL)
+	log.L().Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -280,7 +281,7 @@ func (p *pyxisClient) getRPMManifest(ctx context.Context, imageID string) (*RPMM
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
-	log.Debugf("URL is: %s", req.URL)
+	log.L().Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -314,7 +315,7 @@ func (p *pyxisClient) GetProject(ctx context.Context) (*CertProject, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not create new request: %v", err)
 	}
-	log.Debugf("URL is: %s", req.URL)
+	log.L().Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -366,7 +367,7 @@ func (p *pyxisClient) updateProject(ctx context.Context, certProject *CertProjec
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
-	log.Debugf("URL is: %s", req.URL)
+	log.L().Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -442,7 +443,7 @@ func (p *pyxisClient) createArtifact(ctx context.Context, artifact *Artifact) (*
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
-	log.Debugf("URL is: %s", req.URL)
+	log.L().Debugf("URL is: %s", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
