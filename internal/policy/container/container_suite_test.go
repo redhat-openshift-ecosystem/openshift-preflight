@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	log "github.com/sirupsen/logrus"
+	logrus "github.com/sirupsen/logrus"
 )
 
 func TestContainer(t *testing.T) {
@@ -19,8 +20,8 @@ func TestContainer(t *testing.T) {
 }
 
 func init() {
-	log.SetFormatter(&log.TextFormatter{})
-	log.SetLevel(log.TraceLevel)
+	log.L().SetFormatter(&logrus.TextFormatter{})
+	log.L().SetLevel(logrus.TraceLevel)
 }
 
 type FakeLayer struct{}

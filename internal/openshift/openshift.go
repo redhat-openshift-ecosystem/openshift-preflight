@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+
 	imagestreamv1 "github.com/openshift/api/image/v1"
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -48,7 +49,7 @@ func AddSchemes(scheme *apiruntime.Scheme) error {
 
 // CreateNamespace can return an ErrAlreadyExists
 func (oe *openshiftClient) CreateNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
-	log.Tracef("Creating namespace: %q", name)
+	log.L().Tracef("Creating namespace: %q", name)
 	nsSpec := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -65,7 +66,7 @@ func (oe *openshiftClient) CreateNamespace(ctx context.Context, name string) (*c
 }
 
 func (oe *openshiftClient) DeleteNamespace(ctx context.Context, name string) error {
-	log.Tracef("Deleting namespace: %q", name)
+	log.L().Tracef("Deleting namespace: %q", name)
 	nsSpec := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -81,7 +82,7 @@ func (oe *openshiftClient) DeleteNamespace(ctx context.Context, name string) err
 
 // GetNamespace can return am ErrNotFound
 func (oe *openshiftClient) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
-	log.Tracef("fetching namespace %q", name)
+	log.L().Tracef("fetching namespace %q", name)
 	nsSpec := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -102,7 +103,7 @@ func (oe *openshiftClient) GetNamespace(ctx context.Context, name string) (*core
 
 // CreateOperatorGroup can return an ErrAlreadyExists
 func (oe *openshiftClient) CreateOperatorGroup(ctx context.Context, data OperatorGroupData, namespace string) (*operatorsv1.OperatorGroup, error) {
-	log.Tracef("Creating OperatorGroup %q in namespace %q", data.Name, namespace)
+	log.L().Tracef("Creating OperatorGroup %q in namespace %q", data.Name, namespace)
 	operatorGroup := &operatorsv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      data.Name,
@@ -124,7 +125,7 @@ func (oe *openshiftClient) CreateOperatorGroup(ctx context.Context, data Operato
 }
 
 func (oe *openshiftClient) DeleteOperatorGroup(ctx context.Context, name string, namespace string) error {
-	log.Tracef("Deleting OperatorGroup %q in namespace %q", name, namespace)
+	log.L().Tracef("Deleting OperatorGroup %q in namespace %q", name, namespace)
 	operatorGroup := operatorsv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -141,7 +142,7 @@ func (oe *openshiftClient) DeleteOperatorGroup(ctx context.Context, name string,
 
 // GetOperatorGroup can return an ErrNotFound
 func (oe *openshiftClient) GetOperatorGroup(ctx context.Context, name string, namespace string) (*operatorsv1.OperatorGroup, error) {
-	log.Tracef("fetching operatorgroup %q from namespace %q", name, namespace)
+	log.L().Tracef("fetching operatorgroup %q from namespace %q", name, namespace)
 	operatorGroup := operatorsv1.OperatorGroup{}
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
 		Name:      name,
@@ -158,7 +159,7 @@ func (oe *openshiftClient) GetOperatorGroup(ctx context.Context, name string, na
 
 // CreateSecret can return an ErrAlreadyExists
 func (oe openshiftClient) CreateSecret(ctx context.Context, name string, content map[string]string, secretType corev1.SecretType, namespace string) (*corev1.Secret, error) {
-	log.Tracef("Creating secret %q in namespace %q", name, namespace)
+	log.L().Tracef("Creating secret %q in namespace %q", name, namespace)
 	secret := corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
@@ -183,7 +184,7 @@ func (oe openshiftClient) CreateSecret(ctx context.Context, name string, content
 }
 
 func (oe openshiftClient) DeleteSecret(ctx context.Context, name string, namespace string) error {
-	log.Tracef("Deleting secret %q from namespace %q", name, namespace)
+	log.L().Tracef("Deleting secret %q from namespace %q", name, namespace)
 	secret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -200,7 +201,7 @@ func (oe openshiftClient) DeleteSecret(ctx context.Context, name string, namespa
 
 // GetSecret can return an ErrNotFound
 func (oe openshiftClient) GetSecret(ctx context.Context, name string, namespace string) (*corev1.Secret, error) {
-	log.Tracef("fetching secret %q from namespace %q", name, namespace)
+	log.L().Tracef("fetching secret %q from namespace %q", name, namespace)
 	secret := corev1.Secret{}
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
 		Name:      name,
@@ -217,7 +218,7 @@ func (oe openshiftClient) GetSecret(ctx context.Context, name string, namespace 
 
 // CreateCatalogSource can return an ErrAlreadyExists
 func (oe openshiftClient) CreateCatalogSource(ctx context.Context, data CatalogSourceData, namespace string) (*operatorsv1alpha1.CatalogSource, error) {
-	log.Tracef("Creating CatalogSource %q in namespace %q", data.Name, namespace)
+	log.L().Tracef("Creating CatalogSource %q in namespace %q", data.Name, namespace)
 	catalogSource := &operatorsv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      data.Name,
@@ -241,7 +242,7 @@ func (oe openshiftClient) CreateCatalogSource(ctx context.Context, data CatalogS
 }
 
 func (oe *openshiftClient) DeleteCatalogSource(ctx context.Context, name string, namespace string) error {
-	log.Tracef("Deleting CatalogSource %q in namespace %q", name, namespace)
+	log.L().Tracef("Deleting CatalogSource %q in namespace %q", name, namespace)
 	catalogSource := operatorsv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -257,7 +258,7 @@ func (oe *openshiftClient) DeleteCatalogSource(ctx context.Context, name string,
 
 // GetCatalogSource cat return an ErrNotFound
 func (oe *openshiftClient) GetCatalogSource(ctx context.Context, name string, namespace string) (*operatorsv1alpha1.CatalogSource, error) {
-	log.Tracef("fetching catalogsource: %q", name)
+	log.L().Tracef("fetching catalogsource: %q", name)
 	catalogSource := &operatorsv1alpha1.CatalogSource{}
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
 		Name:      name,
@@ -274,7 +275,7 @@ func (oe *openshiftClient) GetCatalogSource(ctx context.Context, name string, na
 
 // CreateSubscription can return an ErrAlreadyExists
 func (oe openshiftClient) CreateSubscription(ctx context.Context, data SubscriptionData, namespace string) (*operatorsv1alpha1.Subscription, error) {
-	log.Tracef("Creating Subscription %q in namespace %q", data.Name, namespace)
+	log.L().Tracef("Creating Subscription %q in namespace %q", data.Name, namespace)
 	subscription := &operatorsv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      data.Name,
@@ -299,7 +300,7 @@ func (oe openshiftClient) CreateSubscription(ctx context.Context, data Subscript
 
 // GetSubscription can return an ErrNotFound
 func (oe *openshiftClient) GetSubscription(ctx context.Context, name string, namespace string) (*operatorsv1alpha1.Subscription, error) {
-	log.Tracef("fetching subscription %q from namespace %q", name, namespace)
+	log.L().Tracef("fetching subscription %q from namespace %q", name, namespace)
 	subscription := &operatorsv1alpha1.Subscription{}
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
 		Name:      name,
@@ -315,7 +316,7 @@ func (oe *openshiftClient) GetSubscription(ctx context.Context, name string, nam
 }
 
 func (oe openshiftClient) DeleteSubscription(ctx context.Context, name string, namespace string) error {
-	log.Tracef("Deleting Subscription %q in namespace %q", name, namespace)
+	log.L().Tracef("Deleting Subscription %q in namespace %q", name, namespace)
 
 	subscription := &operatorsv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
@@ -332,7 +333,7 @@ func (oe openshiftClient) DeleteSubscription(ctx context.Context, name string, n
 
 // GetCSV can return an ErrNotFound
 func (oe *openshiftClient) GetCSV(ctx context.Context, name string, namespace string) (*operatorsv1alpha1.ClusterServiceVersion, error) {
-	log.Debugf("fetching csv %q from namespace %q", name, namespace)
+	log.L().Debugf("fetching csv %q from namespace %q", name, namespace)
 	csv := &operatorsv1alpha1.ClusterServiceVersion{}
 	err := oe.Client.Get(ctx, crclient.ObjectKey{
 		Name:      name,
@@ -378,7 +379,7 @@ func (oe *openshiftClient) GetImages(ctx context.Context) (map[string]struct{}, 
 
 // CreateRoleBinding can return an ErrAlreadyExists
 func (oe *openshiftClient) CreateRoleBinding(ctx context.Context, data RoleBindingData, namespace string) (*rbacv1.RoleBinding, error) {
-	log.Tracef("Creating RoleBinding %q in namespace %q", data.Name, namespace)
+	log.L().Tracef("Creating RoleBinding %q in namespace %q", data.Name, namespace)
 	subjectsObj := make([]rbacv1.Subject, 0, len(data.Subjects))
 	for _, subject := range data.Subjects {
 		subjectsObj = append(subjectsObj, rbacv1.Subject{
@@ -412,13 +413,13 @@ func (oe *openshiftClient) CreateRoleBinding(ctx context.Context, data RoleBindi
 		return nil, fmt.Errorf("could not create rolebinding: %s/%s: %v", namespace, data.Name, err)
 	}
 
-	log.Debugf("RoleBinding %s created in namespace %s", data.Name, namespace)
+	log.L().Debugf("RoleBinding %s created in namespace %s", data.Name, namespace)
 	return &roleBindingObj, nil
 }
 
 // GetRoleBinding can return an ErrNotFound
 func (oe *openshiftClient) GetRoleBinding(ctx context.Context, name string, namespace string) (*rbacv1.RoleBinding, error) {
-	log.Tracef("fetching RoleBinding %q from namespace %q", name, namespace)
+	log.L().Tracef("fetching RoleBinding %q from namespace %q", name, namespace)
 	roleBinding := rbacv1.RoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "RoleBinding",
@@ -443,7 +444,7 @@ func (oe *openshiftClient) GetRoleBinding(ctx context.Context, name string, name
 }
 
 func (oe *openshiftClient) DeleteRoleBinding(ctx context.Context, name string, namespace string) error {
-	log.Tracef("Deleting RoleBinding %q in namespace %q", name, namespace)
+	log.L().Tracef("Deleting RoleBinding %q in namespace %q", name, namespace)
 
 	roleBinding := rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{

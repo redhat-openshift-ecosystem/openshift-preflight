@@ -5,8 +5,7 @@ import (
 	"fmt"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-
-	log "github.com/sirupsen/logrus"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 var _ certification.Check = &ScorecardOlmSuiteCheck{}
@@ -34,9 +33,9 @@ func NewScorecardOlmSuiteCheck(operatorSdk operatorSdk, ns, sa string, kubeconfi
 }
 
 func (p *ScorecardOlmSuiteCheck) Validate(ctx context.Context, bundleRef certification.ImageReference) (bool, error) {
-	log.Trace("Running operator-sdk scorecard Check for ", bundleRef.ImageURI)
+	log.L().Trace("Running operator-sdk scorecard Check for ", bundleRef.ImageURI)
 	selector := []string{"suite=olm"}
-	log.Tracef("--selector=%s", selector)
+	log.L().Tracef("--selector=%s", selector)
 	scorecardReport, err := p.getDataToValidate(ctx, bundleRef.ImageFSPath, selector, scorecardOlmSuiteResult)
 	if err != nil {
 		p.fatalError = true

@@ -7,7 +7,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/bundle"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 var _ certification.Check = &ValidateOperatorBundleCheck{}
@@ -37,10 +37,10 @@ func (p *ValidateOperatorBundleCheck) validate(ctx context.Context, report *bund
 	if !report.Passed || len(report.Results) > 0 {
 		for _, output := range report.Results {
 			for _, result := range output.Errors {
-				log.Error(result.Error())
+				log.L().Error(result.Error())
 			}
 			for _, result := range output.Warnings {
-				log.Warn(result.Error())
+				log.L().Warn(result.Error())
 			}
 		}
 	}
