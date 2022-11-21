@@ -6,9 +6,8 @@ import (
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/rpm"
-
-	log "github.com/sirupsen/logrus"
 )
 
 var _ certification.Check = &HasNoProhibitedPackagesCheck{}
@@ -56,8 +55,8 @@ func (p *HasNoProhibitedPackagesCheck) validate(ctx context.Context, pkgList []s
 	}
 
 	if len(prohibitedPackages) > 0 {
-		log.Debugf("The number of prohibited package found in the container image: %d", len(prohibitedPackages))
-		log.Debugf("found the following prohibited packages: %+v", prohibitedPackages)
+		log.L().Debugf("The number of prohibited package found in the container image: %d", len(prohibitedPackages))
+		log.L().Debugf("found the following prohibited packages: %+v", prohibitedPackages)
 	}
 
 	return len(prohibitedPackages) == 0, nil

@@ -11,13 +11,13 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/pyxis"
-
-	log "github.com/sirupsen/logrus"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 // ResultWriter defines methods associated with writing check results.
@@ -64,7 +64,7 @@ type ContainerCertificationSubmitter struct {
 }
 
 func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
-	log.Info("preparing results that will be submitted to Red Hat")
+	log.L().Info("preparing results that will be submitted to Red Hat")
 
 	// get the project info from pyxis
 	certProject, err := s.Pyxis.GetProject(ctx)
@@ -80,7 +80,7 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 		return fmt.Errorf("no certification project was returned from pyxis")
 	}
 
-	log.Tracef("CertProject: %+v", certProject)
+	log.L().Tracef("CertProject: %+v", certProject)
 
 	// only read the dockerfile if the user provides a location for the file
 	// at this point in the flow, if `cfg.DockerConfig` is empty we know the repo is public and can continue the submission flow
@@ -184,11 +184,11 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 		return fmt.Errorf("could not submit to pyxis: %w", err)
 	}
 
-	log.Info("Test results have been submitted to Red Hat.")
-	log.Info("These results will be reviewed by Red Hat for final certification.")
-	log.Infof("The container's image id is: %s.", certResults.CertImage.ID)
-	log.Infof("Please check %s to view scan results.", BuildScanResultsURL(s.CertificationProjectID, certResults.CertImage.ID))
-	log.Infof("Please check %s to monitor the progress.", BuildOverviewURL(s.CertificationProjectID))
+	log.L().Info("Test results have been submitted to Red Hat.")
+	log.L().Info("These results will be reviewed by Red Hat for final certification.")
+	log.L().Infof("The container's image id is: %s.", certResults.CertImage.ID)
+	log.L().Infof("Please check %s to view scan results.", BuildScanResultsURL(s.CertificationProjectID, certResults.CertImage.ID))
+	log.L().Infof("Please check %s to monitor the progress.", BuildOverviewURL(s.CertificationProjectID))
 
 	return nil
 }
@@ -198,10 +198,10 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 type NoopSubmitter struct {
 	emitLog bool
 	reason  string
-	log     *log.Logger
+	log     *logrus.Logger
 }
 
-func NewNoopSubmitter(emitLog bool, log *log.Logger) *NoopSubmitter {
+func NewNoopSubmitter(emitLog bool, log *logrus.Logger) *NoopSubmitter {
 	return &NoopSubmitter{
 		emitLog: emitLog,
 		log:     log,

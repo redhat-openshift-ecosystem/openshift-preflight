@@ -9,12 +9,11 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 type CheckConfig struct {
@@ -79,7 +78,7 @@ func RunPreflight(
 		}
 	}
 
-	log.Infof("Preflight result: %s", convertPassedOverall(results.PassedOverall))
+	log.L().Infof("Preflight result: %s", convertPassedOverall(results.PassedOverall))
 
 	return nil
 }
@@ -102,7 +101,7 @@ func writeJUnit(ctx context.Context, results runtime.Results) error {
 		if err != nil {
 			return err
 		}
-		log.Tracef("JUnitXML written to %s", junitFilename)
+		log.L().Tracef("JUnitXML written to %s", junitFilename)
 	}
 
 	return nil

@@ -33,7 +33,7 @@ func GetContainerPolicyExceptions(ctx context.Context, pc PyxisClient) (policy.P
 	if err != nil {
 		return "", fmt.Errorf("could not retrieve project: %w", err)
 	}
-	// log.Debugf("Certification project name is: %s", certProject.Name)
+	// log.L().Debugf("Certification project name is: %s", certProject.Name)
 	if certProject.Container.Type == "scratch" {
 		return policy.PolicyScratch, nil
 	}

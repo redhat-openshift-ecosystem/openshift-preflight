@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -13,7 +14,8 @@ import (
 	imagestreamv1 "github.com/openshift/api/image/v1"
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,8 +26,8 @@ func TestOperator(t *testing.T) {
 }
 
 func init() {
-	log.SetFormatter(&log.TextFormatter{})
-	log.SetLevel(log.TraceLevel)
+	log.L().SetFormatter(&logrus.TextFormatter{})
+	log.L().SetLevel(logrus.TraceLevel)
 }
 
 type FakeOperatorSdk struct {

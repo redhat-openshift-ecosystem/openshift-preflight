@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
-	log "github.com/sirupsen/logrus"
 )
 
 var _ certification.Check = &RunAsNonRootCheck{}
@@ -35,18 +35,18 @@ func (p *RunAsNonRootCheck) getDataToValidate(image cranev1.Image) (string, erro
 
 func (p *RunAsNonRootCheck) validate(user string) (bool, error) {
 	if user == "" {
-		log.Info("detected empty USER. Presumed to be running as root")
-		log.Info("USER value must be provided and be a non-root value for this check to pass")
+		log.L().Info("detected empty USER. Presumed to be running as root")
+		log.L().Info("USER value must be provided and be a non-root value for this check to pass")
 		return false, nil
 	}
 
 	if user == "0" || user == "root" {
-		log.Infof("detected USER specified as root: %s", user)
-		log.Info("USER other than root is required for this check to pass")
+		log.L().Infof("detected USER specified as root: %s", user)
+		log.L().Info("USER other than root is required for this check to pass")
 		return false, nil
 	}
 
-	log.Infof("USER %s specified that is non-root", user)
+	log.L().Infof("USER %s specified that is non-root", user)
 	return true, nil
 }
 

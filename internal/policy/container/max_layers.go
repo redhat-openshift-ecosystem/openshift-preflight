@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -33,7 +33,7 @@ func (p *MaxLayersCheck) getDataToValidate(image cranev1.Image) ([]cranev1.Layer
 }
 
 func (p *MaxLayersCheck) validate(layers []cranev1.Layer) (bool, error) {
-	log.Debugf("detected %d layers in image", len(layers))
+	log.L().Debugf("detected %d layers in image", len(layers))
 	return len(layers) <= acceptableLayerMax, nil
 }
 
