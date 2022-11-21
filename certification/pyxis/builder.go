@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 // certificationInputBuilder facilitates the building of CertificationInput for
@@ -68,7 +68,7 @@ func (b *certificationInputBuilder) Finalize() (*CertificationInput, error) {
 // Errors are logged, but will not halt execution.
 func (b *certificationInputBuilder) WithCertImage(r io.Reader) *certificationInputBuilder {
 	if err := b.storeCertImage(r); err != nil {
-		log.Error(fmt.Errorf("cert image could not be stored: %v", err))
+		log.L().Error(fmt.Errorf("cert image could not be stored: %v", err))
 	}
 
 	return b
@@ -78,7 +78,7 @@ func (b *certificationInputBuilder) WithCertImage(r io.Reader) *certificationInp
 // Errors are logged, but will not halt execution.
 func (b *certificationInputBuilder) WithPreflightResults(r io.Reader) *certificationInputBuilder {
 	if err := b.storePreflightResults(r); err != nil {
-		log.Error(fmt.Errorf("preflight results could not be stored: %v", err))
+		log.L().Error(fmt.Errorf("preflight results could not be stored: %v", err))
 	}
 
 	return b
@@ -88,7 +88,7 @@ func (b *certificationInputBuilder) WithPreflightResults(r io.Reader) *certifica
 // Errors are logged, but will not halt execution.
 func (b *certificationInputBuilder) WithRPMManifest(r io.Reader) *certificationInputBuilder {
 	if err := b.storeRPMManifest(r); err != nil {
-		log.Error(fmt.Errorf("rpm manifest could not be stored: %v", err))
+		log.L().Error(fmt.Errorf("rpm manifest could not be stored: %v", err))
 	}
 
 	return b
@@ -102,7 +102,7 @@ func (b *certificationInputBuilder) WithRPMManifest(r io.Reader) *certificationI
 func (b *certificationInputBuilder) WithArtifact(r io.Reader, filename string) *certificationInputBuilder {
 	bts, err := io.ReadAll(r)
 	if err != nil {
-		log.Error(fmt.Errorf("artifact could not be stored: %s: %v", filename, err))
+		log.L().Error(fmt.Errorf("artifact could not be stored: %s: %v", filename, err))
 		return b
 	}
 

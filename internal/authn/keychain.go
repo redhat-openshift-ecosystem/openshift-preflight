@@ -9,7 +9,8 @@ import (
 	"github.com/docker/cli/cli/config/types"
 	craneauthn "github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	log "github.com/sirupsen/logrus"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 type preflightKeychain struct {
@@ -49,7 +50,7 @@ func PreflightKeychain(opts ...PreflightKeychainOption) craneauthn.Keychain {
 // If the file cannot be found or read, that constitutes an error.
 // Can return os.IsNotExist.
 func (k *preflightKeychain) Resolve(target craneauthn.Resource) (craneauthn.Authenticator, error) {
-	log.Trace("entering preflight keychain Resolve")
+	log.L().Trace("entering preflight keychain Resolve")
 
 	if k.dockercfg == "" {
 		// No file specified. No auth expected

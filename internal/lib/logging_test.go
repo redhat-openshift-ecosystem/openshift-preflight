@@ -6,9 +6,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 var _ = Describe("Lib Logging Functions", func() {
@@ -30,7 +30,7 @@ var _ = Describe("Lib Logging Functions", func() {
 
 			LogThroughArtifactWriterIfSet(ctx)
 			msg := "testing logs emitted through artifact writer"
-			log.Info(msg)
+			log.L().Info(msg)
 			data, ok := w.Files()["preflight.log"]
 			Expect(ok).To(BeTrue())
 			Expect(data).To(ContainSubstring(msg))
@@ -39,7 +39,7 @@ var _ = Describe("Lib Logging Functions", func() {
 		It("Should be configured to discard logs if no artifact writer is configured", func() {
 			ctx := context.Background()
 			LogThroughArtifactWriterIfSet(ctx)
-			Expect(log.StandardLogger().Out).To(Equal(io.Discard))
+			Expect(log.L().Out).To(Equal(io.Discard))
 		})
 	})
 })

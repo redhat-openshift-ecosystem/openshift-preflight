@@ -11,7 +11,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2/dsl/core"
 	. "github.com/onsi/gomega"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 func TestPyxis(t *testing.T) {
@@ -20,8 +22,8 @@ func TestPyxis(t *testing.T) {
 }
 
 func init() {
-	log.SetFormatter(&log.TextFormatter{})
-	log.SetLevel(log.TraceLevel)
+	log.L().SetFormatter(&logrus.TextFormatter{})
+	log.L().SetLevel(logrus.TraceLevel)
 }
 
 type localRoundTripper struct {
@@ -57,7 +59,7 @@ type (
 // to dedupe. Acknowledged that it is a bit fragile. -bpc
 
 func (p *pyxisProjectHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
-	log.Trace("In the Project ServeHTTP")
+	log.L().Trace("In the Project ServeHTTP")
 	response.Header().Set("Content-Type", "application/json")
 	if request.Body != nil {
 		defer request.Body.Close()
@@ -83,13 +85,13 @@ func (p *pyxisProjectHandler) ServeHTTP(response http.ResponseWriter, request *h
 }
 
 func (p *pyxisImageHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
-	log.Trace("In the Image ServeHTTP")
+	log.L().Trace("In the Image ServeHTTP")
 	response.Header().Set("Content-Type", "application/json")
 	if request.Body != nil {
 		defer request.Body.Close()
 	}
 	responseString := `{"_id":"blah","certified":false,"deleted":false,"image_id":"123456789abc"}`
-	log.Tracef("Method: %s", request.Method)
+	log.L().Tracef("Method: %s", request.Method)
 	switch {
 	case request.Method == http.MethodPost && strings.Contains(request.Header["X-Api-Key"][0], "my-update-image"):
 		response.WriteHeader(http.StatusConflict)
@@ -106,7 +108,7 @@ func (p *pyxisImageHandler) ServeHTTP(response http.ResponseWriter, request *htt
 	case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-bad-image-api-token":
 		response.WriteHeader(http.StatusConflict)
 	case request.Method == http.MethodGet && request.Header["X-Api-Key"][0] == "my-bad-401-image-api-token":
-		log.Trace("get with 401")
+		log.L().Trace("get with 401")
 		response.WriteHeader(http.StatusUnauthorized)
 	case request.Header["X-Api-Key"][0] == "my-bad-image-api-token":
 		response.WriteHeader(http.StatusUnauthorized)
@@ -122,7 +124,7 @@ func (p *pyxisImageHandler) ServeHTTP(response http.ResponseWriter, request *htt
 }
 
 func (p *pyxisRPMManifestHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
-	log.Trace("In the RPM Manifest ServeHTTP")
+	log.L().Trace("In the RPM Manifest ServeHTTP")
 	response.Header().Set("Content-Type", "application/json")
 	if request.Body != nil {
 		defer request.Body.Close()
@@ -145,7 +147,7 @@ func (p *pyxisRPMManifestHandler) ServeHTTP(response http.ResponseWriter, reques
 }
 
 func (p *pyxisTestResultsHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
-	log.Trace("In the Results ServeHTTP")
+	log.L().Trace("In the Results ServeHTTP")
 	response.Header().Set("Content-Type", "application/json")
 	if request.Body != nil {
 		defer request.Body.Close()
@@ -159,7 +161,7 @@ func (p *pyxisTestResultsHandler) ServeHTTP(response http.ResponseWriter, reques
 }
 
 func (p *pyxisGraphqlLayerHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
-	log.Trace("In the graphql Layers ServeHTTP")
+	log.L().Trace("In the graphql Layers ServeHTTP")
 	response.Header().Set("Content-Type", "application/json")
 	if request.Body != nil {
 		defer request.Body.Close()
@@ -189,7 +191,7 @@ func (p *pyxisGraphqlLayerHandler) ServeHTTP(response http.ResponseWriter, reque
 }
 
 func (p *pyxisGraphqlFindImagesHandler) ServeHTTP(response http.ResponseWriter, request *http.Request) {
-	log.Trace("In the graphql FindImages ServeHTTP")
+	log.L().Trace("In the graphql FindImages ServeHTTP")
 	response.Header().Set("Content-Type", "application/json")
 	if request.Body != nil {
 		defer request.Body.Close()

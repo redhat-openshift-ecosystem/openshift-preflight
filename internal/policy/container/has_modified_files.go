@@ -9,10 +9,10 @@ import (
 	"sync"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/rpm"
 
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
-	log "github.com/sirupsen/logrus"
 )
 
 var _ certification.Check = &HasModifiedFilesCheck{}
@@ -98,7 +98,7 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef ce
 		// tell the user the first layer was dropped
 		diff0, _ := layers[0].DiffID()
 		diff1, _ := layers[1].DiffID()
-		log.Debugf(
+		log.L().Debugf(
 			"The first layer (%s) contained no files, so the next layer (%s) is being used as the base layer.",
 			diff0.String(),
 			diff1.String(),
@@ -146,7 +146,7 @@ func (p *HasModifiedFilesCheck) validate(packageFilesRef *packageFilesRef) (bool
 		for _, file := range layer {
 			if _, ok := baseLayer[file]; ok {
 				// This means the files exists in the base layer. This is a fail.
-				log.Debugf("modified file detected: %s", file)
+				log.L().Debugf("modified file detected: %s", file)
 				modifiedFilesDetected = true
 			}
 		}

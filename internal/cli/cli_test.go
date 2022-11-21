@@ -11,6 +11,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	// This file imports logrus instead of internal/log because a standalone logger is used
+	// for test specs defined here.
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"

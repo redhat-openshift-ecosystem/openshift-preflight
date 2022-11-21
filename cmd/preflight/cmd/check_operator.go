@@ -11,10 +11,10 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/operator"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -72,7 +72,7 @@ func ensureIndexImageConfigIsSet() error {
 
 // checkOperatorRunE executes checkOperator using the user args to inform the execution.
 func checkOperatorRunE(cmd *cobra.Command, args []string) error {
-	log.Info("certification library version ", version.Version.String())
+	log.L().Info("certification library version ", version.Version.String())
 	ctx := cmd.Context()
 	operatorImage := args[0]
 
