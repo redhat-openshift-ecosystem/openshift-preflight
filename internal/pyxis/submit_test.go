@@ -16,13 +16,13 @@ var _ = Describe("Pyxis Submit", func() {
 	mux := http.NewServeMux()
 
 	// These go from most explicit to least explicit. They will be check that way by the ServeMux.
-	mux.Handle("/api/v1/projects/certification/id/my-awesome-project-id/test-results", &pyxisTestResultsHandler{})
-	mux.Handle("/api/v1/projects/certification/id/my-image-project-id/images", &pyxisImageHandler{})
-	mux.Handle("/api/v1/projects/certification/id/", &pyxisProjectHandler{})
-	mux.Handle("/api/v1/images/id/updateImage", &pyxisImageHandler{})
-	mux.Handle("/api/v1/images/id/blah/", &pyxisRPMManifestHandler{})
-	mux.Handle("/api/v1/images/id/updateImage/", &pyxisImageHandler{})
-	mux.Handle("/api/v1/images", &pyxisImageHandler{})
+	mux.HandleFunc("/api/v1/projects/certification/id/my-awesome-project-id/test-results", pyxisTestResultsHandler(ctx))
+	mux.HandleFunc("/api/v1/projects/certification/id/my-image-project-id/images", pyxisImageHandler(ctx))
+	mux.HandleFunc("/api/v1/projects/certification/id/", pyxisProjectHandler(ctx))
+	mux.HandleFunc("/api/v1/images/id/updateImage", pyxisImageHandler(ctx))
+	mux.HandleFunc("/api/v1/images/id/blah/", pyxisRPMManifestHandler(ctx))
+	mux.HandleFunc("/api/v1/images/id/updateImage/", pyxisImageHandler(ctx))
+	mux.HandleFunc("/api/v1/images", pyxisImageHandler(ctx))
 
 	BeforeEach(func() {
 		pyxisClient = NewPyxisClient(

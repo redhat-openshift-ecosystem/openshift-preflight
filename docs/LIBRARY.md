@@ -88,6 +88,9 @@ artifacts in a map of filenames to `io.Reader`. The `preflight.log` is written
 to the ArtifactWriter for library callers, and can be accessed once checks have
 been executed.
 
+A logger of choice should be added to the context with logr.NewContext. Otherwise,
+no logs will be available from the library.
+
 [4]: Formatting results
 
 Once checks have been executed, raw `runtime.Results` are returned. It is up to

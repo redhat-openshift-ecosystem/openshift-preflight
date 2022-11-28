@@ -8,7 +8,6 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	preflighterr "github.com/redhat-openshift-ecosystem/openshift-preflight/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/engine"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 )
 
@@ -45,11 +44,6 @@ func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
 	}
 
 	pol := policy.PolicyOperator
-
-	// NOTE(from Jose): workaround to handle preflight.log writing for lib callers.
-	if !lib.CallerIsCLI(ctx) {
-		lib.LogThroughArtifactWriterIfSet(ctx)
-	}
 
 	checks, err := engine.InitializeOperatorChecks(ctx, pol, engine.OperatorCheckConfig{
 		ScorecardImage:          c.scorecardImage,

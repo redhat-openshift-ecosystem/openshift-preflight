@@ -8,14 +8,15 @@ import (
 	"path"
 	"strings"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 )
@@ -124,11 +125,10 @@ var _ = Describe("The NoopSubmitter", func() {
 		var noop *NoopSubmitter
 
 		BeforeEach(func() {
-			bufferLogger := logrus.New()
 			bf = bytes.NewBuffer([]byte{})
-			bufferLogger.SetOutput(bf)
+			bufferLogger := logr.Logger{}.WithSink(log.NewBufferSink(bf))
 
-			noop = NewNoopSubmitter(false, bufferLogger)
+			noop = NewNoopSubmitter(false, &bufferLogger)
 		})
 
 		Context("and enabling log emitting", func() {

@@ -15,6 +15,7 @@
 package authn
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -24,9 +25,6 @@ import (
 
 	craneauthn "github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/sirupsen/logrus"
-
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 var (
@@ -67,6 +65,7 @@ func setupConfigFile(t *testing.T, content string) string {
 
 	// configure the keychain with the config provided.
 	keychain.dockercfg = p
+	keychain.ctx = context.TODO()
 
 	// return the config dir so we can clean up
 	return cd
@@ -200,9 +199,4 @@ func TestVariousPaths(t *testing.T) {
 			}
 		})
 	}
-}
-
-func init() {
-	log.L().SetFormatter(&logrus.TextFormatter{})
-	log.L().SetLevel(logrus.TraceLevel)
 }

@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
+
+	"github.com/go-logr/logr"
 )
 
 type scorecardCheck struct {
@@ -20,11 +21,13 @@ type scorecardCheck struct {
 
 //nolint:unparam // ctx is unused. Keep for future use.
 func (p *scorecardCheck) validate(ctx context.Context, items []operatorsdk.OperatorSdkScorecardItem) (bool, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	foundTestFailed := false
 	var err error
 
 	if len(items) == 0 {
-		log.L().Warn("Did not receive any test result information from scorecard output")
+		logger.Info("warning: did not receive any test result information from scorecard output")
 	}
 	for _, item := range items {
 		for _, result := range item.Status.Results {

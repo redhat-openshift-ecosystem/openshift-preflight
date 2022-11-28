@@ -43,10 +43,6 @@ func (c *containerCheck) Run(ctx context.Context) (certification.Results, error)
 		return certification.Results{}, preflighterr.ErrImageEmpty
 	}
 
-	if !lib.CallerIsCLI(ctx) {
-		lib.LogThroughArtifactWriterIfSet(ctx)
-	}
-
 	pol := policy.PolicyContainer
 
 	// If we have enough Pyxis information, resolve the policy.

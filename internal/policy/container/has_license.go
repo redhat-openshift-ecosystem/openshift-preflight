@@ -11,6 +11,8 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+
+	"github.com/go-logr/logr"
 )
 
 const (
@@ -57,6 +59,8 @@ func (p *HasLicenseCheck) getDataToValidate(ctx context.Context, mountedPath str
 
 //nolint:unparam // ctx is unused. Keep for future use.
 func (p *HasLicenseCheck) validate(ctx context.Context, licenseFileList []fs.DirEntry) (bool, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	nonZeroLength := false
 	for _, f := range licenseFileList {
 		info, err := f.Info()
@@ -68,7 +72,7 @@ func (p *HasLicenseCheck) validate(ctx context.Context, licenseFileList []fs.Dir
 			break
 		}
 	}
-	log.L().Debugf("%d Licenses found", len(licenseFileList))
+	logger.V(log.DBG).Info("number of licenses found", "licenseCount", len(licenseFileList))
 	return len(licenseFileList) >= minLicenseFileCount && nonZeroLength, nil
 }
 

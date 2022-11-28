@@ -2,13 +2,14 @@ package operator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/bundle"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+	"github.com/go-logr/logr"
 )
 
 var _ check.Check = &ValidateOperatorBundleCheck{}
@@ -34,14 +35,16 @@ func (p *ValidateOperatorBundleCheck) dataToValidate(ctx context.Context, imageP
 	return bundle.Validate(ctx, imagePath)
 }
 
-func (p *ValidateOperatorBundleCheck) validate(ctx context.Context, report *bundle.Report) (bool, error) { //nolint:unparam // save context for future use
+func (p *ValidateOperatorBundleCheck) validate(ctx context.Context, report *bundle.Report) (bool, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	if !report.Passed || len(report.Results) > 0 {
 		for _, output := range report.Results {
 			for _, result := range output.Errors {
-				log.L().Error(result.Error())
+				logger.Error(errors.New("validate operator bundle error"), result.Error())
 			}
 			for _, result := range output.Warnings {
-				log.L().Warn(result.Error())
+				logger.Info(fmt.Sprintf("warning: %s", result.Error()))
 			}
 		}
 	}

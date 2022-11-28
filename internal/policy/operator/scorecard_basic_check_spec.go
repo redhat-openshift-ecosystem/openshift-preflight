@@ -7,6 +7,8 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+
+	"github.com/go-logr/logr"
 )
 
 var _ check.Check = &ScorecardBasicSpecCheck{}
@@ -34,9 +36,10 @@ func NewScorecardBasicSpecCheck(operatorSdk operatorSdk, ns, sa string, kubeconf
 }
 
 func (p *ScorecardBasicSpecCheck) Validate(ctx context.Context, bundleRef image.ImageReference) (bool, error) {
-	log.L().Trace("Running operator-sdk scorecard check for ", bundleRef.ImageURI)
+	logger := logr.FromContextOrDiscard(ctx)
+	logger.V(log.TRC).Info("running operator-sdk scorecard check", "image", bundleRef.ImageURI)
+
 	selector := []string{"test=basic-check-spec-test"}
-	log.L().Tracef("--selector=%s", selector)
 	scorecardReport, err := p.getDataToValidate(ctx, bundleRef.ImageFSPath, selector, scorecardBasicCheckResult)
 	if err != nil {
 		p.fatalError = true

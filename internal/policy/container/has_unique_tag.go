@@ -57,7 +57,7 @@ func (p *hasUniqueTagCheck) Validate(ctx context.Context, imgRef image.ImageRefe
 func (p *hasUniqueTagCheck) getDataToValidate(ctx context.Context, image string) ([]string, error) {
 	options := []crane.Option{
 		crane.WithContext(ctx),
-		crane.WithAuthFromKeychain(authn.PreflightKeychain(authn.WithDockerConfig(p.dockercfg))),
+		crane.WithAuthFromKeychain(authn.PreflightKeychain(ctx, authn.WithDockerConfig(p.dockercfg))),
 	}
 
 	return crane.ListTags(image, options...)

@@ -7,7 +7,8 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/bundle"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+
+	"github.com/go-logr/logr"
 )
 
 var _ check.Check = &securityContextConstraintsInCSV{}
@@ -44,8 +45,10 @@ func (p *securityContextConstraintsInCSV) dataToValidate(ctx context.Context, im
 
 //nolint:unparam // ctx is unused. Keep for future use.
 func (p *securityContextConstraintsInCSV) validate(ctx context.Context, requestedSccList []string) (bool, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	if len(requestedSccList) == 0 {
-		log.L().Infof("No custom security context constraint was detected in the CSV. The default restricted SCC will be used.")
+		logger.Info("No custom security context constraint was detected in the CSV. The default restricted SCC will be used.")
 		return true, nil
 	}
 
@@ -53,8 +56,8 @@ func (p *securityContextConstraintsInCSV) validate(ctx context.Context, requeste
 		return false, fmt.Errorf("only one scc should be requested at a time")
 	}
 
-	log.L().Infof("A custom scc was specified: %s , action may be needed by a cluster admin, please check the "+
-		"operator documentation for more information", requestedSccList[0])
+	logger.Info("A custom scc was specified, action may be needed by a cluster admin, please check the "+
+		"operator documentation for more information", "scc", requestedSccList[0])
 	// set bool to change help text
 	p.customSCCSpecified = true
 	return true, nil

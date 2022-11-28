@@ -6,8 +6,8 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
+	"github.com/go-logr/logr"
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
@@ -23,7 +23,7 @@ func (p *RunAsNonRootCheck) Validate(ctx context.Context, imgRef image.ImageRefe
 		return false, fmt.Errorf("could not get validation data: %v", err)
 	}
 
-	return p.validate(user)
+	return p.validate(ctx, user)
 }
 
 func (p *RunAsNonRootCheck) getDataToValidate(image cranev1.Image) (string, error) {
@@ -34,20 +34,22 @@ func (p *RunAsNonRootCheck) getDataToValidate(image cranev1.Image) (string, erro
 	return configFile.Config.User, nil
 }
 
-func (p *RunAsNonRootCheck) validate(user string) (bool, error) {
+func (p *RunAsNonRootCheck) validate(ctx context.Context, user string) (bool, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	if user == "" {
-		log.L().Info("detected empty USER. Presumed to be running as root")
-		log.L().Info("USER value must be provided and be a non-root value for this check to pass")
+		logger.Info("detected empty USER. Presumed to be running as root")
+		logger.Info("USER value must be provided and be a non-root value for this check to pass")
 		return false, nil
 	}
 
 	if user == "0" || user == "root" {
-		log.L().Infof("detected USER specified as root: %s", user)
-		log.L().Info("USER other than root is required for this check to pass")
+		logger.Info("detected USER specified as root or UID 0")
+		logger.Info("USER other than root is required for this check to pass")
 		return false, nil
 	}
 
-	log.L().Infof("USER %s specified that is non-root", user)
+	logger.Info(fmt.Sprintf("USER %s specified that is non-root", user))
 	return true, nil
 }
 
