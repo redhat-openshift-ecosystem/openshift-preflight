@@ -14,6 +14,8 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+
+	"github.com/go-logr/logr"
 )
 
 type CheckConfig struct {
@@ -30,6 +32,8 @@ func RunPreflight(
 	rw lib.ResultWriter,
 	rs lib.ResultSubmitter,
 ) error {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	// Configure artifact writing if not already configured. For CLI
 	// executions, we default to writing to the filesystem.
 	artifactsWriter := artifacts.WriterFromContext(ctx)
@@ -78,7 +82,7 @@ func RunPreflight(
 		}
 	}
 
-	log.L().Infof("Preflight result: %s", convertPassedOverall(results.PassedOverall))
+	logger.Info(fmt.Sprintf("Preflight result: %s", convertPassedOverall(results.PassedOverall)))
 
 	return nil
 }
@@ -86,6 +90,8 @@ func RunPreflight(
 // writeJUnit will write JUnit results as an artifact using the ArtifactWriter configured
 // in ctx.
 func writeJUnit(ctx context.Context, results certification.Results) error {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	junitformatter, err := formatters.NewByName("junitxml")
 	if err != nil {
 		return err
@@ -101,7 +107,7 @@ func writeJUnit(ctx context.Context, results certification.Results) error {
 		if err != nil {
 			return err
 		}
-		log.L().Tracef("JUnitXML written to %s", junitFilename)
+		logger.V(log.TRC).Info("JUnitXML filename", "filename", junitFilename)
 	}
 
 	return nil

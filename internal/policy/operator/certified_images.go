@@ -7,9 +7,9 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 
+	"github.com/go-logr/logr"
 	"github.com/google/go-containerregistry/pkg/name"
 	mimage "github.com/operator-framework/operator-manifest-tools/pkg/image"
 	"github.com/operator-framework/operator-manifest-tools/pkg/pullspec"
@@ -48,6 +48,8 @@ func (p *certifiedImagesCheck) Validate(ctx context.Context, imgRef image.ImageR
 
 //nolint:unparam // ctx is unused. Keep for future use.
 func (p *certifiedImagesCheck) dataToValidate(ctx context.Context, imagePath string) ([]string, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	operatorManifests, err := pullspec.FromDirectory(imagePath, pullspec.DefaultHeuristic)
 	if err != nil {
 		return nil, err
@@ -61,7 +63,7 @@ func (p *certifiedImagesCheck) dataToValidate(ctx context.Context, imagePath str
 	for _, img := range imageNames {
 		digest, err := name.NewDigest(img)
 		if err != nil {
-			log.L().Warningf("Image does not appear to be pinned: %s: %v", img, err)
+			logger.Error(err, "image does not appear to be pinned", "image", img)
 			p.nonCertifiedImages = append(p.nonCertifiedImages, img)
 			continue
 		}
@@ -72,6 +74,8 @@ func (p *certifiedImagesCheck) dataToValidate(ctx context.Context, imagePath str
 }
 
 func (p *certifiedImagesCheck) validate(ctx context.Context, imageDigests []string) (bool, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	pyxisImages, err := p.imageFinder.FindImagesByDigest(ctx, imageDigests)
 	if err != nil {
 		return false, err
@@ -85,13 +89,13 @@ func (p *certifiedImagesCheck) validate(ctx context.Context, imageDigests []stri
 	for _, digest := range imageDigests {
 		img, ok := foundMap[digest]
 		if !ok {
-			log.L().Warningf("Image not found in Pyxis, therefore it is not certified: %s", digest)
+			logger.Info("warning: image not found in Pyxis, therefore it is not certified", "digest", digest)
 			p.nonCertifiedImages = append(p.nonCertifiedImages, digest)
 			continue
 		}
 		if !img.Certified {
 			fullImg := fmt.Sprintf("%s/%s@%s", img.Repositories[0].Registry, img.Repositories[0].Repository, img.DockerImageDigest)
-			log.L().Warningf("Image is not certified: %s", fullImg)
+			logger.Info("warning: image is not certified", "image", fullImg)
 			p.nonCertifiedImages = append(p.nonCertifiedImages, fullImg)
 		}
 	}

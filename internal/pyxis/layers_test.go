@@ -13,7 +13,7 @@ var _ = Describe("Pyxis CheckRedHatLayers", func() {
 	ctx := context.Background()
 	var pyxisClient *pyxisClient
 	mux := http.NewServeMux()
-	mux.Handle("/query/", &pyxisGraphqlLayerHandler{})
+	mux.HandleFunc("/query/", pyxisGraphqlLayerHandler(ctx))
 
 	Context("when some layers are provided", func() {
 		BeforeEach(func() {

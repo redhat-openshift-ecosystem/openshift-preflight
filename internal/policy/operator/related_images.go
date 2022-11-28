@@ -7,8 +7,8 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
+	"github.com/go-logr/logr"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	mimage "github.com/operator-framework/operator-manifest-tools/pkg/image"
 	"github.com/operator-framework/operator-manifest-tools/pkg/pullspec"
@@ -65,9 +65,11 @@ func (p *RelatedImagesCheck) dataToValidate(ctx context.Context, imagePath strin
 
 //nolint:unparam // ctx is unused. Keep for future use.
 func (p *RelatedImagesCheck) validate(ctx context.Context, images []string, relatedImages map[string]struct{}) (bool, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	for _, image := range images {
 		if _, ok := relatedImages[image]; !ok {
-			log.L().Warningf("Image %s is not in relatedImages. This will eventually cause this check to fail", image)
+			logger.Info(fmt.Sprintf("warning: image %s is not in relatedImages. This will eventually cause this check to fail", image))
 		}
 	}
 	return true, nil

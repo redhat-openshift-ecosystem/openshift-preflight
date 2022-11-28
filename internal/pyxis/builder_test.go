@@ -2,6 +2,7 @@ package pyxis
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 	"path"
@@ -31,90 +32,90 @@ var _ = Describe("Pyxis Builder tests", func() {
 	Context("When preparing a new input builder", func() {
 		Context("with a nil CertProject value", func() {
 			It("should return an error", func() {
-				_, err := NewCertificationInput(nil)
+				_, err := NewCertificationInput(context.Background(), nil)
 				Expect(err).To(HaveOccurred())
 			})
 		})
 
 		Context("with a non-nil CertProject value as input", func() {
-			p := &CertProject{
-				ID:                  "myID",
-				CertificationStatus: "Pending",
-				Container: Container{
-					DockerConfigJSON: "",
-					Type:             "",
-					ISVPID:           "",
-					Registry:         "",
-					Repository:       "",
-					OsContentType:    "",
-					Privileged:       false,
-				},
-				Name:          "My Project",
-				ProjectStatus: "Some Status",
-				Type:          "Container",
-			}
+			var p *CertProject
+			var certImage *bytes.Buffer
+			var results *bytes.Buffer
+			var rpmManifest *bytes.Buffer
 
-			builder, err := NewCertificationInput(p)
+			BeforeEach(func() {
+				p = &CertProject{
+					ID:                  "myID",
+					CertificationStatus: "Pending",
+					Container: Container{
+						DockerConfigJSON: "",
+						Type:             "",
+						ISVPID:           "",
+						Registry:         "",
+						Repository:       "",
+						OsContentType:    "",
+						Privileged:       false,
+					},
+					Name:          "My Project",
+					ProjectStatus: "Some Status",
+					Type:          "Container",
+				}
+				certImage = bytes.NewBufferString(`{"id":"foo","certified":false,"deleted":false}`)
+				results = bytes.NewBufferString(`{}`)
+				rpmManifest = bytes.NewBufferString(`{}`)
+			})
 
 			It("should not return an error", func() {
+				_, err := NewCertificationInput(context.Background(), p,
+					WithCertImage(certImage),
+					WithPreflightResults(results),
+					WithRPMManifest(rpmManifest),
+				)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("should return a certification input builder with the project embedded", func() {
-				Expect(builder.CertificationInput.CertProject.ID).To(Equal(p.ID))
-			})
-
-			It("should fail to finalize with no cert image", func() {
-				_, err := builder.Finalize()
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should allow binding a valid cert image", func() {
-				certimg := CertImage{
-					ID:                     "foo",
-					Certified:              false,
-					Deleted:                false,
-					DockerImageDigest:      "",
-					DockerImageID:          "",
-					ImageID:                "",
-					ISVPID:                 "",
-					ParsedData:             &ParsedData{},
-					Architecture:           "",
-					RawConfig:              "",
-					Repositories:           []Repository{},
-					SumLayerSizeBytes:      0,
-					UncompressedTopLayerID: "",
-				}
-				bts, err := json.Marshal(certimg)
+				input, err := NewCertificationInput(context.Background(), p,
+					WithCertImage(certImage),
+					WithPreflightResults(results),
+					WithRPMManifest(rpmManifest),
+				)
 				Expect(err).ToNot(HaveOccurred())
-
-				origBuilder := *builder
-				builder = builder.WithCertImage(bytes.NewBuffer(bts))
-				Expect(*builder).To(Not(Equal(origBuilder)))
-
-				Expect(builder.CertImage.ID).To(Equal(certimg.ID))
+				Expect(input.CertProject.ID).To(Equal(p.ID))
 			})
 
 			It("should not bind with an invalid io.Reader", func() {
-				origBuilder := *builder
-				builder = builder.WithCertImage(errReader(0))
-				Expect(*builder).To(Equal(origBuilder))
+				_, err := NewCertificationInput(context.Background(), p,
+					WithCertImage(errReader(0)),
+					WithPreflightResults(results),
+					WithRPMManifest(rpmManifest),
+				)
+				Expect(err).To(HaveOccurred())
 			})
 
 			It("should not bind an invalid cert image", func() {
-				origBuilder := *builder
-				builder = builder.WithCertImage(bytes.NewBufferString("\tHello world!\n"))
-				Expect(*builder).To(Equal(origBuilder))
+				_, err := NewCertificationInput(context.Background(), p,
+					WithCertImage(bytes.NewBufferString("\tHello world!\n")),
+					WithPreflightResults(results),
+					WithRPMManifest(rpmManifest),
+				)
+				Expect(err).To(HaveOccurred())
 			})
 
 			It("should not bind an empty cert image", func() {
-				origBuilder := *builder
-				builder = builder.WithCertImage(bytes.NewBufferString(""))
-				Expect(*builder).To(Equal(origBuilder))
+				_, err := NewCertificationInput(context.Background(), p,
+					WithCertImage(bytes.NewBufferString("")),
+					WithPreflightResults(results),
+					WithRPMManifest(rpmManifest),
+				)
+				Expect(err).To(HaveOccurred())
 			})
 
-			It("should fail to finalize with no test results", func() {
-				_, err := builder.Finalize()
+			It("should fail with no test results", func() {
+				_, err := NewCertificationInput(context.Background(), p,
+					WithCertImage(bytes.NewBufferString("")),
+					WithRPMManifest(rpmManifest),
+				)
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -135,27 +136,35 @@ var _ = Describe("Pyxis Builder tests", func() {
 				bts, err := json.Marshal(results)
 				Expect(err).ToNot(HaveOccurred())
 
-				origBuilder := *builder
-				builder = builder.WithPreflightResults(bytes.NewBuffer(bts))
-				Expect(*builder).To(Not(Equal(origBuilder)))
-
-				Expect(builder.TestResults.ID).To(Equal(results.ID))
-				Expect(builder.TestResults.UserResponse.Image).To(Equal(results.UserResponse.Image))
+				input, err := NewCertificationInput(context.Background(), p,
+					WithCertImage(certImage),
+					WithPreflightResults(bytes.NewBuffer(bts)),
+					WithRPMManifest(rpmManifest),
+				)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(input.TestResults.ID).To(Equal(results.ID))
+				Expect(input.TestResults.UserResponse.Image).To(Equal(results.UserResponse.Image))
 			})
 
 			It("should not bind an invalid preflight results from file", func() {
-				origBuilder := *builder
-				builder = builder.WithPreflightResults(bytes.NewBufferString("\tHello world!\n"))
-				Expect(*builder).To(Equal(origBuilder))
+				_, err := NewCertificationInput(context.Background(), p,
+					WithCertImage(certImage),
+					WithPreflightResults(bytes.NewBufferString("\tHello world!\n")),
+					WithRPMManifest(rpmManifest),
+				)
+				Expect(err).To(HaveOccurred())
 			})
 
 			It("should fail to finalize with no rpm manifest", func() {
-				_, err := builder.Finalize()
+				_, err := NewCertificationInput(context.Background(), p,
+					WithCertImage(certImage),
+					WithPreflightResults(results),
+				)
 				Expect(err).To(HaveOccurred())
 			})
 
 			It("should allow binding a valid rpmmanifest read from a file", func() {
-				rpmmanifest := RPMManifest{
+				rpmManifest := RPMManifest{
 					ID:      "foo",
 					ImageID: "bar",
 					RPMS: []RPM{{
@@ -170,45 +179,63 @@ var _ = Describe("Pyxis Builder tests", func() {
 						Version:      "",
 					}},
 				}
-				bts, err := json.Marshal(rpmmanifest)
+				bts, err := json.Marshal(rpmManifest)
 				Expect(err).ToNot(HaveOccurred())
 
-				origBuilder := *builder
-				builder = builder.WithRPMManifest(bytes.NewBuffer(bts))
-				Expect(*builder).To(Not(Equal(origBuilder)))
+				input, err := NewCertificationInput(context.Background(), p,
+					WithCertImage(certImage),
+					WithPreflightResults(results),
+					WithRPMManifest(bytes.NewBuffer(bts)),
+				)
 
-				Expect(builder.RpmManifest.ID).To(Equal(rpmmanifest.ID))
-				Expect(builder.RpmManifest.ImageID).To(Equal(rpmmanifest.ImageID))
-				Expect(builder.RpmManifest.RPMS[0].Name).To(Equal(rpmmanifest.RPMS[0].Name))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(input.RpmManifest.ID).To(Equal(rpmManifest.ID))
+				Expect(input.RpmManifest.ImageID).To(Equal(rpmManifest.ImageID))
+				Expect(input.RpmManifest.RPMS[0].Name).To(Equal(rpmManifest.RPMS[0].Name))
 			})
 
 			It("should not bind an invalid rpm manifest from file", func() {
-				origBuilder := *builder
-				builder = builder.WithRPMManifest(bytes.NewBufferString("\tHello world!\n"))
-				Expect(*builder).To(Equal(origBuilder))
+				_, err := NewCertificationInput(context.Background(), p,
+					WithCertImage(certImage),
+					WithPreflightResults(results),
+					WithRPMManifest(bytes.NewBufferString("\tHello world!\n")),
+				)
+				Expect(err).To(HaveOccurred())
 			})
 
 			It("should finalize successfully with no artifacts", func() {
-				fbuilder, err := builder.Finalize()
+				input, err := NewCertificationInput(context.Background(), p,
+					WithCertImage(certImage),
+					WithPreflightResults(results),
+					WithRPMManifest(rpmManifest),
+				)
 				Expect(err).ToNot(HaveOccurred())
-
-				Expect(len(fbuilder.Artifacts)).To(BeZero())
+				Expect(len(input.Artifacts)).To(BeZero())
 			})
 
 			It("should bind an arbitrary test file as an artifact", func() {
 				f := "artifact.log"
 				data := "\tartifact contents\n"
-				builder.WithArtifact(bytes.NewBufferString(data), f)
-
-				Expect(len(builder.Artifacts)).To(Equal(1))
-				Expect(builder.Artifacts[0].Filename).To(Equal(path.Base(f)))
-				Expect(int64(len(data))).To(Equal(builder.Artifacts[0].FileSize))
+				input, err := NewCertificationInput(context.Background(), p,
+					WithCertImage(certImage),
+					WithPreflightResults(results),
+					WithRPMManifest(rpmManifest),
+					WithArtifact(bytes.NewBufferString(data), f),
+				)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(input.Artifacts)).To(Equal(1))
+				Expect(input.Artifacts[0].Filename).To(Equal(path.Base(f)))
+				Expect(int64(len(data))).To(Equal(input.Artifacts[0].FileSize))
 			})
 
 			It("should not bind an artifact with a bad Reader", func() {
-				origBuilder := *builder
-				builder = builder.WithArtifact(errReader(0), "bad-reader.txt")
-				Expect(*builder).To(Equal(origBuilder))
+				_, err := NewCertificationInput(context.Background(), p,
+					WithCertImage(certImage),
+					WithPreflightResults(results),
+					WithRPMManifest(rpmManifest),
+					WithArtifact(errReader(0), "bad-reader.txt"),
+				)
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
