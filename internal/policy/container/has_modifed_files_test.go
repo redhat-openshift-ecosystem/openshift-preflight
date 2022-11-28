@@ -44,7 +44,7 @@ var _ = Describe("HasModifiedFiles", func() {
 	Describe("Checking if it has any modified RPM files", func() {
 		Context("When there are no modified RPM files found", func() {
 			It("should pass validate", func() {
-				ok, err := hasModifiedFiles.validate(&pkgList)
+				ok, err := hasModifiedFiles.validate(context.Background(), &pkgList)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -56,7 +56,7 @@ var _ = Describe("HasModifiedFiles", func() {
 				pkgs.LayerFiles[1] = append(pkgs.LayerFiles[1], "this")
 			})
 			It("should not pass Validate", func() {
-				ok, err := hasModifiedFiles.validate(&pkgs)
+				ok, err := hasModifiedFiles.validate(context.Background(), &pkgs)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

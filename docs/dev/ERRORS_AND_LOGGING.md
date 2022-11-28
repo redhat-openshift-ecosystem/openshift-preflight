@@ -27,5 +27,3 @@ Logging of errors should be limited to only the upper-most layers. Otherwise, wr
 If an error is logged, and then returned, one should either wrap the current error
 with more context, and return that entire error, or log the wrapped error and then
 return only the wrapper, without the current error.
-
-One notable exception to this is the Builder in the pyxis package. Errors are logged but not returned. Since the errors are not wrapped or propagated up, it makes sense to log them.

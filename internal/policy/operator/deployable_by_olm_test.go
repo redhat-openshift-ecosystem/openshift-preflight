@@ -124,7 +124,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 
 	DescribeTable("Image Registry validation",
 		func(bundleImages []string, expected bool) {
-			ok := checkImageSource(bundleImages)
+			ok := checkImageSource(context.Background(), bundleImages)
 			Expect(ok).To(Equal(expected))
 		},
 		Entry("registry.connect.dev.redhat.com", []string{"registry.connect.dev.redhat.com/"}, true),

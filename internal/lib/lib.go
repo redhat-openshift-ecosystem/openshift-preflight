@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 )
 
@@ -29,11 +31,13 @@ func ResolveSubmitter(pc PyxisClient, projectID, dockerconfig, logfile string) R
 // If no policy exception flags are found on the project, the standard
 // container policy is returned.
 func GetContainerPolicyExceptions(ctx context.Context, pc PyxisClient) (policy.Policy, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	certProject, err := pc.GetProject(ctx)
 	if err != nil {
 		return "", fmt.Errorf("could not retrieve project: %w", err)
 	}
-	// log.L().Debugf("Certification project name is: %s", certProject.Name)
+	logger.V(log.DBG).Info("certification project", "name", certProject.Name)
 	if certProject.Container.Type == "scratch" {
 		return policy.PolicyScratch, nil
 	}

@@ -9,20 +9,20 @@ import (
 	"path/filepath"
 	"strings"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
-	// This file imports logrus instead of internal/log because a standalone logger is used
-	// for test specs defined here.
-	log "github.com/sirupsen/logrus"
-
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
+
+	// This file imports logrus instead of internal/log because a standalone logger is used
+	// for test specs defined here.
+	"github.com/go-logr/logr"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("CLI Library function", func() {
@@ -152,10 +152,8 @@ var _ = Describe("CLI Library function", func() {
 					}
 
 					buf := bytes.NewBuffer([]byte{})
-					submitterTestLogger := log.New()
-					submitterTestLogger.SetOutput(buf)
-					submitterTestLogger.SetFormatter(&log.TextFormatter{})
-					testSubmitter := lib.NewNoopSubmitter(true, submitterTestLogger)
+					submitterTestLogger := logr.Logger{}.WithSink(log.NewBufferSink(buf))
+					testSubmitter := lib.NewNoopSubmitter(true, &submitterTestLogger)
 
 					err := RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) {
 						return certification.Results{

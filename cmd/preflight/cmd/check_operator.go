@@ -10,11 +10,11 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/operator"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -72,8 +72,13 @@ func ensureIndexImageConfigIsSet() error {
 
 // checkOperatorRunE executes checkOperator using the user args to inform the execution.
 func checkOperatorRunE(cmd *cobra.Command, args []string) error {
-	log.L().Info("certification library version ", version.Version.String())
 	ctx := cmd.Context()
+	logger, err := logr.FromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("invalid logging configuration")
+	}
+
+	logger.Info("certification library version", "version", version.Version.String())
 	operatorImage := args[0]
 
 	// Render the Viper configuration as a runtime.Config
@@ -110,7 +115,7 @@ func checkOperatorRunE(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 	return cli.RunPreflight(
-		lib.SetCallerToCLI(ctx),
+		ctx,
 		checkoperator.Run,
 		cli.CheckConfig{
 			IncludeJUnitResults: cfg.WriteJUnit,

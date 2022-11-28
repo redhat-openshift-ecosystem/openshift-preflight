@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/rpm"
 
+	"github.com/go-logr/logr"
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 )
 
@@ -37,13 +38,15 @@ func (p *HasModifiedFilesCheck) Validate(ctx context.Context, imgRef image.Image
 	if err != nil {
 		return false, fmt.Errorf("could not generate modified files list: %v", err)
 	}
-	return p.validate(packageFiles)
+	return p.validate(ctx, packageFiles)
 }
 
 // getDataToValidate returns the list of files (packageFilesRef.PackageFiles)
 // installed via packages from the container image,and the list of files (packageFilesRef.LayerFiles)
 // modified/added via layers in the image.
 func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef image.ImageReference) (*packageFilesRef, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	// Get a list of packages from the RPM database. This avoids having to rely on
 	// rpm, dnf, yum, etc. being installed in the image.
 	pkgList, err := rpm.GetPackageList(ctx, imgRef.ImageFSPath)
@@ -99,11 +102,11 @@ func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef im
 		// tell the user the first layer was dropped
 		diff0, _ := layers[0].DiffID()
 		diff1, _ := layers[1].DiffID()
-		log.L().Debugf(
-			"The first layer (%s) contained no files, so the next layer (%s) is being used as the base layer.",
-			diff0.String(),
-			diff1.String(),
-		)
+		logger.V(log.DBG).Info(
+			fmt.Sprintf("The first layer (%s) contained no files, so the next layer (%s) is being used as the base layer.",
+				diff0.String(),
+				diff1.String(),
+			))
 	}
 
 	return &packageFilesRef{files, packageFiles}, nil
@@ -127,7 +130,9 @@ func (p *HasModifiedFilesCheck) dropFirstLayerIfEmpty(files [][]string) ([][]str
 // have been modified within the additional layers.
 //
 //nolint:unparam // ctx is unused. Keep for future use.
-func (p *HasModifiedFilesCheck) validate(packageFilesRef *packageFilesRef) (bool, error) {
+func (p *HasModifiedFilesCheck) validate(ctx context.Context, packageFilesRef *packageFilesRef) (bool, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	layerFiles := packageFilesRef.LayerFiles
 	packageFiles := packageFilesRef.PackageFiles
 
@@ -147,7 +152,7 @@ func (p *HasModifiedFilesCheck) validate(packageFilesRef *packageFilesRef) (bool
 		for _, file := range layer {
 			if _, ok := baseLayer[file]; ok {
 				// This means the files exists in the base layer. This is a fail.
-				log.L().Debugf("modified file detected: %s", file)
+				logger.V(log.DBG).Info("modified file detected", "filename", file)
 				modifiedFilesDetected = true
 			}
 		}

@@ -12,6 +12,8 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
+
+	"github.com/go-logr/logr"
 )
 
 func New(userProvidedScorecardImage string, cmdContext execContext) *operatorSdk {
@@ -30,6 +32,8 @@ type operatorSdk struct {
 type execContext = func(name string, arg ...string) *exec.Cmd
 
 func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorSdkScorecardOptions) (*OperatorSdkScorecardReport, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	cmdArgs := []string{"scorecard"}
 	if opts.OutputFormat == "" {
 		opts.OutputFormat = "json"
@@ -46,7 +50,7 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 		if err != nil {
 			return nil, fmt.Errorf("unable to create a temporary kubeconfig file for use with scorecard: %s", err)
 		}
-		log.L().Trace("created temporary kubeconfig for use with scorecard at path: ", kcf.Name())
+		logger.V(log.TRC).Info("created temporary kubeconfig for use with scorecard at path", "name", kcf.Name())
 		defer os.Remove(kcf.Name())
 		_, err = kcf.Write(opts.Kubeconfig)
 		if err != nil {
@@ -65,7 +69,7 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 		cmdArgs = append(cmdArgs, "--service-account", opts.ServiceAccount)
 	}
 
-	configFile, err := o.createScorecardConfigFile()
+	configFile, err := o.createScorecardConfigFile(ctx)
 	defer os.Remove(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("could not create scorecard config file: %v", err)
@@ -78,7 +82,7 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 	cmdArgs = append(cmdArgs, image)
 
 	cmd := o.cmdContext("operator-sdk", cmdArgs...)
-	log.L().Trace("running scorecard with the following invocation", cmd.Args)
+	logger.Info("running scorecard with the following invocation", "args", cmd.Args)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -92,8 +96,8 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 		// We also conclude/assume that "FATA" being in stderr would indicate an error in the
 		// check execution itself.
 		if stderr.Len() != 0 && strings.Contains(strings.ToUpper(stderr.String()), "FATA") {
-			log.L().Debug("operator-sdk scorecard failed to run properly.")
-			log.L().Debugf("stderr: %s", stderr.String())
+			logger.V(log.DBG).Info("operator-sdk scorecard failed to run properly")
+			logger.V(log.DBG).Info("stderr output", "stderr", stderr.String())
 
 			return nil, fmt.Errorf("failed to run operator-sdk scorecard: %v", err)
 		}
@@ -113,6 +117,8 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 }
 
 func (o operatorSdk) BundleValidate(ctx context.Context, image string, opts OperatorSdkBundleValidateOptions) (*OperatorSdkBundleValidateReport, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	cmdArgs := []string{"bundle", "validate"}
 	if opts.ContainerEngine == "" {
 		opts.ContainerEngine = "none"
@@ -138,7 +144,7 @@ func (o operatorSdk) BundleValidate(ctx context.Context, image string, opts Oper
 	cmdArgs = append(cmdArgs, image)
 
 	cmd := o.cmdContext("operator-sdk", cmdArgs...)
-	log.L().Debugf("Command being run: %s", cmd.Args)
+	logger.V(log.DBG).Info("command being run", "args", cmd.Args)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -152,8 +158,8 @@ func (o operatorSdk) BundleValidate(ctx context.Context, image string, opts Oper
 		// We also conclude/assume that "FATA" being in stderr would indicate an error in the
 		// check execution itself.
 		if stderr.Len() != 0 && strings.Contains(stderr.String(), "FATA") {
-			log.L().Debugf("stdout: %s", stdout.String())
-			log.L().Debugf("stderr: %s", stderr.String())
+			logger.V(log.DBG).Info("command output", "stdout", stdout.String())
+			logger.V(log.DBG).Info("command output", "stderr", stderr.String())
 			return nil, fmt.Errorf("failed to run operator-sdk bundle validate: %v", err)
 		}
 	}
@@ -183,8 +189,8 @@ func (o operatorSdk) writeScorecardFile(ctx context.Context, resultFile, stdout 
 	return nil
 }
 
-func (o operatorSdk) createScorecardConfigFile() (string, error) {
-	img := runtime.ScorecardImage(o.scorecardImage)
+func (o operatorSdk) createScorecardConfigFile(ctx context.Context) (string, error) {
+	img := runtime.ScorecardImage(ctx, o.scorecardImage)
 	configTemplate := fmt.Sprintf(`kind: Configuration
 apiversion: scorecard.operatorframework.io/v1alpha3
 metadata:

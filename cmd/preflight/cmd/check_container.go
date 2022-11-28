@@ -11,10 +11,10 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -67,8 +67,13 @@ func checkContainerCmd() *cobra.Command {
 
 // checkContainerRunE executes checkContainer using the user args to inform the execution.
 func checkContainerRunE(cmd *cobra.Command, args []string) error {
-	log.L().Info("certification library version ", version.Version.String())
 	ctx := cmd.Context()
+	logger, err := logr.FromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("invalid logging configuration")
+	}
+	logger.Info("certification library version", "version", version.Version.String())
+
 	containerImage := args[0]
 
 	// Render the Viper configuration as a runtime.Config
@@ -103,7 +108,7 @@ func checkContainerRunE(cmd *cobra.Command, args []string) error {
 	// Run the  container check.
 	cmd.SilenceUsage = true
 	return cli.RunPreflight(
-		lib.SetCallerToCLI(ctx),
+		ctx,
 		checkcontainer.Run,
 		cli.CheckConfig{
 			IncludeJUnitResults: cfg.WriteJUnit,

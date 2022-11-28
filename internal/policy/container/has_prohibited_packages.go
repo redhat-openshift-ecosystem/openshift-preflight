@@ -9,6 +9,8 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/rpm"
+
+	"github.com/go-logr/logr"
 )
 
 var _ check.Check = &HasNoProhibitedPackagesCheck{}
@@ -40,6 +42,8 @@ func (p *HasNoProhibitedPackagesCheck) getDataToValidate(ctx context.Context, di
 
 //nolint:unparam // ctx is unused. Keep for future use.
 func (p *HasNoProhibitedPackagesCheck) validate(ctx context.Context, pkgList []string) (bool, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	var prohibitedPackages []string
 	for _, pkg := range pkgList {
 		_, ok := prohibitedPackageList[pkg]
@@ -56,8 +60,7 @@ func (p *HasNoProhibitedPackagesCheck) validate(ctx context.Context, pkgList []s
 	}
 
 	if len(prohibitedPackages) > 0 {
-		log.L().Debugf("The number of prohibited package found in the container image: %d", len(prohibitedPackages))
-		log.L().Debugf("found the following prohibited packages: %+v", prohibitedPackages)
+		logger.V(log.DBG).Info("prohibited packages found", "packageCount", len(prohibitedPackages), "packageList", prohibitedPackages)
 	}
 
 	return len(prohibitedPackages) == 0, nil
