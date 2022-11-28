@@ -5,23 +5,16 @@ import (
 	"testing"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	logrus "github.com/sirupsen/logrus"
 )
 
 func TestContainer(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Container Suite")
-}
-
-func init() {
-	log.L().SetFormatter(&logrus.TextFormatter{})
-	log.L().SetLevel(logrus.TraceLevel)
 }
 
 type FakeLayer struct{}

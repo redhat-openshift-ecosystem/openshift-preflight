@@ -8,9 +8,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/shurcooL/graphql"
-
+	"github.com/go-logr/logr"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+	"github.com/shurcooL/graphql"
 )
 
 const (
@@ -46,6 +46,7 @@ func NewPyxisClient(pyxisHost string, apiToken string, projectID string, httpCli
 }
 
 func (p *pyxisClient) createImage(ctx context.Context, certImage *CertImage) (*CertImage, error) {
+	logger := logr.FromContextOrDiscard(ctx)
 	b, err := json.Marshal(certImage)
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal certImage: %w", err)
@@ -55,7 +56,7 @@ func (p *pyxisClient) createImage(ctx context.Context, certImage *CertImage) (*C
 		return nil, err
 	}
 
-	log.L().Debugf("URL is: %s", req.URL)
+	logger.V(log.TRC).Info("pyxis URL", "url", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -89,13 +90,14 @@ func (p *pyxisClient) createImage(ctx context.Context, certImage *CertImage) (*C
 }
 
 func (p *pyxisClient) getImage(ctx context.Context, dockerImageDigest string) (*CertImage, error) {
+	logger := logr.FromContextOrDiscard(ctx)
 	req, err := p.newRequestWithAPIToken(ctx, http.MethodGet,
 		p.getPyxisURL(fmt.Sprintf("projects/certification/id/%s/images?filter=docker_image_digest==%s", p.ProjectID, dockerImageDigest)), nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
-	log.L().Debugf("URL is: %s", req.URL)
+	logger.V(log.TRC).Info("pyxis URL", "url", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -233,6 +235,8 @@ func (p *pyxisClient) FindImagesByDigest(ctx context.Context, digests []string) 
 }
 
 func (p *pyxisClient) createRPMManifest(ctx context.Context, rpmManifest *RPMManifest) (*RPMManifest, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	b, err := json.Marshal(rpmManifest)
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal rpm manifest: %w", err)
@@ -242,7 +246,7 @@ func (p *pyxisClient) createRPMManifest(ctx context.Context, rpmManifest *RPMMan
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
-	log.L().Debugf("URL is: %s", req.URL)
+	logger.V(log.TRC).Info("pyxis URL", "url", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -276,12 +280,14 @@ func (p *pyxisClient) createRPMManifest(ctx context.Context, rpmManifest *RPMMan
 }
 
 func (p *pyxisClient) getRPMManifest(ctx context.Context, imageID string) (*RPMManifest, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	req, err := p.newRequestWithAPIToken(ctx, http.MethodGet, p.getPyxisURL(fmt.Sprintf("images/id/%s/rpm-manifest", imageID)), nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
-	log.L().Debugf("URL is: %s", req.URL)
+	logger.V(log.TRC).Info("pyxis URL", "url", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -311,11 +317,14 @@ func (p *pyxisClient) getRPMManifest(ctx context.Context, imageID string) (*RPMM
 }
 
 func (p *pyxisClient) GetProject(ctx context.Context) (*CertProject, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	req, err := p.newRequestWithAPIToken(ctx, http.MethodGet, p.getPyxisURL(fmt.Sprintf("projects/certification/id/%s", p.ProjectID)), nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not create new request: %v", err)
 	}
-	log.L().Debugf("URL is: %s", req.URL)
+
+	logger.V(log.TRC).Info("pyxis URL", "url", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -345,6 +354,8 @@ func (p *pyxisClient) GetProject(ctx context.Context) (*CertProject, error) {
 }
 
 func (p *pyxisClient) updateProject(ctx context.Context, certProject *CertProject) (*CertProject, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	// We cannot send the project type or container type
 	// to pyxis in a Patch. Copy the CertProject and strip type
 	// values to have omitempty skip the key in the JSON patch.
@@ -367,7 +378,7 @@ func (p *pyxisClient) updateProject(ctx context.Context, certProject *CertProjec
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
-	log.L().Debugf("URL is: %s", req.URL)
+	logger.V(log.TRC).Info("pyxis URL", "url", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
@@ -434,6 +445,8 @@ func (p *pyxisClient) createTestResults(ctx context.Context, testResults *TestRe
 }
 
 func (p *pyxisClient) createArtifact(ctx context.Context, artifact *Artifact) (*Artifact, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	b, err := json.Marshal(artifact)
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal artifact: %w", err)
@@ -443,7 +456,7 @@ func (p *pyxisClient) createArtifact(ctx context.Context, artifact *Artifact) (*
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
-	log.L().Debugf("URL is: %s", req.URL)
+	logger.V(log.TRC).Info("pyxis URL", "url", req.URL)
 
 	resp, err := p.Client.Do(req)
 	if err != nil {

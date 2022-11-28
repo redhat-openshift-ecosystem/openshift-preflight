@@ -6,15 +6,14 @@ import (
 	"io"
 	"os"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
+	"github.com/bombsimon/logrusr/v4"
+	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 var configFileUsed bool
@@ -83,7 +82,7 @@ func initConfig() {
 
 // preRunConfig is used by cobra.PreRun in all non-root commands to load all necessary configurations
 func preRunConfig(cmd *cobra.Command, args []string) {
-	l := log.L()
+	l := logrus.New()
 	// set up logging
 	logname := viper.GetString("logfile")
 	logFile, err := os.OpenFile(logname, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
@@ -101,4 +100,8 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 	if !configFileUsed {
 		l.Debug("config file not found, proceeding without it")
 	}
+
+	logger := logrusr.New(l)
+	ctx := logr.NewContext(cmd.Context(), logger)
+	cmd.SetContext(ctx)
 }

@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/go-logr/logr"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -76,13 +76,15 @@ type CraneEngine struct {
 }
 
 func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
-	log.L().Debug("target image: ", c.Image)
+	logger := logr.FromContextOrDiscard(ctx)
+	logger.V(log.DBG).Info("target image", "image", c.Image)
 
 	// prepare crane runtime options, if necessary
 	options := []crane.Option{
 		crane.WithContext(ctx),
 		crane.WithAuthFromKeychain(
 			authn.PreflightKeychain(
+				ctx,
 				// We configure the Preflight Keychain here.
 				// In theory, we should not require further configuration
 				// downstream because the PreflightKeychain is a singleton.
@@ -104,7 +106,7 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	}
 
 	// pull the image and save to fs
-	log.L().Debug("pulling image from target registry")
+	logger.V(log.DBG).Info("pulling image from target registry")
 	img, err := crane.Pull(c.Image, options...)
 	if err != nil {
 		return fmt.Errorf("failed to pull remote container: %v", err)
@@ -115,10 +117,10 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to create temporary directory: %v", err)
 	}
-	log.L().Debug("temporary directory is ", tmpdir)
+	logger.V(log.DBG).Info("temporary directory is ", tmpdir)
 	defer func() {
 		if err := os.RemoveAll(tmpdir); err != nil {
-			log.L().Errorf("unable to clean up tmpdir %s: %v", tmpdir, err)
+			logger.Error(err, "unable to clean up tmpdir", "tempDir", tmpdir)
 		}
 	}()
 
@@ -135,26 +137,26 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	}
 
 	// export/flatten, and extract
-	log.L().Debug("exporting and flattening image")
+	logger.V(log.DBG).Info("exporting and flattening image")
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	r, w := io.Pipe()
 	go func() {
 		defer w.Close()
-		log.L().Debugf("writing container filesystem to output dir: %s", containerFSPath)
+		logger.V(log.DBG).Info("writing container filesystem", "outputDirectory", containerFSPath)
 		err = crane.Export(img, w)
 		if err != nil {
 			// TODO: Handle this error more effectively. Right now we rely on
 			// error handling in the logic to extract this export in a lower
 			// line, but we should probably exit early if the export encounters
 			// an error, which requires watching multiple error streams.
-			log.L().Error("unable to export and flatten container filesystem:", err)
+			logger.Error(err, "unable to export and flatten container filesystem")
 		}
 		wg.Done()
 	}()
 
-	log.L().Debug("extracting container filesystem to ", containerFSPath)
-	if err := untar(containerFSPath, r); err != nil {
+	logger.V(log.DBG).Info("extracting container filesystem to ", containerFSPath)
+	if err := untar(ctx, containerFSPath, r); err != nil {
 		return fmt.Errorf("failed to extract tarball: %v", err)
 	}
 	wg.Wait()
@@ -186,24 +188,24 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 
 	if c.IsBundle {
 		// Record test cluster version
-		version, err := openshift.GetOpenshiftClusterVersion(c.Kubeconfig)
+		version, err := openshift.GetOpenshiftClusterVersion(ctx, c.Kubeconfig)
 		if err != nil {
-			log.L().Errorf("could not determine test cluster version: %v", err)
+			logger.Error(err, "could not determine test cluster version")
 		}
 		c.results.TestedOn = version
 	} else {
-		log.L().Debug("Container checks do not require a cluster. skipping cluster version check.")
+		logger.V(log.DBG).Info("Container checks do not require a cluster. skipping cluster version check.")
 		c.results.TestedOn = runtime.UnknownOpenshiftClusterVersion()
 	}
 
 	// execute checks
-	log.L().Debug("executing checks")
+	logger.V(log.DBG).Info("executing checks")
 	for _, check := range c.Checks {
 		c.results.TestedImage = c.Image
 
-		log.L().Debug("running check: ", check.Name())
+		logger.V(log.DBG).Info("running check", "check", check.Name())
 		if check.Metadata().Level == "optional" {
-			log.L().Infof("Check %s is not currently being enforced.", check.Name())
+			logger.Info(fmt.Sprintf("Check %s is not currently being enforced.", check.Name()))
 		}
 
 		// run the validation
@@ -212,18 +214,18 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 		checkElapsedTime := time.Since(checkStartTime)
 
 		if err != nil {
-			log.L().WithFields(logrus.Fields{"result": "ERROR", "err": err}).Info("check completed: ", check.Name())
+			logger.WithValues("result", "ERROR", "err", err).Info("check completed", "check", check.Name())
 			c.results.Errors = appendUnlessOptional(c.results.Errors, certification.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
 		if !checkPassed {
-			log.L().WithFields(logrus.Fields{"result": "FAILED"}).Info("check completed: ", check.Name())
+			logger.WithValues("result", "FAILED").Info("check completed", "check", check.Name())
 			c.results.Failed = appendUnlessOptional(c.results.Failed, certification.Result{Check: check, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
-		log.L().WithFields(logrus.Fields{"result": "PASSED"}).Info("check completed: ", check.Name())
+		logger.WithValues("result", "PASSED").Info("check completed", "check", check.Name())
 		c.results.Passed = appendUnlessOptional(c.results.Passed, certification.Result{Check: check, ElapsedTime: checkElapsedTime})
 	}
 
@@ -237,7 +239,7 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 		// hash the contents of the bundle.
 		md5sum, err := generateBundleHash(ctx, c.imageRef.ImageFSPath)
 		if err != nil {
-			log.L().Errorf("could not generate bundle hash: %v", err)
+			logger.Error(err, "could not generate bundle hash")
 		}
 		c.results.CertificationHash = md5sum
 	} else { // for containers:
@@ -247,8 +249,12 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 		// we don't handle this error, but fail safe and don't log a potentially
 		// incorrect line message to the user.
 		if resolvedDigest, err := c.imageRef.ImageInfo.Digest(); err == nil {
-			msg, logfunc := tagDigestBindingInfo(c.imageRef.ImageTagOrSha, resolvedDigest.String())
-			logfunc(msg)
+			msg, warn := tagDigestBindingInfo(c.imageRef.ImageTagOrSha, resolvedDigest.String())
+			if warn {
+				logger.Info(fmt.Sprintf("Warning: %s", msg))
+			} else {
+				logger.Info(msg)
+			}
 		}
 	}
 
@@ -265,14 +271,14 @@ func appendUnlessOptional(results []certification.Result, result certification.R
 // tagDigestBindingInfo emits a log line describing tag and digest binding semantics.
 // The providedIdentifer is the tag or digest of the image as the user gave it at the commandline.
 // resolvedDigest
-func tagDigestBindingInfo(providedIdentifier string, resolvedDigest string) (msg string, logFunc func(...interface{})) {
+func tagDigestBindingInfo(providedIdentifier string, resolvedDigest string) (msg string, warn bool) {
 	if strings.HasPrefix(providedIdentifier, "sha256:") {
 		return "You've provided an image by digest. " +
 				"When submitting this image to Red Hat for certification, " +
 				"no tag will be associated with this image. " +
 				"If you would like to associate a tag with this image, " +
 				"please rerun this tool replacing your image reference with a tag.",
-			log.L().Warn
+			true
 	}
 
 	return fmt.Sprintf(
@@ -282,10 +288,11 @@ func tagDigestBindingInfo(providedIdentifier string, resolvedDigest string) (msg
 			`You may then add or remove any supplemental tags `+
 			`through your Red Hat Connect portal as you see fit.`,
 		providedIdentifier, resolvedDigest,
-	), log.L().Info
+	), false
 }
 
 func generateBundleHash(ctx context.Context, bundlePath string) (string, error) {
+	logger := logr.FromContextOrDiscard(ctx)
 	files := make(map[string]string)
 	fileSystem := os.DirFS(bundlePath)
 
@@ -330,7 +337,7 @@ func generateBundleHash(ctx context.Context, bundlePath string) (string, error) 
 
 	sum := fmt.Sprintf("%x", md5.Sum(hashBuffer.Bytes()))
 
-	log.L().Debugf("md5 sum: %s", sum)
+	logger.V(log.DBG).Info("md5 sum", "md5sum", sum)
 
 	return sum, nil
 }
@@ -342,7 +349,8 @@ func (c *CraneEngine) Results(ctx context.Context) certification.Results {
 
 // Untar takes a destination path and a reader; a tar reader loops over the tarfile
 // creating the file structure at 'dst' along the way, and writing any files
-func untar(dst string, r io.Reader) error {
+func untar(ctx context.Context, dst string, r io.Reader) error {
+	logger := logr.FromContextOrDiscard(ctx)
 	tr := tar.NewReader(r)
 
 	for {
@@ -399,7 +407,7 @@ func untar(dst string, r io.Reader) error {
 		case tar.TypeSymlink:
 			err := os.Symlink(header.Linkname, filepath.Join(dst, header.Name))
 			if err != nil {
-				log.L().Println(fmt.Sprintf("Error creating link: %s. Ignoring.", header.Name))
+				logger.V(log.DBG).Info(fmt.Sprintf("Error creating link: %s. Ignoring.", header.Name))
 				continue
 			}
 		}
@@ -411,6 +419,8 @@ func untar(dst string, r io.Reader) error {
 //
 //nolint:unparam // ctx is unused. Keep for future use.
 func writeCertImage(ctx context.Context, imageRef image.ImageReference) error {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	config, err := imageRef.ImageInfo.ConfigFile()
 	if err != nil {
 		return fmt.Errorf("failed to get image config file: %w", err)
@@ -521,7 +531,7 @@ func writeCertImage(ctx context.Context, imageRef image.ImageReference) error {
 			return fmt.Errorf("failed to save file to artifacts directory: %w", err)
 		}
 
-		log.L().Tracef("image config written to disk: %s", fileName)
+		logger.V(log.TRC).Info("image config written to disk", "filename", fileName)
 	}
 
 	return nil
@@ -533,9 +543,10 @@ func getBgName(srcrpm string) string {
 }
 
 func writeRPMManifest(ctx context.Context, containerFSPath string) error {
+	logger := logr.FromContextOrDiscard(ctx)
 	pkgList, err := rpm.GetPackageList(ctx, containerFSPath)
 	if err != nil {
-		log.L().Errorf("could not get rpm list, continuing without it: %v", err)
+		logger.Error(err, "could not get rpm list, continuing without it")
 	}
 
 	// covert rpm struct to pxyis struct
@@ -556,7 +567,7 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 			if matches != nil {
 				pgpKeyID = matches[1]
 			} else {
-				log.L().Debugf("string did not match the format required: %s", packageInfo.PGP)
+				logger.V(log.DBG).Info("string did not match the format required", "pgp", packageInfo.PGP)
 				pgpKeyID = ""
 			}
 		}
@@ -592,7 +603,7 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 			return fmt.Errorf("failed to save file to artifacts directory: %w", err)
 		}
 
-		log.L().Tracef("rpm manifest written to disk: %s", fileName)
+		logger.V(log.TRC).Info("rpm manifest written to disk", "filename", fileName)
 	}
 
 	return nil

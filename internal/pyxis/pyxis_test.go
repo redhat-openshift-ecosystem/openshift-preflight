@@ -11,7 +11,7 @@ import (
 var _ = Describe("Pyxis", func() {
 	ctx := context.Background()
 	mux := http.NewServeMux()
-	mux.Handle("/query/", &pyxisGraphqlFindImagesHandler{})
+	mux.HandleFunc("/query/", pyxisGraphqlFindImagesHandler(ctx))
 	pyxisClient := NewPyxisClient("my.pyxis.host/query/", "my-spiffy-api-token", "my-awesome-project-id", &http.Client{Transport: localRoundTripper{handler: mux}})
 
 	Context("Find Images", func() {

@@ -6,6 +6,7 @@ import (
 	goruntime "runtime"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/authn"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
@@ -25,9 +26,10 @@ var images = map[string]string{
 // imageList takes the images mapping and represents them using just
 // the image URIs.
 func imageList(ctx context.Context) []string {
+	logger := logr.FromContextOrDiscard(ctx)
 	options := []crane.Option{
 		crane.WithContext(ctx),
-		crane.WithAuthFromKeychain(authn.PreflightKeychain()),
+		crane.WithAuthFromKeychain(authn.PreflightKeychain(ctx)),
 		crane.WithPlatform(&cranev1.Platform{
 			OS: "linux",
 			// This remains the runtime arch, as we don't specify the arch for operators
@@ -41,7 +43,7 @@ func imageList(ctx context.Context) []string {
 		base := strings.Split(image, ":")[0]
 		digest, err := crane.Digest(image, options...)
 		if err != nil {
-			log.L().Error(fmt.Errorf("could not retrieve image digest: %w", err))
+			logger.Error(fmt.Errorf("could not retrieve image digest: %w", err), "crane error")
 			// Skip this entry
 			continue
 		}
@@ -61,9 +63,10 @@ func Assets(ctx context.Context) AssetData {
 // ScorecardImage returns the container image used for OperatorSDK
 // Scorecard based checks. If userProvidedScorecardImage is set, it is
 // returned, otherwise, the default is returned.
-func ScorecardImage(userProvidedScorecardImage string) string {
+func ScorecardImage(ctx context.Context, userProvidedScorecardImage string) string {
+	logger := logr.FromContextOrDiscard(ctx)
 	if userProvidedScorecardImage != "" {
-		log.L().Debugf("Using %s as the scorecard test image", userProvidedScorecardImage)
+		logger.V(log.DBG).Info("user provided scorecard test image", "image", userProvidedScorecardImage)
 		return userProvidedScorecardImage
 	}
 	return images["scorecard"]

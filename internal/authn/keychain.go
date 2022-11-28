@@ -1,20 +1,22 @@
 package authn
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/types"
+	"github.com/go-logr/logr"
 	craneauthn "github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 type preflightKeychain struct {
 	dockercfg string
+	ctx       context.Context
 }
 
 type PreflightKeychainOption func(*preflightKeychain)
@@ -28,16 +30,20 @@ func WithDockerConfig(dockercfg string) PreflightKeychainOption {
 	}
 }
 
-var keychain = preflightKeychain{}
+var keychain = preflightKeychain{
+	ctx: context.Background(), // Initialize here, but can be overridden with PreflightKeychain func
+}
 
 // PreflightKeychain will return the preflight keychain as a craneauthn.Keychain.
 // This operates as a singleton. If provided an option, that option overwrites
 // the single instance of PreflightKeychain. If provided no option, the keychain
 // is returned as already configured.
-func PreflightKeychain(opts ...PreflightKeychainOption) craneauthn.Keychain {
+func PreflightKeychain(ctx context.Context, opts ...PreflightKeychainOption) craneauthn.Keychain {
 	for _, opt := range opts {
 		opt(&keychain)
 	}
+
+	keychain.ctx = ctx
 
 	return &keychain
 }
@@ -50,7 +56,9 @@ func PreflightKeychain(opts ...PreflightKeychainOption) craneauthn.Keychain {
 // If the file cannot be found or read, that constitutes an error.
 // Can return os.IsNotExist.
 func (k *preflightKeychain) Resolve(target craneauthn.Resource) (craneauthn.Authenticator, error) {
-	log.L().Trace("entering preflight keychain Resolve")
+	logger := logr.FromContextOrDiscard(k.ctx)
+
+	logger.V(log.TRC).Info("entering preflight keychain Resolve")
 
 	if k.dockercfg == "" {
 		// No file specified. No auth expected

@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/go-logr/logr"
 	"github.com/spf13/viper"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
@@ -64,7 +64,8 @@ type ContainerCertificationSubmitter struct {
 }
 
 func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
-	log.L().Info("preparing results that will be submitted to Red Hat")
+	logger := logr.FromContextOrDiscard(ctx)
+	logger.Info("preparing results that will be submitted to Red Hat")
 
 	// get the project info from pyxis
 	certProject, err := s.Pyxis.GetProject(ctx)
@@ -80,7 +81,7 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 		return fmt.Errorf("no certification project was returned from pyxis")
 	}
 
-	log.L().Tracef("CertProject: %+v", certProject)
+	logger.V(log.TRC).Info("certification project id", "project", certProject)
 
 	// only read the dockerfile if the user provides a location for the file
 	// at this point in the flow, if `cfg.DockerConfig` is empty we know the repo is public and can continue the submission flow
@@ -110,10 +111,6 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 	if certProject.Container.HostedRegistry {
 		certProject.Container.DockerConfigJSON = ""
 	}
-
-	// prepare submission. We ignore the error because nil checks for the certProject
-	// are done earlier to prevent panics, and that's the only error case for this function.
-	submission, _ := pyxis.NewCertificationInput(certProject)
 
 	// We need to get the artifact writer to know where our artifacts were written. We also need the
 	// Filesystem Writer here to make sure we can get the configured path.
@@ -164,31 +161,32 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 	}
 	defer logfile.Close()
 
-	submission.
+	// prepare submission. We ignore the error because nil checks for the certProject
+	// are done earlier to prevent panics, and that's the only error case for this function.
+	submission, err := pyxis.NewCertificationInput(ctx, certProject,
 		// The engine writes the certified image config to disk in a Pyxis-specific format.
-		WithCertImage(certImage).
+		pyxis.WithCertImage(certImage),
 		// Include Preflight's test results in our submission. pyxis.TestResults embeds them.
-		WithPreflightResults(preflightResults).
+		pyxis.WithPreflightResults(preflightResults),
 		// The certification engine writes the rpmManifest for images not based on scratch.
-		WithRPMManifest(rpmManifest).
+		pyxis.WithRPMManifest(rpmManifest),
 		// Include the preflight execution log file.
-		WithArtifact(logfile, filepath.Base(s.PreflightLogFile))
-
-	input, err := submission.Finalize()
+		pyxis.WithArtifact(logfile, filepath.Base(s.PreflightLogFile)),
+	)
 	if err != nil {
 		return fmt.Errorf("unable to finalize data that would be sent to pyxis: %w", err)
 	}
 
-	certResults, err := s.Pyxis.SubmitResults(ctx, input)
+	certResults, err := s.Pyxis.SubmitResults(ctx, submission)
 	if err != nil {
 		return fmt.Errorf("could not submit to pyxis: %w", err)
 	}
 
-	log.L().Info("Test results have been submitted to Red Hat.")
-	log.L().Info("These results will be reviewed by Red Hat for final certification.")
-	log.L().Infof("The container's image id is: %s.", certResults.CertImage.ID)
-	log.L().Infof("Please check %s to view scan results.", BuildScanResultsURL(s.CertificationProjectID, certResults.CertImage.ID))
-	log.L().Infof("Please check %s to monitor the progress.", BuildOverviewURL(s.CertificationProjectID))
+	logger.Info("Test results have been submitted to Red Hat.")
+	logger.Info("These results will be reviewed by Red Hat for final certification.")
+	logger.Info(fmt.Sprintf("The container's image id is: %s.", certResults.CertImage.ID))
+	logger.Info(fmt.Sprintf("Please check %s to view scan results.", BuildScanResultsURL(s.CertificationProjectID, certResults.CertImage.ID)))
+	logger.Info(fmt.Sprintf("Please check %s to monitor the progress.", BuildOverviewURL(s.CertificationProjectID)))
 
 	return nil
 }
@@ -198,10 +196,10 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 type NoopSubmitter struct {
 	emitLog bool
 	reason  string
-	log     *logrus.Logger
+	log     *logr.Logger
 }
 
-func NewNoopSubmitter(emitLog bool, log *logrus.Logger) *NoopSubmitter {
+func NewNoopSubmitter(emitLog bool, log *logr.Logger) *NoopSubmitter {
 	return &NoopSubmitter{
 		emitLog: emitLog,
 		log:     log,

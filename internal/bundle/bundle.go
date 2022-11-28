@@ -9,14 +9,14 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
+	"github.com/go-logr/logr"
 	"github.com/operator-framework/api/pkg/manifests"
 	"github.com/operator-framework/api/pkg/validation"
 	olmvalidation "github.com/redhat-openshift-ecosystem/ocp-olm-catalog-validator/pkg/validation"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/yaml"
-
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 // This table signifies what the NEXT release of OpenShift will
@@ -32,8 +32,9 @@ var ocpToKubeVersion = map[string]string{
 const latestReleasedVersion = "4.11"
 
 func Validate(ctx context.Context, imagePath string) (*Report, error) {
-	log.L().Trace("reading annotations file from the bundle")
-	log.L().Debug("image extraction directory is ", imagePath)
+	logger := logr.FromContextOrDiscard(ctx)
+	logger.V(log.TRC).Info("reading annotations file from the bundle")
+	logger.V(log.DBG).Info("image extraction directory", "directory", imagePath)
 
 	bundle, err := manifests.GetBundleFromDir(imagePath)
 	if err != nil {
@@ -67,7 +68,7 @@ func Validate(ctx context.Context, imagePath string) (*Report, error) {
 			return nil, fmt.Errorf("%v", err)
 		}
 		if k8sVer, found := ocpToKubeVersion[targetVersion]; found {
-			log.L().Debugf("OpenShift %s detected in annotations. Running with additional checks enabled.", targetVersion)
+			logger.V(log.DBG).Info("running with additional checks enabled because of the OpenShift version detected", "version", targetVersion)
 			optionalValues = make(map[string]string)
 			optionalValues["k8s-version"] = k8sVer
 		}
