@@ -20,6 +20,7 @@ import (
 	"github.com/operator-framework/api/pkg/manifests"
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	validationerrors "github.com/operator-framework/api/pkg/validation/errors"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -108,8 +109,20 @@ func (p *DeployableByOlmCheck) Validate(ctx context.Context, bundleRef certifica
 		return false, fmt.Errorf("%v", err)
 	}
 	p.initOpenShifeEngine()
-	if report, err := bundle.Validate(ctx, bundleRef.ImageFSPath); err != nil || !report.Passed {
+	report, err := bundle.Validate(ctx, bundleRef.ImageFSPath)
+	if err != nil {
 		return false, fmt.Errorf("%v", err)
+	}
+
+	if !report.Passed { // validation didn't throw an error, but it also didn't pass.
+		erroredValidations := []validationerrors.ManifestResult{}
+		for _, r := range report.Results {
+			if r.HasError() {
+				erroredValidations = append(erroredValidations, r)
+			}
+		}
+
+		return false, fmt.Errorf("the bundle cannot be deployed because deployment validation has failed: %+v", erroredValidations)
 	}
 
 	// gather the list of registry and pod images
