@@ -13,6 +13,7 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2/dsl/core"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 

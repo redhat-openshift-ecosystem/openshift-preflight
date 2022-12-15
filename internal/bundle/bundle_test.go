@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2/dsl/core"
 	. "github.com/onsi/ginkgo/v2/dsl/table"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 

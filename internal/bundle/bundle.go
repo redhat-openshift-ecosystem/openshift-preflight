@@ -13,6 +13,7 @@ import (
 	"github.com/operator-framework/api/pkg/manifests"
 	"github.com/operator-framework/api/pkg/validation"
 	olmvalidation "github.com/redhat-openshift-ecosystem/ocp-olm-catalog-validator/pkg/validation"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	rbacv1 "k8s.io/api/rbac/v1"
