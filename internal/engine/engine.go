@@ -117,7 +117,7 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to create temporary directory: %v", err)
 	}
-	logger.V(log.DBG).Info("temporary directory is ", tmpdir)
+	logger.V(log.DBG).Info("created temporary directory", "path", tmpdir)
 	defer func() {
 		if err := os.RemoveAll(tmpdir); err != nil {
 			logger.Error(err, "unable to clean up tmpdir", "tempDir", tmpdir)
@@ -155,7 +155,7 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 		wg.Done()
 	}()
 
-	logger.V(log.DBG).Info("extracting container filesystem to ", containerFSPath)
+	logger.V(log.DBG).Info("extracting container filesystem", "path", containerFSPath)
 	if err := untar(ctx, containerFSPath, r); err != nil {
 		return fmt.Errorf("failed to extract tarball: %v", err)
 	}
