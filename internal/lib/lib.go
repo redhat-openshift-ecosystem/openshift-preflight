@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 )

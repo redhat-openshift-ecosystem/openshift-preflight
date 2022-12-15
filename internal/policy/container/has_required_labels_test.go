@@ -7,6 +7,7 @@ import (
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 

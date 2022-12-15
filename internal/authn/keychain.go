@@ -11,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	craneauthn "github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
