@@ -701,6 +701,7 @@ func InitializeOperatorChecks(ctx context.Context, p policy.Policy, cfg Operator
 			),
 			operatorpol.NewSecurityContextConstraintsCheck(),
 			&operatorpol.RelatedImagesCheck{},
+			operatorpol.FollowsRestrictedNetworkEnablementGuidelines{},
 		}, nil
 	}
 
