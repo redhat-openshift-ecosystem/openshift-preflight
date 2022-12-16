@@ -250,6 +250,7 @@ var _ = Describe("Check Name Queries", func() {
 			"BundleImageRefsAreCertified",
 			"SecurityContextConstraintsInCSV",
 			"AllImageRefsInRelatedImages",
+			"FollowsRestrictedNetworkEnablementGuidelines",
 		}),
 		Entry("scratch container policy", ScratchContainerPolicy, []string{
 			"HasLicense",
