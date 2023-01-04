@@ -15,7 +15,7 @@ OPERATOR_INDEXIMAGE=${OPERATOR_INDEXIMAGE:-"$DEFAULT_OPERATOR_INDEXIMAGE"}
 customized_sa="customsa" \
 customized_ns="customns" \
 customized_logfile="sgol.txt" \
-customized_artifacts="stcafitra" \
+customized_artifacts="e2e_test_artifacts" \
 results_file="./${customized_artifacts}/results.json"
 
 

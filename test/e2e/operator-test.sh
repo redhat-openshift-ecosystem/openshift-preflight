@@ -5,13 +5,14 @@ set -e
 DEFAULT_PREFLIGHT_BIN="preflight"
 DEFAULT_OPERATOR_BUNDLE="quay.io/opdev/simple-demo-operator-bundle:latest"
 DEFAULT_OPERATOR_INDEXIMAGE="quay.io/opdev/simple-demo-operator-catalog:latest"
+DEFAULT_ARTIFACTS_DIR="e2e_test_artifacts"
 
 PREFLIGHT_BIN=${PREFLIGHT_BIN:-"$DEFAULT_PREFLIGHT_BIN"}
 OPERATOR_BUNDLE=${OPERATOR_BUNDLE:-"$DEFAULT_OPERATOR_BUNDLE"}
 OPERATOR_INDEXIMAGE=${OPERATOR_INDEXIMAGE:-"$DEFAULT_OPERATOR_INDEXIMAGE"}
+ARTIFACTS_DIR=${ARTIFACTS_DIR:-"$DEFAULT_ARTIFACTS_DIR"}
 
-results_file="./artifacts/results.json"
-
+results_file="${ARTIFACTS_DIR}/results.json"
 
  USAGE=" 
  Usage: 
@@ -45,11 +46,12 @@ results_file="./artifacts/results.json"
 echo "Preflight binary value: $PREFLIGHT_BIN"
 echo "Operator bundle being tested: $OPERATOR_BUNDLE"
 echo "Operator index for test: $OPERATOR_INDEXIMAGE"
+echo "Artifacts directory for test: $ARTIFACTS_DIR"
 
 # Run preflight.
 echo "Running preflight"
 echo -e "========================"
-PFLT_LOGLEVEL=trace PFLT_INDEXIMAGE="${OPERATOR_INDEXIMAGE}" \
+PFLT_LOGLEVEL=trace PFLT_INDEXIMAGE="${OPERATOR_INDEXIMAGE}" PFLT_ARTIFACTS="${ARTIFACTS_DIR}" \
     "./${PREFLIGHT_BIN}" check operator "${OPERATOR_BUNDLE}"
 
 echo -e "\n========================"
