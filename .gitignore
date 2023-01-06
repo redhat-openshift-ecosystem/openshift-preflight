@@ -28,6 +28,14 @@ results.json
 cert-image.json
 rpm-manifest.json
 results-junit.xml
+*CatalogSource.json
+*Namespace.json
+*OperatorGroup.json
+*Subscription.json
+*BasicSpecCheck.json
+*OlmSuiteCheck.json
+hashes.txt
+
 # E2E customzied env log file.
 sgol.txt
 
