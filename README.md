@@ -22,7 +22,7 @@ functional, and in your path.
 
 | Name             | Tool cli          | Minimum version |
 |----------------- |:-----------------:|----------------:|
-| OperatorSDK      | `operator-sdk`    |         v1.22.2 |
+| OperatorSDK      | `operator-sdk`    |         v1.26.0 |
 | OpenShift Client | `oc`              |         v4.7.19 |
 
 See our [Vagrantfile](Vagrantfile) for more information on setting up a
