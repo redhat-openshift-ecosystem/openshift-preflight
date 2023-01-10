@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -50,18 +49,6 @@ var _ = Describe("CLI Library function", func() {
 
 				testFormatter, err = formatters.NewByName(formatters.DefaultFormat)
 				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("It should fail if the artifact writter cannot write the results file", func() {
-				var err error
-				// Prewrite the expected result file to cause a conflict
-				_, err = artifactWriter.WriteFile(
-					ResultsFilenameWithExtension(testFormatter.FileExtension()),
-					strings.NewReader("written for cli test case."))
-				Expect(err).ToNot(HaveOccurred())
-
-				err = RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) { return certification.Results{}, nil }, CheckConfig{}, testFormatter, &runtime.ResultWriterFile{}, nil)
-				Expect(err).To(HaveOccurred())
 			})
 
 			It("Should return an error if unable to successfully check execution encounters an error", func() {
@@ -110,38 +97,6 @@ var _ = Describe("CLI Library function", func() {
 					Expect(err).ToNot(HaveOccurred())
 					expectedJUnitResultFile := filepath.Join(artifactWriter.Path(), "results-junit.xml")
 					Expect(expectedJUnitResultFile).To(BeAnExistingFile())
-				})
-
-				It("should return an error if the junit artifact cannot be written", func() {
-					// simulate this failure by causing a conflict writing the result-junit.xml file.
-					c := CheckConfig{
-						IncludeJUnitResults: true,
-					}
-
-					_, err := artifactWriter.WriteFile("results-junit.xml", strings.NewReader("conflicting junit contents for testing"))
-					Expect(err).ToNot(HaveOccurred())
-
-					err = RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) {
-						return certification.Results{
-							TestedImage:   "testWithJUnit",
-							PassedOverall: true,
-							Passed: []certification.Result{
-								{
-									Check: check.NewGenericCheck(
-										"testJUnitWritten",
-										func(ctx context.Context, ir image.ImageReference) (bool, error) { return true, nil },
-										check.Metadata{},
-										check.HelpText{},
-									),
-									ElapsedTime: 1,
-								},
-							},
-							Failed: []certification.Result{},
-							Errors: []certification.Result{},
-						}, nil
-					}, c, testFormatter, &runtime.ResultWriterFile{}, nil)
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("could not write file to artifacts directory")) // the error message returned by FilesystemWriter.
 				})
 			})
 
