@@ -46,7 +46,7 @@ type FilesystemWriterOption = func(*FilesystemWriter)
 func (w *FilesystemWriter) WriteFile(filename string, contents io.Reader) (string, error) {
 	fullFilePath := filepath.Join(w.Path(), filename)
 
-	if err := afero.SafeWriteReader(w.fs, fullFilePath, contents); err != nil {
+	if err := afero.WriteReader(w.fs, fullFilePath, contents); err != nil {
 		return fullFilePath, fmt.Errorf("could not write file to artifacts directory: %v", err)
 	}
 	return fullFilePath, nil
