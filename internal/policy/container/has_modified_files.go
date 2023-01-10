@@ -2,11 +2,15 @@ package container
 
 import (
 	"archive/tar"
+	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
-	"sync"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
@@ -14,7 +18,9 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/rpm"
 
 	"github.com/go-logr/logr"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
+	"github.com/spf13/afero"
 )
 
 var _ check.Check = &HasModifiedFilesCheck{}
@@ -24,140 +30,197 @@ var _ check.Check = &HasModifiedFilesCheck{}
 // modified in subsequent layers.
 type HasModifiedFilesCheck struct{}
 
-type packageFilesRef struct {
-	// LayerFiles contains a slice of files modified by layer.
-	LayerFiles [][]string
-	// PackagesFiles is a map of modified files. the anonymous struct
-	// here is just used to allow us to search package files by name
-	// as the key of this map, and doesn't have any value.
-	PackageFiles map[string]struct{}
+const whiteoutPrefix = ".wh."
+
+type packageMeta struct {
+	Name    string
+	Version string
+	Release string
+	Arch    string
 }
 
+func (pm packageMeta) Compare(other packageMeta) int {
+	return 0
+}
+
+type packageFilesRef struct {
+	// LayerFiles contains a slice of files created/modified in layer
+	LayerFiles []string
+	// LayerPackages is a map of the packages in a layer. The key is
+	// the NVR of the package. The value is metadata about the package
+	// that we use for processing
+	LayerPackages map[string]packageMeta
+	// LayerPackageFiles maps files to a package name-version-release
+	LayerPackageFiles map[string]string
+	HasRPMDB          bool
+}
+
+// Validate runs the check of whether any Red Hat files were modified
 func (p *HasModifiedFilesCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
-	packageFiles, err := p.getDataToValidate(ctx, imgRef)
+	fs := afero.NewOsFs()
+	layerIDs, packageFiles, packageDist, err := p.gatherDataToValidate(ctx, imgRef, fs)
 	if err != nil {
 		return false, fmt.Errorf("could not generate modified files list: %v", err)
 	}
-	return p.validate(ctx, packageFiles)
+
+	return p.validate(ctx, layerIDs, packageFiles, packageDist)
 }
 
-// getDataToValidate returns the list of files (packageFilesRef.PackageFiles)
-// installed via packages from the container image,and the list of files (packageFilesRef.LayerFiles)
-// modified/added via layers in the image.
-func (p *HasModifiedFilesCheck) getDataToValidate(ctx context.Context, imgRef image.ImageReference) (*packageFilesRef, error) {
+// gatherDataToValidate returns a map from layer digest to a struct containing the list of files
+// (packageFilesRef.LayerPackageFiles) installed via packages (packageFilesRef.LayerPackages)
+// from the container image, and the list of files (packageFilesRef.LayerFiles) modified/added
+// via layers in the image.
+func (p *HasModifiedFilesCheck) gatherDataToValidate(ctx context.Context, imgRef image.ImageReference, fs afero.Fs) ([]string, map[string]packageFilesRef, string, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 
-	// Get a list of packages from the RPM database. This avoids having to rely on
-	// rpm, dnf, yum, etc. being installed in the image.
-	pkgList, err := rpm.GetPackageList(ctx, imgRef.ImageFSPath)
+	layerDir, err := afero.TempDir(fs, "", "rpm-layers-")
 	if err != nil {
-		return nil, fmt.Errorf("could not get rpm list: %w", err)
+		return nil, nil, "", err
 	}
+	defer func() {
+		_ = fs.RemoveAll(layerDir)
+	}()
 
-	packageFiles, err := p.getInstalledFilesFor(pkgList)
-	if err != nil {
-		return nil, fmt.Errorf("could not list installed files: %w", err)
+	if imgRef.ImageInfo == nil {
+		return nil, nil, "", fmt.Errorf("image reference invalid")
 	}
 
 	layers, err := imgRef.ImageInfo.Layers()
 	if err != nil {
-		return nil, fmt.Errorf("could not get image layers: %w", err)
+		return nil, nil, "", err
 	}
 
-	files := make([][]string, 0, len(layers))
+	layerIDs := make([]string, 0, len(layers))
+	layerRefs := make(map[string]packageFilesRef, len(layers))
 
-	// Uncompress each layer and build a slice containing the files
-	// modified by each layer.
-	for _, layer := range layers {
-		r, err := layer.Uncompressed()
+	// Uncompress each layer and build maps containing the packages,
+	// the package files, and the files modified by each layer
+	// Also generate a list of the layerIDs so we can keep the
+	// order within the maps.
+	for idx, layer := range layers {
+		layerIDHash, err := layer.Digest()
 		if err != nil {
-			return nil, fmt.Errorf("could not extract layers: %w", err)
+			return nil, nil, "", fmt.Errorf("unable to retrieve diff id for layer: %w", err)
 		}
-		pathChan := make(chan string)
+		layerID := layerIDHash.String()
 
-		var wg sync.WaitGroup
-		wg.Add(1)
-		go func() {
-			// For each path in the pathChan, add it to the layer's
-			// list of files.
-			layerFiles := make([]string, 0)
-			for path := range pathChan {
-				layerFiles = append(layerFiles, path)
+		layerDir := filepath.Join(layerDir, fmt.Sprintf("%02d-%s", idx, layerID))
+		err = fs.Mkdir(layerDir, 0o755)
+		if err != nil {
+			return nil, nil, "", fmt.Errorf("could not create layer directory: %w", err)
+		}
+
+		layerIDs = append(layerIDs, layerID)
+
+		files, err := generateChangesFor(layer)
+		if err != nil {
+			return nil, nil, "", err
+		}
+
+		found, pkgList := findRPMDB(ctx, layer)
+		if !found {
+			logger.V(log.TRC).Info("could not find rpm database in layer", "layer", layerID)
+			if idx > 0 {
+				// Just make this is the same as last layer, since the RPM db was not modified
+				lastLayer := layerIDs[idx-1]
+				layerRefs[layerID] = packageFilesRef{
+					LayerFiles:        files,
+					LayerPackages:     layerRefs[lastLayer].LayerPackages,
+					LayerPackageFiles: layerRefs[lastLayer].LayerPackageFiles,
+					HasRPMDB:          false,
+				}
+				continue
 			}
-			// also add it to the overall list of files.
-			files = append(files, layerFiles)
-			wg.Done()
-		}()
-		// add paths to the pathChan
-		err = untar(pathChan, r)
-		if err != nil {
-			return nil, fmt.Errorf("failed to extract tarball: %w", err)
+
+			// If it's the first layer, just make the pkgList empty.
+			pkgList = make([]*rpmdb.PackageInfo, 0)
 		}
 
-		wg.Wait() // wait for file list to get appended to the files var
+		pkgNameList := extractPackageNameVersionRelease(pkgList)
+
+		packageFiles, err := installedFileMapWithExclusions(ctx, pkgList)
+		if err != nil {
+			return nil, nil, "", err
+		}
+
+		layerRefs[layerID] = packageFilesRef{
+			LayerFiles:        files,
+			LayerPackages:     pkgNameList,
+			LayerPackageFiles: packageFiles,
+			HasRPMDB:          true,
+		}
 	}
 
-	files, dropped := p.dropFirstLayerIfEmpty(files)
-	if dropped {
-		// tell the user the first layer was dropped
-		diff0, _ := layers[0].DiffID()
-		diff1, _ := layers[1].DiffID()
-		logger.V(log.DBG).Info(
-			fmt.Sprintf("The first layer (%s) contained no files, so the next layer (%s) is being used as the base layer.",
-				diff0.String(),
-				diff1.String(),
-			))
+	osRelease, err := fs.Open("/etc/os-release")
+	if err != nil {
+		return nil, nil, "", fmt.Errorf("could not open os-release: %v", err)
+	}
+	scanner := bufio.NewScanner(osRelease)
+	var packageDist string
+	for scanner.Scan() {
+		line := scanner.Text()
+		r, _ := regexp.Compile(`PLATFORM_ID=platform:(\s+)`)
+		m := r.FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		packageDist = m[1]
+		break
 	}
 
-	return &packageFilesRef{files, packageFiles}, nil
-}
-
-// dropFirstLayerIfEmpty will evaluate the length of the first layer and will drop its entry in files if it's empty.
-// This avoids establishing a baseline of files installed in the original layer with an empty list. An example
-// of when this should occur is in cases where the image was built FROM scratch, such as ubi-micro. This is required
-// to ensure we don't attempt to validate against an empty layer.
-func (p *HasModifiedFilesCheck) dropFirstLayerIfEmpty(files [][]string) ([][]string, bool) {
-	var dropped bool
-	if len(files[0]) == 0 {
-		files = files[1:] // shift the empty layer out.
-		dropped = true
+	if err := scanner.Err(); err != nil {
+		return nil, nil, "", fmt.Errorf("error while scanning for package dist: %v", err)
 	}
 
-	return files, dropped
+	return layerIDs, layerRefs, packageDist, nil
 }
 
 // validate compares the list of LayerFiles and PackageFiles to see what PackageFiles
-// have been modified within the additional layers.
-//
-//nolint:unparam // ctx is unused. Keep for future use.
-func (p *HasModifiedFilesCheck) validate(ctx context.Context, packageFilesRef *packageFilesRef) (bool, error) {
+// have been modified within the additional layers. packageDist is the value we expect
+// to find in the base packages release field.
+func (p *HasModifiedFilesCheck) validate(ctx context.Context, layerIDs []string, packageFiles map[string]packageFilesRef, packageDist string) (bool, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 
-	layerFiles := packageFilesRef.LayerFiles
-	packageFiles := packageFilesRef.PackageFiles
+	disallowedModifications := false
+	for idx, layerID := range layerIDs {
+		logger := logger.WithValues("layer", layerID)
+		ref := packageFiles[layerID]
+		for _, modifiedFile := range ref.LayerFiles {
+			// If it's a modifiedFile but this layer has an RPM db, that's allowed, but only if the
+			// package itself is updated.
+			if idx == 0 && ref.HasRPMDB {
+				// Just skip these in the first layer
+				continue
+			}
+			if _, found := ref.LayerPackageFiles[modifiedFile]; found {
+				previousPackageVersion, prevFound := packageFiles[layerIDs[idx-1]].LayerPackageFiles[modifiedFile]
+				if !prevFound && ref.HasRPMDB {
+					// This is a net-new package file. Pass it.
+					continue
+				}
+				currentPackageVersion := ref.LayerPackageFiles[modifiedFile]
+				if previousPackageVersion != currentPackageVersion {
+					// Check that release contains the same arch and OS release
+					previousPackage := packageFiles[layerIDs[idx-1]].LayerPackages[previousPackageVersion]
+					currentPackage := ref.LayerPackages[currentPackageVersion]
 
-	// Determine the list of files that were a part of the base layer.
-	baseLayer := make(map[string]struct{}, len(layerFiles[0]))
-	for _, filename := range layerFiles[0] {
-		if _, ok := packageFiles[filename]; ok {
-			baseLayer[filename] = struct{}{}
-		}
-	}
-	layers := layerFiles[1:]
+					previousOsRelease := strings.Contains(previousPackage.Release, packageDist)
+					currentOsRelease := strings.Contains(currentPackage.Release, packageDist)
 
-	// Look for modifications in subsequent layers by determining
-	// if a file in a base layer exists in a subsequent layer.
-	modifiedFilesDetected := false
-	for _, layer := range layers {
-		for _, file := range layer {
-			if _, ok := baseLayer[file]; ok {
-				// This means the files exists in the base layer. This is a fail.
-				logger.V(log.DBG).Info("modified file detected", "filename", file)
-				modifiedFilesDetected = true
+					if (previousOsRelease && !currentOsRelease) || (previousPackage.Arch != currentPackage.Arch) {
+						// If either of these differ, that's a fail
+						return false, nil
+					}
+
+					// This appears like an update. This is allowed.
+					continue
+				}
+				logger.V(log.DBG).Info("found disallowed modification in layer", "file", modifiedFile)
+				disallowedModifications = true
 			}
 		}
 	}
-	return !modifiedFilesDetected, nil
+	return !disallowedModifications, nil
 }
 
 func (p HasModifiedFilesCheck) Name() string {
@@ -180,69 +243,247 @@ func (p HasModifiedFilesCheck) Metadata() check.Metadata {
 	}
 }
 
-// Untar takes a destination path and a reader; a tar reader loops over the tarfile
-// creating the file structure at 'dst' along the way, and writing any files
-func untar(pathChan chan<- string, r io.Reader) error {
-	tr := tar.NewReader(r)
-
-	for {
-		header, err := tr.Next()
-
-		switch {
-		// if no more files are found return
-		case err == io.EOF:
-			close(pathChan)
-			return nil
-
-		// return any other error
-		case err != nil:
-			return err
-
-		// if the header is nil, just skip it (not sure how this happens)
-		case header == nil:
-			continue
-		}
-
-		// the target location where the dir/file should be created
-		target := header.Name
-
-		// the following switch could also be done using fi.Mode(), not sure if there
-		// a benefit of using one vs. the other.
-		// fi := header.FileInfo()
-
-		// check the file type
-		switch header.Typeflag {
-		// if its a dir ignore it
-		case tar.TypeDir:
-			continue
-
-		// if it's a file write the name to the channel
-		case tar.TypeReg:
-			// Strip off any leading '/' or './'
-			pathChan <- strings.TrimLeft(target, "./")
-
-		// if it's a link create it
-		case tar.TypeSymlink:
-			pathChan <- strings.TrimLeft(header.Linkname, "./")
+func extractPackageNameVersionRelease(pkgList []*rpmdb.PackageInfo) map[string]packageMeta {
+	pkgNameList := make(map[string]packageMeta, len(pkgList))
+	for _, pkg := range pkgList {
+		pkgNameList[fmt.Sprintf("%s-%s-%s", pkg.Name, pkg.Version, pkg.Release)] = packageMeta{
+			Name:    pkg.Name,
+			Version: pkg.Version,
+			Release: pkg.Release,
+			Arch:    pkg.Arch,
 		}
 	}
+	return pkgNameList
 }
 
-// getInstalledFilesFor returns a map of installed files by pkgs. The returned map only contains
-// relevant keys to aid in lookup; values are unimportant.
-func (p *HasModifiedFilesCheck) getInstalledFilesFor(pkgList []*rpmdb.PackageInfo) (map[string]struct{}, error) {
-	installedFiles := make(map[string]struct{}, len(pkgList))
-	for _, pkg := range pkgList {
-		filenames, err := pkg.InstalledFileNames()
+// findRPMDB attempts to extract a valid RPMDB from layers in the order
+// they are provided. If found is false, pkglist should
+// be disregarded as any value there will be invalid.
+func findRPMDB(ctx context.Context, layer v1.Layer) (found bool, pkglist []*rpmdb.PackageInfo) {
+	logger := logr.FromContextOrDiscard(ctx)
+	var err error
+	pkglist, err = extractRPMDB(ctx, layer)
+	if err == nil {
+		id, _ := layer.Digest()
+		logger.V(log.TRC).Info("findRPMDB found an RPM db", "layer", id.String())
+		found = true
+		return
+	}
+
+	return found, pkglist
+}
+
+// directoryIsExcluded excludes a directory and any file contained in that directory.
+func directoryIsExcluded(ctx context.Context, s string) bool {
+	excl := map[string]struct{}{
+		"etc": {},
+		"var": {},
+		"run": {},
+	}
+
+	for k := range excl {
+		if strings.HasPrefix(s, filepath.Clean(k+"/")) || k == s {
+			logger := logr.FromContextOrDiscard(ctx)
+			logger.V(log.TRC).Info("directory excluded", "directory", s)
+			return true
+		}
+	}
+
+	return false
+}
+
+// pathIsExcluded checks if s is excluded explicitly as written.
+func pathIsExcluded(ctx context.Context, s string) bool {
+	excl := map[string]struct{}{
+		"etc/resolv.conf": {},
+		"etc/hostname":    {},
+		// etc and etc/ are both required as both can present the directory
+		// in a tarball. Same goes for other directories.
+		"etc":  {},
+		"etc/": {},
+		"run":  {},
+		"run/": {},
+	}
+
+	_, found := excl[s]
+	if found {
+		logger := logr.FromContextOrDiscard(ctx)
+		logger.V(log.TRC).Info("file excluded", "file", s)
+		return true
+	}
+	return found
+}
+
+// normalize will clean a filepath of extraneous characters like ./, //, etc.
+// and strip a leading slash. E.g. /foo/../baz --> baz
+func normalize(s string) string {
+	// for the root path, return the root path.
+	if s == "/" {
+		return s
+	}
+	return filepath.Clean(strings.TrimPrefix(s, "/"))
+}
+
+// installedFileMapWithExclusions gets a map of installed filenames that have been cleaned
+// of extra slashes, dotslashes, and leading slashes.
+func installedFileMapWithExclusions(ctx context.Context, pkglist []*rpmdb.PackageInfo) (map[string]string, error) {
+	const okFlags = rpmdb.RPMFILE_CONFIG |
+		rpmdb.RPMFILE_DOC |
+		rpmdb.RPMFILE_LICENSE |
+		rpmdb.RPMFILE_MISSINGOK |
+		rpmdb.RPMFILE_README
+	m := map[string]string{}
+	for _, pkg := range pkglist {
+		files, err := pkg.InstalledFiles()
+		if err != nil {
+			return m, err
+		}
+
+		for _, file := range files {
+			if int32(file.Flags)&okFlags > 0 {
+				// It is one of the ok flags. Skip it.
+				continue
+			}
+			normalized := normalize(file.Path)
+			if pathIsExcluded(ctx, normalized) || directoryIsExcluded(ctx, normalized) {
+				// It is either an explicitly excluded path or directory. Skip it.
+				continue
+			}
+			m[normalized] = fmt.Sprintf("%s-%s-%s", pkg.Name, pkg.Version, pkg.Release)
+		}
+	}
+	return m, nil
+}
+
+// generateChangesFor will check layer for file changes, and will return a list of those.
+func generateChangesFor(layer v1.Layer) ([]string, error) {
+	layerReader, err := layer.Uncompressed()
+	if err != nil {
+		return nil, fmt.Errorf("reading layer contents: %w", err)
+	}
+	defer layerReader.Close()
+	tarReader := tar.NewReader(layerReader)
+	var filelist []string
+	for {
+		header, err := tarReader.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("reading tar: %w", err)
+		}
+
+		// Some tools prepend everything with "./", so if we don't Clean the
+		// name, we may have duplicate entries, which angers tar-split.
+		header.Name = filepath.Clean(header.Name)
+		// force PAX format to remove Name/Linkname length limit of 100 characters
+		// required by USTAR and to not depend on internal tar package guess which
+		// prefers USTAR over PAX
+		header.Format = tar.FormatPAX
+
+		basename := filepath.Base(header.Name)
+		dirname := filepath.Dir(header.Name)
+		tombstone := strings.HasPrefix(basename, whiteoutPrefix)
+		if tombstone {
+			basename = basename[len(whiteoutPrefix):]
+		}
+		switch {
+		case (header.Typeflag == tar.TypeDir && tombstone) || header.Typeflag == tar.TypeReg:
+			filelist = append(filelist, strings.TrimPrefix(filepath.Join(dirname, basename), "/"))
+		case header.Typeflag == tar.TypeSymlink:
+			filelist = append(filelist, strings.TrimPrefix(header.Name, "/"))
+		default:
+			// TODO: what do we do with other flags?
+			continue
+		}
+	}
+
+	return filelist, nil
+}
+
+// ExtractRPMDB copies /var/lib/rpm/* from the archive and derives a list of packages from
+// the rpm database.
+func extractRPMDB(ctx context.Context, layer v1.Layer) ([]*rpmdb.PackageInfo, error) {
+	layerReader, err := layer.Uncompressed()
+	if err != nil {
+		return nil, fmt.Errorf("reading layer contents: %w", err)
+	}
+	defer layerReader.Close()
+
+	fs := afero.NewOsFs()
+	basepath, err := afero.TempDir(fs, "", "rpmdb")
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = fs.RemoveAll(basepath)
+	}()
+
+	tarReader := tar.NewReader(layerReader)
+	for {
+		header, err := tarReader.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("reading tar: %w", err)
+		}
+
+		// Some tools prepend everything with "./", so if we don't Clean the
+		// name, we may have duplicate entries, which angers tar-split.
+		header.Name = filepath.Clean(header.Name)
+		header.Format = tar.FormatPAX
+		rpmdirname := "var/lib/rpm"
+		basename := filepath.Base(header.Name)
+		dirname := filepath.Dir(header.Name)
+		tombstone := strings.HasPrefix(basename, whiteoutPrefix)
+
+		// Not a file or directory? Continue...
+		if header.Typeflag != tar.TypeDir && header.Typeflag != tar.TypeReg {
+			continue
+		}
+
+		// Tombstone? Ignore...
+		if tombstone {
+			continue
+		}
+
+		// Not in the RPM directory. Ignore...
+		if !strings.HasPrefix(filepath.Join(dirname, basename), rpmdirname) {
+			continue
+		}
+		// a dir or file with the correct var/lib/rpm prefix that has not been marked with a tombstone is valid.
+		if header.Typeflag == tar.TypeDir {
+			err := os.MkdirAll(filepath.Join(basepath, dirname, basename), header.FileInfo().Mode())
+			if err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		f, err := fs.OpenFile(filepath.Join(basepath, dirname, basename), os.O_RDWR|os.O_CREATE|os.O_TRUNC, header.FileInfo().Mode())
 		if err != nil {
 			return nil, err
 		}
-		for _, file := range filenames {
-			// A struct is used here, but it is unimportant and
-			// should not have value.
-			installedFiles[file] = struct{}{}
+		err = func() error {
+			// closure here allows us to defer f.Close() in this iteration instead of
+			// waiting for the parent function to complete.
+			defer f.Close()
+			_, err := io.Copy(f, tarReader)
+			if err != nil {
+				return err
+			}
+			return nil
+		}()
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	return installedFiles, nil
+	packageList, err := rpm.GetPackageList(ctx, basepath)
+	if err != nil {
+		return nil, err
+	}
+
+	return packageList, nil
 }
