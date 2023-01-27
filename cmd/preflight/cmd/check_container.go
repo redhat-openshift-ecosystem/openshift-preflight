@@ -186,6 +186,7 @@ func generateContainerCheckOptions(cfg *runtime.Config) []container.Option {
 		container.WithDockerConfigJSONFromFile(cfg.DockerConfig),
 		// Always add PyxisHost, since the value is always set in viper config parsing.
 		container.WithPyxisHost(cfg.PyxisHost),
+		container.WithPlatform(cfg.Platform),
 	}
 
 	// set auth information if both are present in config.
