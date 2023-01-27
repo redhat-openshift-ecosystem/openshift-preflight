@@ -282,7 +282,7 @@ func tagDigestBindingInfo(providedIdentifier string, resolvedDigest string) (msg
 	}
 
 	return fmt.Sprintf(
-		`This image's tag %s will be paired with digest %s`+
+		`This image's tag %s will be paired with digest %s `+
 			`once this image has been published in accordance `+
 			`with Red Hat Certification policy. `+
 			`You may then add or remove any supplemental tags `+
