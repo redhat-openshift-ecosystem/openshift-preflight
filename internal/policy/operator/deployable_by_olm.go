@@ -370,6 +370,7 @@ func (p *DeployableByOlmCheck) generateOperatorGroupData(ctx context.Context, op
 	for _, v := range prioritizedInstallModes {
 		if operatorData.InstallModes[v].Supported {
 			installMode = operatorData.InstallModes[v].Type
+			break
 		}
 	}
 	logger.V(log.DBG).Info("operator install mode", "installMode", installMode)
