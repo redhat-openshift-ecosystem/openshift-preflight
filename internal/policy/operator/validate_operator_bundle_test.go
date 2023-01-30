@@ -18,13 +18,13 @@ var _ = Describe("BundleValidateCheck", func() {
 
 	AssertMetaData(&bundleValidateCheck)
 
-	// TODO: Add more tests and bundles to testdata/ that excecise each of the
+	// TODO: Add more tests and bundles to testdata/ that exercise each of the
 	// validations that we use.
 	Describe("Operator Bundle Validate", func() {
 		Context("When Operator Bundle Validate passes", func() {
 			It("Should pass Validate", func() {
 				imageRef := image.ImageReference{
-					ImageFSPath: "./testdata/valid_bundle",
+					ImageFSPath: "./testdata/all_namespaces",
 				}
 				ok, err := bundleValidateCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())

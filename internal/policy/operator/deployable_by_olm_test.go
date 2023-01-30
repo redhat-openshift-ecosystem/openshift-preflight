@@ -23,6 +23,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		deployableByOLMCheck DeployableByOlmCheck
 		imageRef             image.ImageReference
 		testcontext          context.Context
+		clientBuilder        *fake.ClientBuilder
 	)
 
 	BeforeEach(func() {
@@ -32,20 +33,21 @@ var _ = Describe("DeployableByOLMCheck", func() {
 
 		fakeImage := fakecranev1.FakeImage{}
 		imageRef.ImageInfo = &fakeImage
-		imageRef.ImageFSPath = "./testdata/valid_bundle"
+		imageRef.ImageFSPath = "./testdata/all_namespaces"
 
 		now := metav1.Now()
 		og.Status.LastUpdated = &now
 		deployableByOLMCheck = *NewDeployableByOlmCheck("test_indeximage", "", "")
 		scheme := apiruntime.NewScheme()
 		Expect(openshift.AddSchemes(scheme)).To(Succeed())
-		var client crclient.Client //nolint:gosimple // explicitly make var with interface
-		client = fake.NewClientBuilder().
+		clientBuilder = fake.NewClientBuilder().
 			WithScheme(scheme).
-			WithObjects(&csv, &csvDefault, &csvMarketplace, &ns, &secret, &sub, &og).
-			WithLists(&pods, &isList).
+			WithObjects(&csvDefault, &csvMarketplace, &ns, &secret, &sub, &og).
+			WithLists(&pods, &isList)
+
+		deployableByOLMCheck.client = clientBuilder.
+			WithObjects(&csv).
 			Build()
-		deployableByOLMCheck.client = client
 
 		// Temp artifacts dir
 		tmpDir, err := os.MkdirTemp("", "deployable-by-olm-*")
@@ -57,8 +59,46 @@ var _ = Describe("DeployableByOLMCheck", func() {
 	})
 
 	Describe("When deploying an operator using OLM", func() {
-		Context("When CSV has been created successfully", func() {
+		Context("When the only supported install mode is AllNamespaces", func() {
 			It("Should pass Validate", func() {
+				ok, err := deployableByOLMCheck.Validate(testcontext, imageRef)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
+			})
+		})
+		Context("When the supported install modes are OwnNamespace and SingleNamespace", func() {
+			BeforeEach(func() {
+				imageRef.ImageFSPath = "./testdata/own_namespace"
+
+				// changing the namespace since OwnNamespace operators CSV get applied to `InstallNamespace`
+				ownCSV := csv.DeepCopy()
+				ownCSV.Namespace = "testPackage"
+
+				deployableByOLMCheck.client = clientBuilder.
+					WithObjects(ownCSV).
+					Build()
+			})
+			It("OperatorGroup should use InstallNamespace and Should pass Validate", func() {
+				ok, err := deployableByOLMCheck.Validate(testcontext, imageRef)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
+			})
+		})
+		Context("When the only supported install mode is SingleNamespace", func() {
+			BeforeEach(func() {
+				imageRef.ImageFSPath = "./testdata/single_namespace"
+			})
+			It("OperatorGroup should use InstallNamespace and Should pass Validate", func() {
+				ok, err := deployableByOLMCheck.Validate(testcontext, imageRef)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
+			})
+		})
+		Context("When the only supported install mode is MultiNamespace", func() {
+			BeforeEach(func() {
+				imageRef.ImageFSPath = "./testdata/multi_namespace"
+			})
+			It("OperatorGroup should use InstallNamespace and Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(testcontext, imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
@@ -95,13 +135,6 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				// dockerconfig.json is just an empty file. It just needs to exist.
 				deployableByOLMCheck.dockerConfig = "./testdata/dockerconfig.json"
 			})
-			It("Should pass Validate", func() {
-				ok, err := deployableByOLMCheck.Validate(testcontext, imageRef)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(ok).To(BeTrue())
-			})
-		})
-		Context("When the only supported install mode is AllNamespaces", func() {
 			It("Should pass Validate", func() {
 				ok, err := deployableByOLMCheck.Validate(testcontext, imageRef)
 				Expect(err).ToNot(HaveOccurred())
