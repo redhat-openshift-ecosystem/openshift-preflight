@@ -7,7 +7,7 @@ require (
 	github.com/bombsimon/logrusr/v4 v4.0.0
 	github.com/docker/cli v20.10.22+incompatible
 	github.com/go-logr/logr v1.2.3
-	github.com/google/go-containerregistry v0.12.1
+	github.com/google/go-containerregistry v0.13.0
 	github.com/knqyf263/go-rpmdb v0.0.0-20220629110411-9a3bd2ebb923
 	github.com/onsi/ginkgo/v2 v2.7.0
 	github.com/onsi/gomega v1.26.0
