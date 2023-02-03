@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -102,7 +103,18 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	}
 
 	if c.Insecure {
-		options = append(options, crane.Insecure)
+		// Adding WithTransport opt is a workaround to allow for access to HTTPS
+		// container registries with self-signed or non-trusted certificates.
+		//
+		// See https://github.com/google/go-containerregistry/issues/1553 for more context. If this issue
+		// is resolved, then this workaround can likely be removed or adjusted to use new features in the
+		// go-containerregistry project.
+		rt := remote.DefaultTransport.(*http.Transport).Clone()
+		rt.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true, //nolint: gosec
+		}
+
+		options = append(options, crane.Insecure, crane.WithTransport(rt))
 	}
 
 	// pull the image and save to fs
@@ -674,6 +686,7 @@ func New(ctx context.Context,
 		IsBundle:     isBundle,
 		IsScratch:    isScratch,
 		Platform:     platform,
+		Insecure:     insecure,
 	}, nil
 }
 
