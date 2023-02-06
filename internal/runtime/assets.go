@@ -21,7 +21,7 @@ import (
 // to be used outside of this package.
 var images = map[string]string{
 	// operator policy, operator-sdk scorecard
-	"scorecard": "quay.io/operator-framework/scorecard-test:v1.26.0",
+	"scorecard": "quay.io/operator-framework/scorecard-test:v1.27.0",
 }
 
 // imageList takes the images mapping and represents them using just

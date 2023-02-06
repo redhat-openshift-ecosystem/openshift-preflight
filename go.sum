@@ -351,8 +351,8 @@ github.com/openshift/api v0.0.0-20210910062324-a41d3573a3ba/go.mod h1:izBmoXbUu3
 github.com/openshift/build-machinery-go v0.0.0-20210423112049-9415d7ebd33e/go.mod h1:b1BuldmJlbA/xYtdZvKi+7j5YGB44qJUJDZ9zwiNCfE=
 github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 h1:ZHRIMCFIJN1p9LsJt4HQ+akDrys4PrYnXzOWI5LK03I=
 github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142/go.mod h1:fjS8r9mqDVsPb5td3NehsNOAWa4uiFkYEfVZioQ2gH0=
-github.com/operator-framework/api v0.16.1-0.20220823134246-5f99430d4ec4 h1:juST/k+hHmKD/BlZ4GCzeDdxvNsxB4wHlDyfAPYmSrU=
-github.com/operator-framework/api v0.16.1-0.20220823134246-5f99430d4ec4/go.mod h1:kk8xJahHJR3bKqrA+A+1VIrhOTmyV76k+ARv+iV+u1Q=
+github.com/operator-framework/api v0.17.4-0.20221221181915-f1b729684854 h1:/EFqPU6baS6MzfLvIeGlfVV0bDLehlA1jwSxHxL0D9s=
+github.com/operator-framework/api v0.17.4-0.20221221181915-f1b729684854/go.mod h1:34tb98EwTN5SZLkgoxwvRkhMJKLHUWHOrrcv1ZwvEeA=
 github.com/operator-framework/operator-manifest-tools v0.2.2 h1:mALhDVeXCkwh5xsXt4m0eatfL7hxfPOQSTLDSoe/0mo=
 github.com/operator-framework/operator-manifest-tools v0.2.2/go.mod h1:pYXBtryqeokM8MiCtSsGxQUI/vZgcFLMhEI0gkt9KFI=
 github.com/pelletier/go-toml/v2 v2.0.6 h1:nrzqCb7j9cDFj2coyLNLaZuJTLjWjlaz6nvTvIwycIU=

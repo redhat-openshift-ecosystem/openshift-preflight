@@ -11,8 +11,10 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/openshift"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-logr/logr"
 )
 
@@ -43,6 +45,21 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 		for _, selector := range opts.Selector {
 			cmdArgs = append(cmdArgs, fmt.Sprintf("--selector=%s", selector))
 		}
+	}
+
+	version, err := openshift.GetOpenshiftClusterVersion(ctx, opts.Kubeconfig)
+	if err != nil {
+		logger.Error(err, "could not determine test cluster version")
+	}
+
+	// todo-adam I think it's okay to ignore the error
+	clusterVersion, _ := semver.Make(version.Version)
+	psaMinVersion, _ := semver.Make("4.12.0")
+
+	// forcing scorecard to create pod in restricted mode to ensure that preflight can work in cluster where
+	// pod security admission is enforced
+	if clusterVersion.GTE(psaMinVersion) {
+		cmdArgs = append(cmdArgs, "--pod-security", "restricted")
 	}
 
 	if opts.Kubeconfig != nil {
