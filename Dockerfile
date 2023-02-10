@@ -42,7 +42,6 @@ LABEL ARCH=${ARCH}
 LABEL OS=${OS}
 
 # Define versions for dependencies
-ARG OPENSHIFT_CLIENT_VERSION=4.7.19
 ARG OPERATOR_SDK_VERSION=1.26.0
 
 # Add preflight binary
@@ -56,9 +55,6 @@ RUN dnf install -y \
       findutils \
       podman \
     && dnf clean all
-
-# Install OpenShift client binary
-RUN curl --fail -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OPENSHIFT_CLIENT_VERSION}/openshift-client-linux-${OPENSHIFT_CLIENT_VERSION}.tar.gz | tar -xzv -C /usr/local/bin oc
 
 # Install Operator SDK binray
 RUN curl --fail -Lo /usr/local/bin/operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk_linux_${ARCH} \
