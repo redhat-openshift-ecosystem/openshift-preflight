@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bombsimon/logrusr/v4 v4.0.0
-	github.com/docker/cli v20.10.22+incompatible
+	github.com/docker/cli v23.0.1+incompatible
 	github.com/go-logr/logr v1.2.3
 	github.com/google/go-containerregistry v0.12.1
 	github.com/knqyf263/go-rpmdb v0.0.0-20220629110411-9a3bd2ebb923
