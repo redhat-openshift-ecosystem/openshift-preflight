@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
@@ -97,10 +98,27 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 		mw := io.MultiWriter(os.Stderr, logFile)
 		l.SetOutput(mw)
 	} else {
-		l.Debug("Failed to log to file, using default stderr")
+		l.Infof("Failed to log to file, using default stderr")
 	}
 	if ll, err := logrus.ParseLevel(viper.GetString("loglevel")); err == nil {
 		l.SetLevel(ll)
+	}
+
+	// if we are in the offline flow redirect log file to exist in the directory where all other artifact exist
+	if viper.GetBool("offline") {
+		artifacts := viper.GetString("artifacts")
+
+		// ignoring error since OpenFile will error and we'll still have the multiwriter from above
+		_ = os.Mkdir(artifacts, 0o777)
+
+		artifactsLogFile, err := os.OpenFile(filepath.Join(artifacts, logname), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+		if err == nil {
+			mw := io.MultiWriter(os.Stderr, logFile, artifactsLogFile)
+			l.SetOutput(mw)
+		}
+
+		// setting log level to trace, to provide the most detailed logs possible
+		l.SetLevel(logrus.TraceLevel)
 	}
 
 	if !configFileUsed {

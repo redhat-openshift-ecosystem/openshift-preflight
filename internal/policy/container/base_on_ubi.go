@@ -50,7 +50,7 @@ func (p *BasedOnUBICheck) getImageLayers(image cranev1.Image) ([]cranev1.Hash, e
 func (p *BasedOnUBICheck) certifiedImagesFound(ctx context.Context, layerHashes []cranev1.Hash) (bool, error) {
 	certImages, err := p.LayerHashCheckEngine.CertifiedImagesContainingLayers(ctx, layerHashes)
 	if err != nil {
-		return false, fmt.Errorf("pyxis query for uncompressed top layers ids failed: %w", err)
+		return false, fmt.Errorf("pyxis query for uncompressed top layers ids %+q failed: %w", layerHashes, err)
 	}
 	if len(certImages) >= 1 {
 		return true, nil

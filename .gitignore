@@ -35,6 +35,7 @@ results-junit.xml
 *BasicSpecCheck.json
 *OlmSuiteCheck.json
 hashes.txt
+artifacts.tar
 
 # E2E customzied env log file.
 sgol.txt

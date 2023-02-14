@@ -52,6 +52,20 @@ func (w *FilesystemWriter) WriteFile(filename string, contents io.Reader) (strin
 	return fullFilePath, nil
 }
 
+// Exists checks if a file exists with a filename
+func (w *FilesystemWriter) Exists(filename string) (bool, error) {
+	fullFilePath := filepath.Join(w.Path(), filename)
+
+	return afero.Exists(w.fs, fullFilePath)
+}
+
+// Remove removes contents from dir at filename.
+func (w *FilesystemWriter) Remove(filename string) error {
+	fullFilePath := filepath.Join(w.Path(), filename)
+
+	return w.fs.Remove(fullFilePath)
+}
+
 // Path is the full artifacts path.
 func (w *FilesystemWriter) Path() string {
 	return w.dir
