@@ -116,11 +116,36 @@ var _ = Describe("cmd package utility functions", func() {
 				tmpDir, err = os.MkdirTemp("", "prerun-config-*")
 				Expect(err).ToNot(HaveOccurred())
 				DeferCleanup(os.RemoveAll, tmpDir)
+
+				viper.Instance().Set("logfile", filepath.Join(tmpDir, "foo.log"))
+				DeferCleanup(viper.Instance().Set, "logfile", "preflight.log")
 			})
 			It("should create the logfile", func() {
-				viper.Instance().Set("logfile", filepath.Join(tmpDir, "foo.log"))
 				Expect(cmd.ExecuteContext(context.TODO())).To(Succeed())
 				_, err := os.Stat(filepath.Join(tmpDir, "foo.log"))
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+		Context("with the offline flag", func() {
+			var tmpDir string
+			BeforeEach(func() {
+				var err error
+				tmpDir, err = os.MkdirTemp("", "prerun-artifacts-*")
+				Expect(err).ToNot(HaveOccurred())
+				DeferCleanup(os.RemoveAll, tmpDir)
+
+				viper.Instance().Set("artifacts", tmpDir)
+				DeferCleanup(viper.Instance().Set, "artifacts", artifacts.DefaultArtifactsDir)
+
+				viper.Instance().Set("logfile", "preflight.log")
+				DeferCleanup(viper.Instance().Set, "logfile", "preflight.log")
+
+				viper.Instance().Set("offline", true)
+				DeferCleanup(viper.Instance().Set, "offline", false)
+			})
+			It("should create the logfile in the artifacts directory", func() {
+				Expect(cmd.ExecuteContext(context.TODO())).To(Succeed())
+				_, err := os.Stat(filepath.Join(tmpDir, "preflight.log"))
 				Expect(err).ToNot(HaveOccurred())
 			})
 		})

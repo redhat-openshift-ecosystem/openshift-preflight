@@ -26,6 +26,7 @@ type Config struct {
 	Submit                 bool
 	Platform               string
 	Insecure               bool
+	Offline                bool
 	// Operator-Specific Fields
 	Namespace         string
 	ServiceAccount    string
@@ -67,6 +68,7 @@ func (c *Config) storeContainerPolicyConfiguration(vcfg viper.Viper) {
 	c.CertificationProjectID = vcfg.GetString("certification_project_id")
 	c.Platform = vcfg.GetString("platform")
 	c.Insecure = vcfg.GetBool("insecure")
+	c.Offline = vcfg.GetBool("offline")
 }
 
 // storeOperatorPolicyConfiguration reads operator-policy-specific config

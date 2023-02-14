@@ -64,12 +64,12 @@ var _ = Describe("Viper to Runtime Config", func() {
 		})
 	})
 
-	It("should only have 20 struct keys for tests to be valid", func() {
+	It("should only have 23 struct keys for tests to be valid", func() {
 		// If this test fails, it means a developer has added or removed
 		// keys from runtime.Config, and so these tests may no longer be
 		// accurate in confirming that the derived configuration from viper
 		// matches.
 		keys := reflect.TypeOf(Config{}).NumField()
-		Expect(keys).To(Equal(22))
+		Expect(keys).To(Equal(23))
 	})
 })

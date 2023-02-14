@@ -17,7 +17,7 @@ var _ = Describe("Check Operator", func() {
 	Context("when running the check operator subcommand", func() {
 		Context("without the operator bundle image being provided", func() {
 			It("should return an error", func() {
-				_, err := executeCommand(checkOperatorCmd(mockRunPreflight))
+				_, err := executeCommand(checkOperatorCmd(mockRunPreflightReturnNil))
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -30,7 +30,7 @@ var _ = Describe("Check Operator", func() {
 				os.Unsetenv("KUBECONFIG")
 			})
 			It("should return an error", func() {
-				out, err := executeCommand(checkOperatorCmd(mockRunPreflight), "quay.io/example/image:mytag")
+				out, err := executeCommand(checkOperatorCmd(mockRunPreflightReturnNil), "quay.io/example/image:mytag")
 				Expect(err).To(HaveOccurred())
 				Expect(out).To(ContainSubstring("KUBECONFIG could not"))
 			})
@@ -50,7 +50,7 @@ var _ = Describe("Check Operator", func() {
 				os.Setenv("KUBECONFIG", "foo")
 			})
 			It("should return an error", func() {
-				out, err := executeCommand(checkOperatorCmd(mockRunPreflight), "quay.io/example/image:mytag")
+				out, err := executeCommand(checkOperatorCmd(mockRunPreflightReturnNil), "quay.io/example/image:mytag")
 				Expect(err).To(HaveOccurred())
 				Expect(out).To(ContainSubstring("PFLT_INDEXIMAGE could not"))
 			})
@@ -78,7 +78,7 @@ var _ = Describe("Check Operator", func() {
 				os.Setenv("KUBECONFIG", f1.Name())
 			})
 			It("should reach the core logic, and execute the mocked RunPreflight", func() {
-				out, err := executeCommandWithLogger(checkOperatorCmd(mockRunPreflight), logr.Discard(), "quay.io/example/image:mytag")
+				out, err := executeCommandWithLogger(checkOperatorCmd(mockRunPreflightReturnNil), logr.Discard(), "quay.io/example/image:mytag")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(out).ToNot(BeNil())
 			})
@@ -102,7 +102,7 @@ var _ = Describe("Check Operator", func() {
 				os.Setenv("KUBECONFIG", "foo")
 			})
 			It("should return a no such file error", func() {
-				out, err := executeCommandWithLogger(checkOperatorCmd(mockRunPreflight), logr.Discard(), "quay.io/example/image:mytag")
+				out, err := executeCommandWithLogger(checkOperatorCmd(mockRunPreflightReturnNil), logr.Discard(), "quay.io/example/image:mytag")
 				Expect(err).To(HaveOccurred())
 				Expect(out).To(ContainSubstring(": open foo: no such file or directory"))
 			})
@@ -121,7 +121,7 @@ var _ = Describe("Check Operator", func() {
 				os.Setenv("KUBECONFIG", ".")
 			})
 			It("should return an is a directory error", func() {
-				out, err := executeCommandWithLogger(checkOperatorCmd(mockRunPreflight), logr.Discard(), "quay.io/example/image:mytag")
+				out, err := executeCommandWithLogger(checkOperatorCmd(mockRunPreflightReturnNil), logr.Discard(), "quay.io/example/image:mytag")
 				Expect(err).To(HaveOccurred())
 				Expect(out).To(ContainSubstring(": is a directory"))
 			})
@@ -185,7 +185,7 @@ var _ = Describe("Check Operator", func() {
 		})
 
 		It("should succeed when all positional arg constraints and environment constraints are correct", func() {
-			err := checkOperatorPositionalArgs(checkOperatorCmd(mockRunPreflight), posArgs)
+			err := checkOperatorPositionalArgs(checkOperatorCmd(mockRunPreflightReturnNil), posArgs)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})

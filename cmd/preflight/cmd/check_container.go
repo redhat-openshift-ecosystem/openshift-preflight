@@ -1,8 +1,13 @@
 package cmd
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	rt "runtime"
 	"strings"
 
@@ -49,6 +54,14 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 
 	flags.Bool("insecure", false, "Use insecure protocol for the registry. Default is False. Cannot be used with submit.")
 	_ = viper.BindPFlag("insecure", flags.Lookup("insecure"))
+
+	flags.Bool("offline", false, "Intended to be used in disconnected environments and will tar artifacts used for submission,\n"+
+		"enabling other Red Hat managed tools/process to submit these artifacts at a later time.\n"+
+		"Cannot be used with submit.")
+	_ = viper.BindPFlag("offline", flags.Lookup("offline"))
+
+	// Make --submit mutually exclusive to --offline
+	checkContainerCmd.MarkFlagsMutuallyExclusive("submit", "offline")
 
 	// Make --submit mutually exclusive to --insecure
 	checkContainerCmd.MarkFlagsMutuallyExclusive("submit", "insecure")
@@ -116,7 +129,7 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 	// Run the  container check.
 	cmd.SilenceUsage = true
 
-	return runpreflight(
+	err = runpreflight(
 		ctx,
 		checkcontainer.Run,
 		cli.CheckConfig{
@@ -127,6 +140,46 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 		&runtime.ResultWriterFile{},
 		resultSubmitter,
 	)
+
+	if err != nil {
+		return err
+	}
+
+	// checking for offline flag, if present tar up the contents of the artifacts directory
+	if cfg.Offline {
+		src := artifactsWriter.Path()
+		var buf bytes.Buffer
+
+		// check to see if a tar file already exist to account for someone re-running
+		exists, err := artifactsWriter.Exists(check.DefaultArtifactsTarFileName)
+		if err != nil {
+			return fmt.Errorf("unable to check if tar already exists: %v", err)
+		}
+
+		// remove the tar file if it exists
+		if exists {
+			err = artifactsWriter.Remove(check.DefaultArtifactsTarFileName)
+			if err != nil {
+				return fmt.Errorf("unable to remove existing tar: %v", err)
+			}
+		}
+
+		// tar the directory
+		err = artifactsTar(ctx, src, &buf)
+		if err != nil {
+			return fmt.Errorf("unable to tar up artifacts directory: %v", err)
+		}
+
+		// writing the tar file to disk
+		_, err = artifactsWriter.WriteFile(check.DefaultArtifactsTarFileName, &buf)
+		if err != nil {
+			return fmt.Errorf("could not artifacts tar to artifacts dir: %w", err)
+		}
+
+		logger.Info("artifact tar written to disk", "filename", check.DefaultArtifactsTarFileName)
+	}
+
+	return nil
 }
 
 func checkContainerPositionalArgs(cmd *cobra.Command, args []string) error {
@@ -213,4 +266,76 @@ func generateContainerCheckOptions(cfg *runtime.Config) []container.Option {
 	}
 
 	return o
+}
+
+// artifactsTar takes a source path and a writer; a tar writer loops over the files in the source
+// directory, writes the appropriate header information and copies the file into the tar writer
+//
+//nolint:unparam // ctx is unused. Keep for future use.
+func artifactsTar(ctx context.Context, src string, w io.Writer) error {
+	// ensure the src actually exists before trying to tar it
+	if _, err := os.Stat(src); err != nil {
+		return fmt.Errorf("unable to tar files - %v", err.Error())
+	}
+
+	tw := tar.NewWriter(w)
+	defer tw.Close()
+
+	// getting a list of DirEntry's
+	files, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	// iterating over the list
+	for _, file := range files {
+		// ignoring directories and only processing files
+		if file.IsDir() {
+			continue
+		}
+
+		// getting the FileInfo from the DirEntry, account for errors with this call ie ErrNotExist
+		fileInfo, err := file.Info()
+		if err != nil {
+			return err
+		}
+
+		// continue on non-regular files
+		if !fileInfo.Mode().IsRegular() {
+			continue
+		}
+
+		// create a new dir/file header
+		header, err := tar.FileInfoHeader(fileInfo, fileInfo.Name())
+		if err != nil {
+			return err
+		}
+
+		// write the header
+		if err := tw.WriteHeader(header); err != nil {
+			return err
+		}
+
+		err = func() error {
+			// open files to tar
+			f, err := os.Open(filepath.Join(src, fileInfo.Name()))
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+
+			// copy file data into tar writer
+			if _, err := io.Copy(tw, f); err != nil {
+				return err
+			}
+
+			return nil
+		}()
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
