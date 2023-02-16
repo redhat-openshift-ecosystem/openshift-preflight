@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -19,7 +21,11 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/registry"
+	"github.com/google/go-containerregistry/pkg/v1/empty"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/random"
+	"github.com/google/go-containerregistry/pkg/v1/static"
+	"github.com/google/go-containerregistry/pkg/v1/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -28,14 +34,18 @@ var _ = Describe("Execute Checks tests", func() {
 	var src string
 	var engine CraneEngine
 	var testcontext context.Context
+	var s *httptest.Server
+	var u *url.URL
 	BeforeEach(func() {
 		// Set up a fake registry.
 		registryLogger := log.New(io.Discard, "", log.Ldate)
-		s := httptest.NewServer(registry.New(registry.Logger(registryLogger)))
+		s = httptest.NewServer(registry.New(registry.Logger(registryLogger)))
 		DeferCleanup(func() {
 			s.Close()
 		})
-		u, err := url.Parse(s.URL)
+
+		var err error
+		u, err = url.Parse(s.URL)
 		Expect(err).ToNot(HaveOccurred())
 
 		src = fmt.Sprintf("%s/test/crane", u.Host)
@@ -136,6 +146,75 @@ var _ = Describe("Execute Checks tests", func() {
 				engine.Image = "does.not/exist/anywhere:ever"
 				err := engine.ExecuteChecks(testcontext)
 				Expect(err).To(HaveOccurred())
+			})
+		})
+		Context("it is a bundle made with GNU tar layer", func() {
+			BeforeEach(func() {
+				var buf bytes.Buffer
+
+				err := writeTarball(&buf, []byte("mycontent"), "myfile", 10)
+				Expect(err).ToNot(HaveOccurred())
+
+				layer := static.NewLayer(buf.Bytes(), types.MediaType("application/vnd.docker.image.rootfs.diff.tar"))
+				img, err := mutate.AppendLayers(empty.Image, layer)
+				Expect(err).ToNot(HaveOccurred())
+
+				src = fmt.Sprintf("%s/test/crane", u.Host)
+
+				err = crane.Push(img, src)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			It("should just hang forever err and hash mean nothing", func() {
+				engine.IsBundle = true
+				err := engine.ExecuteChecks(testcontext)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(engine.results.CertificationHash).ToNot(BeEmpty())
+			})
+		})
+		Context("it is a bundle made with tar layer", func() {
+			BeforeEach(func() {
+				engine.IsBundle = true
+
+				var buf bytes.Buffer
+
+				err := writeTarball(&buf, []byte("mycontent"), "myfile", 0)
+				Expect(err).ToNot(HaveOccurred())
+
+				layer := static.NewLayer(buf.Bytes(), types.MediaType("application/vnd.docker.image.rootfs.diff.tar"))
+				img, err := mutate.AppendLayers(empty.Image, layer)
+				Expect(err).ToNot(HaveOccurred())
+
+				src = fmt.Sprintf("%s/test/crane", u.Host)
+
+				err = crane.Push(img, src)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			It("should succeed and generate a bundle hash", func() {
+				engine.IsBundle = true
+				err := engine.ExecuteChecks(testcontext)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(engine.results.CertificationHash).ToNot(BeEmpty())
+			})
+		})
+		Context("it is a bundle made and one of the layers is not a tar", func() {
+			BeforeEach(func() {
+				engine.IsBundle = true
+
+				want := []byte(`{"foo":"bar"}`)
+				layer := static.NewLayer(want, types.MediaType("application/json"))
+				img, err := mutate.AppendLayers(empty.Image, layer)
+				Expect(err).ToNot(HaveOccurred())
+
+				src = fmt.Sprintf("%s/test/crane", u.Host)
+
+				err = crane.Push(img, src)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			It("should throw an EOF error on untar", func() {
+				engine.IsBundle = true
+				err := engine.ExecuteChecks(testcontext)
+				Expect(err).To(HaveOccurred())
+				Expect(engine.results.CertificationHash).To(BeEmpty())
 			})
 		})
 	})
@@ -277,3 +356,39 @@ var _ = Describe("Check Name Queries", func() {
 		})
 	})
 })
+
+// writeTarball writes a tar archive to out with filename containing contents at the base path
+// with extra bytes written at the end of length extraBytes.
+// note: this should only be used as a helper function in tests
+func writeTarball(out io.Writer, contents []byte, filename string, extraBytes uint) error {
+	tw := tar.NewWriter(out)
+	defer tw.Close()
+
+	header := &tar.Header{
+		Typeflag: tar.TypeReg,
+		Name:     filename,
+		Size:     int64(len(contents)),
+		Mode:     420,
+		Format:   tar.FormatPAX,
+	}
+
+	err := tw.WriteHeader(header)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(tw, bytes.NewReader(contents))
+	if err != nil {
+		return err
+	}
+
+	if extraBytes > 0 {
+		extra := make([]byte, extraBytes)
+		_, err = out.Write(extra)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

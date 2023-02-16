@@ -18,7 +18,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -150,28 +149,27 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 
 	// export/flatten, and extract
 	logger.V(log.DBG).Info("exporting and flattening image")
-	wg := sync.WaitGroup{}
-	wg.Add(1)
 	r, w := io.Pipe()
 	go func() {
-		defer w.Close()
 		logger.V(log.DBG).Info("writing container filesystem", "outputDirectory", containerFSPath)
-		err = crane.Export(img, w)
-		if err != nil {
-			// TODO: Handle this error more effectively. Right now we rely on
-			// error handling in the logic to extract this export in a lower
-			// line, but we should probably exit early if the export encounters
-			// an error, which requires watching multiple error streams.
-			logger.Error(err, "unable to export and flatten container filesystem")
-		}
-		wg.Done()
+
+		// Close the writer with any errors encountered during
+		// extraction. These errors will be returned by the reader end
+		// on subsequent reads. If err == nil, the reader will return
+		// EOF.
+		w.CloseWithError(crane.Export(img, w))
 	}()
 
 	logger.V(log.DBG).Info("extracting container filesystem", "path", containerFSPath)
 	if err := untar(ctx, containerFSPath, r); err != nil {
 		return fmt.Errorf("failed to extract tarball: %v", err)
 	}
-	wg.Wait()
+
+	// explicitly discarding from the reader for cases where there is data in the reader after it sends an EOF
+	_, err = io.Copy(io.Discard, r)
+	if err != nil {
+		return fmt.Errorf("failed to drain io reader: %v", err)
+	}
 
 	reference, err := name.ParseReference(c.Image)
 	if err != nil {
