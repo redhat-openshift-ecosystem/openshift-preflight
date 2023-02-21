@@ -426,6 +426,41 @@ func untar(ctx context.Context, dst string, r io.Reader) error {
 	}
 }
 
+// writePaddedTarball writes a tar archive to out with filename containing contents at the base path
+// with extra bytes written at the end of length extraBytes+1.
+// note: this should only be used as a helper function in tests
+func writePaddedTarball(out io.Writer, contents []byte, filename string, extraBytes uint) error {
+	tw := tar.NewWriter(out)
+	defer tw.Close()
+
+	header := &tar.Header{
+		Typeflag: tar.TypeReg,
+		Name:     filename,
+		Size:     int64(len(contents)),
+		Mode:     420,
+		Format:   tar.FormatPAX,
+	}
+
+	err := tw.WriteHeader(header)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(tw, bytes.NewReader(contents))
+	if err != nil {
+		return err
+	}
+
+	extraBytes += 1
+	extra := make([]byte, extraBytes)
+	_, err = out.Write(extra)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // writeCertImage takes imageRef and writes it to disk as JSON representing a pyxis.CertImage
 // struct. The file is written at path certification.DefaultCertImageFilename.
 //
