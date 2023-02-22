@@ -13,6 +13,11 @@
 This project is in active and rapid development! Many facets of this project are
 subject to change, and some features are not fully implemented.
 
+## Certification Workflow Guide
+
+For the complete container and operator bundle certification workflow instructions, please reference our 
+[official certification documentation](https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.56/html/red_hat_software_certification_workflow_guide/index).
+
 ## Requirements
 
 For running the Preflight binary, the host or VM must have at least RHEL 8.5, CentOS 8.5 or Fedora 35 installed.
@@ -138,30 +143,21 @@ preflight version 0.0.0 <commit: 2d3bb671bff8a95d385621382f31215234877d44>
 
 [releases_link]:https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases
 
-## Preflight Testing
+## Unit Tests
+Execute the below command if you want to run all the unit tests in this repository.
 
-For e2e testing, run
-
-```bash
-go test -v ./test/e2e/
-```
-
-or run
-
-```bash
-make test-e2e
-```
-
-For unit testing, run
-
-```bash
-go test -v `go list ./... | grep -v e2e`
-```
-
-or run
-
+Run all the unit tests:
 ```bash
 make test
+```
+
+## End-to-end Tests
+Execute the below command if you want to run all the end-to-end tests in this repository. **Note:** Running these test
+requires a running OpenShift cluster.
+
+Run all the unit tests:
+```bash
+make test-e2e
 ```
 
 ## How to Contribute
