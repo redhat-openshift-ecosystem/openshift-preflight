@@ -11,8 +11,8 @@ require (
 	github.com/knqyf263/go-rpmdb v0.0.0-20220629110411-9a3bd2ebb923
 	github.com/onsi/ginkgo/v2 v2.8.1
 	github.com/onsi/gomega v1.27.1
-	github.com/openshift/api v0.0.0-20210910062324-a41d3573a3ba
-	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
+	github.com/openshift/api v0.0.0-20230223193310-d964c7a58d75
+	github.com/openshift/client-go v0.0.0-20230120202327-72f107311084
 	github.com/operator-framework/api v0.16.0
 	github.com/operator-framework/operator-manifest-tools v0.2.2
 	github.com/redhat-openshift-ecosystem/ocp-olm-catalog-validator v0.1.0
@@ -57,7 +57,7 @@ require (
 	github.com/google/cel-go v0.12.6 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/gofuzz v1.1.0 // indirect
+	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
