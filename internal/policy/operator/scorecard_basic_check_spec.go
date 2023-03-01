@@ -57,8 +57,8 @@ func (p *ScorecardBasicSpecCheck) Metadata() check.Metadata {
 	return check.Metadata{
 		Description:      "Check to make sure that all CRs have a spec block.",
 		Level:            "best",
-		KnowledgeBaseURL: "https://sdk.operatorframework.io/docs/advanced-topics/scorecard/scorecard/#overview", // Placeholder
-		CheckURL:         "https://sdk.operatorframework.io/docs/advanced-topics/scorecard/scorecard/#basic-test-suite",
+		KnowledgeBaseURL: "https://sdk.operatorframework.io/docs/testing-operators/scorecard/#overview",
+		CheckURL:         "https://sdk.operatorframework.io/docs/testing-operators/scorecard/#basic-test-suite",
 	}
 }
 
