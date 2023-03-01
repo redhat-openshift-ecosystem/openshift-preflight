@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
+	// This pulls in the sqlite dependency
+	_ "github.com/glebarez/go-sqlite"
 )
 
 // GetPackageList returns the list of packages in the rpm database from either
