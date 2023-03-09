@@ -44,6 +44,7 @@ func rootCmd() *cobra.Command {
 	rootCmd.AddCommand(listChecksCmd())
 	rootCmd.AddCommand(runtimeAssetsCmd())
 	rootCmd.AddCommand(supportCmd())
+	rootCmd.AddCommand(experimentalCmd())
 
 	return rootCmd
 }
