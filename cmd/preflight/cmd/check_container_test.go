@@ -99,6 +99,7 @@ certification_project_id: mycertid`
 		Context("and the flag is set properly", func() {
 			BeforeEach(func() {
 				viper.Set("certification_project_id", "123456789")
+				DeferCleanup(viper.Set, "certification_project_id", "")
 			})
 			It("should not change the flag value", func() {
 				err := validateCertificationProjectID(checkContainerCmd(), []string{"foo"})
@@ -109,6 +110,7 @@ certification_project_id: mycertid`
 		Context("and a valid ospid format is provided", func() {
 			BeforeEach(func() {
 				viper.Set("certification_project_id", "ospid-123456789")
+				DeferCleanup(viper.Set, "certification_project_id", "")
 			})
 			It("should strip ospid- from the flag value", func() {
 				err := validateCertificationProjectID(checkContainerCmd(), []string{"foo"})
@@ -119,6 +121,7 @@ certification_project_id: mycertid`
 		Context("and a legacy format with ospid is provided", func() {
 			BeforeEach(func() {
 				viper.Set("certification_project_id", "ospid-62423-f26c346-6cc1dc7fae92")
+				DeferCleanup(viper.Set, "certification_project_id", "")
 			})
 			It("should throw an error", func() {
 				err := validateCertificationProjectID(checkContainerCmd(), []string{"foo"})
@@ -128,6 +131,7 @@ certification_project_id: mycertid`
 		Context("and a legacy format without ospid is provided", func() {
 			BeforeEach(func() {
 				viper.Set("certification_project_id", "62423-f26c346-6cc1dc7fae92")
+				DeferCleanup(viper.Set, "certification_project_id", "")
 			})
 			It("should throw an error", func() {
 				err := validateCertificationProjectID(checkContainerCmd(), []string{"foo"})
