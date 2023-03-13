@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	rt "runtime"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/container"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
@@ -22,7 +24,10 @@ import (
 
 var submit bool
 
-func checkContainerCmd() *cobra.Command {
+// runPreflight is introduced to make testing of this command possible, it has the same method signature as cli.RunPreflight.
+type runPreflight func(context.Context, func(ctx context.Context) (certification.Results, error), cli.CheckConfig, formatters.ResponseFormatter, lib.ResultWriter, lib.ResultSubmitter) error
+
+func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 	checkContainerCmd := &cobra.Command{
 		Use:   "container",
 		Short: "Run checks for a container",
@@ -31,7 +36,9 @@ func checkContainerCmd() *cobra.Command {
 		// this fmt.Sprintf is in place to keep spacing consistent with cobras two spaces that's used in: Usage, Flags, etc
 		Example: fmt.Sprintf("  %s", "preflight check container quay.io/repo-name/container-name:version"),
 		PreRunE: validateCertificationProjectID,
-		RunE:    checkContainerRunE,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return checkContainerRunE(cmd, args, runpreflight)
+		},
 	}
 
 	flags := checkContainerCmd.Flags()
@@ -66,7 +73,7 @@ func checkContainerCmd() *cobra.Command {
 }
 
 // checkContainerRunE executes checkContainer using the user args to inform the execution.
-func checkContainerRunE(cmd *cobra.Command, args []string) error {
+func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPreflight) error {
 	ctx := cmd.Context()
 	logger, err := logr.FromContext(ctx)
 	if err != nil {
@@ -107,7 +114,8 @@ func checkContainerRunE(cmd *cobra.Command, args []string) error {
 
 	// Run the  container check.
 	cmd.SilenceUsage = true
-	return cli.RunPreflight(
+
+	return runpreflight(
 		ctx,
 		checkcontainer.Run,
 		cli.CheckConfig{
