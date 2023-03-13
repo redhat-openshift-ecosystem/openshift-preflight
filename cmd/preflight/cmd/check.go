@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -21,7 +23,7 @@ func checkCmd() *cobra.Command {
 	_ = viper.BindPFlag("artifacts", checkCmd.PersistentFlags().Lookup("artifacts"))
 
 	checkCmd.AddCommand(checkOperatorCmd())
-	checkCmd.AddCommand(checkContainerCmd())
+	checkCmd.AddCommand(checkContainerCmd(cli.RunPreflight))
 
 	return checkCmd
 }

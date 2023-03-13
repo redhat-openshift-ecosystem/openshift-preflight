@@ -2,9 +2,16 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"path/filepath"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/viper"
@@ -16,7 +23,7 @@ var _ = Describe("Check Container Command", func() {
 	Context("when running the check container subcommand", func() {
 		Context("With all of the required parameters", func() {
 			It("should reach the core logic, but throw an error because of the placeholder values for the container image", func() {
-				_, err := executeCommand(checkContainerCmd(), "example.com/example/image:mytag")
+				_, err := executeCommand(checkContainerCmd(mockRunPreflight), "example.com/example/image:mytag")
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -25,21 +32,21 @@ var _ = Describe("Check Container Command", func() {
 	Context("When validating check container arguments and flags", func() {
 		Context("and the user provided more than 1 positional arg", func() {
 			It("should fail to run", func() {
-				_, err := executeCommand(checkContainerCmd(), "foo", "bar")
+				_, err := executeCommand(checkContainerCmd(mockRunPreflight), "foo", "bar")
 				Expect(err).To(HaveOccurred())
 			})
 		})
 
 		Context("and the user provided less than 1 positional arg", func() {
 			It("should fail to run", func() {
-				_, err := executeCommand(checkContainerCmd())
+				_, err := executeCommand(checkContainerCmd(mockRunPreflight))
 				Expect(err).To(HaveOccurred())
 			})
 		})
 
 		DescribeTable("and the user has enabled the submit flag",
 			func(errString string, args []string) {
-				out, err := executeCommand(checkContainerCmd(), args...)
+				out, err := executeCommand(checkContainerCmd(mockRunPreflight), args...)
 				Expect(err).To(HaveOccurred())
 				Expect(out).To(ContainSubstring(errString))
 			},
@@ -64,7 +71,7 @@ var _ = Describe("Check Container Command", func() {
 				It("should still execute with no error", func() {
 					submit = true
 
-					err := checkContainerPositionalArgs(checkContainerCmd(), []string{"foo"})
+					err := checkContainerPositionalArgs(checkContainerCmd(mockRunPreflight), []string{"foo"})
 					Expect(err).ToNot(HaveOccurred())
 					Expect(viper.GetString("pyxis_api_token")).To(Equal("tokenid"))
 					Expect(viper.GetString("certification_project_id")).To(Equal("certid"))
@@ -86,7 +93,7 @@ certification_project_id: mycertid`
 					initConfig()
 					submit = true
 
-					err := checkContainerPositionalArgs(checkContainerCmd(), []string{"foo"})
+					err := checkContainerPositionalArgs(checkContainerCmd(mockRunPreflight), []string{"foo"})
 					Expect(err).ToNot(HaveOccurred())
 					Expect(viper.GetString("pyxis_api_token")).To(Equal("mytoken"))
 					Expect(viper.GetString("certification_project_id")).To(Equal("mycertid"))
@@ -102,7 +109,7 @@ certification_project_id: mycertid`
 				DeferCleanup(viper.Set, "certification_project_id", "")
 			})
 			It("should not change the flag value", func() {
-				err := validateCertificationProjectID(checkContainerCmd(), []string{"foo"})
+				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflight), []string{"foo"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(viper.GetString("certification_project_id")).To(Equal("123456789"))
 			})
@@ -113,7 +120,7 @@ certification_project_id: mycertid`
 				DeferCleanup(viper.Set, "certification_project_id", "")
 			})
 			It("should strip ospid- from the flag value", func() {
-				err := validateCertificationProjectID(checkContainerCmd(), []string{"foo"})
+				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflight), []string{"foo"})
 				Expect(err).ToNot(HaveOccurred())
 				Expect(viper.GetString("certification_project_id")).To(Equal("123456789"))
 			})
@@ -124,7 +131,7 @@ certification_project_id: mycertid`
 				DeferCleanup(viper.Set, "certification_project_id", "")
 			})
 			It("should throw an error", func() {
-				err := validateCertificationProjectID(checkContainerCmd(), []string{"foo"})
+				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflight), []string{"foo"})
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -134,9 +141,22 @@ certification_project_id: mycertid`
 				DeferCleanup(viper.Set, "certification_project_id", "")
 			})
 			It("should throw an error", func() {
-				err := validateCertificationProjectID(checkContainerCmd(), []string{"foo"})
+				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflight), []string{"foo"})
 				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
+
+	Context("when running the check container subcommand with a logger provided", func() {
+		Context("with all of the required parameters", func() {
+			It("should reach the core logic, and execute the mocked RunPreflight", func() {
+				_, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflight), logr.Discard(), "example.com/example/image:mytag")
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+	})
 })
+
+func mockRunPreflight(context.Context, func(ctx context.Context) (certification.Results, error), cli.CheckConfig, formatters.ResponseFormatter, lib.ResultWriter, lib.ResultSubmitter) error {
+	return nil
+}
