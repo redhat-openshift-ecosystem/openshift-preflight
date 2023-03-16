@@ -19,7 +19,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func checkOperatorCmd() *cobra.Command {
+func checkOperatorCmd(runpreflight runPreflight) *cobra.Command {
 	checkOperatorCmd := &cobra.Command{
 		Use:   "operator",
 		Short: "Run checks for an Operator",
@@ -27,7 +27,9 @@ func checkOperatorCmd() *cobra.Command {
 		Args:  checkOperatorPositionalArgs,
 		// this fmt.Sprintf is in place to keep spacing consistent with cobras two spaces that's used in: Usage, Flags, etc
 		Example: fmt.Sprintf("  %s", "preflight check operator quay.io/repo-name/operator-bundle:version"),
-		RunE:    checkOperatorRunE,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return checkOperatorRunE(cmd, args, runpreflight)
+		},
 	}
 	checkOperatorCmd.Flags().String("namespace", "", "The namespace to use when running OperatorSDK Scorecard. (env: PFLT_NAMESPACE)")
 	_ = viper.BindPFlag("namespace", checkOperatorCmd.Flags().Lookup("namespace"))
@@ -71,7 +73,7 @@ func ensureIndexImageConfigIsSet() error {
 }
 
 // checkOperatorRunE executes checkOperator using the user args to inform the execution.
-func checkOperatorRunE(cmd *cobra.Command, args []string) error {
+func checkOperatorRunE(cmd *cobra.Command, args []string, runpreflight runPreflight) error {
 	ctx := cmd.Context()
 	logger, err := logr.FromContext(ctx)
 	if err != nil {
@@ -114,7 +116,7 @@ func checkOperatorRunE(cmd *cobra.Command, args []string) error {
 	checkoperator := operator.NewCheck(operatorImage, cfg.IndexImage, kubeconfig, opts...)
 
 	cmd.SilenceUsage = true
-	return cli.RunPreflight(
+	return runpreflight(
 		ctx,
 		checkoperator.Run,
 		cli.CheckConfig{
