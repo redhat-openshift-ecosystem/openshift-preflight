@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -159,4 +160,8 @@ certification_project_id: mycertid`
 
 func mockRunPreflight(context.Context, func(ctx context.Context) (certification.Results, error), cli.CheckConfig, formatters.ResponseFormatter, lib.ResultWriter, lib.ResultSubmitter) error {
 	return nil
+}
+
+func mockRunPreflightReturnErr(context.Context, func(ctx context.Context) (certification.Results, error), cli.CheckConfig, formatters.ResponseFormatter, lib.ResultWriter, lib.ResultSubmitter) error {
+	return errors.New("random error")
 }

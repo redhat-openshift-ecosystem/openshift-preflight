@@ -22,7 +22,7 @@ func checkCmd() *cobra.Command {
 	checkCmd.PersistentFlags().String("artifacts", "", "Where check-specific artifacts will be written. (env: PFLT_ARTIFACTS)")
 	_ = viper.BindPFlag("artifacts", checkCmd.PersistentFlags().Lookup("artifacts"))
 
-	checkCmd.AddCommand(checkOperatorCmd())
+	checkCmd.AddCommand(checkOperatorCmd(cli.RunPreflight))
 	checkCmd.AddCommand(checkContainerCmd(cli.RunPreflight))
 
 	return checkCmd
