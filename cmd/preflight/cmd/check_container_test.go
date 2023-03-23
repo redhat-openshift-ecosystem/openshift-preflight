@@ -11,11 +11,11 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/viper"
 )
 
 var _ = Describe("Check Container Command", func() {
@@ -74,8 +74,8 @@ var _ = Describe("Check Container Command", func() {
 
 					err := checkContainerPositionalArgs(checkContainerCmd(mockRunPreflight), []string{"foo"})
 					Expect(err).ToNot(HaveOccurred())
-					Expect(viper.GetString("pyxis_api_token")).To(Equal("tokenid"))
-					Expect(viper.GetString("certification_project_id")).To(Equal("certid"))
+					Expect(viper.Instance().GetString("pyxis_api_token")).To(Equal("tokenid"))
+					Expect(viper.Instance().GetString("certification_project_id")).To(Equal("certid"))
 				})
 			})
 			When("a config file is used", func() {
@@ -86,7 +86,7 @@ certification_project_id: mycertid`
 					Expect(err).ToNot(HaveOccurred())
 					err = os.WriteFile(filepath.Join(tempDir, "config.yaml"), bytes.NewBufferString(config).Bytes(), 0o644)
 					Expect(err).ToNot(HaveOccurred())
-					viper.AddConfigPath(tempDir)
+					viper.Instance().AddConfigPath(tempDir)
 					DeferCleanup(os.RemoveAll, tempDir)
 				})
 				It("should still execute with no error", func() {
@@ -96,8 +96,8 @@ certification_project_id: mycertid`
 
 					err := checkContainerPositionalArgs(checkContainerCmd(mockRunPreflight), []string{"foo"})
 					Expect(err).ToNot(HaveOccurred())
-					Expect(viper.GetString("pyxis_api_token")).To(Equal("mytoken"))
-					Expect(viper.GetString("certification_project_id")).To(Equal("mycertid"))
+					Expect(viper.Instance().GetString("pyxis_api_token")).To(Equal("mytoken"))
+					Expect(viper.Instance().GetString("certification_project_id")).To(Equal("mycertid"))
 				})
 			})
 		})
@@ -106,30 +106,30 @@ certification_project_id: mycertid`
 	Context("When validating the certification-project-id flag", func() {
 		Context("and the flag is set properly", func() {
 			BeforeEach(func() {
-				viper.Set("certification_project_id", "123456789")
-				DeferCleanup(viper.Set, "certification_project_id", "")
+				viper.Instance().Set("certification_project_id", "123456789")
+				DeferCleanup(viper.Instance().Set, "certification_project_id", "")
 			})
 			It("should not change the flag value", func() {
 				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflight), []string{"foo"})
 				Expect(err).ToNot(HaveOccurred())
-				Expect(viper.GetString("certification_project_id")).To(Equal("123456789"))
+				Expect(viper.Instance().GetString("certification_project_id")).To(Equal("123456789"))
 			})
 		})
 		Context("and a valid ospid format is provided", func() {
 			BeforeEach(func() {
-				viper.Set("certification_project_id", "ospid-123456789")
-				DeferCleanup(viper.Set, "certification_project_id", "")
+				viper.Instance().Set("certification_project_id", "ospid-123456789")
+				DeferCleanup(viper.Instance().Set, "certification_project_id", "")
 			})
 			It("should strip ospid- from the flag value", func() {
 				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflight), []string{"foo"})
 				Expect(err).ToNot(HaveOccurred())
-				Expect(viper.GetString("certification_project_id")).To(Equal("123456789"))
+				Expect(viper.Instance().GetString("certification_project_id")).To(Equal("123456789"))
 			})
 		})
 		Context("and a legacy format with ospid is provided", func() {
 			BeforeEach(func() {
-				viper.Set("certification_project_id", "ospid-62423-f26c346-6cc1dc7fae92")
-				DeferCleanup(viper.Set, "certification_project_id", "")
+				viper.Instance().Set("certification_project_id", "ospid-62423-f26c346-6cc1dc7fae92")
+				DeferCleanup(viper.Instance().Set, "certification_project_id", "")
 			})
 			It("should throw an error", func() {
 				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflight), []string{"foo"})
@@ -138,8 +138,8 @@ certification_project_id: mycertid`
 		})
 		Context("and a legacy format without ospid is provided", func() {
 			BeforeEach(func() {
-				viper.Set("certification_project_id", "62423-f26c346-6cc1dc7fae92")
-				DeferCleanup(viper.Set, "certification_project_id", "")
+				viper.Instance().Set("certification_project_id", "62423-f26c346-6cc1dc7fae92")
+				DeferCleanup(viper.Instance().Set, "certification_project_id", "")
 			})
 			It("should throw an error", func() {
 				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflight), []string{"foo"})

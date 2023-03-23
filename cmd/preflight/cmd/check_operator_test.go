@@ -7,7 +7,8 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/viper"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 )
 
 var _ = Describe("Check Operator", func() {
@@ -57,8 +58,8 @@ var _ = Describe("Check Operator", func() {
 
 		Context("With all of the required parameters", func() {
 			BeforeEach(func() {
-				DeferCleanup(viper.Set, "indexImage", viper.GetString("indexImage"))
-				viper.Set("indexImage", "foo")
+				DeferCleanup(viper.Instance().Set, "indexImage", viper.Instance().GetString("indexImage"))
+				viper.Instance().Set("indexImage", "foo")
 				if val, isSet := os.LookupEnv("KUBECONFIG"); isSet {
 					DeferCleanup(os.Setenv, "KUBECONFIG", val)
 				} else {
@@ -90,8 +91,8 @@ var _ = Describe("Check Operator", func() {
 
 		Context("With an invalid KUBECONFIG file location", func() {
 			BeforeEach(func() {
-				DeferCleanup(viper.Set, "indexImage", viper.GetString("indexImage"))
-				viper.Set("indexImage", "foo")
+				DeferCleanup(viper.Instance().Set, "indexImage", viper.Instance().GetString("indexImage"))
+				viper.Instance().Set("indexImage", "foo")
 				if val, isSet := os.LookupEnv("KUBECONFIG"); isSet {
 					DeferCleanup(os.Setenv, "KUBECONFIG", val)
 				} else {
@@ -109,8 +110,8 @@ var _ = Describe("Check Operator", func() {
 
 		Context("With a KUBECONFIG file location that is a directory", func() {
 			BeforeEach(func() {
-				DeferCleanup(viper.Set, "indexImage", viper.GetString("indexImage"))
-				viper.Set("indexImage", "foo")
+				DeferCleanup(viper.Instance().Set, "indexImage", viper.Instance().GetString("indexImage"))
+				viper.Instance().Set("indexImage", "foo")
 				if val, isSet := os.LookupEnv("KUBECONFIG"); isSet {
 					DeferCleanup(os.Setenv, "KUBECONFIG", val)
 				} else {
@@ -151,8 +152,8 @@ var _ = Describe("Check Operator", func() {
 
 		Context("specifically, PFLT_INDEXIMAGE", func() {
 			BeforeEach(func() {
-				DeferCleanup(viper.Set, "indexImage", viper.GetString("indexImage"))
-				viper.Set("indexImage", "foo")
+				DeferCleanup(viper.Instance().Set, "indexImage", viper.Instance().GetString("indexImage"))
+				viper.Instance().Set("indexImage", "foo")
 			})
 			It("should not encounter an error if the value is set", func() {
 				err := ensureIndexImageConfigIsSet()
@@ -160,7 +161,7 @@ var _ = Describe("Check Operator", func() {
 			})
 
 			It("should encounter an error if the value is not set", func() {
-				viper.Set("indexImage", "")
+				viper.Instance().Set("indexImage", "")
 				err := ensureIndexImageConfigIsSet()
 				Expect(err).To(HaveOccurred())
 			})
@@ -173,8 +174,8 @@ var _ = Describe("Check Operator", func() {
 		// to prevent trying to run the entire RunE func in previous cases.
 		posArgs := []string{"firstparam"}
 		BeforeEach(func() {
-			DeferCleanup(viper.Set, "indexImage", viper.GetString("indexImage"))
-			viper.Set("indexImage", "foo")
+			DeferCleanup(viper.Instance().Set, "indexImage", viper.Instance().GetString("indexImage"))
+			viper.Instance().Set("indexImage", "foo")
 			if val, isSet := os.LookupEnv("KUBECONIFG"); isSet {
 				DeferCleanup(os.Setenv, "KUBECONFIG", val)
 			} else {

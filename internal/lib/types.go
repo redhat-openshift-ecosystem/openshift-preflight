@@ -12,12 +12,12 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/spf13/viper"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 )
 
 // ResultWriter defines methods associated with writing check results.
@@ -232,9 +232,9 @@ func (s *NoopSubmitter) SetReason(reason string) {
 func BuildConnectURL(projectID string) string {
 	connectURL := fmt.Sprintf("https://connect.redhat.com/projects/%s", projectID)
 
-	pyxisEnv := viper.GetString("pyxis_env")
+	pyxisEnv := viper.Instance().GetString("pyxis_env")
 	if len(pyxisEnv) > 0 && pyxisEnv != "prod" {
-		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s", viper.GetString("pyxis_env"), projectID)
+		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s", viper.Instance().GetString("pyxis_env"), projectID)
 	}
 
 	return connectURL

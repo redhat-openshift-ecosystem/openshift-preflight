@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 func checkCmd() *cobra.Command {
@@ -14,6 +14,7 @@ func checkCmd() *cobra.Command {
 		Long:  "This command will allow you to execute the Red Hat Certification tests for an operator or a container.",
 	}
 
+	viper := viper.Instance()
 	checkCmd.PersistentFlags().StringP("docker-config", "d", "", "Path to docker config.json file. This value is optional for publicly accessible images.\n"+
 		"However, it is strongly encouraged for public Docker Hub images,\n"+
 		"due to the rate limit imposed for unauthenticated requests. (env: PFLT_DOCKERCONFIG)")

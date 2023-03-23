@@ -11,12 +11,12 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/operator"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 func checkOperatorCmd(runpreflight runPreflight) *cobra.Command {
@@ -31,6 +31,8 @@ func checkOperatorCmd(runpreflight runPreflight) *cobra.Command {
 			return checkOperatorRunE(cmd, args, runpreflight)
 		},
 	}
+
+	viper := viper.Instance()
 	checkOperatorCmd.Flags().String("namespace", "", "The namespace to use when running OperatorSDK Scorecard. (env: PFLT_NAMESPACE)")
 	_ = viper.BindPFlag("namespace", checkOperatorCmd.Flags().Lookup("namespace"))
 
@@ -65,7 +67,7 @@ func ensureKubeconfigIsSet() error {
 // ensureIndexImageConfigIsSet ensures that the PFLT_INDEXIMAGE environment variable has
 // a value.
 func ensureIndexImageConfigIsSet() error {
-	if catalogImage := viper.GetString("indexImage"); len(catalogImage) == 0 {
+	if catalogImage := viper.Instance().GetString("indexImage"); len(catalogImage) == 0 {
 		return fmt.Errorf("environment variable PFLT_INDEXIMAGE could not be found")
 	}
 
@@ -84,7 +86,7 @@ func checkOperatorRunE(cmd *cobra.Command, args []string, runpreflight runPrefli
 	operatorImage := args[0]
 
 	// Render the Viper configuration as a runtime.Config
-	cfg, err := runtime.NewConfigFrom(*viper.GetViper())
+	cfg, err := runtime.NewConfigFrom(*viper.Instance())
 	if err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
