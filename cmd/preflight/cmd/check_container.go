@@ -14,12 +14,12 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 )
 
 var submit bool
@@ -43,6 +43,7 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 
 	flags := checkContainerCmd.Flags()
 
+	viper := viper.Instance()
 	flags.BoolVarP(&submit, "submit", "s", false, "submit check container results to Red Hat")
 	_ = viper.BindPFlag("submit", flags.Lookup("submit"))
 
@@ -84,7 +85,7 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 	containerImage := args[0]
 
 	// Render the Viper configuration as a runtime.Config
-	cfg, err := runtime.NewConfigFrom(*viper.GetViper())
+	cfg, err := runtime.NewConfigFrom(*viper.Instance())
 	if err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
@@ -142,6 +143,7 @@ func checkContainerPositionalArgs(cmd *cobra.Command, args []string) error {
 	})
 
 	// --submit was specified
+	viper := viper.Instance()
 	if submit {
 		// If the flag is not marked as changed AND viper hasn't gotten it from environment, it's an error
 		if !cmd.Flag("certification-project-id").Changed && !viper.IsSet("certification_project_id") {
@@ -171,6 +173,7 @@ func checkContainerPositionalArgs(cmd *cobra.Command, args []string) error {
 // validateCertificationProjectID validates that the certification project id is in the proper format
 // and throws an error if the value provided is in a legacy format that is not usable to query pyxis
 func validateCertificationProjectID(cmd *cobra.Command, args []string) error {
+	viper := viper.Instance()
 	certificationProjectID := viper.GetString("certification_project_id")
 	// splitting the certification project id into parts. if there are more than 2 elements in the array,
 	// we know they inputted a legacy project id, which can not be used to query pyxis

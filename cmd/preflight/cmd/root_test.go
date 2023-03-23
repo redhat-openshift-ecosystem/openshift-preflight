@@ -8,12 +8,12 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // executeCommand is used for cobra command testing. It is effectively what's seen here:
@@ -75,10 +75,10 @@ var _ = Describe("cmd package utility functions", func() {
 			Context("and no envvars are set", func() {
 				It("should have defaults set correctly", func() {
 					initConfig()
-					Expect(viper.GetString("namespace")).To(Equal(DefaultNamespace))
-					Expect(viper.GetString("artifacts")).To(Equal(artifacts.DefaultArtifactsDir))
-					Expect(viper.GetString("logfile")).To(Equal(DefaultLogFile))
-					Expect(viper.GetString("loglevel")).To(Equal(DefaultLogLevel))
+					Expect(viper.Instance().GetString("namespace")).To(Equal(DefaultNamespace))
+					Expect(viper.Instance().GetString("artifacts")).To(Equal(artifacts.DefaultArtifactsDir))
+					Expect(viper.Instance().GetString("logfile")).To(Equal(DefaultLogFile))
+					Expect(viper.Instance().GetString("loglevel")).To(Equal(DefaultLogLevel))
 				})
 			})
 			Context("and envvars are set", func() {
@@ -88,10 +88,10 @@ var _ = Describe("cmd package utility functions", func() {
 				})
 				It("should have overrides in place", func() {
 					initConfig()
-					Expect(viper.GetString("namespace")).To(Equal(DefaultNamespace))
-					Expect(viper.GetString("artifacts")).To(Equal(artifacts.DefaultArtifactsDir))
-					Expect(viper.GetString("logfile")).To(Equal("/tmp/foo.log"))
-					Expect(viper.GetString("loglevel")).To(Equal("trace"))
+					Expect(viper.Instance().GetString("namespace")).To(Equal(DefaultNamespace))
+					Expect(viper.Instance().GetString("artifacts")).To(Equal(artifacts.DefaultArtifactsDir))
+					Expect(viper.Instance().GetString("logfile")).To(Equal("/tmp/foo.log"))
+					Expect(viper.Instance().GetString("loglevel")).To(Equal("trace"))
 				})
 				AfterEach(func() {
 					os.Unsetenv("PFLT_LOGFILE")
@@ -118,7 +118,7 @@ var _ = Describe("cmd package utility functions", func() {
 				DeferCleanup(os.RemoveAll, tmpDir)
 			})
 			It("should create the logfile", func() {
-				viper.Set("logfile", filepath.Join(tmpDir, "foo.log"))
+				viper.Instance().Set("logfile", filepath.Join(tmpDir, "foo.log"))
 				Expect(cmd.ExecuteContext(context.TODO())).To(Succeed())
 				_, err := os.Stat(filepath.Join(tmpDir, "foo.log"))
 				Expect(err).ToNot(HaveOccurred())

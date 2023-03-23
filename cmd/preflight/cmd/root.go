@@ -7,13 +7,14 @@ import (
 	"os"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
 	"github.com/bombsimon/logrusr/v4"
 	"github.com/go-logr/logr"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	spfviper "github.com/spf13/viper"
 )
 
 var configFileUsed bool
@@ -32,6 +33,7 @@ func rootCmd() *cobra.Command {
 		PersistentPreRun: preRunConfig,
 	}
 
+	viper := viper.Instance()
 	rootCmd.PersistentFlags().String("logfile", "", "Where the execution logfile will be written. (env: PFLT_LOGFILE)")
 	_ = viper.BindPFlag("logfile", rootCmd.PersistentFlags().Lookup("logfile"))
 
@@ -51,6 +53,7 @@ func Execute() error {
 }
 
 func initConfig() {
+	viper := viper.Instance()
 	// set up ENV var support
 	viper.SetEnvPrefix("pflt")
 	viper.AutomaticEnv()
@@ -62,7 +65,7 @@ func initConfig() {
 
 	configFileUsed = true
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		if _, ok := err.(spfviper.ConfigFileNotFoundError); ok {
 			configFileUsed = false
 		}
 	}
@@ -82,6 +85,7 @@ func initConfig() {
 
 // preRunConfig is used by cobra.PreRun in all non-root commands to load all necessary configurations
 func preRunConfig(cmd *cobra.Command, args []string) {
+	viper := viper.Instance()
 	l := logrus.New()
 	// set up logging
 	logname := viper.GetString("logfile")
