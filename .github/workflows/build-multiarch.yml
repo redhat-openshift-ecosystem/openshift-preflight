@@ -19,6 +19,10 @@ on:
       tag:
         required: true
         type: string
+      sign:
+        type: boolean
+        default: false
+        required: false
     secrets:
       registry:
         required: true
@@ -26,13 +30,29 @@ on:
         required: true
       password:
         required: true
+      token:
+        required: false
+        description: "The token used for cosign. Typically GITHUB_TOKEN within GitHub Actions."
+        
         
 
 jobs:
   create-and-push-multiarch-manifest:
+    permissions:
+      contents: read
+      packages: write
+      # This is used to complete the identity challenge
+      # with sigstore/fulcio when running outside of PRs.
+      id-token: write
     name: create and push a multiarch manifest to the repo
     runs-on: ubuntu-latest
     steps:
+      - name: Install cosign
+        if: ${{ inputs.sign == true && github.event.release.published }}
+        uses: sigstore/cosign-installer@f3c664df7af409cb4873aa5068053ba9d61a57b6 #v2.6.0
+        with:
+          cosign-release: 'v2.0.0'
+
       # Authenticate to container image registry to push the image
       - name: Podman Login
         uses: redhat-actions/podman-login@v1
@@ -50,5 +70,22 @@ jobs:
           buildah manifest add ${{ inputs.name }} ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}-linux-s390x
 
       - name: Push manifest
+        id: push-manifest
         run: |
-            podman manifest push ${{ inputs.name }} ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}  --all
+            podman manifest push --digestfile imagedigest ${{ inputs.name }} ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}  --all
+            echo "digest=$(cat imagedigest)" | tee -a $GITHUB_OUTPUT
+
+      - name: Sign the published manifest
+        # only sign if release is published, not for ghactions branch push
+        # which is used for testing and development.
+        if: ${{ inputs.sign == true && github.event.release.published }}
+        run: |
+          cosign sign --yes --recursive ${{ secrets.registry }}/${{ inputs.name }}@${{ steps.push-manifest.outputs.digest }}
+
+      - name: Verify the image signature
+        if: ${{ inputs.sign == true && github.event.release.published }}
+        run: |
+          cosign verify \
+            --certificate-identity https://github.com/redhat-openshift-ecosystem/openshift-preflight/.github/workflows/build-multiarch.yml@refs/tags/${{ inputs.tag }} \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}

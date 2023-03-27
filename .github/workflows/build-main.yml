@@ -99,6 +99,7 @@ jobs:
     with:
       name: ${{ needs.build-main.outputs.imageName }}
       tag: ${{ needs.build-main.outputs.imageVersion }}
+      sign: false # do not sign images built on main
     secrets:
       registry: ${{ secrets.IMAGE_REGISTRY }}
       user: ${{ secrets.REGISTRY_USER }}
