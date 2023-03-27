@@ -164,6 +164,18 @@ make test-e2e
 
 Check out the [contributor documentation][contribution_docs].
 
+## Signed Images
+
+This repository uses the [Cosign](https://github.com/sigstore/cosign) project to
+sign release images stored in `quay.io/opdev/preflight` using [Keyless
+Signatures](https://docs.sigstore.dev/cosign/keyless/). The verification
+workflow is documented in the `verify-image` Make target for those that want to
+confirm the images locally
+
+```shell
+RELEASE_TAG=1.5.4 make verify-image
+```
+
 ## License
 
 Operator SDK is under Apache 2.0 license. See the [LICENSE][license_file] file

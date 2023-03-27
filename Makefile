@@ -73,6 +73,19 @@ test-e2e:
 test-e2e-customized-env:
 	./test/e2e/operator-test-customized-env.sh
 
+.PHONY: ensure-release-tag-set
+ensure-release-tag-set:
+	echo "Make sure the RELEASE_TAG value is set."
+	test $(RELEASE_TAG) != "0.0.0"
+
+
+.PHONY: verify-image
+verify-image: cosign ensure-release-tag-set
+	${COSIGN} verify \
+		--certificate-identity https://github.com/redhat-openshift-ecosystem/openshift-preflight/.github/workflows/build-multiarch.yml@refs/tags/$(RELEASE_TAG) \
+		--certificate-oidc-issuer https://token.actions.githubusercontent.com \
+		quay.io/opdev/preflight:$(RELEASE_TAG)
+
 .PHONY: clean
 clean:
 	@go clean
@@ -92,6 +105,12 @@ $(GOLANGCI_LINT):
 GOFUMPT = $(shell pwd)/bin/gofumpt
 gofumpt: ## Download envtest-setup locally if necessary.
 	$(call go-install-tool,$(GOFUMPT),mvdan.cc/gofumpt@latest)
+
+COSIGN = $(shell pwd)/bin/cosign
+COSIGN_VERSION ?= v2.0.0
+cosign: ## Download envtest-setup locally if necessary.
+	$(call go-install-tool,$(COSIGN),github.com/sigstore/cosign/v2/cmd/cosign@$(COSIGN_VERSION))
+
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))

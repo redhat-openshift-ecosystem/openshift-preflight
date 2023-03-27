@@ -57,15 +57,23 @@ jobs:
       imageVersion: ${{ env.RELEASE_TAG }}
 
   build-multiarch:
+    permissions:
+      contents: read
+      packages: write
+      # This is used to complete the identity challenge
+      # with sigstore/fulcio when running outside of PRs.
+      id-token: write
     needs: build-release
     uses: ./.github/workflows/build-multiarch.yml
     with:
       name: ${{ needs.build-release.outputs.imageName }}
       tag: ${{ needs.build-release.outputs.imageVersion }}
+      sign: true
     secrets:
       registry: ${{ secrets.IMAGE_REGISTRY }}
       user: ${{ secrets.REGISTRY_USER }}
       password: ${{ secrets.REGISTRY_PASSWORD }}
+      token: ${{ secrets.GITHUB_TOKEN }}
 
   extract-assets:
     needs: build-release
