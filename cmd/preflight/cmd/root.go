@@ -88,6 +88,8 @@ func initConfig() {
 func preRunConfig(cmd *cobra.Command, args []string) {
 	viper := viper.Instance()
 	l := logrus.New()
+	l.SetFormatter(&logrus.TextFormatter{DisableColors: true})
+
 	// set up logging
 	logname := viper.GetString("logfile")
 	logFile, err := os.OpenFile(logname, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
@@ -101,7 +103,6 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 		l.SetLevel(ll)
 	}
 
-	l.SetFormatter(&logrus.TextFormatter{})
 	if !configFileUsed {
 		l.Debug("config file not found, proceeding without it")
 	}
