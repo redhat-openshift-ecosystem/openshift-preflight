@@ -77,7 +77,7 @@ type CraneEngine struct {
 
 func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	logger := logr.FromContextOrDiscard(ctx)
-	logger.V(log.DBG).Info("target image", "image", c.Image)
+	logger.Info("target image", "image", c.Image)
 
 	// prepare crane runtime options, if necessary
 	options := []crane.Option{
