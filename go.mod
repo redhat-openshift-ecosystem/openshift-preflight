@@ -14,8 +14,8 @@ require (
 	github.com/onsi/gomega v1.27.5
 	github.com/openshift/api v0.0.0-20230223193310-d964c7a58d75
 	github.com/openshift/client-go v0.0.0-20230120202327-72f107311084
-	github.com/operator-framework/api v0.16.0
-	github.com/operator-framework/operator-manifest-tools v0.2.2
+	github.com/operator-framework/api v0.17.4-0.20230223191600-0131a6301e42
+	github.com/operator-framework/operator-manifest-tools v0.2.3-0.20230227155221-caa8b9e1ab12
 	github.com/redhat-certification/chart-verifier v0.0.0-20230309162114-4bccec13d65a
 	github.com/redhat-openshift-ecosystem/ocp-olm-catalog-validator v0.1.0
 	github.com/shurcooL/graphql v0.0.0-20220606043923-3cf50f8a0a29
@@ -204,5 +204,3 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.13.6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
-
-replace github.com/operator-framework/api v0.16.0 => github.com/operator-framework/api v0.16.1-0.20220823134246-5f99430d4ec4
