@@ -41,6 +41,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/cache"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
 
@@ -73,6 +74,12 @@ type CraneEngine struct {
 
 	imageRef image.ImageReference
 	results  certification.Results
+}
+
+func export(img cranev1.Image, w io.Writer) error {
+	fs := mutate.Extract(img)
+	_, err := io.Copy(w, fs)
+	return err
 }
 
 func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
@@ -157,7 +164,7 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 		// extraction. These errors will be returned by the reader end
 		// on subsequent reads. If err == nil, the reader will return
 		// EOF.
-		w.CloseWithError(crane.Export(img, w))
+		w.CloseWithError(export(img, w))
 	}()
 
 	logger.V(log.DBG).Info("extracting container filesystem", "path", containerFSPath)
