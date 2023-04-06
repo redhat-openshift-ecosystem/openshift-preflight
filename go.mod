@@ -7,7 +7,7 @@ require (
 	github.com/bombsimon/logrusr/v4 v4.0.0
 	github.com/docker/cli v23.0.2+incompatible
 	github.com/glebarez/go-sqlite v1.21.1
-	github.com/go-logr/logr v1.2.3
+	github.com/go-logr/logr v1.2.4
 	github.com/google/go-containerregistry v0.14.0
 	github.com/knqyf263/go-rpmdb v0.0.0-20230301153543-ba94b245509b
 	github.com/onsi/ginkgo/v2 v2.9.2
