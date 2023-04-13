@@ -13,7 +13,9 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	spfviper "github.com/spf13/viper"
 )
 
 // executeCommand is used for cobra command testing. It is effectively what's seen here:
@@ -96,6 +98,33 @@ var _ = Describe("cmd package utility functions", func() {
 				AfterEach(func() {
 					os.Unsetenv("PFLT_LOGFILE")
 					os.Unsetenv("PFLT_LOGLEVEL")
+				})
+			})
+			When("a config file is present", func() {
+				var v *spfviper.Viper
+				BeforeEach(func() {
+					v = viper.Instance()
+					fs := afero.NewMemMapFs()
+					v.SetFs(fs)
+					configFile := `namespace: configspace
+artifacts: configartifacts
+logfile: configlogfile
+loglevel: configloglevel`
+					// This has to be written to current working directory in the memmapfs, since '.'
+					// as the config path is translated into an absolute path prior to the config
+					// file being read. So, here, we just create the file at that path, it just
+					// happens to be in a memmapfs
+					cwd, err := os.Getwd()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(afero.WriteFile(fs, filepath.Join(cwd, "config.yaml"), bytes.NewBufferString(configFile).Bytes(), 0o644)).To(Succeed())
+					DeferCleanup(v.SetFs, afero.NewOsFs())
+				})
+				It("should read all of the config", func() {
+					initConfig()
+					Expect(v.GetString("namespace")).To(Equal("configspace"))
+					Expect(v.GetString("artifacts")).To(Equal("configartifacts"))
+					Expect(v.GetString("logfile")).To(Equal("configlogfile"))
+					Expect(v.GetString("loglevel")).To(Equal("configloglevel"))
 				})
 			})
 		})
