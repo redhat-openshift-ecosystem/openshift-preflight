@@ -134,11 +134,15 @@ var _ = Describe("cmd package utility functions", func() {
 				Expect(err).ToNot(HaveOccurred())
 				DeferCleanup(os.RemoveAll, tmpDir)
 
+				tmpLogDir, err := os.MkdirTemp("", "prerun-log-*")
+				Expect(err).ToNot(HaveOccurred())
+				DeferCleanup(os.RemoveAll, tmpLogDir)
+
 				viper.Instance().Set("artifacts", tmpDir)
 				DeferCleanup(viper.Instance().Set, "artifacts", artifacts.DefaultArtifactsDir)
 
-				viper.Instance().Set("logfile", "preflight.log")
-				DeferCleanup(viper.Instance().Set, "logfile", "preflight.log")
+				viper.Instance().Set("logfile", filepath.Join(tmpLogDir, "preflight.log"))
+				DeferCleanup(viper.Instance().Set, "logfile", DefaultLogFile)
 
 				viper.Instance().Set("offline", true)
 				DeferCleanup(viper.Instance().Set, "offline", false)
