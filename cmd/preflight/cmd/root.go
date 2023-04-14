@@ -106,12 +106,14 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 
 	// if we are in the offline flow redirect log file to exist in the directory where all other artifact exist
 	if viper.GetBool("offline") {
+		// Get the base name of the logfile, in case logfile has a path
+		baseLogName := filepath.Base(logname)
 		artifacts := viper.GetString("artifacts")
 
 		// ignoring error since OpenFile will error and we'll still have the multiwriter from above
 		_ = os.Mkdir(artifacts, 0o777)
 
-		artifactsLogFile, err := os.OpenFile(filepath.Join(artifacts, logname), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+		artifactsLogFile, err := os.OpenFile(filepath.Join(artifacts, baseLogName), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 		if err == nil {
 			mw := io.MultiWriter(os.Stderr, logFile, artifactsLogFile)
 			l.SetOutput(mw)
