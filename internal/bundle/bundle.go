@@ -8,13 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+
 	"github.com/blang/semver"
 	"github.com/go-logr/logr"
 	"github.com/operator-framework/api/pkg/manifests"
 	"github.com/operator-framework/api/pkg/validation"
-	olmvalidation "github.com/redhat-openshift-ecosystem/ocp-olm-catalog-validator/pkg/validation"
-
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
 	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/yaml"
@@ -30,7 +29,7 @@ var ocpToKubeVersion = map[string]string{
 	"4.13": "1.26",
 }
 
-const latestReleasedVersion = "4.11"
+const latestReleasedVersion = "4.12"
 
 func Validate(ctx context.Context, imagePath string) (*Report, error) {
 	logger := logr.FromContextOrDiscard(ctx)
@@ -44,7 +43,6 @@ func Validate(ctx context.Context, imagePath string) (*Report, error) {
 	validators := validation.DefaultBundleValidators.WithValidators(
 		validation.AlphaDeprecatedAPIsValidator,
 		validation.OperatorHubValidator,
-		olmvalidation.OpenShiftValidator,
 	)
 
 	objs := bundle.ObjectsToValidate()
