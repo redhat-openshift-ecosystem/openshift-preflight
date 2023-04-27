@@ -50,6 +50,8 @@ func executeCommandWithLogger(root *cobra.Command, l logr.Logger, args ...string
 }
 
 var _ = Describe("cmd package utility functions", func() {
+	BeforeEach(createAndCleanupDirForArtifactsAndLogs)
+
 	Describe("Get the root command", func() {
 		Context("when calling the root command function", func() {
 			It("should return a root command", func() {
