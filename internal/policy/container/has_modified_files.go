@@ -382,7 +382,9 @@ func generateChangesFor(layer v1.Layer) ([]string, error) {
 	}
 	defer layerReader.Close()
 	tarReader := tar.NewReader(layerReader)
-	var filelist []string
+	// Use a map so we can remove items easily. Will turn this into a string slice before returning
+	filelist := make(map[string]struct{})
+	var links []string
 	for {
 		header, err := tarReader.Next()
 		if errors.Is(err, io.EOF) {
@@ -408,16 +410,31 @@ func generateChangesFor(layer v1.Layer) ([]string, error) {
 		}
 		switch {
 		case (header.Typeflag == tar.TypeDir && tombstone) || header.Typeflag == tar.TypeReg:
-			filelist = append(filelist, strings.TrimPrefix(filepath.Join(dirname, basename), "/"))
-		case header.Typeflag == tar.TypeSymlink:
-			filelist = append(filelist, strings.TrimPrefix(header.Name, "/"))
+			filelist[strings.TrimPrefix(filepath.Join(dirname, basename), "/")] = struct{}{}
+		case header.Typeflag == tar.TypeSymlink || header.Typeflag == tar.TypeLink:
+			filelist[strings.TrimPrefix(header.Name, "/")] = struct{}{}
+			// Add the target to the links slice so we can remove them later
+			links = append(links, strings.TrimPrefix(header.Linkname, "/"))
 		default:
 			// TODO: what do we do with other flags?
 			continue
 		}
 	}
 
-	return filelist, nil
+	// We have to process these after the fact, as the link could have come before
+	// the target in the tarball
+	// As it stands now, this really only works for links that the target is a fully
+	// qualified path. If the link was relative, this probably doesn't work.
+	for _, link := range links {
+		delete(filelist, link)
+	}
+
+	keys := make([]string, 0, len(filelist))
+	for k := range filelist {
+		keys = append(keys, k)
+	}
+
+	return keys, nil
 }
 
 // ExtractRPMDB copies /var/lib/rpm/* from the archive and derives a list of packages from
