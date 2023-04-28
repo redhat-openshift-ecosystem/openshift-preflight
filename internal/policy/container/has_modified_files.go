@@ -113,7 +113,7 @@ func (p *HasModifiedFilesCheck) gatherDataToValidate(ctx context.Context, imgRef
 
 		layerIDs = append(layerIDs, layerID)
 
-		files, err := generateChangesFor(layer)
+		files, err := generateChangesFor(ctx, layer)
 		if err != nil {
 			return nil, nil, "", err
 		}
@@ -375,7 +375,8 @@ func installedFileMapWithExclusions(ctx context.Context, pkglist []*rpmdb.Packag
 }
 
 // generateChangesFor will check layer for file changes, and will return a list of those.
-func generateChangesFor(layer v1.Layer) ([]string, error) {
+func generateChangesFor(ctx context.Context, layer v1.Layer) ([]string, error) {
+	logger := logr.FromContextOrDiscard(ctx)
 	layerReader, err := layer.Uncompressed()
 	if err != nil {
 		return nil, fmt.Errorf("reading layer contents: %w", err)
@@ -408,6 +409,13 @@ func generateChangesFor(layer v1.Layer) ([]string, error) {
 		if tombstone {
 			basename = basename[len(whiteoutPrefix):]
 		}
+
+		// If there is a capability entry, ignore the file
+		if _, found := header.PAXRecords["SCHILY.xattr.security.capability"]; found {
+			logger.V(log.TRC).Info("security capabilities found in layer tar, ignoring file", "file", header.Name)
+			continue
+		}
+
 		switch {
 		case (header.Typeflag == tar.TypeDir && tombstone) || header.Typeflag == tar.TypeReg:
 			filelist[strings.TrimPrefix(filepath.Join(dirname, basename), "/")] = struct{}{}
