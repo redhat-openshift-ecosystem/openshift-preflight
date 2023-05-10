@@ -23,9 +23,9 @@ Vagrant.configure("2") do |config|
     containers-common \
     openscap-containers
 
-    curl -L https://go.dev/dl/go1.19.3.linux-amd64.tar.gz --output go1.19.3.linux-amd64.tar.gz
-    rm -rf /usr/local/go && tar -C /usr/local -xzf go1.19.3.linux-amd64.tar.gz
-    rm go1.19.3.linux-amd64.tar.gz
+    curl -L https://go.dev/dl/go1.20.4.linux-amd64.tar.gz --output go1.20.4.linux-amd64.tar.gz
+    rm -rf /usr/local/go && tar -C /usr/local -xzf go1.20.4.linux-amd64.tar.gz
+    rm go1.20.4.linux-amd64.tar.gz
 
     curl -L https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz --output oc.tar.gz
     tar -C /usr/local/bin -xzf oc.tar.gz
