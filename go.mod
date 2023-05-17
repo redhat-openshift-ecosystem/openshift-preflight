@@ -9,7 +9,7 @@ require (
 	github.com/glebarez/go-sqlite v1.21.1
 	github.com/go-logr/logr v1.2.4
 	github.com/google/go-containerregistry v0.14.0
-	github.com/knqyf263/go-rpmdb v0.0.0-20230301153543-ba94b245509b
+	github.com/knqyf263/go-rpmdb v0.0.0-20230517124904-b97c85e63254
 	github.com/onsi/ginkgo/v2 v2.9.2
 	github.com/onsi/gomega v1.27.6
 	github.com/openshift/api v0.0.0-20230223193310-d964c7a58d75
