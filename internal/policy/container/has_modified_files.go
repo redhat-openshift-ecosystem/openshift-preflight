@@ -33,11 +33,12 @@ type HasModifiedFilesCheck struct{}
 const whiteoutPrefix = ".wh."
 
 type packageMeta struct {
-	Name    string
-	Version string
-	Release string
-	Arch    string
-	Vendor  string
+	Name        string
+	Version     string
+	Release     string
+	Arch        string
+	Vendor      string
+	InstallTime int
 }
 
 func (pm packageMeta) Compare(other packageMeta) int {
@@ -220,6 +221,15 @@ func (p *HasModifiedFilesCheck) validate(ctx context.Context, layerIDs []string,
 					continue
 				}
 
+				if currentPackage.InstallTime > previousPackage.InstallTime {
+					// This _probably_ means that the package was either:
+					// a) explicitly rpm -e then rpm -i
+					// b) dnf reinstall
+					// This should not trigger. Going to trace log this, but not always report
+					logger.V(log.TRC).Info("package appears to have been re-installed or removed and installed in the same layer", "package", currentPackage.Name)
+					continue
+				}
+
 				// Nope, nope, nope. File was modified without using RPM
 				logger.V(log.DBG).Info("found disallowed modification in layer", "file", modifiedFile)
 				disallowedModifications = true
@@ -265,11 +275,12 @@ func extractPackageNameVersionRelease(pkgList []*rpmdb.PackageInfo) map[string]p
 	pkgNameList := make(map[string]packageMeta, len(pkgList))
 	for _, pkg := range pkgList {
 		pkgNameList[fmt.Sprintf("%s-%s-%s", pkg.Name, pkg.Version, pkg.Release)] = packageMeta{
-			Name:    pkg.Name,
-			Version: pkg.Version,
-			Release: pkg.Release,
-			Arch:    pkg.Arch,
-			Vendor:  pkg.Vendor,
+			Name:        pkg.Name,
+			Version:     pkg.Version,
+			Release:     pkg.Release,
+			Arch:        pkg.Arch,
+			Vendor:      pkg.Vendor,
+			InstallTime: pkg.InstallTime,
 		}
 	}
 	return pkgNameList
