@@ -21,7 +21,7 @@ import (
 var configFileUsed bool
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(func() { initConfig(viper.Instance()) })
 }
 
 func rootCmd() *cobra.Command {
@@ -54,8 +54,7 @@ func Execute() error {
 	return rootCmd().ExecuteContext(context.Background())
 }
 
-func initConfig() {
-	viper := viper.Instance()
+func initConfig(viper *spfviper.Viper) {
 	// set up ENV var support
 	viper.SetEnvPrefix("pflt")
 	viper.AutomaticEnv()
