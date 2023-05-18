@@ -740,8 +740,8 @@ github.com/openshift/api v0.0.0-20230223193310-d964c7a58d75 h1:OQJsfiach1cKBI1xU
 github.com/openshift/api v0.0.0-20230223193310-d964c7a58d75/go.mod h1:ctXNyWanKEjGj8sss1KjjHQ3ENKFm33FFnS5BKaIPh4=
 github.com/openshift/client-go v0.0.0-20230120202327-72f107311084 h1:66uaqNwA+qYyQDwsMWUfjjau8ezmg1dzCqub13KZOcE=
 github.com/openshift/client-go v0.0.0-20230120202327-72f107311084/go.mod h1:M3h9m001PWac3eAudGG3isUud6yBjr5XpzLYLLTlHKo=
-github.com/operator-framework/api v0.17.4-0.20230223191600-0131a6301e42 h1:d/Pnr19TnmIq3zQ6ebewC+5jt5zqYbRkvYd37YZENQY=
-github.com/operator-framework/api v0.17.4-0.20230223191600-0131a6301e42/go.mod h1:l/cuwtPxkVUY7fzYgdust2m9tlmb8I4pOvbsUufRb24=
+github.com/operator-framework/api v0.17.5 h1:9d0pc6m1Vp4QeS8i5dhl/B0nifhKQdtw+iFsNx0An0Q=
+github.com/operator-framework/api v0.17.5/go.mod h1:l/cuwtPxkVUY7fzYgdust2m9tlmb8I4pOvbsUufRb24=
 github.com/operator-framework/operator-manifest-tools v0.2.3-0.20230227155221-caa8b9e1ab12 h1:PXejNY6ZFU6CutIkowf/ECsuT/xcLAIgmXQxG43SHnY=
 github.com/operator-framework/operator-manifest-tools v0.2.3-0.20230227155221-caa8b9e1ab12/go.mod h1:5OAMYmIkFCiiHfS1r3HcIYu3F/sum38pofSoLZy7Cbw=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
