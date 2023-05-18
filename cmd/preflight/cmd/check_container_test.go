@@ -93,7 +93,7 @@ certification_project_id: mycertid`
 				})
 				It("should still execute with no error", func() {
 					// Make sure that we've read the config file
-					initConfig()
+					initConfig(viper.Instance())
 					submit = true
 
 					err := checkContainerPositionalArgs(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})

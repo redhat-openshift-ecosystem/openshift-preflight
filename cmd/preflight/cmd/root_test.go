@@ -73,14 +73,18 @@ var _ = Describe("cmd package utility functions", func() {
 	)
 
 	Describe("Initialize Viper configuration", func() {
-		Context("when initConfig() is called", func() {
+		var testViper *spfviper.Viper
+		BeforeEach(func() {
+			testViper = spfviper.New()
+		})
+		Context("when initConfig is called", func() {
 			Context("and no envvars are set", func() {
 				It("should have defaults set correctly", func() {
-					initConfig()
-					Expect(viper.Instance().GetString("namespace")).To(Equal(DefaultNamespace))
-					Expect(viper.Instance().GetString("artifacts")).To(Equal(artifacts.DefaultArtifactsDir))
-					Expect(viper.Instance().GetString("logfile")).To(Equal(DefaultLogFile))
-					Expect(viper.Instance().GetString("loglevel")).To(Equal(DefaultLogLevel))
+					initConfig(testViper)
+					Expect(testViper.GetString("namespace")).To(Equal(DefaultNamespace))
+					Expect(testViper.GetString("artifacts")).To(Equal(artifacts.DefaultArtifactsDir))
+					Expect(testViper.GetString("logfile")).To(Equal(DefaultLogFile))
+					Expect(testViper.GetString("loglevel")).To(Equal(DefaultLogLevel))
 				})
 			})
 			Context("and envvars are set", func() {
@@ -89,11 +93,11 @@ var _ = Describe("cmd package utility functions", func() {
 					os.Setenv("PFLT_LOGLEVEL", "trace")
 				})
 				It("should have overrides in place", func() {
-					initConfig()
-					Expect(viper.Instance().GetString("namespace")).To(Equal(DefaultNamespace))
-					Expect(viper.Instance().GetString("artifacts")).To(Equal(artifacts.DefaultArtifactsDir))
-					Expect(viper.Instance().GetString("logfile")).To(Equal("/tmp/foo.log"))
-					Expect(viper.Instance().GetString("loglevel")).To(Equal("trace"))
+					initConfig(testViper)
+					Expect(testViper.GetString("namespace")).To(Equal(DefaultNamespace))
+					Expect(testViper.GetString("artifacts")).To(Equal(artifacts.DefaultArtifactsDir))
+					Expect(testViper.GetString("logfile")).To(Equal("/tmp/foo.log"))
+					Expect(testViper.GetString("loglevel")).To(Equal("trace"))
 				})
 				AfterEach(func() {
 					os.Unsetenv("PFLT_LOGFILE")
@@ -101,11 +105,9 @@ var _ = Describe("cmd package utility functions", func() {
 				})
 			})
 			When("a config file is present", func() {
-				var v *spfviper.Viper
 				BeforeEach(func() {
-					v = viper.Instance()
 					fs := afero.NewMemMapFs()
-					v.SetFs(fs)
+					testViper.SetFs(fs)
 					configFile := `namespace: configspace
 artifacts: configartifacts
 logfile: configlogfile
@@ -117,14 +119,14 @@ loglevel: configloglevel`
 					cwd, err := os.Getwd()
 					Expect(err).ToNot(HaveOccurred())
 					Expect(afero.WriteFile(fs, filepath.Join(cwd, "config.yaml"), bytes.NewBufferString(configFile).Bytes(), 0o644)).To(Succeed())
-					DeferCleanup(v.SetFs, afero.NewOsFs())
+					DeferCleanup(testViper.SetFs, afero.NewOsFs())
 				})
 				It("should read all of the config", func() {
-					initConfig()
-					Expect(v.GetString("namespace")).To(Equal("configspace"))
-					Expect(v.GetString("artifacts")).To(Equal("configartifacts"))
-					Expect(v.GetString("logfile")).To(Equal("configlogfile"))
-					Expect(v.GetString("loglevel")).To(Equal("configloglevel"))
+					initConfig(testViper)
+					Expect(testViper.GetString("namespace")).To(Equal("configspace"))
+					Expect(testViper.GetString("artifacts")).To(Equal("configartifacts"))
+					Expect(testViper.GetString("logfile")).To(Equal("configlogfile"))
+					Expect(testViper.GetString("loglevel")).To(Equal("configloglevel"))
 				})
 			})
 		})
