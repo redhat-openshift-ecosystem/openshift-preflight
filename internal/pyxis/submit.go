@@ -33,15 +33,12 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 		return nil, fmt.Errorf("certImage has not been properly populated")
 	}
 
-	// Set this project's metadata to match the image that we're certifying.
-	if certProject.Container.Registry == "" {
-		// normalizing index.docker.io to docker.io for the certProject
-		certProject.Container.Registry = normalizeDockerRegistry(certImage.Repositories[0].Registry)
-	}
-
-	if certProject.Container.Repository == "" {
-		certProject.Container.Repository = certImage.Repositories[0].Repository
-	}
+	// Always set the project's metadata to match the image that we're certifying. These values will always be sent
+	// to pyxis which has the validation rules on if the values can be updated, and will throw an exception if they
+	// are not allowed to be updated, ie if the images/projects are already published.
+	// Also normalizing index.docker.io to docker.io for the certProject
+	certProject.Container.Registry = normalizeDockerRegistry(certImage.Repositories[0].Registry)
+	certProject.Container.Repository = certImage.Repositories[0].Repository
 
 	// always update the project no matter the status to ensure the dockerconfig preflight used to pull the image
 	// is the dockerfile that resides on the project and other backend processes ie clair use the same file
