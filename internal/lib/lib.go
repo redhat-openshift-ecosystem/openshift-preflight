@@ -39,7 +39,8 @@ func GetContainerPolicyExceptions(ctx context.Context, pc PyxisClient) (policy.P
 		return "", fmt.Errorf("could not retrieve project: %w", err)
 	}
 	logger.V(log.DBG).Info("certification project", "name", certProject.Name)
-	if certProject.Container.Type == "scratch" {
+	if certProject.Container.Type == "scratch" ||
+	   certProject.Container.OsContentType =="Scratch Image" {	// Older projects put the scratch flag here
 		return policy.PolicyScratch, nil
 	}
 
