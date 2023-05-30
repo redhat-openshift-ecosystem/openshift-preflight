@@ -345,6 +345,26 @@ func pathIsExcluded(ctx context.Context, s string) bool {
 	return found
 }
 
+// prefixAndSuffixIsExcluded will check both start and end of path
+func prefixAndSuffixIsExcluded(ctx context.Context, s string) bool {
+	excl := []struct {
+		Prefix string
+		Suffix string
+	}{
+		{Prefix: "usr/lib64/", Suffix: ".cache"},
+	}
+
+	for _, v := range excl {
+		if strings.HasPrefix(s, v.Prefix) && strings.HasSuffix(s, v.Suffix) {
+			logger := logr.FromContextOrDiscard(ctx)
+			logger.V(log.TRC).Info("prefix and suffix excluded", "filename", s, "prefix", v.Prefix, "suffix", v.Suffix)
+			return true
+		}
+	}
+
+	return false
+}
+
 // normalize will clean a filepath of extraneous characters like ./, //, etc.
 // and strip a leading slash. E.g. /foo/../baz --> baz
 func normalize(s string) string {
@@ -376,7 +396,7 @@ func installedFileMapWithExclusions(ctx context.Context, pkglist []*rpmdb.Packag
 				continue
 			}
 			normalized := normalize(file.Path)
-			if pathIsExcluded(ctx, normalized) || directoryIsExcluded(ctx, normalized) {
+			if pathIsExcluded(ctx, normalized) || directoryIsExcluded(ctx, normalized) || prefixAndSuffixIsExcluded(ctx, normalized) {
 				// It is either an explicitly excluded path or directory. Skip it.
 				continue
 			}
