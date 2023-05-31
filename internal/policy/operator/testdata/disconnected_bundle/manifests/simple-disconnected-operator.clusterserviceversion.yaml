@@ -23,7 +23,7 @@ metadata:
     capabilities: Basic Install
     createdAt: "2022-12-16T20:14:33Z"
     operators.openshift.io/infrastructure-features: '["Disconnected"]'
-    operators.operatorframework.io/builder: operator-sdk-v1.26.0
+    operators.operatorframework.io/builder: operator-sdk-v1.29.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
   name: simple-disconnected-operator.v0.0.1
   namespace: placeholder
