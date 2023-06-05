@@ -71,8 +71,15 @@ var _ = Describe("Policy Resolution", func() {
 			Expect(err).To(HaveOccurred())
 		})
 
-		It("should return a scratch policy exception if the project has the flag in the API", func() {
+		It("should return a scratch policy exception if the project has type flag in the API", func() {
 			fakePC.getProjectsFunc = gpFuncReturnScratchException
+			p, err := GetContainerPolicyExceptions(context.TODO(), fakePC)
+			Expect(p).To(Equal(policy.PolicyScratch))
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return a scratch policy exception if the project has os_content_type flag in the API", func() {
+			fakePC.getProjectsFunc = gpFuncReturnScratchImageException
 			p, err := GetContainerPolicyExceptions(context.TODO(), fakePC)
 			Expect(p).To(Equal(policy.PolicyScratch))
 			Expect(err).ToNot(HaveOccurred())
