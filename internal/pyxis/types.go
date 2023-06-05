@@ -60,11 +60,12 @@ type ParsedData struct {
 }
 
 type Repository struct {
-	Published  bool   `json:"published" default:"false"`
-	PushDate   string `json:"push_date,omitempty"` // time.Now
-	Registry   string `json:"registry,omitempty"`
-	Repository string `json:"repository,omitempty"`
-	Tags       []Tag  `json:"tags,omitempty"`
+	Published          bool   `json:"published" default:"false"`
+	PushDate           string `json:"push_date,omitempty"` // time.Now
+	Registry           string `json:"registry,omitempty"`
+	Repository         string `json:"repository,omitempty"`
+	Tags               []Tag  `json:"tags,omitempty"`
+	ManifestListDigest string `json:"manifest_list_digest,omitempty"`
 }
 
 type Label struct {

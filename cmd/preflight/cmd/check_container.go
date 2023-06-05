@@ -18,11 +18,16 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/option"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -80,8 +85,8 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 		"URL paramater. This value may differ from the PID on the overview page. (env: PFLT_CERTIFICATION_PROJECT_ID)"))
 	_ = viper.BindPFlag("certification_project_id", flags.Lookup("certification-project-id"))
 
-	checkContainerCmd.Flags().String("platform", rt.GOARCH, "Architecture of image to pull. Defaults to current platform.")
-	_ = viper.BindPFlag("platform", checkContainerCmd.Flags().Lookup("platform"))
+	flags.String("platform", rt.GOARCH, "Architecture of image to pull. Defaults to runtime platform.")
+	_ = viper.BindPFlag("platform", flags.Lookup("platform"))
 
 	return checkContainerCmd
 }
@@ -103,80 +108,89 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	artifactsWriter, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(cfg.Artifacts))
+	cfg.Image = containerImage
+
+	containerImagePlatforms, err := platformsToBeProcessed(cmd, cfg)
 	if err != nil {
 		return err
 	}
 
-	// Add the artifact writer to the context for use by checks.
-	ctx = artifacts.ContextWithWriter(ctx, artifactsWriter)
-
-	formatter, err := formatters.NewByName(formatters.DefaultFormat)
-	if err != nil {
-		return err
-	}
-
-	opts := generateContainerCheckOptions(cfg)
-
-	checkcontainer := container.NewCheck(
-		containerImage,
-		opts...,
-	)
-
-	pc := lib.NewPyxisClient(ctx, cfg.CertificationProjectID, cfg.PyxisAPIToken, cfg.PyxisHost)
-	resultSubmitter := lib.ResolveSubmitter(pc, cfg.CertificationProjectID, cfg.DockerConfig, cfg.LogFile)
-
-	// Run the  container check.
-	cmd.SilenceUsage = true
-
-	err = runpreflight(
-		ctx,
-		checkcontainer.Run,
-		cli.CheckConfig{
-			IncludeJUnitResults: cfg.WriteJUnit,
-			SubmitResults:       cfg.Submit,
-		},
-		formatter,
-		&runtime.ResultWriterFile{},
-		resultSubmitter,
-	)
-
-	if err != nil {
-		return err
-	}
-
-	// checking for offline flag, if present tar up the contents of the artifacts directory
-	if cfg.Offline {
-		src := artifactsWriter.Path()
-		var buf bytes.Buffer
-
-		// check to see if a tar file already exist to account for someone re-running
-		exists, err := artifactsWriter.Exists(check.DefaultArtifactsTarFileName)
+	for _, platform := range containerImagePlatforms {
+		logger.Info(fmt.Sprintf("running checks for %s for platform %s", containerImage, platform))
+		artifactsWriter, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(filepath.Join(cfg.Artifacts, platform)))
 		if err != nil {
-			return fmt.Errorf("unable to check if tar already exists: %v", err)
+			return err
 		}
 
-		// remove the tar file if it exists
-		if exists {
-			err = artifactsWriter.Remove(check.DefaultArtifactsTarFileName)
+		// Add the artifact writer to the context for use by checks.
+		ctx := artifacts.ContextWithWriter(ctx, artifactsWriter)
+
+		formatter, err := formatters.NewByName(formatters.DefaultFormat)
+		if err != nil {
+			return err
+		}
+
+		opts := generateContainerCheckOptions(cfg)
+		opts = append(opts, container.WithPlatform(platform))
+
+		checkcontainer := container.NewCheck(
+			containerImage,
+			opts...,
+		)
+
+		pc := lib.NewPyxisClient(ctx, cfg.CertificationProjectID, cfg.PyxisAPIToken, cfg.PyxisHost)
+		resultSubmitter := lib.ResolveSubmitter(pc, cfg.CertificationProjectID, cfg.DockerConfig, cfg.LogFile)
+
+		// Run the  container check.
+		cmd.SilenceUsage = true
+
+		if err := runpreflight(
+			ctx,
+			checkcontainer.Run,
+			cli.CheckConfig{
+				IncludeJUnitResults: cfg.WriteJUnit,
+				SubmitResults:       cfg.Submit,
+			},
+			formatter,
+			&runtime.ResultWriterFile{},
+			resultSubmitter,
+		); err != nil {
+			return err
+		}
+
+		// checking for offline flag, if present tar up the contents of the artifacts directory
+		if cfg.Offline {
+			src := artifactsWriter.Path()
+			var buf bytes.Buffer
+
+			// check to see if a tar file already exist to account for someone re-running
+			exists, err := artifactsWriter.Exists(check.DefaultArtifactsTarFileName)
 			if err != nil {
-				return fmt.Errorf("unable to remove existing tar: %v", err)
+				return fmt.Errorf("unable to check if tar already exists: %v", err)
 			}
-		}
 
-		// tar the directory
-		err = artifactsTar(ctx, src, &buf)
-		if err != nil {
-			return fmt.Errorf("unable to tar up artifacts directory: %v", err)
-		}
+			// remove the tar file if it exists
+			if exists {
+				err = artifactsWriter.Remove(check.DefaultArtifactsTarFileName)
+				if err != nil {
+					return fmt.Errorf("unable to remove existing tar: %v", err)
+				}
+			}
 
-		// writing the tar file to disk
-		_, err = artifactsWriter.WriteFile(check.DefaultArtifactsTarFileName, &buf)
-		if err != nil {
-			return fmt.Errorf("could not artifacts tar to artifacts dir: %w", err)
-		}
+			// tar the directory
+			err = artifactsTar(ctx, src, &buf)
+			if err != nil {
+				return fmt.Errorf("unable to tar up artifacts directory: %v", err)
+			}
 
-		logger.Info("artifact tar written to disk", "filename", check.DefaultArtifactsTarFileName)
+			// writing the tar file to disk
+			_, err = artifactsWriter.WriteFile(check.DefaultArtifactsTarFileName, &buf)
+			if err != nil {
+				return fmt.Errorf("could not artifacts tar to artifacts dir: %w", err)
+			}
+
+			logger.Info("artifact tar written to disk", "filename", check.DefaultArtifactsTarFileName)
+		}
 	}
 
 	return nil
@@ -251,6 +265,7 @@ func generateContainerCheckOptions(cfg *runtime.Config) []container.Option {
 		// Always add PyxisHost, since the value is always set in viper config parsing.
 		container.WithPyxisHost(cfg.PyxisHost),
 		container.WithPlatform(cfg.Platform),
+		container.WithManifestListDigest(cfg.ManifestListDigest),
 	}
 
 	// set auth information if both are present in config.
@@ -338,4 +353,91 @@ func artifactsTar(ctx context.Context, src string, w io.Writer) error {
 	}
 
 	return nil
+}
+
+func platformsToBeProcessed(cmd *cobra.Command, cfg *runtime.Config) ([]string, error) {
+	ctx := cmd.Context()
+	logger := logr.FromContextOrDiscard(ctx)
+
+	// flag.Changed is not set if the env is all that is set.
+	_, platformEnvPresent := os.LookupEnv("PFLT_PLATFORM")
+	platformChanged := cmd.Flags().Lookup("platform").Changed || platformEnvPresent
+
+	containerImagePlatforms := []string{cfg.Platform}
+
+	options := crane.GetOptions(option.GenerateCraneOptions(ctx, cfg)...)
+	ref, err := name.ParseReference(cfg.Image, options.Name...)
+	if err != nil {
+		return nil, fmt.Errorf("invalid image reference: %w", err)
+	}
+
+	desc, err := remote.Get(ref, options.Remote...)
+	if err != nil {
+		return nil, fmt.Errorf("invalid manifest?: %w", err)
+	}
+
+	if !desc.MediaType.IsIndex() {
+		// This means the passed image is just an image, and not a manifest list
+		// So, let's get the config to find out if the image matches the
+		// given platform.
+		img, err := desc.Image()
+		if err != nil {
+			return nil, fmt.Errorf("could not convert descriptor to image: %w", err)
+		}
+		cfgFile, err := img.ConfigFile()
+		if err != nil {
+			return nil, fmt.Errorf("could not retrieve image config: %w", err)
+		}
+
+		// A specific arch was specified. This image does not contain that arch.
+		if cfgFile.Architecture != cfg.Platform && !platformChanged {
+			return nil, fmt.Errorf("cannot process image manifest of different arch without platform override")
+		}
+
+		// At this point, we know that the original containerImagePlatform is correct, so
+		// we can just return it and skip the below.
+		// While we could just let this fall through to the end, I'd rather short-circuit
+		// here, in case any further changes disrupt that logic flow.
+		return containerImagePlatforms, nil
+	}
+
+	// If platform param is not changed, it means that a platform was not specified on the
+	// command line. Therefore, we should process all platforms in the manifest list.
+	// As long as what is poinged to is a manifest list. Otherwise, it will just be the
+	// currnt runtime platform.
+	if desc.MediaType.IsIndex() {
+		logger.V(log.DBG).Info("manifest list detected, checking all platforms in manifest")
+
+		idx, err := desc.ImageIndex()
+		if err != nil {
+			return nil, fmt.Errorf("could not convert descriptor to index: %w", err)
+		}
+		manifestListDigest, err := idx.Digest()
+		if err != nil {
+			return nil, fmt.Errorf("could not retrieve index digest: %w", err)
+		}
+		cfg.ManifestListDigest = manifestListDigest.String()
+
+		manifest, err := idx.IndexManifest()
+		if err != nil {
+			return nil, fmt.Errorf("could not retrieve index manifest: %w", err)
+		}
+
+		// Preflight was given a manifest list. --platform was not specified.
+		// Therefore, all platforms in the manifest list should be processed.
+		// Create a new slice since the original was for a single platform.
+		containerImagePlatforms = make([]string, 0, len(manifest.Manifests))
+		for _, img := range manifest.Manifests {
+			if platformChanged && cfg.Platform != img.Platform.Architecture {
+				// The user selected a platform. If this isn't it, continue.
+				continue
+			}
+			containerImagePlatforms = append(containerImagePlatforms, img.Platform.Architecture)
+		}
+		if platformChanged && len(containerImagePlatforms) == 0 {
+			return nil, fmt.Errorf("invalid platform specified")
+		}
+	}
+
+	return containerImagePlatforms, nil
 }

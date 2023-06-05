@@ -50,14 +50,15 @@ func New(ctx context.Context,
 	cfg runtime.Config,
 ) (craneEngine, error) {
 	return craneEngine{
-		kubeconfig:   kubeconfig,
-		dockerConfig: cfg.DockerConfig,
-		image:        cfg.Image,
-		checks:       checks,
-		isBundle:     cfg.Bundle,
-		isScratch:    cfg.Scratch,
-		platform:     cfg.Platform,
-		insecure:     cfg.Insecure,
+		kubeconfig:         kubeconfig,
+		dockerConfig:       cfg.DockerConfig,
+		image:              cfg.Image,
+		checks:             checks,
+		isBundle:           cfg.Bundle,
+		isScratch:          cfg.Scratch,
+		platform:           cfg.Platform,
+		insecure:           cfg.Insecure,
+		manifestListDigest: cfg.ManifestListDigest,
 	}, nil
 }
 
@@ -87,6 +88,9 @@ type craneEngine struct {
 	// Insecure controls whether to allow an insecure connection to
 	// the registry crane connects with.
 	insecure bool
+
+	// ManifestListDigest is the sha256 digest for the manifest list
+	manifestListDigest string
 
 	imageRef image.ImageReference
 	results  certification.Results
@@ -179,12 +183,13 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 
 	// store the image internals in the engine image reference to pass to validations.
 	c.imageRef = image.ImageReference{
-		ImageURI:        c.image,
-		ImageFSPath:     containerFSPath,
-		ImageInfo:       img,
-		ImageRegistry:   reference.Context().RegistryStr(),
-		ImageRepository: reference.Context().RepositoryStr(),
-		ImageTagOrSha:   reference.Identifier(),
+		ImageURI:           c.image,
+		ImageFSPath:        containerFSPath,
+		ImageInfo:          img,
+		ImageRegistry:      reference.Context().RegistryStr(),
+		ImageRepository:    reference.Context().RepositoryStr(),
+		ImageTagOrSha:      reference.Identifier(),
+		ManifestListDigest: c.manifestListDigest,
 	}
 
 	if err := writeCertImage(ctx, c.imageRef); err != nil {
@@ -498,10 +503,11 @@ func writeCertImage(ctx context.Context, imageRef image.ImageReference) error {
 
 	repositories := make([]pyxis.Repository, 0, 1)
 	repositories = append(repositories, pyxis.Repository{
-		PushDate:   addedDate,
-		Registry:   imageRef.ImageRegistry,
-		Repository: imageRef.ImageRepository,
-		Tags:       tags,
+		PushDate:           addedDate,
+		Registry:           imageRef.ImageRegistry,
+		Repository:         imageRef.ImageRepository,
+		Tags:               tags,
+		ManifestListDigest: imageRef.ManifestListDigest,
 	})
 
 	certImage := pyxis.CertImage{

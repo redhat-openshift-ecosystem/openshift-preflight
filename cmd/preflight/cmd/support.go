@@ -10,21 +10,21 @@ import (
 )
 
 const (
-	baseURL              = "https://connect.redhat.com/support/technology-partner/#/case/new?"
-	typeParam            = "type"
-	typeValue            = "CERT"
-	sourceParam          = "source"
-	sourceValue          = "preflight"
-	certProjectTypeParam = "cert_project_type"
-	certProjectIDParam   = "cert_project_id"
-	pullRequestURLParam  = "pull_request_url"
-	operatorBundleImage  = "Operator Bundle Image"
-	containerImage       = "Container Image"
+	baseURL                 = "https://connect.redhat.com/support/technology-partner/#/case/new?"
+	typeParam               = "type"
+	typeValue               = "CERT"
+	sourceParam             = "source"
+	sourceValue             = "preflight"
+	certProjectTypeParam    = "cert_project_type"
+	certProjectIDParam      = "cert_project_id"
+	pullRequestURLParam     = "pull_request_url"
+	operatorBundleImageText = "Operator Bundle Image"
+	containerImageText      = "Container Image"
 )
 
 var projectTypeMapping = map[string]string{
-	"container": containerImage,
-	"operator":  operatorBundleImage,
+	"container": containerImageText,
+	"operator":  operatorBundleImageText,
 }
 
 func supportCmd() *cobra.Command {
