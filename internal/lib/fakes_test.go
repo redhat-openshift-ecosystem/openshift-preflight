@@ -129,6 +129,15 @@ func gpFuncReturnScratchException(ctx context.Context) (*pyxis.CertProject, erro
 	}, nil
 }
 
+// gpFuncReturnScratchImageException implements gpFunc and returns a scratch image exception.
+func gpFuncReturnScratchImageException(ctx context.Context) (*pyxis.CertProject, error) {
+	return &pyxis.CertProject{
+		Container: pyxis.Container{
+			OsContentType: "Scratch Image",
+		},
+	}, nil
+}
+
 // gpFuncReturnRootException implements gpFunc and returns a root exception.
 func gpFuncReturnRootException(ctx context.Context) (*pyxis.CertProject, error) {
 	return &pyxis.CertProject{
