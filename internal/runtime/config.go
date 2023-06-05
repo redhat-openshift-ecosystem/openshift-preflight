@@ -28,6 +28,7 @@ type Config struct {
 	Platform               string
 	Insecure               bool
 	Offline                bool
+	ManifestListDigest     string
 	// Operator-Specific Fields
 	Namespace         string
 	ServiceAccount    string

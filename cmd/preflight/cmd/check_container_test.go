@@ -4,8 +4,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"io"
+	"log"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -16,21 +22,124 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/registry"
+	cranev1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
+	"github.com/google/go-containerregistry/pkg/v1/random"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
+	cranev1types "github.com/google/go-containerregistry/pkg/v1/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 )
 
 var _ = Describe("Check Container Command", func() {
+	var src string
+	var manifestListSrc string
+	var srcppc string
+	var manifests map[string]string
+	var s *httptest.Server
+	var u *url.URL
+	BeforeEach(func() {
+		manifests = make(map[string]string, 2)
+		// Set up a fake registry.
+		registryLogger := log.New(io.Discard, "", log.Ldate)
+		s = httptest.NewServer(registry.New(registry.Logger(registryLogger)))
+		DeferCleanup(s.Close)
+
+		var err error
+		u, err = url.Parse(s.URL)
+		Expect(err).ToNot(HaveOccurred())
+
+		src = fmt.Sprintf("%s/test/crane", u.Host)
+		manifests["image"] = src
+
+		// Expected values.
+		img, err := random.Image(1024, 5)
+		Expect(err).ToNot(HaveOccurred())
+
+		cfgFile, err := img.ConfigFile()
+		Expect(err).ToNot(HaveOccurred())
+
+		cfgFile.Architecture = "amd64"
+
+		cfgImg, err := mutate.ConfigFile(img, cfgFile)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = crane.Push(cfgImg, src)
+		Expect(err).ToNot(HaveOccurred())
+
+		srcppc = fmt.Sprintf("%s/test/craneppc", u.Host)
+		manifests["imageppc"] = srcppc
+
+		newLayer, err := random.Layer(1024, cranev1types.OCILayer)
+		Expect(err).ToNot(HaveOccurred())
+
+		ppcImg, err := mutate.AppendLayers(img, newLayer)
+		Expect(err).ToNot(HaveOccurred())
+
+		ppcCfgFile, err := ppcImg.ConfigFile()
+		Expect(err).ToNot(HaveOccurred())
+
+		ppcCfgFile.Architecture = "ppc64le"
+
+		ppcCfgImg, err := mutate.ConfigFile(ppcImg, ppcCfgFile)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(crane.Push(ppcCfgImg, srcppc)).To(Succeed())
+
+		platforms := [4]string{"amd64", "arm64", "ppc64le", "s390x"}
+		manifestListSrc = fmt.Sprintf("%s/test/cranelist", u.Host)
+		manifests["index"] = manifestListSrc
+		lst, err := random.Index(1024, 5, int64(len(platforms)))
+		Expect(err).ToNot(HaveOccurred())
+
+		ref, err := name.ParseReference(manifestListSrc)
+		Expect(err).ToNot(HaveOccurred())
+
+		m, err := lst.IndexManifest()
+		Expect(err).ToNot(HaveOccurred())
+
+		for i, manifest := range m.Manifests {
+			switch {
+			case manifest.MediaType.IsImage():
+				m.Manifests[i].Platform = &cranev1.Platform{
+					Architecture: platforms[i],
+					OS:           "linux",
+				}
+			}
+		}
+		err = remote.WriteIndex(ref, lst)
+		Expect(err).ToNot(HaveOccurred())
+	})
 	BeforeEach(createAndCleanupDirForArtifactsAndLogs)
 
-	Context("when running the check container subcommand", func() {
-		Context("With all of the required parameters", func() {
-			It("should reach the core logic, but throw an error because of the placeholder values for the container image", func() {
-				_, err := executeCommand(checkContainerCmd(mockRunPreflightReturnNil), "example.com/example/image:mytag")
-				Expect(err).To(HaveOccurred())
+	When("a manifest list is passed", func() {
+		When("default params otherwise", func() {
+			It("should not error", func() {
+				_, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnNil), logr.Discard(), manifestListSrc)
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 	})
+
+	DescribeTable("--platform tests",
+		func(manifestKey string, platform string, match types.GomegaMatcher, includePlatformArg bool) {
+			args := []string{manifests[manifestKey]}
+			if includePlatformArg {
+				args = append(args, "--platform", platform)
+			}
+			_, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnNil), logr.Discard(), args...)
+			Expect(err).To(match)
+		},
+		Entry("image manifest, valid platform", "image", "amd64", Not(HaveOccurred()), true),
+		Entry("image manifest, different platform, modifier", "image", "none", Not(HaveOccurred()), true),
+		Entry("image manifest, different platform, no modifier", "imageppc", "none", HaveOccurred(), false),
+		Entry("index manifest, valid platform", "index", "amd64", Not(HaveOccurred()), true),
+		Entry("index manifest, invalid platform", "index", "none", HaveOccurred(), true),
+	)
 
 	Context("When validating check container arguments and flags", func() {
 		Context("and the user provided more than 1 positional arg", func() {
@@ -153,13 +262,13 @@ certification_project_id: mycertid`
 	Context("when running the check container subcommand with a logger provided", func() {
 		Context("with all of the required parameters", func() {
 			It("should reach the core logic, and execute the mocked RunPreflight", func() {
-				_, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnNil), logr.Discard(), "example.com/example/image:mytag")
+				_, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnNil), logr.Discard(), src)
 				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 		Context("with all of the required parameters with error mocked", func() {
 			It("should reach the core logic, and execute the mocked RunPreflight and return error", func() {
-				_, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnErr), logr.Discard(), "example.com/example/image:mytag")
+				_, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnErr), logr.Discard(), src)
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -172,12 +281,15 @@ certification_project_id: mycertid`
 				Expect(err).ToNot(HaveOccurred())
 				DeferCleanup(os.RemoveAll, tmpDir)
 
+				platformDir := filepath.Join(tmpDir, runtime.GOARCH)
+				Expect(os.Mkdir(platformDir, 0o755)).Should(Succeed())
+
 				// creating test files on in the tmpDir so the tar function has files to tar
-				f1, err := os.Create(filepath.Join(tmpDir, "test-file-1.json"))
+				f1, err := os.Create(filepath.Join(platformDir, "test-file-1.json"))
 				Expect(err).ToNot(HaveOccurred())
 				defer f1.Close()
 
-				f2, err := os.Create(filepath.Join(tmpDir, "test-file-1.json"))
+				f2, err := os.Create(filepath.Join(platformDir, "test-file-1.json"))
 				Expect(err).ToNot(HaveOccurred())
 				defer f2.Close()
 
@@ -188,7 +300,7 @@ certification_project_id: mycertid`
 				DeferCleanup(viper.Instance().Set, "offline", false)
 			})
 			It("should reach core logic, and the additional offline logic", func() {
-				out, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnNil), logr.Discard(), "example.com/example/image:mytag")
+				out, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnNil), logr.Discard(), src)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(out).ToNot(BeNil())
 			})
@@ -199,12 +311,15 @@ certification_project_id: mycertid`
 				Expect(err).ToNot(HaveOccurred())
 				DeferCleanup(os.RemoveAll, tmpDir)
 
+				platformDir := filepath.Join(tmpDir, runtime.GOARCH)
+				Expect(os.Mkdir(platformDir, 0o755)).Should(Succeed())
+
 				// creating test files on in the tmpDir so the tar function has files to tar
-				f1, err := os.Create(filepath.Join(tmpDir, "test-file-1.json"))
+				f1, err := os.Create(filepath.Join(platformDir, "test-file-1.json"))
 				Expect(err).ToNot(HaveOccurred())
 				defer f1.Close()
 
-				f2, err := os.Create(filepath.Join(tmpDir, "test-file-1.json"))
+				f2, err := os.Create(filepath.Join(platformDir, "test-file-1.json"))
 				Expect(err).ToNot(HaveOccurred())
 				defer f2.Close()
 
@@ -220,7 +335,7 @@ certification_project_id: mycertid`
 				DeferCleanup(viper.Instance().Set, "offline", false)
 			})
 			It("should reach the additional offline logic, and remove existing tar file", func() {
-				out, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnNil), logr.Discard(), "example.com/example/image:mytag")
+				out, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnNil), logr.Discard(), src)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(out).ToNot(BeNil())
 			})

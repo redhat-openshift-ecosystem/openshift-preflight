@@ -71,12 +71,13 @@ func (c *containerCheck) Run(ctx context.Context) (certification.Results, error)
 	}
 
 	cfg := runtime.Config{
-		Image:        c.image,
-		DockerConfig: c.dockerconfigjson,
-		Scratch:      pol == policy.PolicyScratch,
-		Bundle:       false,
-		Insecure:     c.insecure,
-		Platform:     c.platform,
+		Image:              c.image,
+		DockerConfig:       c.dockerconfigjson,
+		Scratch:            pol == policy.PolicyScratch,
+		Bundle:             false,
+		Insecure:           c.insecure,
+		Platform:           c.platform,
+		ManifestListDigest: c.manifestListDigest,
 	}
 	eng, err := engine.New(ctx, checks, nil, cfg)
 	if err != nil {
@@ -151,6 +152,15 @@ func WithInsecureConnection() Option {
 	}
 }
 
+// WithManifestListDigest signifies that we have a manifest list and should add
+// this digest to any Pyxis calls.
+// This is only valid when submitting to Pyxis. Otherwise, it will be ignored.
+func WithManifestListDigest(manifestListDigest string) Option {
+	return func(cc *containerCheck) {
+		cc.manifestListDigest = manifestListDigest
+	}
+}
+
 type containerCheck struct {
 	image                  string
 	dockerconfigjson       string
@@ -159,4 +169,5 @@ type containerCheck struct {
 	pyxisHost              string
 	platform               string
 	insecure               bool
+	manifestListDigest     string
 }
