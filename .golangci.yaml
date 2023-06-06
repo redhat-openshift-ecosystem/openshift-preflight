@@ -5,7 +5,7 @@ run:
 linters:
   enable:
   - asciicheck
-  - deadcode
+  - unused
   - depguard
   - gofumpt
   - goimports
