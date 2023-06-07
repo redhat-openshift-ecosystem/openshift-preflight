@@ -310,6 +310,7 @@ func directoryIsExcluded(ctx context.Context, s string) bool {
 		"var":               {},
 		"run":               {},
 		"usr/lib/.build-id": {},
+		"usr/tmp":           {},
 	}
 
 	for k := range excl {
