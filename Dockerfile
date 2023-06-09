@@ -9,6 +9,7 @@ ARG release_tag
 ARG ARCH
 ARG OS
 
+
 # Build the preflight binary
 COPY . /go/src/preflight
 WORKDIR /go/src/preflight
