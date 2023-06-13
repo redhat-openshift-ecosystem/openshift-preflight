@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
-
 	goruntime "runtime"
+	"time"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	preflighterr "github.com/redhat-openshift-ecosystem/openshift-preflight/errors"
@@ -58,6 +57,9 @@ func (c *containerCheck) Run(ctx context.Context) (certification.Results, error)
 		if err != nil {
 			return certification.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotResolvePolicyException, err)
 		}
+
+		// adding policy to context to be retrieved later in the submit flow
+		ctx = policy.NewContext(ctx, override)
 
 		pol = override
 	}
