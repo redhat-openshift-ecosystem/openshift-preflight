@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 )
 
 // certificationInputBuilder facilitates the building of CertificationInput for
@@ -18,7 +20,7 @@ type certificationInputBuilder struct {
 // NewCertificationInput accepts required values for submitting to Pyxis, and returns a CertificationInputBuilder for
 // adding additional files as artifacts to the submission. The caller must call Finalize() in order to receive
 // a *CertificationInput.
-func NewCertificationInput(ctx context.Context, project *CertProject, opts ...certificationInputOption) (*CertificationInput, error) {
+func NewCertificationInput(ctx context.Context, project *CertProject, opts ...CertificationInputOption) (*CertificationInput, error) {
 	if project == nil {
 		return nil, fmt.Errorf("a certification project was not provided and is required")
 	}
@@ -35,7 +37,7 @@ func NewCertificationInput(ctx context.Context, project *CertProject, opts ...ce
 		}
 	}
 
-	return b.finalize()
+	return b.finalize(ctx)
 }
 
 // Finalize runs a collection of safeguards to try to ensure we get a reliable
@@ -44,7 +46,7 @@ func NewCertificationInput(ctx context.Context, project *CertProject, opts ...ce
 // unmodifiable CertificationInput.
 //
 // If any required values are not included, an error is thrown.
-func (b *certificationInputBuilder) finalize() (*CertificationInput, error) {
+func (b *certificationInputBuilder) finalize(ctx context.Context) (*CertificationInput, error) {
 	// safeguards, make sure things aren't nil for any reason.
 	if b.CertImage == nil {
 		return nil, fmt.Errorf("a CertImage was not provided and is required")
@@ -53,7 +55,7 @@ func (b *certificationInputBuilder) finalize() (*CertificationInput, error) {
 		return nil, fmt.Errorf("test results were not provided and are required")
 	}
 
-	if b.RpmManifest == nil {
+	if b.RpmManifest == nil && policy.FromContext(ctx) != policy.PolicyScratch {
 		return nil, fmt.Errorf("the RPM manifest was not provided and is required")
 	}
 
@@ -69,11 +71,11 @@ func (b *certificationInputBuilder) finalize() (*CertificationInput, error) {
 	return &b.CertificationInput, nil
 }
 
-type certificationInputOption func(*certificationInputBuilder) error
+type CertificationInputOption func(*certificationInputBuilder) error
 
 // WithCertImage adds a pyxis.CertImage from the passed io.Reader to the CertificationInput.
 // Errors are logged, but will not halt execution.
-func WithCertImage(r io.Reader) certificationInputOption {
+func WithCertImage(r io.Reader) CertificationInputOption {
 	return func(b *certificationInputBuilder) error {
 		if err := b.storeCertImage(r); err != nil {
 			return fmt.Errorf("cert image could not be stored: %v", err)
@@ -84,7 +86,7 @@ func WithCertImage(r io.Reader) certificationInputOption {
 
 // WithPreflightResults adds formatters.UserResponse from the passed io.Reader to the CertificationInput.
 // Errors are logged, but will not halt execution.
-func WithPreflightResults(r io.Reader) certificationInputOption {
+func WithPreflightResults(r io.Reader) CertificationInputOption {
 	return func(b *certificationInputBuilder) error {
 		if err := b.storePreflightResults(r); err != nil {
 			return fmt.Errorf("preflight results could not be stored: %v", err)
@@ -95,7 +97,7 @@ func WithPreflightResults(r io.Reader) certificationInputOption {
 
 // WithRPMManifest adds the pyxis.RPMManifest from the passed io.Reader to the CertificationInput.
 // Errors are logged, but will not halt execution.
-func WithRPMManifest(r io.Reader) certificationInputOption {
+func WithRPMManifest(r io.Reader) CertificationInputOption {
 	return func(b *certificationInputBuilder) error {
 		if err := b.storeRPMManifest(r); err != nil {
 			return fmt.Errorf("rpm manifest could not be stored: %v", err)
@@ -109,7 +111,7 @@ func WithRPMManifest(r io.Reader) certificationInputOption {
 // but will not halt execution. The filename parameter will be used as the Filename
 // field in the Artifact struct. It will be sent as is. It should prepresent only the
 // base filename.
-func WithArtifact(r io.Reader, filename string) certificationInputOption {
+func WithArtifact(r io.Reader, filename string) CertificationInputOption {
 	return func(b *certificationInputBuilder) error {
 		bts, err := io.ReadAll(r)
 		if err != nil {

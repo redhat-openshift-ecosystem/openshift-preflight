@@ -11,13 +11,14 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/go-logr/logr"
-
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
+
+	"github.com/go-logr/logr"
 )
 
 // ResultWriter defines methods associated with writing check results.
@@ -141,16 +142,6 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 	}
 	defer preflightResults.Close()
 
-	rpmManifest, err := os.Open(path.Join(artifactWriter.Path(), check.DefaultRPMManifestFilename))
-	if err != nil {
-		return fmt.Errorf(
-			"could not open file for submission: %s: %w",
-			check.DefaultRPMManifestFilename,
-			err,
-		)
-	}
-	defer rpmManifest.Close()
-
 	logfile, err := os.Open(s.PreflightLogFile)
 	if err != nil {
 		return fmt.Errorf(
@@ -161,18 +152,29 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 	}
 	defer logfile.Close()
 
-	// prepare submission. We ignore the error because nil checks for the certProject
-	// are done earlier to prevent panics, and that's the only error case for this function.
-	submission, err := pyxis.NewCertificationInput(ctx, certProject,
-		// The engine writes the certified image config to disk in a Pyxis-specific format.
+	options := []pyxis.CertificationInputOption{
 		pyxis.WithCertImage(certImage),
-		// Include Preflight's test results in our submission. pyxis.TestResults embeds them.
 		pyxis.WithPreflightResults(preflightResults),
-		// The certification engine writes the rpmManifest for images not based on scratch.
-		pyxis.WithRPMManifest(rpmManifest),
-		// Include the preflight execution log file.
 		pyxis.WithArtifact(logfile, filepath.Base(s.PreflightLogFile)),
-	)
+	}
+
+	// only read the rpm manifest file off of disk if the policy executed is not scratch
+	// scratch images do not have rpm manifests, the rpm-manifest.json file is not written to disk by the engine during execution
+	if policy.FromContext(ctx) != policy.PolicyScratch {
+		rpmManifest, err := os.Open(path.Join(artifactWriter.Path(), check.DefaultRPMManifestFilename))
+		if err != nil {
+			return fmt.Errorf(
+				"could not open file for submission: %s: %w",
+				check.DefaultRPMManifestFilename,
+				err,
+			)
+		}
+		defer rpmManifest.Close()
+
+		options = append(options, pyxis.WithRPMManifest(rpmManifest))
+	}
+
+	submission, err := pyxis.NewCertificationInput(ctx, certProject, options...)
 	if err != nil {
 		return fmt.Errorf("unable to finalize data that would be sent to pyxis: %w", err)
 	}
