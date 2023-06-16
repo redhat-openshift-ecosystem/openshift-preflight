@@ -15,7 +15,7 @@ WORKDIR /go/src/preflight
 RUN make build RELEASE_TAG=${release_tag}
 
 # ubi8:latest
-FROM registry.access.redhat.com/ubi8/ubi:latest
+FROM registry.access.redhat.com/ubi9/ubi:latest
 ARG quay_expiration
 ARG release_tag
 ARG preflight_commit
