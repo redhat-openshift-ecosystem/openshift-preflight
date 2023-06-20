@@ -352,7 +352,7 @@ func prefixAndSuffixIsExcluded(ctx context.Context, s string) bool {
 		Prefix string
 		Suffix string
 	}{
-		{Prefix: "usr/lib64/", Suffix: ".cache"},
+		{Prefix: "usr/", Suffix: ".cache"},
 	}
 
 	for _, v := range excl {
