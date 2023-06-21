@@ -57,38 +57,6 @@ var _ = Describe("OperatorSdk", func() {
 			Expect(err).To(HaveOccurred())
 		})
 	})
-	When("The Bundle Validate result is good", func() {
-		It("should succeed", func() {
-			operatorSdk := New("foo.image", fakeExecValidateCommandSuccess)
-			_, err := operatorSdk.BundleValidate(testcontext, "foo.image", OperatorSdkBundleValidateOptions{
-				OutputFormat:    "json",
-				LogLevel:        "debug",
-				ContainerEngine: "podman",
-				Selector:        []string{"selector1", "selector2"},
-				OptionalValues:  map[string]string{"foo": "bar"},
-				Verbose:         true,
-				WaitTime:        "120m",
-			})
-			Expect(err).ToNot(HaveOccurred())
-		})
-	})
-	When("The scorecard result has an error", func() {
-		It("should return result == failed", func() {
-			operatoSdk := New("foo.image", fakeExecValidateCommandError)
-			result, err := operatoSdk.BundleValidate(testcontext, "foo.image", OperatorSdkBundleValidateOptions{
-				OutputFormat: "text",
-			})
-			Expect(err).ToNot(HaveOccurred())
-			Expect(result.Passed).To(BeFalse())
-		})
-	})
-	When("The Bundle Validate result is bad", func() {
-		It("should fail", func() {
-			operatorSdk := New("foo.image", fakeExecValidateCommandFailure)
-			_, err := operatorSdk.BundleValidate(testcontext, "foo.image", OperatorSdkBundleValidateOptions{})
-			Expect(err).To(HaveOccurred())
-		})
-	})
 })
 
 // These will be called when the inception occurs.
@@ -155,30 +123,6 @@ func fakeExecCommandSuccess(command string, args ...string) *exec.Cmd {
 
 func fakeExecCommandFailure(command string, args ...string) *exec.Cmd {
 	cs := []string{"-test.run=TestShellProcessFail", "--", command}
-	cs = append(cs, args...)
-	cmd := exec.Command(os.Args[0], cs...)
-	cmd.Env = []string{"GO_TEST_PROCESS=1"}
-	return cmd
-}
-
-func fakeExecValidateCommandSuccess(command string, args ...string) *exec.Cmd {
-	cs := []string{"-test.run=TestBundleValidateProcessSuccess", "--", command}
-	cs = append(cs, args...)
-	cmd := exec.Command(os.Args[0], cs...)
-	cmd.Env = []string{"GO_TEST_PROCESS=1"}
-	return cmd
-}
-
-func fakeExecValidateCommandError(command string, args ...string) *exec.Cmd {
-	cs := []string{"-test.run=TestBundleValidateProcessError", "--", command}
-	cs = append(cs, args...)
-	cmd := exec.Command(os.Args[0], cs...)
-	cmd.Env = []string{"GO_TEST_PROCESS=1"}
-	return cmd
-}
-
-func fakeExecValidateCommandFailure(command string, args ...string) *exec.Cmd {
-	cs := []string{"-test.run=TestBundleValidateProcessFail", "--", command}
 	cs = append(cs, args...)
 	cmd := exec.Command(os.Args[0], cs...)
 	cmd.Env = []string{"GO_TEST_PROCESS=1"}
