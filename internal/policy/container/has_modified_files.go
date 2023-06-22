@@ -231,17 +231,27 @@ func (p *HasModifiedFilesCheck) validate(ctx context.Context, layerIDs []string,
 				}
 
 				// Nope, nope, nope. File was modified without using RPM
-				logger.V(log.DBG).Info("found disallowed modification in layer", "file", modifiedFile)
+				logger.Info("found disallowed modification in layer", "file", modifiedFile)
 				disallowedModifications = true
 				continue
 			}
-			// Check that release contains the same arch and OS release
+
+			// Check that release contains the same arch, this is to ensure that a package did not get rebuilt with
+			// a different architecture
 			previousOsRelease := strings.Contains(previousPackage.Release, packageDist)
 			currentOsRelease := strings.Contains(currentPackage.Release, packageDist)
 
-			if (previousOsRelease && !currentOsRelease) || (previousPackage.Arch != currentPackage.Arch) {
-				// If either of these differ, that's a fail
-				return false, nil
+			if previousOsRelease && !currentOsRelease {
+				logger.Info("mismatch in OS release", "file", modifiedFile)
+				disallowedModifications = true
+				continue
+			}
+
+			// Check that the architectures for previous version and current version of a given package match
+			if previousPackage.Arch != currentPackage.Arch {
+				logger.Info("mismatch in package architecture", "file", modifiedFile)
+				disallowedModifications = true
+				continue
 			}
 
 			// This appears like an update. This is allowed.
@@ -274,7 +284,7 @@ func (p HasModifiedFilesCheck) Metadata() check.Metadata {
 func extractPackageNameVersionRelease(pkgList []*rpmdb.PackageInfo) map[string]packageMeta {
 	pkgNameList := make(map[string]packageMeta, len(pkgList))
 	for _, pkg := range pkgList {
-		pkgNameList[fmt.Sprintf("%s-%s-%s", pkg.Name, pkg.Version, pkg.Release)] = packageMeta{
+		pkgNameList[strings.Join([]string{pkg.Name, pkg.Version, pkg.Release, pkg.Arch}, "-")] = packageMeta{
 			Name:        pkg.Name,
 			Version:     pkg.Version,
 			Release:     pkg.Release,
@@ -393,19 +403,46 @@ func installedFileMapWithExclusions(ctx context.Context, pkglist []*rpmdb.Packag
 			return m, err
 		}
 
+		// converting directories to a map so we can filter them out quicker
+		pkgDirNamesMap := make(map[string]struct{})
+		for _, dir := range pkg.DirNames {
+			pkgDirNamesMap[dir] = struct{}{}
+		}
+
 		for _, file := range files {
+			if _, found := pkgDirNamesMap[file.Path]; found {
+				// The file is a directory. Skip it.
+				continue
+			}
+
 			if int32(file.Flags)&okFlags > 0 {
 				// It is one of the ok flags. Skip it.
 				continue
 			}
+
 			normalized := normalize(file.Path)
 			if pathIsExcluded(ctx, normalized) || directoryIsExcluded(ctx, normalized) || prefixAndSuffixIsExcluded(ctx, normalized) {
 				// It is either an explicitly excluded path or directory. Skip it.
 				continue
 			}
-			m[normalized] = fmt.Sprintf("%s-%s-%s", pkg.Name, pkg.Version, pkg.Release)
+
+			// checking to see if the file is already in the map.
+			// check to see if all attributes of the rpm match except architecture.
+			// this is to support cross architecture file ownership,
+			// the 2nd architecture we encounter, we can skip it.
+			if val, found := m[normalized]; found {
+				s := strings.Split(val, "-")
+				name, version, release, arch := s[0], s[1], s[2], s[3]
+
+				if name == pkg.Name && version == pkg.Version && release == pkg.Release && arch != pkg.Arch {
+					continue
+				}
+			}
+
+			m[normalized] = strings.Join([]string{pkg.Name, pkg.Version, pkg.Release, pkg.Arch}, "-")
 		}
 	}
+
 	return m, nil
 }
 
