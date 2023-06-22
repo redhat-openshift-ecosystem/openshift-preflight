@@ -243,6 +243,37 @@ var _ = Describe("HasModifiedFiles", func() {
 				Expect(ok).To(BeFalse())
 			})
 		})
+		When("the package architecture changes", func() {
+			var pkgs map[string]packageFilesRef
+			BeforeEach(func() {
+				pkgs = pkgRef
+
+				pkgSecondLayerPackageFiles := pkgs["secondlayer"].LayerPackageFiles
+				delete(pkgSecondLayerPackageFiles, "this")
+				pkgSecondLayerPackageFiles["this"] = "foo-1.0-1.d10"
+
+				pkgSecondLayerPackages := pkgs["secondlayer"].LayerPackages
+				delete(pkgSecondLayerPackages, "foo-1.0-1.d9")
+				pkgSecondLayerPackages["foo-1.0-1.d10"] = packageMeta{
+					Name:    "foo",
+					Version: "1.0",
+					Release: "1.d9",
+					Arch:    "differentarch",
+				}
+
+				pkgs["secondlayer"] = packageFilesRef{
+					LayerPackages:     pkgSecondLayerPackages,
+					LayerPackageFiles: pkgSecondLayerPackageFiles,
+					LayerFiles:        append(pkgs["secondlayer"].LayerFiles, "this"),
+					HasRPMDB:          true,
+				}
+			})
+			It("should fail because of different architectures dist", func() {
+				ok, err := hasModifiedFiles.validate(context.Background(), layers, pkgs, dist)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeFalse())
+			})
+		})
 		When("release dist does not match installed OS", func() {
 			When("package is a net-new", func() {
 				When("a file is modified", func() {
@@ -321,11 +352,37 @@ var _ = Describe("HasModifiedFiles", func() {
 		var goodPkgList []*rpmdb.PackageInfo
 
 		BeforeEach(func() {
+			// goodPkgList represents three mock RPM's,
+			// the first is a basic one to cover the happy path.
+			// the second is need to test our filtering logic for files from another architecture.
+			// the third is to test our filtering logic for directories.
 			goodPkgList = []*rpmdb.PackageInfo{
 				{
 					BaseNames:  []string{basename},
 					DirIndexes: []int32{dirindex},
 					DirNames:   []string{dirname},
+					Name:       "foo",
+					Version:    "1.0.0",
+					Release:    "100",
+					Arch:       "x86_64",
+				},
+				{
+					BaseNames:  []string{basename},
+					DirIndexes: []int32{dirindex},
+					DirNames:   []string{dirname},
+					Name:       "foo",
+					Version:    "1.0.0",
+					Release:    "100",
+					Arch:       "i686",
+				},
+				{
+					BaseNames:  []string{""},
+					DirIndexes: []int32{dirindex},
+					DirNames:   []string{"/"},
+					Name:       "just-dirs",
+					Version:    "1.0.0",
+					Release:    "100",
+					Arch:       "x86_64",
 				},
 			}
 		})

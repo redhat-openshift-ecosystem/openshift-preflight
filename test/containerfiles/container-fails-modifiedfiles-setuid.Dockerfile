@@ -11,7 +11,7 @@ LABEL name="preflight test image" \
       summary="testing the preflight tool" \
       description="test the preflight tool"
 
-RUN rm -f /bin/true
+RUN find / -xdev -perm -4000 -exec chmod ug-s {} +
 
 USER preflightuser
 
