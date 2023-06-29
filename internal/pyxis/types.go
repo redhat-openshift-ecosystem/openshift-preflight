@@ -104,6 +104,11 @@ type CertProject struct {
 	Type                string    `json:"type,omitempty"` // required
 }
 
+func (cp CertProject) ScratchProject() bool {
+	// ScratchProject returns true if the CertProject is designated Scratch in Pyxis.
+	return cp.Container.Type == "scratch" || cp.Container.OsContentType == "Scratch Image"
+}
+
 type Container struct {
 	DockerConfigJSON string `json:"docker_config_json,omitempty"`
 	HostedRegistry   bool   `json:"hosted_registry,omitempty"`

@@ -83,17 +83,19 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 		}
 	}
 
-	// Create the RPM manifest, or get it if it already exists.
-	rpmManifest := certInput.RpmManifest
-	rpmManifest.ImageID = certImage.ID
-	_, err = p.createRPMManifest(ctx, rpmManifest)
-	if err != nil {
-		if !errors.Is(err, ErrPyxis409StatusCode) {
-			return nil, fmt.Errorf("could not create rpm manifest: %v", err)
-		}
-		_, err = p.getRPMManifest(ctx, rpmManifest.ImageID)
+	if !certProject.ScratchProject() {
+		// Create the RPM manifest, or get it if it already exists.
+		rpmManifest := certInput.RpmManifest
+		rpmManifest.ImageID = certImage.ID
+		_, err = p.createRPMManifest(ctx, rpmManifest)
 		if err != nil {
-			return nil, fmt.Errorf("could not get rpm manifest: %v", err)
+			if !errors.Is(err, ErrPyxis409StatusCode) {
+				return nil, fmt.Errorf("could not create rpm manifest: %v", err)
+			}
+			_, err = p.getRPMManifest(ctx, rpmManifest.ImageID)
+			if err != nil {
+				return nil, fmt.Errorf("could not get rpm manifest: %v", err)
+			}
 		}
 	}
 

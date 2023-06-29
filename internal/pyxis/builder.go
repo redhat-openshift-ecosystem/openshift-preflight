@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 )
 
 // certificationInputBuilder facilitates the building of CertificationInput for
@@ -18,7 +16,7 @@ type certificationInputBuilder struct {
 }
 
 // NewCertificationInput accepts required values for submitting to Pyxis, and returns a CertificationInputBuilder for
-// adding additional files as artifacts to the submission. The caller must call Finalize() in order to receive
+// adding additional files as artifacts to the submission. The caller must call finalize() in order to receive
 // a *CertificationInput.
 func NewCertificationInput(ctx context.Context, project *CertProject, opts ...CertificationInputOption) (*CertificationInput, error) {
 	if project == nil {
@@ -37,16 +35,16 @@ func NewCertificationInput(ctx context.Context, project *CertProject, opts ...Ce
 		}
 	}
 
-	return b.finalize(ctx)
+	return b.finalize()
 }
 
-// Finalize runs a collection of safeguards to try to ensure we get a reliable
+// finalize runs a collection of safeguards to try to ensure we get a reliable
 // CertificationInput. This also wires up information that's shared across
 // the various included assets (e.g. ISVPID) where applicable, and returns an
 // unmodifiable CertificationInput.
 //
 // If any required values are not included, an error is thrown.
-func (b *certificationInputBuilder) finalize(ctx context.Context) (*CertificationInput, error) {
+func (b *certificationInputBuilder) finalize() (*CertificationInput, error) {
 	// safeguards, make sure things aren't nil for any reason.
 	if b.CertImage == nil {
 		return nil, fmt.Errorf("a CertImage was not provided and is required")
@@ -55,7 +53,7 @@ func (b *certificationInputBuilder) finalize(ctx context.Context) (*Certificatio
 		return nil, fmt.Errorf("test results were not provided and are required")
 	}
 
-	if b.RpmManifest == nil && policy.FromContext(ctx) != policy.PolicyScratch {
+	if b.RpmManifest == nil && !b.CertProject.ScratchProject() {
 		return nil, fmt.Errorf("the RPM manifest was not provided and is required")
 	}
 

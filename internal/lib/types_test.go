@@ -259,15 +259,14 @@ var _ = Describe("Container Certification Submitter", func() {
 		Context("and no docker config command argument was provided", func() {
 			BeforeEach(func() {
 				fakePC.setSRFuncSubmitSuccessfully("", "")
+				fakePC.getProjectsFunc = gpFuncReturnScratchException
 			})
 			It("should not throw an error", func() {
 				sbmt.DockerConfig = ""
 				err := os.Remove(dockerConfigPath)
 				Expect(err).ToNot(HaveOccurred())
 
-				scratchContext := policy.NewContext(testcontext, policy.PolicyContainer)
-
-				err = sbmt.Submit(scratchContext)
+				err = sbmt.Submit(testcontext)
 				Expect(err).ToNot(HaveOccurred())
 			})
 		})
@@ -278,9 +277,7 @@ var _ = Describe("Container Certification Submitter", func() {
 				fakePC.getProjectsFunc = gpFuncReturnHostedRegistry
 			})
 			It("should not throw an error", func() {
-				scratchContext := policy.NewContext(testcontext, policy.PolicyContainer)
-
-				err := sbmt.Submit(scratchContext)
+				err := sbmt.Submit(testcontext)
 				Expect(err).ToNot(HaveOccurred())
 			})
 		})
@@ -312,9 +309,7 @@ var _ = Describe("Container Certification Submitter", func() {
 				err := os.Remove(path.Join(aw.Path(), check.DefaultRPMManifestFilename))
 				Expect(err).ToNot(HaveOccurred())
 
-				scratchContext := policy.NewContext(testcontext, policy.PolicyContainer)
-
-				err = sbmt.Submit(scratchContext)
+				err = sbmt.Submit(testcontext)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring(check.DefaultRPMManifestFilename))
 			})
@@ -323,14 +318,13 @@ var _ = Describe("Container Certification Submitter", func() {
 		Context("and scratch policy was executed, so no rpmManifest exists on disk", func() {
 			BeforeEach(func() {
 				fakePC.setSRFuncSubmitSuccessfully("12345", "12345")
+				fakePC.getProjectsFunc = gpFuncReturnScratchException
 			})
 			It("should not throw an error", func() {
 				err := os.Remove(path.Join(aw.Path(), check.DefaultRPMManifestFilename))
 				Expect(err).ToNot(HaveOccurred())
 
-				scratchContext := policy.NewContext(testcontext, policy.PolicyScratch)
-
-				err = sbmt.Submit(scratchContext)
+				err = sbmt.Submit(testcontext)
 				Expect(err).ToNot(HaveOccurred())
 			})
 		})
@@ -349,12 +343,11 @@ var _ = Describe("Container Certification Submitter", func() {
 		Context("and the submission fails", func() {
 			BeforeEach(func() {
 				fakePC.submitResultsFunc = srFuncReturnError
+				fakePC.getProjectsFunc = gpFuncReturnScratchException
 			})
 
 			It("should throw an error", func() {
-				scratchContext := policy.NewContext(testcontext, policy.PolicyContainer)
-
-				err := sbmt.Submit(scratchContext)
+				err := sbmt.Submit(testcontext)
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -378,9 +371,7 @@ var _ = Describe("Container Certification Submitter", func() {
 			})
 
 			It("should throw an error finalizing the submission", func() {
-				scratchContext := policy.NewContext(testcontext, policy.PolicyContainer)
-
-				err := sbmt.Submit(scratchContext)
+				err := sbmt.Submit(testcontext)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("unable to finalize data"))
 			})
@@ -389,11 +380,10 @@ var _ = Describe("Container Certification Submitter", func() {
 		Context("and the submission succeeds", func() {
 			BeforeEach(func() {
 				fakePC.setSRFuncSubmitSuccessfully("", "")
+				fakePC.getProjectsFunc = gpFuncReturnScratchException
 			})
 			It("should not throw an error", func() {
-				scratchContext := policy.NewContext(testcontext, policy.PolicyContainer)
-
-				err := sbmt.Submit(scratchContext)
+				err := sbmt.Submit(testcontext)
 				Expect(err).ToNot(HaveOccurred())
 			})
 		})
