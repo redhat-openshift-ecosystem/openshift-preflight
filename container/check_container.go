@@ -58,9 +58,6 @@ func (c *containerCheck) Run(ctx context.Context) (certification.Results, error)
 			return certification.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotResolvePolicyException, err)
 		}
 
-		// adding policy to context to be retrieved later in the submit flow
-		ctx = policy.NewContext(ctx, override)
-
 		pol = override
 	}
 

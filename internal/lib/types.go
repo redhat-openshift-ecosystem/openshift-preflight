@@ -158,9 +158,15 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 		pyxis.WithArtifact(logfile, filepath.Base(s.PreflightLogFile)),
 	}
 
+	pol := policy.PolicyContainer
+
+	if certProject.ScratchProject() {
+		pol = policy.PolicyScratch
+	}
+
 	// only read the rpm manifest file off of disk if the policy executed is not scratch
 	// scratch images do not have rpm manifests, the rpm-manifest.json file is not written to disk by the engine during execution
-	if policy.FromContext(ctx) != policy.PolicyScratch {
+	if pol != policy.PolicyScratch {
 		rpmManifest, err := os.Open(path.Join(artifactWriter.Path(), check.DefaultRPMManifestFilename))
 		if err != nil {
 			return fmt.Errorf(
