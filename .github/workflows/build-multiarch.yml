@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install cosign
-        if: ${{ inputs.sign == true && github.event.release && github.event.action == "published" }}
+        if: ${{ inputs.sign == true && github.event.release && github.event.action == 'published' }}
         uses: sigstore/cosign-installer@f3c664df7af409cb4873aa5068053ba9d61a57b6 #v2.6.0
         with:
           cosign-release: 'v2.0.0'
@@ -78,12 +78,12 @@ jobs:
       - name: Sign the published manifest
         # only sign if release is published, not for ghactions branch push
         # which is used for testing and development.
-        if: ${{ inputs.sign == true && github.event.release && github.event.action == "published" }}
+        if: ${{ inputs.sign == true && github.event.release && github.event.action == 'published' }}
         run: |
           cosign sign --yes --recursive ${{ secrets.registry }}/${{ inputs.name }}@${{ steps.push-manifest.outputs.digest }}
 
       - name: Verify the image signature
-        if: ${{ inputs.sign == true && github.event.release && github.event.action == "published" }}
+        if: ${{ inputs.sign == true && github.event.release && github.event.action == 'published' }}
         run: |
           cosign verify \
             --certificate-identity https://github.com/redhat-openshift-ecosystem/openshift-preflight/.github/workflows/build-multiarch.yml@refs/tags/${{ inputs.tag }} \
