@@ -383,7 +383,9 @@ func installedFileMapWithExclusions(ctx context.Context, pkglist []*rpmdb.Packag
 		rpmdb.RPMFILE_DOC |
 		rpmdb.RPMFILE_LICENSE |
 		rpmdb.RPMFILE_MISSINGOK |
-		rpmdb.RPMFILE_README
+		rpmdb.RPMFILE_README |
+		rpmdb.RPMFILE_ARTIFACT |
+		rpmdb.RPMFILE_GHOST
 	m := map[string]string{}
 	for _, pkg := range pkglist {
 		files, err := pkg.InstalledFiles()
