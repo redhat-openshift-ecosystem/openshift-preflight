@@ -40,7 +40,7 @@ jobs:
         password: ${{ secrets.password }}
 
     - name: Extract executable
-      uses: shrink/actions-docker-extract@v1
+      uses: shrink/actions-docker-extract@v2
       id: extract
       with:
         image: ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}-${{ matrix.platform }}-${{ matrix.architecture }}
