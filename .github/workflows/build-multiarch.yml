@@ -49,7 +49,7 @@ jobs:
     steps:
       - name: Install cosign
         if: ${{ inputs.sign == true && github.event.release && github.event.action == 'published' }}
-        uses: sigstore/cosign-installer@f3c664df7af409cb4873aa5068053ba9d61a57b6 #v2.6.0
+        uses: sigstore/cosign-installer@6e04d228eb30da1757ee4e1dd75a0ec73a653e06 #v2.6.0
         with:
           cosign-release: 'v2.0.0'
 
