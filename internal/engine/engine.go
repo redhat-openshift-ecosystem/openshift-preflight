@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,12 +23,12 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/authn"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/openshift"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/option"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 	containerpol "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy/container"
 	operatorpol "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy/operator"
@@ -42,8 +41,25 @@ import (
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/cache"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
-	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
+
+// New creates a new CraneEngine from the passed params
+func New(ctx context.Context,
+	checks []check.Check,
+	kubeconfig []byte,
+	cfg runtime.Config,
+) (CraneEngine, error) {
+	return CraneEngine{
+		Kubeconfig:   kubeconfig,
+		DockerConfig: cfg.DockerConfig,
+		Image:        cfg.Image,
+		Checks:       checks,
+		IsBundle:     cfg.Bundle,
+		IsScratch:    cfg.Scratch,
+		Platform:     cfg.Platform,
+		Insecure:     cfg.Insecure,
+	}, nil
+}
 
 // CraneEngine implements a certification.CheckEngine, and leverage crane to interact with
 // the container registry and target image.
@@ -82,49 +98,27 @@ func export(img cranev1.Image, w io.Writer) error {
 	return err
 }
 
+func (c *CraneEngine) CranePlatform() string {
+	return c.Platform
+}
+
+func (c *CraneEngine) CraneDockerConfig() string {
+	return c.DockerConfig
+}
+
+func (c *CraneEngine) CraneInsecure() bool {
+	return c.Insecure
+}
+
+var _ option.CraneConfig = &CraneEngine{}
+
 func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 	logger := logr.FromContextOrDiscard(ctx)
 	logger.Info("target image", "image", c.Image)
 
-	// prepare crane runtime options, if necessary
-	options := []crane.Option{
-		crane.WithContext(ctx),
-		crane.WithAuthFromKeychain(
-			authn.PreflightKeychain(
-				ctx,
-				// We configure the Preflight Keychain here.
-				// In theory, we should not require further configuration
-				// downstream because the PreflightKeychain is a singleton.
-				// However, as long as we pass this same DockerConfig
-				// value downstream, it shouldn't matter if the
-				// keychain is reconfigured downstream.
-				authn.WithDockerConfig(c.DockerConfig),
-			),
-		),
-		crane.WithPlatform(&cranev1.Platform{
-			OS:           "linux",
-			Architecture: c.Platform,
-		}),
-		retryOnceAfter(5 * time.Second),
-	}
-
-	if c.Insecure {
-		// Adding WithTransport opt is a workaround to allow for access to HTTPS
-		// container registries with self-signed or non-trusted certificates.
-		//
-		// See https://github.com/google/go-containerregistry/issues/1553 for more context. If this issue
-		// is resolved, then this workaround can likely be removed or adjusted to use new features in the
-		// go-containerregistry project.
-		rt := remote.DefaultTransport.(*http.Transport).Clone()
-		rt.TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true, //nolint: gosec
-		}
-
-		options = append(options, crane.Insecure, crane.WithTransport(rt))
-	}
-
 	// pull the image and save to fs
 	logger.V(log.DBG).Info("pulling image from target registry")
+	options := option.GenerateCraneOptions(ctx, c)
 	img, err := crane.Pull(c.Image, options...)
 	if err != nil {
 		return fmt.Errorf("failed to pull remote container: %v", err)
@@ -647,52 +641,6 @@ func convertLabels(imageLabels map[string]string) []pyxis.Label {
 	}
 
 	return pyxisLabels
-}
-
-// retryOnceAfter is a crane option that retries once after t duration.
-func retryOnceAfter(t time.Duration) crane.Option {
-	return func(o *crane.Options) {
-		o.Remote = append(o.Remote, remote.WithRetryBackoff(remote.Backoff{
-			Duration: t,
-			Factor:   1.0,
-			Jitter:   0.1,
-			Steps:    2,
-		}))
-	}
-}
-
-// CheckEngine defines the functionality necessary to run all checks for a policy,
-// and return the results of that check execution.
-type CheckEngine interface {
-	// ExecuteChecks should execute all checks in a policy and internally
-	// store the results. Errors returned by ExecuteChecks should reflect
-	// errors in pre-validation tasks, and not errors in individual check
-	// execution itself.
-	ExecuteChecks(context.Context) error
-	// Results returns the outcome of executing all checks.
-	Results(context.Context) certification.Results
-}
-
-func New(ctx context.Context,
-	image string,
-	checks []check.Check,
-	kubeconfig []byte,
-	dockerconfig string,
-	isBundle,
-	isScratch bool,
-	insecure bool,
-	platform string,
-) (CheckEngine, error) {
-	return &CraneEngine{
-		Kubeconfig:   kubeconfig,
-		DockerConfig: dockerconfig,
-		Image:        image,
-		Checks:       checks,
-		IsBundle:     isBundle,
-		IsScratch:    isScratch,
-		Platform:     platform,
-		Insecure:     insecure,
-	}, nil
 }
 
 // OperatorCheckConfig contains configuration relevant to an individual check's execution.

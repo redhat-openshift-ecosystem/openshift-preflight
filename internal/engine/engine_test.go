@@ -11,7 +11,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	goruntime "runtime"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
@@ -266,7 +265,8 @@ var _ = Describe("Tag and digest binding information function", func() {
 var _ = Describe("CheckInitialization", func() {
 	When("initializing the engine", func() {
 		It("should not return an error", func() {
-			_, err := New(context.TODO(), "example.com/some/image:latest", []check.Check{}, nil, "", false, false, false, goruntime.GOARCH)
+			cfg := runtime.Config{}
+			_, err := New(context.TODO(), []check.Check{}, nil, cfg)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
