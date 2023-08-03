@@ -70,7 +70,15 @@ func (c *containerCheck) Run(ctx context.Context) (certification.Results, error)
 		return certification.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
 	}
 
-	eng, err := engine.New(ctx, c.image, checks, nil, c.dockerconfigjson, false, pol == policy.PolicyScratch, c.insecure, c.platform)
+	cfg := runtime.Config{
+		Image:        c.image,
+		DockerConfig: c.dockerconfigjson,
+		Scratch:      pol == policy.PolicyScratch,
+		Bundle:       false,
+		Insecure:     c.insecure,
+		Platform:     c.platform,
+	}
+	eng, err := engine.New(ctx, checks, nil, cfg)
 	if err != nil {
 		return certification.Results{}, err
 	}

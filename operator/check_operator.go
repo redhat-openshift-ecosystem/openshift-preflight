@@ -9,6 +9,7 @@ import (
 	preflighterr "github.com/redhat-openshift-ecosystem/openshift-preflight/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 )
 
 type Option = func(*operatorCheck)
@@ -59,7 +60,15 @@ func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
 		return certification.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
 	}
 
-	eng, err := engine.New(ctx, c.image, checks, c.kubeconfig, c.dockerConfigFilePath, true, true, c.insecure, goruntime.GOARCH)
+	cfg := runtime.Config{
+		Image:        c.image,
+		DockerConfig: c.dockerConfigFilePath,
+		Scratch:      true,
+		Bundle:       true,
+		Insecure:     c.insecure,
+		Platform:     goruntime.GOARCH,
+	}
+	eng, err := engine.New(ctx, checks, c.kubeconfig, cfg)
 	if err != nil {
 		return certification.Results{}, err
 	}
