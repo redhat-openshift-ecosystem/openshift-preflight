@@ -6,7 +6,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bombsimon/logrusr/v4 v4.0.0
 	github.com/docker/cli v24.0.5+incompatible
-	github.com/glebarez/go-sqlite v1.21.1
+	github.com/glebarez/go-sqlite v1.21.2
 	github.com/go-logr/logr v1.2.4
 	github.com/google/go-containerregistry v0.15.2
 	github.com/knqyf263/go-rpmdb v0.0.0-20230517124904-b97c85e63254
@@ -192,10 +192,10 @@ require (
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
 	k8s.io/kubectl v0.24.2 // indirect
 	k8s.io/utils v0.0.0-20230209194617-a36077c30491 // indirect
-	modernc.org/libc v1.22.3 // indirect
+	modernc.org/libc v1.22.5 // indirect
 	modernc.org/mathutil v1.5.0 // indirect
 	modernc.org/memory v1.5.0 // indirect
-	modernc.org/sqlite v1.21.1 // indirect
+	modernc.org/sqlite v1.23.1 // indirect
 	oras.land/oras-go v1.2.3-0.20230215124245-cfa8d030e4cc // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.1.2 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
