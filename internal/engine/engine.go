@@ -48,45 +48,45 @@ func New(ctx context.Context,
 	checks []check.Check,
 	kubeconfig []byte,
 	cfg runtime.Config,
-) (CraneEngine, error) {
-	return CraneEngine{
-		Kubeconfig:   kubeconfig,
-		DockerConfig: cfg.DockerConfig,
-		Image:        cfg.Image,
-		Checks:       checks,
-		IsBundle:     cfg.Bundle,
-		IsScratch:    cfg.Scratch,
-		Platform:     cfg.Platform,
-		Insecure:     cfg.Insecure,
+) (craneEngine, error) {
+	return craneEngine{
+		kubeconfig:   kubeconfig,
+		dockerConfig: cfg.DockerConfig,
+		image:        cfg.Image,
+		checks:       checks,
+		isBundle:     cfg.Bundle,
+		isScratch:    cfg.Scratch,
+		platform:     cfg.Platform,
+		insecure:     cfg.Insecure,
 	}, nil
 }
 
 // CraneEngine implements a certification.CheckEngine, and leverage crane to interact with
 // the container registry and target image.
-type CraneEngine struct {
+type craneEngine struct {
 	// Kubeconfig is a byte slice containing a valid Kubeconfig to be used by checks.
-	Kubeconfig []byte
+	kubeconfig []byte
 	// DockerConfig is the credential required to pull the image.
-	DockerConfig string
+	dockerConfig string
 	// Image is what is being tested, and should contain the
 	// fully addressable path (including registry, namespaces, etc)
 	// to the image
-	Image string
+	image string
 	// Checks is an array of all checks to be executed against
 	// the image provided.
-	Checks []check.Check
+	checks []check.Check
 	// Platform is the container platform to use. E.g. amd64.
-	Platform string
+	platform string
 
 	// IsBundle is an indicator that the asset is a bundle.
-	IsBundle bool
+	isBundle bool
 
 	// IsScratch is an indicator that the asset is a scratch image
-	IsScratch bool
+	isScratch bool
 
 	// Insecure controls whether to allow an insecure connection to
 	// the registry crane connects with.
-	Insecure bool
+	insecure bool
 
 	imageRef image.ImageReference
 	results  certification.Results
@@ -98,28 +98,28 @@ func export(img cranev1.Image, w io.Writer) error {
 	return err
 }
 
-func (c *CraneEngine) CranePlatform() string {
-	return c.Platform
+func (c *craneEngine) CranePlatform() string {
+	return c.platform
 }
 
-func (c *CraneEngine) CraneDockerConfig() string {
-	return c.DockerConfig
+func (c *craneEngine) CraneDockerConfig() string {
+	return c.dockerConfig
 }
 
-func (c *CraneEngine) CraneInsecure() bool {
-	return c.Insecure
+func (c *craneEngine) CraneInsecure() bool {
+	return c.insecure
 }
 
-var _ option.CraneConfig = &CraneEngine{}
+var _ option.CraneConfig = &craneEngine{}
 
-func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
+func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 	logger := logr.FromContextOrDiscard(ctx)
-	logger.Info("target image", "image", c.Image)
+	logger.Info("target image", "image", c.image)
 
 	// pull the image and save to fs
 	logger.V(log.DBG).Info("pulling image from target registry")
 	options := option.GenerateCraneOptions(ctx, c)
-	img, err := crane.Pull(c.Image, options...)
+	img, err := crane.Pull(c.image, options...)
 	if err != nil {
 		return fmt.Errorf("failed to pull remote container: %v", err)
 	}
@@ -172,14 +172,14 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 		return fmt.Errorf("failed to drain io reader: %v", err)
 	}
 
-	reference, err := name.ParseReference(c.Image)
+	reference, err := name.ParseReference(c.image)
 	if err != nil {
 		return fmt.Errorf("image uri could not be parsed: %v", err)
 	}
 
 	// store the image internals in the engine image reference to pass to validations.
 	c.imageRef = image.ImageReference{
-		ImageURI:        c.Image,
+		ImageURI:        c.image,
 		ImageFSPath:     containerFSPath,
 		ImageInfo:       img,
 		ImageRegistry:   reference.Context().RegistryStr(),
@@ -191,15 +191,15 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 		return fmt.Errorf("could not write cert image: %v", err)
 	}
 
-	if !c.IsScratch {
+	if !c.isScratch {
 		if err := writeRPMManifest(ctx, containerFSPath); err != nil {
 			return fmt.Errorf("could not write rpm manifest: %v", err)
 		}
 	}
 
-	if c.IsBundle {
+	if c.isBundle {
 		// Record test cluster version
-		version, err := openshift.GetOpenshiftClusterVersion(ctx, c.Kubeconfig)
+		version, err := openshift.GetOpenshiftClusterVersion(ctx, c.kubeconfig)
 		if err != nil {
 			logger.Error(err, "could not determine test cluster version")
 		}
@@ -211,8 +211,8 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 
 	// execute checks
 	logger.V(log.DBG).Info("executing checks")
-	for _, check := range c.Checks {
-		c.results.TestedImage = c.Image
+	for _, check := range c.checks {
+		c.results.TestedImage = c.image
 
 		logger.V(log.DBG).Info("running check", "check", check.Name())
 		if check.Metadata().Level == "optional" {
@@ -246,7 +246,7 @@ func (c *CraneEngine) ExecuteChecks(ctx context.Context) error {
 		c.results.PassedOverall = true
 	}
 
-	if c.IsBundle { // for operators:
+	if c.isBundle { // for operators:
 		// hash the contents of the bundle.
 		md5sum, err := generateBundleHash(ctx, c.imageRef.ImageFSPath)
 		if err != nil {
@@ -354,7 +354,7 @@ func generateBundleHash(ctx context.Context, bundlePath string) (string, error) 
 }
 
 // Results will return the results of check execution.
-func (c *CraneEngine) Results(ctx context.Context) certification.Results {
+func (c *craneEngine) Results(ctx context.Context) certification.Results {
 	return c.results
 }
 
