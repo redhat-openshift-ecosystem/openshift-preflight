@@ -31,7 +31,7 @@ import (
 
 var _ = Describe("Execute Checks tests", func() {
 	var src string
-	var engine CraneEngine
+	var engine craneEngine
 	var testcontext context.Context
 	var s *httptest.Server
 	var u *url.URL
@@ -109,18 +109,18 @@ var _ = Describe("Execute Checks tests", func() {
 		)
 
 		emptyConfig := runtime.Config{}
-		engine = CraneEngine{
-			DockerConfig: emptyConfig.DockerConfig,
-			Image:        src,
-			Checks: []check.Check{
+		engine = craneEngine{
+			dockerConfig: emptyConfig.DockerConfig,
+			image:        src,
+			checks: []check.Check{
 				goodCheck,
 				errorCheck,
 				failedCheck,
 				optionalCheckPassing,
 				optionalCheckFailing,
 			},
-			IsBundle:  false,
-			IsScratch: false,
+			isBundle:  false,
+			isScratch: false,
 		}
 	})
 	Context("Run the checks", func() {
@@ -134,7 +134,7 @@ var _ = Describe("Execute Checks tests", func() {
 		})
 		Context("it is a bundle", func() {
 			It("should succeed and generate a bundle hash", func() {
-				engine.IsBundle = true
+				engine.isBundle = true
 				err := engine.ExecuteChecks(testcontext)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(engine.results.CertificationHash).ToNot(BeEmpty())
@@ -142,7 +142,7 @@ var _ = Describe("Execute Checks tests", func() {
 		})
 		Context("the image is invalid", func() {
 			It("should throw a crane error on pull", func() {
-				engine.Image = "does.not/exist/anywhere:ever"
+				engine.image = "does.not/exist/anywhere:ever"
 				err := engine.ExecuteChecks(testcontext)
 				Expect(err).To(HaveOccurred())
 			})
@@ -164,7 +164,7 @@ var _ = Describe("Execute Checks tests", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should just hang forever err and hash mean nothing", func() {
-				engine.IsBundle = true
+				engine.isBundle = true
 				err := engine.ExecuteChecks(testcontext)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(engine.results.CertificationHash).ToNot(BeEmpty())
@@ -172,7 +172,7 @@ var _ = Describe("Execute Checks tests", func() {
 		})
 		Context("it is a bundle made with tar layer", func() {
 			BeforeEach(func() {
-				engine.IsBundle = true
+				engine.isBundle = true
 
 				var buf bytes.Buffer
 
@@ -189,7 +189,7 @@ var _ = Describe("Execute Checks tests", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should succeed and generate a bundle hash", func() {
-				engine.IsBundle = true
+				engine.isBundle = true
 				err := engine.ExecuteChecks(testcontext)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(engine.results.CertificationHash).ToNot(BeEmpty())
@@ -197,7 +197,7 @@ var _ = Describe("Execute Checks tests", func() {
 		})
 		Context("it is a bundle made and one of the layers is not a tar", func() {
 			BeforeEach(func() {
-				engine.IsBundle = true
+				engine.isBundle = true
 
 				want := []byte(`{"foo":"bar"}`)
 				layer := static.NewLayer(want, types.MediaType("application/json"))
@@ -210,7 +210,7 @@ var _ = Describe("Execute Checks tests", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should throw an EOF error on untar", func() {
-				engine.IsBundle = true
+				engine.isBundle = true
 				err := engine.ExecuteChecks(testcontext)
 				Expect(err).To(HaveOccurred())
 				Expect(engine.results.CertificationHash).To(BeEmpty())
