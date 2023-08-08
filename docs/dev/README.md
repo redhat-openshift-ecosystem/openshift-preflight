@@ -15,7 +15,7 @@ functional, and in your path.
 
 | Name             | Tool cli          | Minimum version |
 |----------------- |:-----------------:|----------------:|
-| OperatorSDK      | `operator-sdk`    |         v1.30.0 |
+| OperatorSDK      | `operator-sdk`    |         v1.31.0 |
 | OpenShift Client | `oc`              |         v4.10.0 |
 | Podman           | `podman`          |            v3.0 |
 
