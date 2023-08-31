@@ -737,8 +737,8 @@ github.com/openshift/client-go v0.0.0-20230120202327-72f107311084 h1:66uaqNwA+qY
 github.com/openshift/client-go v0.0.0-20230120202327-72f107311084/go.mod h1:M3h9m001PWac3eAudGG3isUud6yBjr5XpzLYLLTlHKo=
 github.com/operator-framework/api v0.17.7 h1:NLn+Ieg+HaPrw75KbX4efllN21ofFArQzS3q8TDbQY0=
 github.com/operator-framework/api v0.17.7/go.mod h1:lnurXgadLnoZ7pufKMHkErr2BVOIZSpHtvEkHBcKvdk=
-github.com/operator-framework/operator-manifest-tools v0.3.0 h1:iKxHA1dKWs22QwUQZhPJAHwRASmI0mnsMVNay0LnCpU=
-github.com/operator-framework/operator-manifest-tools v0.3.0/go.mod h1:PT1D+dEbD9TCoo62TkRP4BHYXA+h+zC0i3Ql7WZW9os=
+github.com/operator-framework/operator-manifest-tools v0.4.0 h1:u/qlCyVA84MtS5Ne016KpTcF0kqWgHyYEeOyFgVrX5k=
+github.com/operator-framework/operator-manifest-tools v0.4.0/go.mod h1:PT1D+dEbD9TCoo62TkRP4BHYXA+h+zC0i3Ql7WZW9os=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pelletier/go-toml v1.8.1/go.mod h1:T2/BmBdy8dvIRq1a/8aqjN41wvWlN4lrapLU/GW4pbc=
