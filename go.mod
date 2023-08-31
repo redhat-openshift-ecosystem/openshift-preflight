@@ -15,7 +15,7 @@ require (
 	github.com/openshift/api v0.0.0-20230223193310-d964c7a58d75
 	github.com/openshift/client-go v0.0.0-20230120202327-72f107311084
 	github.com/operator-framework/api v0.17.7
-	github.com/operator-framework/operator-manifest-tools v0.3.0
+	github.com/operator-framework/operator-manifest-tools v0.4.0
 	github.com/redhat-certification/chart-verifier v0.0.0-20230601213937-5c17fa99cd1f
 	github.com/shurcooL/graphql v0.0.0-20220606043923-3cf50f8a0a29
 	github.com/sirupsen/logrus v1.9.3
