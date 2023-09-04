@@ -16,7 +16,7 @@ jobs:
         platform: [linux]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Fetch latest release version
       uses: reloc8/action-latest-release-version@1.0.0
       id: fetch-latest-release
@@ -62,7 +62,7 @@ jobs:
   build-coverage:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install system deps
       run: 'sudo apt update && sudo apt install -y libgpgme-dev libbtrfs-dev libdevmapper-dev'
