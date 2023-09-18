@@ -33,7 +33,7 @@ jobs:
           - s390x
     steps:
     - name: Docker Login
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         registry: ${{ secrets.registry }}
         username: ${{ secrets.user }}
