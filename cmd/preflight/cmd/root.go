@@ -35,6 +35,8 @@ func rootCmd() *cobra.Command {
 	}
 
 	viper := viper.Instance()
+	rootCmd.PersistentFlags().String("config", "", "A preflight config file. The default is config.yaml (env: PFLT_CONFIG)")
+	_ = viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 	rootCmd.PersistentFlags().String("logfile", "", "Where the execution logfile will be written. (env: PFLT_LOGFILE)")
 	_ = viper.BindPFlag("logfile", rootCmd.PersistentFlags().Lookup("logfile"))
 
@@ -65,6 +67,10 @@ func initConfig(viper *spfviper.Viper) {
 	viper.AddConfigPath(".")
 
 	configFileUsed = true
+	if viper.GetString("config") != "" {
+		viper.SetConfigFile(viper.GetString("config"))
+	}
+
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(spfviper.ConfigFileNotFoundError); ok {
 			configFileUsed = false
