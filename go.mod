@@ -10,7 +10,7 @@ require (
 	github.com/go-logr/logr v1.2.4
 	github.com/google/go-containerregistry v0.15.2
 	github.com/knqyf263/go-rpmdb v0.0.0-20230517124904-b97c85e63254
-	github.com/onsi/ginkgo/v2 v2.12.1
+	github.com/onsi/ginkgo/v2 v2.13.0
 	github.com/onsi/gomega v1.27.10
 	github.com/openshift/api v0.0.1
 	github.com/openshift/client-go v0.0.1
