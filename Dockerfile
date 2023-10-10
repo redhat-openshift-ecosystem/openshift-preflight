@@ -42,7 +42,7 @@ LABEL ARCH=${ARCH}
 LABEL OS=${OS}
 
 # Define versions for dependencies
-ARG OPERATOR_SDK_VERSION=1.31.0
+ARG OPERATOR_SDK_VERSION=1.32.0
 
 # Add preflight binary
 COPY --from=builder /go/src/preflight/preflight /usr/local/bin/preflight
