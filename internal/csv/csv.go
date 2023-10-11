@@ -10,7 +10,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-const InfrastructureFeaturesAnnotation = "operators.openshift.io/infrastructure-features"
+const (
+	InfrastructureFeaturesAnnotation = "operators.openshift.io/infrastructure-features"
+	DisconnectedAnnotation           = "features.operators.openshift.io/disconnected"
+	FIPSCompliantAnnotation          = "features.operators.openshift.io/fips-compliant"
+	ProxyAwareAnnotation             = "features.operators.openshift.io/proxy-aware"
+	TLSProfilesAnnotation            = "features.operators.openshift.io/tls-profiles"
+	TokenAuthAWSAnnotation           = "features.operators.openshift.io/token-auth-aws"
+	TokenAuthAzureAnnotation         = "features.operators.openshift.io/token-auth-azure"
+	TokenAuthGCPAnnotation           = "features.operators.openshift.io/token-auth-gcp"
+	CNFAnnotation                    = "features.operators.openshift.io/cnf"
+	CNIAnnotation                    = "features.operators.openshift.io/cni"
+	CSIAnnotation                    = "features.operators.openshift.io/csi"
+)
 
 // SupportsDisconnected accepts a stringified list of supported features
 // and returns true if "disconnected" is listed as a supported feature.

@@ -78,6 +78,38 @@ var _ = Describe("JUnitXML Formatter", func() {
 						ElapsedTime: 0,
 					},
 				},
+				Warned: []certification.Result{
+					{
+						Check: check.NewGenericCheck(
+							"WarningCheckPass",
+							func(ctx context.Context, ir image.ImageReference) (bool, error) { return true, nil },
+							check.Metadata{
+								Description:      "description",
+								KnowledgeBaseURL: "kburl",
+								CheckURL:         "checkurl",
+							},
+							check.HelpText{
+								Message:    "helptext",
+								Suggestion: "suggestion",
+							}),
+						ElapsedTime: 0,
+					},
+					{
+						Check: check.NewGenericCheck(
+							"WarningCheckFail",
+							func(ctx context.Context, ir image.ImageReference) (bool, error) { return false, nil },
+							check.Metadata{
+								Description:      "description",
+								KnowledgeBaseURL: "kburl",
+								CheckURL:         "checkurl",
+							},
+							check.HelpText{
+								Message:    "helptext",
+								Suggestion: "suggestion",
+							}),
+						ElapsedTime: 0,
+					},
+				},
 			}
 		})
 		It("should format without error", func() {

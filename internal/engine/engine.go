@@ -216,33 +216,39 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 
 	// execute checks
 	logger.V(log.DBG).Info("executing checks")
-	for _, check := range c.checks {
+	for _, executedCheck := range c.checks {
 		c.results.TestedImage = c.image
 
-		logger.V(log.DBG).Info("running check", "check", check.Name())
-		if check.Metadata().Level == "optional" {
-			logger.Info(fmt.Sprintf("Check %s is not currently being enforced.", check.Name()))
+		logger.V(log.DBG).Info("running check", "check", executedCheck.Name())
+		if executedCheck.Metadata().Level == check.LevelOptional || executedCheck.Metadata().Level == check.LevelWarn {
+			logger.Info(fmt.Sprintf("Check %s is not currently being enforced.", executedCheck.Name()))
 		}
 
 		// run the validation
 		checkStartTime := time.Now()
-		checkPassed, err := check.Validate(ctx, c.imageRef)
+		checkPassed, err := executedCheck.Validate(ctx, c.imageRef)
 		checkElapsedTime := time.Since(checkStartTime)
 
 		if err != nil {
-			logger.WithValues("result", "ERROR", "err", err.Error()).Info("check completed", "check", check.Name())
-			c.results.Errors = appendUnlessOptional(c.results.Errors, certification.Result{Check: check, ElapsedTime: checkElapsedTime})
+			logger.WithValues("result", "ERROR", "err", err.Error()).Info("check completed", "check", executedCheck.Name())
+			c.results.Errors = appendUnlessOptional(c.results.Errors, certification.Result{Check: executedCheck, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
 		if !checkPassed {
-			logger.WithValues("result", "FAILED").Info("check completed", "check", check.Name())
-			c.results.Failed = appendUnlessOptional(c.results.Failed, certification.Result{Check: check, ElapsedTime: checkElapsedTime})
+			// if a test doesn't pass but is of level warn include it in warning results, instead of failed results
+			if executedCheck.Metadata().Level == check.LevelWarn {
+				logger.WithValues("result", "WARNING").Info("check completed", "check", executedCheck.Name())
+				c.results.Warned = appendUnlessOptional(c.results.Warned, certification.Result{Check: executedCheck, ElapsedTime: checkElapsedTime})
+				continue
+			}
+			logger.WithValues("result", "FAILED").Info("check completed", "check", executedCheck.Name())
+			c.results.Failed = appendUnlessOptional(c.results.Failed, certification.Result{Check: executedCheck, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
-		logger.WithValues("result", "PASSED").Info("check completed", "check", check.Name())
-		c.results.Passed = appendUnlessOptional(c.results.Passed, certification.Result{Check: check, ElapsedTime: checkElapsedTime})
+		logger.WithValues("result", "PASSED").Info("check completed", "check", executedCheck.Name())
+		c.results.Passed = appendUnlessOptional(c.results.Passed, certification.Result{Check: executedCheck, ElapsedTime: checkElapsedTime})
 	}
 
 	if len(c.results.Errors) > 0 || len(c.results.Failed) > 0 {
@@ -674,6 +680,7 @@ func InitializeOperatorChecks(ctx context.Context, p policy.Policy, cfg Operator
 			operatorpol.NewSecurityContextConstraintsCheck(),
 			&operatorpol.RelatedImagesCheck{},
 			operatorpol.FollowsRestrictedNetworkEnablementGuidelines{},
+			operatorpol.RequiredAnnotations{},
 		}, nil
 	}
 

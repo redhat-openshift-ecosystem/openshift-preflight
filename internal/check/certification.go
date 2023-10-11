@@ -6,6 +6,13 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 
+// Indicates the possible levels that can be utilized in the implementation of a check.
+const (
+	LevelBest     = "best"
+	LevelOptional = "optional"
+	LevelWarn     = "warn"
+)
+
 // Check as an interface containing all methods necessary
 // to use and identify a given check.
 type Check interface {
