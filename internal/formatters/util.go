@@ -11,6 +11,7 @@ func getResponse(r certification.Results) UserResponse {
 	passedChecks := make([]checkExecutionInfo, 0, len(r.Passed))
 	failedChecks := make([]checkExecutionInfo, 0, len(r.Failed))
 	erroredChecks := make([]checkExecutionInfo, 0, len(r.Errors))
+	warnedChecks := make([]checkExecutionInfo, 0, len(r.Warned))
 
 	if len(r.Passed) > 0 {
 		for _, check := range r.Passed {
@@ -47,15 +48,30 @@ func getResponse(r certification.Results) UserResponse {
 		}
 	}
 
+	if len(r.Warned) > 0 {
+		for _, check := range r.Warned {
+			warnedChecks = append(warnedChecks, checkExecutionInfo{
+				Name:             check.Name(),
+				ElapsedTime:      float64(check.ElapsedTime.Milliseconds()),
+				Description:      check.Metadata().Description,
+				Help:             check.Help().Message,
+				Suggestion:       check.Help().Suggestion,
+				KnowledgeBaseURL: check.Metadata().KnowledgeBaseURL,
+				CheckURL:         check.Metadata().CheckURL,
+			})
+		}
+	}
+
 	response := UserResponse{
 		Image:             r.TestedImage,
 		Passed:            r.PassedOverall,
 		LibraryInfo:       version.Version,
 		CertificationHash: r.CertificationHash,
 		Results: resultsText{
-			Passed: passedChecks,
-			Failed: failedChecks,
-			Errors: erroredChecks,
+			Passed:   passedChecks,
+			Failed:   failedChecks,
+			Errors:   erroredChecks,
+			Warnings: warnedChecks,
 		},
 	}
 
@@ -73,9 +89,10 @@ type UserResponse struct {
 
 // resultsText represents the results of check execution against the asset.
 type resultsText struct {
-	Passed []checkExecutionInfo `json:"passed" xml:"passed"`
-	Failed []checkExecutionInfo `json:"failed" xml:"failed"`
-	Errors []checkExecutionInfo `json:"errors" xml:"errors"`
+	Passed   []checkExecutionInfo `json:"passed" xml:"passed"`
+	Failed   []checkExecutionInfo `json:"failed" xml:"failed"`
+	Errors   []checkExecutionInfo `json:"errors" xml:"errors"`
+	Warnings []checkExecutionInfo `json:"warning,omitempty" xml:"warning,omitempty"`
 }
 
 // checkExecutionInfo contains all possible output fields that a user might see in their result.

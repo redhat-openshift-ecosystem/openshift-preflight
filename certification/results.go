@@ -22,4 +22,5 @@ type Results struct {
 	Passed            []Result
 	Failed            []Result
 	Errors            []Result
+	Warned            []Result
 }

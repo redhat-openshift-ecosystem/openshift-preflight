@@ -108,6 +108,24 @@ var _ = Describe("Execute Checks tests", func() {
 			check.HelpText{},
 		)
 
+		warningCheckPassing := check.NewGenericCheck(
+			"warnCheckPassing",
+			func(context.Context, image.ImageReference) (bool, error) {
+				return true, nil
+			},
+			check.Metadata{Level: check.LevelWarn},
+			check.HelpText{},
+		)
+
+		warningCheckFailing := check.NewGenericCheck(
+			"warnCheckFailing",
+			func(context.Context, image.ImageReference) (bool, error) {
+				return false, nil
+			},
+			check.Metadata{Level: check.LevelWarn},
+			check.HelpText{},
+		)
+
 		emptyConfig := runtime.Config{}
 		engine = craneEngine{
 			dockerConfig: emptyConfig.DockerConfig,
@@ -118,6 +136,8 @@ var _ = Describe("Execute Checks tests", func() {
 				failedCheck,
 				optionalCheckPassing,
 				optionalCheckFailing,
+				warningCheckPassing,
+				warningCheckFailing,
 			},
 			isBundle:  false,
 			isScratch: false,
@@ -127,9 +147,10 @@ var _ = Describe("Execute Checks tests", func() {
 		It("should succeed", func() {
 			err := engine.ExecuteChecks(testcontext)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(engine.results.Passed).To(HaveLen(1))
+			Expect(engine.results.Passed).To(HaveLen(2))
 			Expect(engine.results.Failed).To(HaveLen(1))
 			Expect(engine.results.Errors).To(HaveLen(1))
+			Expect(engine.results.Warned).To(HaveLen(1))
 			Expect(engine.results.CertificationHash).To(BeEmpty())
 		})
 		Context("it is a bundle", func() {
@@ -330,6 +351,7 @@ var _ = Describe("Check Name Queries", func() {
 			"SecurityContextConstraintsInCSV",
 			"AllImageRefsInRelatedImages",
 			"FollowsRestrictedNetworkEnablementGuidelines",
+			"RequiredAnnotations",
 		}),
 		Entry("scratch container policy", ScratchContainerPolicy, []string{
 			"HasLicense",
