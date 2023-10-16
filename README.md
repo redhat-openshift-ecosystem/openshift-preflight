@@ -16,7 +16,7 @@ subject to change, and some features are not fully implemented.
 ## Certification Workflow Guide
 
 For the complete container and operator bundle certification workflow instructions, please reference our 
-[official certification documentation](https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.68/html/red_hat_software_certification_workflow_guide/index).
+[official certification documentation](https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.69/html/red_hat_software_certification_workflow_guide/index).
 
 ## Requirements
 
