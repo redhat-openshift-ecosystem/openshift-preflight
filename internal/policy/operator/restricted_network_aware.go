@@ -86,8 +86,8 @@ func (p FollowsRestrictedNetworkEnablementGuidelines) Metadata() check.Metadata 
 		// TODO: If this check is enforced and no longer optional, we need to identify ways to reduce false failures that may be caused by
 		// developers injecting related images in other ways.
 		Level:            "optional",
-		KnowledgeBaseURL: "https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.68/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operator-requirements_openshift-sw-cert-policy-products-managed",
-		CheckURL:         "https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.68/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operator-requirements_openshift-sw-cert-policy-products-managed",
+		KnowledgeBaseURL: "https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.69/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operator-requirements_openshift-sw-cert-policy-products-managed",
+		CheckURL:         "https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.69/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operator-requirements_openshift-sw-cert-policy-products-managed",
 	}
 }
 
