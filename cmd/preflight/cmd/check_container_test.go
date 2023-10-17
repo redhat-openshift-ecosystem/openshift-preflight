@@ -35,6 +35,35 @@ import (
 	"github.com/onsi/gomega/types"
 )
 
+func createPlatformImage(arch string, addlLayers int) cranev1.Image {
+	// Expected values.
+	img, err := random.Image(1024, 5)
+	Expect(err).ToNot(HaveOccurred())
+
+	for i := 0; i < addlLayers; i++ {
+		newLayer, err := random.Layer(1024, cranev1types.OCILayer)
+		Expect(err).ToNot(HaveOccurred())
+		img, err = mutate.AppendLayers(img, newLayer)
+		Expect(err).ToNot(HaveOccurred())
+	}
+
+	cfgFile, err := img.ConfigFile()
+	Expect(err).ToNot(HaveOccurred())
+
+	cfgFile.Architecture = arch
+
+	cfgImg, err := mutate.ConfigFile(img, cfgFile)
+	Expect(err).ToNot(HaveOccurred())
+
+	return cfgImg
+}
+
+func createImageAndPush(src, arch string, addlLayers int) string {
+	img := createPlatformImage(arch, addlLayers)
+	Expect(crane.Push(img, src)).To(Succeed())
+	return src
+}
+
 var _ = Describe("Check Container Command", func() {
 	var src string
 	var manifestListSrc string
@@ -54,46 +83,16 @@ var _ = Describe("Check Container Command", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		src = fmt.Sprintf("%s/test/crane", u.Host)
-		manifests["image"] = src
-
-		// Expected values.
-		img, err := random.Image(1024, 5)
-		Expect(err).ToNot(HaveOccurred())
-
-		cfgFile, err := img.ConfigFile()
-		Expect(err).ToNot(HaveOccurred())
-
-		cfgFile.Architecture = "amd64"
-
-		cfgImg, err := mutate.ConfigFile(img, cfgFile)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = crane.Push(cfgImg, src)
-		Expect(err).ToNot(HaveOccurred())
+		manifests["image"] = createImageAndPush(src, "amd64", 0)
 
 		srcppc = fmt.Sprintf("%s/test/craneppc", u.Host)
-		manifests["imageppc"] = srcppc
+		manifests["imageppc"] = createImageAndPush(srcppc, "ppc64le", 1)
 
-		newLayer, err := random.Layer(1024, cranev1types.OCILayer)
-		Expect(err).ToNot(HaveOccurred())
-
-		ppcImg, err := mutate.AppendLayers(img, newLayer)
-		Expect(err).ToNot(HaveOccurred())
-
-		ppcCfgFile, err := ppcImg.ConfigFile()
-		Expect(err).ToNot(HaveOccurred())
-
-		ppcCfgFile.Architecture = "ppc64le"
-
-		ppcCfgImg, err := mutate.ConfigFile(ppcImg, ppcCfgFile)
-		Expect(err).ToNot(HaveOccurred())
-
-		Expect(crane.Push(ppcCfgImg, srcppc)).To(Succeed())
-
-		platforms := [4]string{"amd64", "arm64", "ppc64le", "s390x"}
 		manifestListSrc = fmt.Sprintf("%s/test/cranelist", u.Host)
 		manifests["index"] = manifestListSrc
-		lst, err := random.Index(1024, 5, int64(len(platforms)))
+
+		platforms := [4]string{"amd64", "arm64", "ppc64le", "s390x"}
+		lst, err := random.Index(1024, 5, int64(len(platforms)+1))
 		Expect(err).ToNot(HaveOccurred())
 
 		ref, err := name.ParseReference(manifestListSrc)
@@ -104,6 +103,11 @@ var _ = Describe("Check Container Command", func() {
 
 		for i, manifest := range m.Manifests {
 			switch {
+			case i == len(platforms):
+				m.Manifests[i].Platform = &cranev1.Platform{
+					Architecture: "unknown",
+					OS:           "unknown",
+				}
 			case manifest.MediaType.IsImage():
 				m.Manifests[i].Platform = &cranev1.Platform{
 					Architecture: platforms[i],
