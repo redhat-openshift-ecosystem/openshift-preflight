@@ -432,6 +432,10 @@ func platformsToBeProcessed(cmd *cobra.Command, cfg *runtime.Config) ([]string, 
 				// The user selected a platform. If this isn't it, continue.
 				continue
 			}
+			if img.Platform.Architecture == "unknown" && img.Platform.OS == "unknown" {
+				// This must be an attestation manifest. Skip it.
+				continue
+			}
 			containerImagePlatforms = append(containerImagePlatforms, img.Platform.Architecture)
 		}
 		if platformChanged && len(containerImagePlatforms) == 0 {
