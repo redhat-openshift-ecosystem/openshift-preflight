@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/bombsimon/logrusr/v4 v4.0.0
+	github.com/bombsimon/logrusr/v4 v4.1.0
 	github.com/docker/cli v24.0.6+incompatible
 	github.com/glebarez/go-sqlite v1.21.2
 	github.com/go-logr/logr v1.2.4
