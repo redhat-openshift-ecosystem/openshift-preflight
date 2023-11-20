@@ -53,7 +53,7 @@ jobs:
         target: ${{ steps.extract.outputs.destination }}/preflight-${{ matrix.platform }}-${{ matrix.architecture }}
 
     - name: Upload binaries to the release
-      uses: AButler/upload-release-assets@v2.0
+      uses: AButler/upload-release-assets@v3.0
       id: upload-release-asset
       with:
         files: ${{ steps.extract.outputs.destination }}/preflight-${{ matrix.platform }}-${{ matrix.architecture }}
