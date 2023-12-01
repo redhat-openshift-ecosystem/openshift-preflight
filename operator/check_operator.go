@@ -7,6 +7,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	preflighterr "github.com/redhat-openshift-ecosystem/openshift-preflight/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
@@ -35,27 +36,7 @@ func NewCheck(image, indeximage string, kubeconfig []byte, opts ...Option) *oper
 
 // Run executes the check and returns the results.
 func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
-	switch {
-	case c.image == "":
-		return certification.Results{}, preflighterr.ErrImageEmpty
-	case c.kubeconfig == nil:
-		return certification.Results{}, preflighterr.ErrKubeconfigEmpty
-	case c.indeximage == "":
-		return certification.Results{}, preflighterr.ErrIndexImageEmpty
-	}
-
-	pol := policy.PolicyOperator
-
-	checks, err := engine.InitializeOperatorChecks(ctx, pol, engine.OperatorCheckConfig{
-		ScorecardImage:          c.scorecardImage,
-		ScorecardWaitTime:       c.scorecardWaitTime,
-		ScorecardNamespace:      c.scorecardNamespace,
-		ScorecardServiceAccount: c.scorecardServiceAccount,
-		IndexImage:              c.indeximage,
-		DockerConfig:            c.dockerConfigFilePath,
-		Channel:                 c.operatorChannel,
-		Kubeconfig:              c.kubeconfig,
-	})
+	_, checks, err := c.List(ctx)
 	if err != nil {
 		return certification.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
 	}
@@ -89,6 +70,32 @@ func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
 	}
 
 	return eng.Results(ctx), nil
+}
+
+// List the available operator checks.
+func (c operatorCheck) List(ctx context.Context) (policy.Policy, []check.Check, error) {
+	switch {
+	case c.image == "":
+		return policy.PolicyNone, []check.Check{}, preflighterr.ErrImageEmpty
+	case c.kubeconfig == nil:
+		return policy.PolicyNone, []check.Check{}, preflighterr.ErrKubeconfigEmpty
+	case c.indeximage == "":
+		return policy.PolicyNone, []check.Check{}, preflighterr.ErrIndexImageEmpty
+	}
+
+	pol := policy.PolicyOperator
+
+	checks, err := engine.InitializeOperatorChecks(ctx, pol, engine.OperatorCheckConfig{
+		ScorecardImage:          c.scorecardImage,
+		ScorecardWaitTime:       c.scorecardWaitTime,
+		ScorecardNamespace:      c.scorecardNamespace,
+		ScorecardServiceAccount: c.scorecardServiceAccount,
+		IndexImage:              c.indeximage,
+		DockerConfig:            c.dockerConfigFilePath,
+		Channel:                 c.operatorChannel,
+		Kubeconfig:              c.kubeconfig,
+	})
+	return pol, checks, err
 }
 
 // WithScorecardNamespace configures the namespace value to use for OperatorSDK Scorecard checks.
