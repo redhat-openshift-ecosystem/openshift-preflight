@@ -12,6 +12,7 @@ type openshiftClusterVersion = runtime.OpenshiftClusterVersion
 type Result struct {
 	check.Check
 	ElapsedTime time.Duration
+	Err         error
 }
 
 type Results struct {

@@ -38,34 +38,7 @@ func NewCheck(image string, opts ...Option) *containerCheck {
 // pyxis information is provided. Calls should add a relevant ArtifactWriter to the context if they
 // wish to work with artifact files written by checks.
 func (c *containerCheck) Run(ctx context.Context) (certification.Results, error) {
-	if c.image == "" {
-		return certification.Results{}, preflighterr.ErrImageEmpty
-	}
-
-	pol := policy.PolicyContainer
-
-	// If we have enough Pyxis information, resolve the policy.
-	if c.hasPyxisData() {
-		p := pyxis.NewPyxisClient(
-			c.pyxisHost,
-			c.pyxisToken,
-			c.certificationProjectID,
-			&http.Client{Timeout: 60 * time.Second},
-		)
-
-		override, err := lib.GetContainerPolicyExceptions(ctx, p)
-		if err != nil {
-			return certification.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotResolvePolicyException, err)
-		}
-
-		pol = override
-	}
-
-	checks, err := engine.InitializeContainerChecks(ctx, pol, engine.ContainerCheckConfig{
-		DockerConfig:           c.dockerconfigjson,
-		PyxisAPIToken:          c.pyxisToken,
-		CertificationProjectID: c.certificationProjectID,
-	})
+	pol, checks, err := c.List(ctx)
 	if err != nil {
 		return certification.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
 	}
@@ -93,6 +66,41 @@ func (c *containerCheck) Run(ctx context.Context) (certification.Results, error)
 	}
 
 	return eng.Results(ctx), nil
+}
+
+// List the available container checks. Policy exceptions will be resolved if the proper
+// pyxis information is provided.
+func (c *containerCheck) List(ctx context.Context) (policy.Policy, []check.Check, error) {
+	if c.image == "" {
+		return policy.PolicyNone, []check.Check{}, preflighterr.ErrImageEmpty
+	}
+
+	pol := policy.PolicyContainer
+
+	// If we have enough Pyxis information, resolve the policy.
+	if c.hasPyxisData() {
+		p := pyxis.NewPyxisClient(
+			c.pyxisHost,
+			c.pyxisToken,
+			c.certificationProjectID,
+			&http.Client{Timeout: 60 * time.Second},
+		)
+
+		override, err := lib.GetContainerPolicyExceptions(ctx, p)
+		if err != nil {
+			return policy.PolicyNone, []check.Check{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotResolvePolicyException, err)
+		}
+
+		pol = override
+	}
+
+	checks, err := engine.InitializeContainerChecks(ctx, pol, engine.ContainerCheckConfig{
+		DockerConfig:           c.dockerconfigjson,
+		PyxisAPIToken:          c.pyxisToken,
+		CertificationProjectID: c.certificationProjectID,
+	})
+
+	return pol, checks, err
 }
 
 // hasPyxisData returns true of the values necessary to make a pyxis
