@@ -40,7 +40,7 @@ func NewCheck(image string, opts ...Option) *containerCheck {
 func (c *containerCheck) Run(ctx context.Context) (certification.Results, error) {
 	pol, checks, err := c.List(ctx)
 	if err != nil {
-		return certification.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
+		return certification.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotListChecks, err)
 	}
 
 	cfg := runtime.Config{
@@ -99,7 +99,9 @@ func (c *containerCheck) List(ctx context.Context) (policy.Policy, []check.Check
 		PyxisAPIToken:          c.pyxisToken,
 		CertificationProjectID: c.certificationProjectID,
 	})
-
+	if err != nil {
+		return pol, checks, fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
+	}
 	return pol, checks, err
 }
 
