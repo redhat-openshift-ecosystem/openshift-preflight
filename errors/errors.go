@@ -9,5 +9,4 @@ var (
 	ErrImageEmpty                   = errors.New("image is empty")
 	ErrCannotResolvePolicyException = errors.New("cannot resolve policy exception")
 	ErrCannotInitializeChecks       = errors.New("unable to initialize checks")
-	ErrCannotListChecks             = errors.New("unable to list checks")
 )

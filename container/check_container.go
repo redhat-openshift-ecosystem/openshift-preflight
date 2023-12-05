@@ -40,7 +40,7 @@ func NewCheck(image string, opts ...Option) *containerCheck {
 func (c *containerCheck) Run(ctx context.Context) (certification.Results, error) {
 	pol, checks, err := c.List(ctx)
 	if err != nil {
-		return certification.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotListChecks, err)
+		return certification.Results{}, err
 	}
 
 	cfg := runtime.Config{
