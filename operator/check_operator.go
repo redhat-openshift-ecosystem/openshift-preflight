@@ -38,7 +38,7 @@ func NewCheck(image, indeximage string, kubeconfig []byte, opts ...Option) *oper
 func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
 	_, checks, err := c.List(ctx)
 	if err != nil {
-		return certification.Results{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotListChecks, err)
+		return certification.Results{}, err
 	}
 
 	cfg := runtime.Config{
