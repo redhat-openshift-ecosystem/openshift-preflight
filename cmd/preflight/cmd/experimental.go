@@ -32,7 +32,5 @@ func experimentalCmd() *cobra.Command {
 		command.Root().HelpFunc()(command, strings)
 	})
 
-	expCmd.AddCommand(helmCmd())
-
 	return expCmd
 }
