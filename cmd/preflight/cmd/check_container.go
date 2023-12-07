@@ -6,10 +6,20 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	rt "runtime"
 	"strings"
+	"time"
+
+	"github.com/go-logr/logr"
+	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-github/v57/github"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -23,13 +33,6 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
-
-	"github.com/go-logr/logr"
-	"github.com/google/go-containerregistry/pkg/crane"
-	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 var submit bool
@@ -45,7 +48,7 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 		Args:  checkContainerPositionalArgs,
 		// this fmt.Sprintf is in place to keep spacing consistent with cobras two spaces that's used in: Usage, Flags, etc
 		Example: fmt.Sprintf("  %s", "preflight check container quay.io/repo-name/container-name:version"),
-		PreRunE: validateCertificationProjectID,
+		PreRunE: validateConditions,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return checkContainerRunE(cmd, args, runpreflight)
 		},
@@ -87,6 +90,9 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 
 	flags.String("platform", rt.GOARCH, "Architecture of image to pull. Defaults to runtime platform.")
 	_ = viper.BindPFlag("platform", flags.Lookup("platform"))
+
+	flags.String("gh-auth-token", "", "A Github auth token can be specified to work around rate limits")
+	_ = viper.BindPFlag("gh-auth-token", flags.Lookup("gh-auth-token"))
 
 	return checkContainerCmd
 }
@@ -237,9 +243,16 @@ func checkContainerPositionalArgs(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// validateConditions run all pre-run functions
+func validateConditions(cmd *cobra.Command, args []string) error {
+	err := validateCertificationProjectID()
+	checkForNewerReleaseVersion(cmd)
+	return err
+}
+
 // validateCertificationProjectID validates that the certification project id is in the proper format
 // and throws an error if the value provided is in a legacy format that is not usable to query pyxis
-func validateCertificationProjectID(cmd *cobra.Command, args []string) error {
+func validateCertificationProjectID() error {
 	viper := viper.Instance()
 	certificationProjectID := viper.GetString("certification_project_id")
 	// splitting the certification project id into parts. if there are more than 2 elements in the array,
@@ -255,6 +268,34 @@ func validateCertificationProjectID(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// checkForNewerReleaseVersion checks if there is a newer release available
+func checkForNewerReleaseVersion(cmd *cobra.Command) {
+	logger := logr.FromContextOrDiscard(cmd.Context())
+
+	// use an authenticated client if a token is provided
+	var client *github.Client
+	ghToken, err := cmd.Flags().GetString("gh-auth-token")
+	if err == nil && len(ghToken) > 0 {
+		client = github.NewClient(&http.Client{
+			// Timeout in 1s in case Github is slow to respond
+			Timeout: time.Second * 1,
+		}).WithAuthToken(ghToken)
+	} else {
+		client = github.NewClient(&http.Client{
+			// timeout in 1s in case Github is slow to respond
+			Timeout: time.Second * 1,
+		})
+	}
+	// check if a newer release is available
+	latestRelease, err := version.Version.LatestReleasedVersion(cmd, client.Repositories)
+	if err != nil {
+		logger.Error(err, "Unable to determine if running the latest release")
+	}
+	if latestRelease != nil {
+		logger.Info("Found newer release", "New version", *latestRelease.TagName, "available at", *latestRelease.HTMLURL)
+	}
 }
 
 // generateContainerCheckOptions returns appropriate container.Options based on cfg.

@@ -13,14 +13,6 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
-
 	"github.com/go-logr/logr"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -33,6 +25,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 )
 
 func createPlatformImage(arch string, addlLayers int) cranev1.Image {
@@ -225,7 +225,7 @@ certification_project_id: mycertid`
 				DeferCleanup(viper.Instance().Set, "certification_project_id", "")
 			})
 			It("should not change the flag value", func() {
-				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
+				err := validateCertificationProjectID()
 				Expect(err).ToNot(HaveOccurred())
 				Expect(viper.Instance().GetString("certification_project_id")).To(Equal("123456789"))
 			})
@@ -236,7 +236,7 @@ certification_project_id: mycertid`
 				DeferCleanup(viper.Instance().Set, "certification_project_id", "")
 			})
 			It("should strip ospid- from the flag value", func() {
-				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
+				err := validateCertificationProjectID()
 				Expect(err).ToNot(HaveOccurred())
 				Expect(viper.Instance().GetString("certification_project_id")).To(Equal("123456789"))
 			})
@@ -247,7 +247,7 @@ certification_project_id: mycertid`
 				DeferCleanup(viper.Instance().Set, "certification_project_id", "")
 			})
 			It("should throw an error", func() {
-				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
+				err := validateCertificationProjectID()
 				Expect(err).To(HaveOccurred())
 			})
 		})
@@ -257,7 +257,7 @@ certification_project_id: mycertid`
 				DeferCleanup(viper.Instance().Set, "certification_project_id", "")
 			})
 			It("should throw an error", func() {
-				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
+				err := validateCertificationProjectID()
 				Expect(err).To(HaveOccurred())
 			})
 		})

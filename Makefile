@@ -47,12 +47,12 @@ image-push:
 .PHONY: test
 test:
 	go test -v $$(go list ./... | grep -v e2e) \
-	-ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo"
+	-ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=foobar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=0.0.1"
 
 .PHONY: cover
 cover:
 	go test -v \
-	 -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo" \
+	 -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=foobar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=0.0.1" \
 	 $$(go list ./... | grep -v e2e) \
 	 -race \
 	 -cover -coverprofile=coverage.out
