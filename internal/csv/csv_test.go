@@ -13,9 +13,36 @@ import (
 
 var _ = Describe("CSV Functions", func() {
 	DescribeTable(
+		"Validating the independent disconnected annotation values",
+		func(value string, expected bool) {
+			actual := SupportsDisconnected(value)
+			Expect(actual).To(Equal(expected))
+		},
+		Entry("set to \"true\"", "true", true),
+		Entry("set to \"false\"", "false", false),
+		Entry("set to \"TRUE\"", "TRUE", false),
+		Entry("set to a random string", "abc", false),
+	)
+
+	When("Checking CSVs for the Disconnected Annotation", func() {
+		var csv operatorsv1alpha1.ClusterServiceVersion
+		It("Should return false if the annotation is missing", func() {
+			annotations := map[string]string{}
+			csv.Annotations = annotations
+			Expect(HasDisconnectedAnnotation(&csv)).To(BeFalse())
+		})
+
+		It("Should return true if the annotation is present, regardless of its value", func() {
+			annotations := map[string]string{DisconnectedAnnotation: "foo"}
+			csv.Annotations = annotations
+			Expect(HasDisconnectedAnnotation(&csv)).To(BeTrue())
+		})
+	})
+
+	DescribeTable(
 		"Validating infrastructure features list disconnected",
 		func(featurelist string, expected bool) {
-			actual := SupportsDisconnected(featurelist)
+			actual := SupportsDisconnectedViaInfrastructureFeatures(featurelist)
 			Expect(actual).To(Equal(expected))
 		},
 		Entry("disconnected in all caps", `["DISCONNECTED"]`, true),
