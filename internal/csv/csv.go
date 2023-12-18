@@ -24,7 +24,7 @@ const (
 	CSIAnnotation                    = "features.operators.openshift.io/csi"
 )
 
-// SupportsDisconnected accepts a stringified list of supported features
+// SupportsDisconnectedViaInfrastructureFeatures accepts a stringified list of supported features
 // and returns true if "disconnected" is listed as a supported feature.
 //
 // E.g. '["disconnected"]'.
@@ -32,7 +32,9 @@ const (
 // This is case insensitive, as each infrastructure
 // is normalized before checking. A failure to unmarshal this structure
 // returns false.
-func SupportsDisconnected(infrastructureFeatures string) bool {
+//
+// This is a legacy annotation and will be superceded by the DisconnectedAnnotation in the future.
+func SupportsDisconnectedViaInfrastructureFeatures(infrastructureFeatures string) bool {
 	var features []string
 
 	err := json.Unmarshal([]byte(infrastructureFeatures), &features)
@@ -49,10 +51,25 @@ func SupportsDisconnected(infrastructureFeatures string) bool {
 	return false
 }
 
+// SupportsDisconnected accepts the value of the DisconnectedAnnotation and returns whether it is
+// set to the exact value of "true", which is the expected value indicating support. For this annotation,
+// an explicit value of "false" is treated the same as any other non-true value.
+func SupportsDisconnected(annotationValue string) bool {
+	return annotationValue == "true"
+}
+
 // HasInfrastructureFeaturesAnnotation returns true if the infrastructure-features annotation
-// exists in the .metadata.annotations block of csv.
+// exists in the .metadata.annotations block of csv. This is the legacy annotation
+// superceded by the DisconnectedAnnotation
 func HasInfrastructureFeaturesAnnotation(csv *operatorsv1alpha1.ClusterServiceVersion) bool {
 	_, ok := csv.GetAnnotations()[InfrastructureFeaturesAnnotation]
+	return ok
+}
+
+// HasDisconnectedAnnotation returns true if the disconnected annotation exists in the
+// .metadata.annotations block of csv.
+func HasDisconnectedAnnotation(csv *operatorsv1alpha1.ClusterServiceVersion) bool {
+	_, ok := csv.GetAnnotations()[DisconnectedAnnotation]
 	return ok
 }
 

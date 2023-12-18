@@ -37,14 +37,18 @@ func (p FollowsRestrictedNetworkEnablementGuidelines) validate(ctx context.Conte
 		return false, err
 	}
 
+	restrictedNetworkSupport := false
 	// If the CSV does not claim to support disconnected environments, there's no reason to check that it followed guidelines.
-	if !libcsv.HasInfrastructureFeaturesAnnotation(csv) {
-		logger.Info("this operator does not have the infrastructure-features annotation. You can safely ignore this if you your operator is not intended to be restricted-network aware.")
-		return false, nil
+	if libcsv.HasDisconnectedAnnotation(csv) && libcsv.SupportsDisconnected(csv.Annotations[libcsv.DisconnectedAnnotation]) {
+		restrictedNetworkSupport = true
 	}
 
-	if !libcsv.SupportsDisconnected(csv.Annotations[libcsv.InfrastructureFeaturesAnnotation]) {
-		logger.Info("the infrastructure-features enabled for this operator did not include the \"disconnected\" identifier. You can safely ignore this if you your operator is not intended to be restricted-network aware.")
+	if libcsv.HasInfrastructureFeaturesAnnotation(csv) && libcsv.SupportsDisconnectedViaInfrastructureFeatures(csv.Annotations[libcsv.InfrastructureFeaturesAnnotation]) {
+		restrictedNetworkSupport = true
+	}
+
+	if !restrictedNetworkSupport {
+		logger.Info("this operator does not indicate it supports installation into restricted networks. This is safe to ignore if you are not intending to deploy in these environments.")
 		return false, nil
 	}
 
