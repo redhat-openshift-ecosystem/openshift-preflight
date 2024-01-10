@@ -76,11 +76,11 @@ func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
 func (c operatorCheck) List(ctx context.Context) (policy.Policy, []check.Check, error) {
 	switch {
 	case c.image == "":
-		return policy.PolicyNone, []check.Check{}, preflighterr.ErrImageEmpty
+		return "", []check.Check{}, preflighterr.ErrImageEmpty
 	case c.kubeconfig == nil:
-		return policy.PolicyNone, []check.Check{}, preflighterr.ErrKubeconfigEmpty
+		return "", []check.Check{}, preflighterr.ErrKubeconfigEmpty
 	case c.indeximage == "":
-		return policy.PolicyNone, []check.Check{}, preflighterr.ErrIndexImageEmpty
+		return "", []check.Check{}, preflighterr.ErrIndexImageEmpty
 	}
 
 	pol := policy.PolicyOperator

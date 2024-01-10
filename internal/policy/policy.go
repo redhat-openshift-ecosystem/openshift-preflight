@@ -7,5 +7,4 @@ const (
 	PolicyContainer Policy = "container"
 	PolicyScratch   Policy = "scratch"
 	PolicyRoot      Policy = "root"
-	PolicyNone      Policy = "none"
 )

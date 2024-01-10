@@ -72,7 +72,7 @@ func (c *containerCheck) Run(ctx context.Context) (certification.Results, error)
 // pyxis information is provided.
 func (c *containerCheck) List(ctx context.Context) (policy.Policy, []check.Check, error) {
 	if c.image == "" {
-		return policy.PolicyNone, []check.Check{}, preflighterr.ErrImageEmpty
+		return "", []check.Check{}, preflighterr.ErrImageEmpty
 	}
 
 	pol := policy.PolicyContainer
@@ -88,7 +88,7 @@ func (c *containerCheck) List(ctx context.Context) (policy.Policy, []check.Check
 
 		override, err := lib.GetContainerPolicyExceptions(ctx, p)
 		if err != nil {
-			return policy.PolicyNone, []check.Check{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotResolvePolicyException, err)
+			return "", []check.Check{}, fmt.Errorf("%w: %s", preflighterr.ErrCannotResolvePolicyException, err)
 		}
 
 		pol = override
