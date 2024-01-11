@@ -12,7 +12,10 @@ type openshiftClusterVersion = runtime.OpenshiftClusterVersion
 type Result struct {
 	check.Check
 	ElapsedTime time.Duration
-	Err         error
+	// Err contains the error a check itself throws if it failed to run.
+	// If populated, the expectation is that this Result is in the
+	// Results{}.Errors slice.
+	Err error
 }
 
 type Results struct {
