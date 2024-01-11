@@ -49,6 +49,29 @@ var _ = Describe("Operator Check initialization", func() {
 
 var _ = Describe("Operator Check Execution", func() {
 	// NOTE: There's no unit test for running the operator check because it requires a cluster.
+	When("testing against a known-good image", func() {
+		var chk *operatorCheck
+		BeforeEach(func() {
+			chk = NewCheck("Image", "IndexImage", []byte("Kubeconfig"))
+		})
+
+		It("Should resolve checks without issue", func() {
+			ctx := context.TODO()
+			err := chk.resolve(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(chk.policy).To(Equal("operator"))
+			Expect(chk.resolved).To(Equal(true))
+			Expect(len(chk.checks)).To(Equal(9))
+		})
+
+		It("Should list checks without issue", func() {
+			ctx := context.TODO()
+			policy, checks, err := chk.List(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(policy).To(Equal("operator"))
+			Expect(len(checks)).To(Equal(9))
+		})
+	})
 
 	When("Calling the check", func() {
 		It("should fail if you passed an empty image", func() {

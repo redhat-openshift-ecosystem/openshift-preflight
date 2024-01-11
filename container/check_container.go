@@ -97,6 +97,7 @@ func (c *containerCheck) resolve(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
 		}
+		c.resolved = true
 	}
 	return nil
 }
