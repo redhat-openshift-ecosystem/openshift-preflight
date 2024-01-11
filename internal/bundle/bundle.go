@@ -44,7 +44,9 @@ func Validate(ctx context.Context, imagePath string) (*Report, error) {
 	}
 	validators := validation.DefaultBundleValidators.WithValidators(
 		validation.AlphaDeprecatedAPIsValidator,
-		validation.OperatorHubValidator,
+		validation.OperatorHubV2Validator,
+		validation.StandardCapabilitiesValidator,
+		validation.StandardCategoriesValidator,
 	)
 
 	objs := bundle.ObjectsToValidate()
