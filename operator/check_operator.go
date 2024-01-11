@@ -36,7 +36,8 @@ func NewCheck(image, indeximage string, kubeconfig []byte, opts ...Option) *oper
 
 // Run executes the check and returns the results.
 func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
-	_, checks, err := c.List(ctx)
+
+	err := c.resolve(ctx)
 	if err != nil {
 		return certification.Results{}, err
 	}
@@ -49,7 +50,7 @@ func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
 		Insecure:     c.insecure,
 		Platform:     goruntime.GOARCH,
 	}
-	eng, err := engine.New(ctx, checks, c.kubeconfig, cfg)
+	eng, err := engine.New(ctx, c.checks, c.kubeconfig, cfg)
 	if err != nil {
 		return certification.Results{}, err
 	}
@@ -65,40 +66,43 @@ func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
 		return certification.Results{}, err
 	}
 
-	if err != nil {
-		return certification.Results{}, err
-	}
-
 	return eng.Results(ctx), nil
+}
+
+func (c *operatorCheck) resolve(ctx context.Context) error {
+	if !c.resolved {
+		switch {
+		case c.image == "":
+			return preflighterr.ErrImageEmpty
+		case c.kubeconfig == nil:
+			return preflighterr.ErrKubeconfigEmpty
+		case c.indeximage == "":
+			return preflighterr.ErrIndexImageEmpty
+		}
+
+		c.policy = policy.PolicyOperator
+		var err error
+		c.checks, err = engine.InitializeOperatorChecks(ctx, c.policy, engine.OperatorCheckConfig{
+			ScorecardImage:          c.scorecardImage,
+			ScorecardWaitTime:       c.scorecardWaitTime,
+			ScorecardNamespace:      c.scorecardNamespace,
+			ScorecardServiceAccount: c.scorecardServiceAccount,
+			IndexImage:              c.indeximage,
+			DockerConfig:            c.dockerConfigFilePath,
+			Channel:                 c.operatorChannel,
+			Kubeconfig:              c.kubeconfig,
+		})
+		if err != nil {
+			return fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
+		}
+	}
+	return nil
 }
 
 // List the available operator checks.
 func (c operatorCheck) List(ctx context.Context) (policy.Policy, []check.Check, error) {
-	switch {
-	case c.image == "":
-		return "", []check.Check{}, preflighterr.ErrImageEmpty
-	case c.kubeconfig == nil:
-		return "", []check.Check{}, preflighterr.ErrKubeconfigEmpty
-	case c.indeximage == "":
-		return "", []check.Check{}, preflighterr.ErrIndexImageEmpty
-	}
-
-	pol := policy.PolicyOperator
-
-	checks, err := engine.InitializeOperatorChecks(ctx, pol, engine.OperatorCheckConfig{
-		ScorecardImage:          c.scorecardImage,
-		ScorecardWaitTime:       c.scorecardWaitTime,
-		ScorecardNamespace:      c.scorecardNamespace,
-		ScorecardServiceAccount: c.scorecardServiceAccount,
-		IndexImage:              c.indeximage,
-		DockerConfig:            c.dockerConfigFilePath,
-		Channel:                 c.operatorChannel,
-		Kubeconfig:              c.kubeconfig,
-	})
-	if err != nil {
-		return pol, checks, fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
-	}
-	return pol, checks, err
+	err := c.resolve(ctx)
+	return c.policy, c.checks, err
 }
 
 // WithScorecardNamespace configures the namespace value to use for OperatorSDK Scorecard checks.
@@ -171,4 +175,7 @@ type operatorCheck struct {
 	operatorChannel         string
 	dockerConfigFilePath    string
 	insecure                bool
+	checks                  []check.Check
+	resolved                bool
+	policy                  policy.Policy
 }
