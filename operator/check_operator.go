@@ -36,7 +36,6 @@ func NewCheck(image, indeximage string, kubeconfig []byte, opts ...Option) *oper
 
 // Run executes the check and returns the results.
 func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
-
 	err := c.resolve(ctx)
 	if err != nil {
 		return certification.Results{}, err
@@ -95,6 +94,7 @@ func (c *operatorCheck) resolve(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
 		}
+		c.resolved = true
 	}
 	return nil
 }
