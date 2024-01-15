@@ -69,33 +69,36 @@ func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
 }
 
 func (c *operatorCheck) resolve(ctx context.Context) error {
-	if !c.resolved {
-		switch {
-		case c.image == "":
-			return preflighterr.ErrImageEmpty
-		case c.kubeconfig == nil:
-			return preflighterr.ErrKubeconfigEmpty
-		case c.indeximage == "":
-			return preflighterr.ErrIndexImageEmpty
-		}
-
-		c.policy = policy.PolicyOperator
-		var err error
-		c.checks, err = engine.InitializeOperatorChecks(ctx, c.policy, engine.OperatorCheckConfig{
-			ScorecardImage:          c.scorecardImage,
-			ScorecardWaitTime:       c.scorecardWaitTime,
-			ScorecardNamespace:      c.scorecardNamespace,
-			ScorecardServiceAccount: c.scorecardServiceAccount,
-			IndexImage:              c.indeximage,
-			DockerConfig:            c.dockerConfigFilePath,
-			Channel:                 c.operatorChannel,
-			Kubeconfig:              c.kubeconfig,
-		})
-		if err != nil {
-			return fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
-		}
-		c.resolved = true
+	if c.resolved {
+		return nil
 	}
+
+	switch {
+	case c.image == "":
+		return preflighterr.ErrImageEmpty
+	case c.kubeconfig == nil:
+		return preflighterr.ErrKubeconfigEmpty
+	case c.indeximage == "":
+		return preflighterr.ErrIndexImageEmpty
+	}
+
+	c.policy = policy.PolicyOperator
+	var err error
+	c.checks, err = engine.InitializeOperatorChecks(ctx, c.policy, engine.OperatorCheckConfig{
+		ScorecardImage:          c.scorecardImage,
+		ScorecardWaitTime:       c.scorecardWaitTime,
+		ScorecardNamespace:      c.scorecardNamespace,
+		ScorecardServiceAccount: c.scorecardServiceAccount,
+		IndexImage:              c.indeximage,
+		DockerConfig:            c.dockerConfigFilePath,
+		Channel:                 c.operatorChannel,
+		Kubeconfig:              c.kubeconfig,
+	})
+	if err != nil {
+		return fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
+	}
+	c.resolved = true
+
 	return nil
 }
 

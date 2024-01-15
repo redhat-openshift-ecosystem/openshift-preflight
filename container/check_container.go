@@ -65,40 +65,43 @@ func (c *containerCheck) Run(ctx context.Context) (certification.Results, error)
 }
 
 func (c *containerCheck) resolve(ctx context.Context) error {
-	if !c.resolved {
-		if c.image == "" {
-			return preflighterr.ErrImageEmpty
-		}
-
-		c.policy = policy.PolicyContainer
-
-		// If we have enough Pyxis information, resolve the policy.
-		if c.hasPyxisData() {
-			p := pyxis.NewPyxisClient(
-				c.pyxisHost,
-				c.pyxisToken,
-				c.certificationProjectID,
-				&http.Client{Timeout: 60 * time.Second},
-			)
-
-			override, err := lib.GetContainerPolicyExceptions(ctx, p)
-			if err != nil {
-				return fmt.Errorf("%w: %s", preflighterr.ErrCannotResolvePolicyException, err)
-			}
-
-			c.policy = override
-		}
-		var err error
-		c.checks, err = engine.InitializeContainerChecks(ctx, c.policy, engine.ContainerCheckConfig{
-			DockerConfig:           c.dockerconfigjson,
-			PyxisAPIToken:          c.pyxisToken,
-			CertificationProjectID: c.certificationProjectID,
-		})
-		if err != nil {
-			return fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
-		}
-		c.resolved = true
+	if c.resolved {
+		return nil
 	}
+
+	if c.image == "" {
+		return preflighterr.ErrImageEmpty
+	}
+
+	c.policy = policy.PolicyContainer
+
+	// If we have enough Pyxis information, resolve the policy.
+	if c.hasPyxisData() {
+		p := pyxis.NewPyxisClient(
+			c.pyxisHost,
+			c.pyxisToken,
+			c.certificationProjectID,
+			&http.Client{Timeout: 60 * time.Second},
+		)
+
+		override, err := lib.GetContainerPolicyExceptions(ctx, p)
+		if err != nil {
+			return fmt.Errorf("%w: %s", preflighterr.ErrCannotResolvePolicyException, err)
+		}
+
+		c.policy = override
+	}
+	var err error
+	c.checks, err = engine.InitializeContainerChecks(ctx, c.policy, engine.ContainerCheckConfig{
+		DockerConfig:           c.dockerconfigjson,
+		PyxisAPIToken:          c.pyxisToken,
+		CertificationProjectID: c.certificationProjectID,
+	})
+	if err != nil {
+		return fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
+	}
+	c.resolved = true
+
 	return nil
 }
 
