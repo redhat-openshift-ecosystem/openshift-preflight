@@ -83,8 +83,7 @@ func (c *operatorCheck) resolve(ctx context.Context) error {
 	}
 
 	c.policy = policy.PolicyOperator
-	var err error
-	c.checks, err = engine.InitializeOperatorChecks(ctx, c.policy, engine.OperatorCheckConfig{
+	newChecks, err := engine.InitializeOperatorChecks(ctx, c.policy, engine.OperatorCheckConfig{
 		ScorecardImage:          c.scorecardImage,
 		ScorecardWaitTime:       c.scorecardWaitTime,
 		ScorecardNamespace:      c.scorecardNamespace,
@@ -97,6 +96,7 @@ func (c *operatorCheck) resolve(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
 	}
+	c.checks = newChecks
 	c.resolved = true
 
 	return nil
@@ -104,8 +104,7 @@ func (c *operatorCheck) resolve(ctx context.Context) error {
 
 // List the available operator checks.
 func (c operatorCheck) List(ctx context.Context) (policy.Policy, []check.Check, error) {
-	err := c.resolve(ctx)
-	return c.policy, c.checks, err
+	return c.policy, c.checks, c.resolve(ctx)
 }
 
 // WithScorecardNamespace configures the namespace value to use for OperatorSDK Scorecard checks.
