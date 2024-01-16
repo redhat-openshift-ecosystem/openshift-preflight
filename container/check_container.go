@@ -91,8 +91,8 @@ func (c *containerCheck) resolve(ctx context.Context) error {
 
 		c.policy = override
 	}
-	var err error
-	c.checks, err = engine.InitializeContainerChecks(ctx, c.policy, engine.ContainerCheckConfig{
+
+	newChecks, err := engine.InitializeContainerChecks(ctx, c.policy, engine.ContainerCheckConfig{
 		DockerConfig:           c.dockerconfigjson,
 		PyxisAPIToken:          c.pyxisToken,
 		CertificationProjectID: c.certificationProjectID,
@@ -100,6 +100,7 @@ func (c *containerCheck) resolve(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
 	}
+	c.checks = newChecks
 	c.resolved = true
 
 	return nil
@@ -108,8 +109,7 @@ func (c *containerCheck) resolve(ctx context.Context) error {
 // List the available container checks. Policy exceptions will be resolved if the proper
 // pyxis information is provided.
 func (c *containerCheck) List(ctx context.Context) (policy.Policy, []check.Check, error) {
-	err := c.resolve(ctx)
-	return c.policy, c.checks, err
+	return c.policy, c.checks, c.resolve(ctx)
 }
 
 // hasPyxisData returns true of the values necessary to make a pyxis
