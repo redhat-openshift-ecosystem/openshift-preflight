@@ -231,7 +231,8 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 
 		if err != nil {
 			logger.WithValues("result", "ERROR", "err", err.Error()).Info("check completed", "check", executedCheck.Name())
-			c.results.Errors = appendUnlessOptional(c.results.Errors, certification.Result{Check: executedCheck, ElapsedTime: checkElapsedTime, Err: err})
+			result := certification.Result{Check: executedCheck, ElapsedTime: checkElapsedTime}
+			c.results.Errors = appendUnlessOptional(c.results.Errors, *result.WithError(err))
 			continue
 		}
 

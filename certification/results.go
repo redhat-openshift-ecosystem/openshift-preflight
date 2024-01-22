@@ -15,7 +15,7 @@ type Result struct {
 	// Err contains the error a check itself throws if it failed to run.
 	// If populated, the expectation is that this Result is in the
 	// Results{}.Errors slice.
-	Err error
+	err error
 }
 
 type Results struct {
@@ -27,4 +27,13 @@ type Results struct {
 	Failed            []Result
 	Errors            []Result
 	Warned            []Result
+}
+
+func (r Result) Error() error {
+	return r.err
+}
+
+func (r *Result) WithError(err error) *Result {
+	r.err = err
+	return r
 }
