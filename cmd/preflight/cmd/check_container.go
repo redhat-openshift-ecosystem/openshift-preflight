@@ -346,7 +346,6 @@ func artifactsTar(ctx context.Context, src string, w io.Writer) error {
 
 			return nil
 		}()
-
 		if err != nil {
 			return err
 		}
