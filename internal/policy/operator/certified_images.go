@@ -110,8 +110,8 @@ func (p *certifiedImagesCheck) Metadata() check.Metadata {
 	return check.Metadata{
 		Description:      "Checking that all images referenced in the CSV are certified. Currently, this check is not enforced.",
 		Level:            "optional",
-		KnowledgeBaseURL: "https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.69/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operand-requirements_openshift-sw-cert-policy-products-managed",
-		CheckURL:         "https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.69/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operand-requirements_openshift-sw-cert-policy-products-managed",
+		KnowledgeBaseURL: "https://access.redhat.com/documentation/en-us/red_hat_software_certification/2024/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operand-requirements_openshift-sw-cert-policy-products-managed",
+		CheckURL:         "https://access.redhat.com/documentation/en-us/red_hat_software_certification/2024/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operand-requirements_openshift-sw-cert-policy-products-managed",
 	}
 }
 

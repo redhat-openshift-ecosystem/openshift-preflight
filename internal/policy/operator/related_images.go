@@ -83,8 +83,8 @@ func (p *RelatedImagesCheck) Metadata() check.Metadata {
 	return check.Metadata{
 		Description:      "Check that all images in the CSV are listed in RelatedImages section. Currently, this check is not enforced.",
 		Level:            "optional",
-		KnowledgeBaseURL: "https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.69/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operator-requirements_openshift-sw-cert-policy-products-managed",
-		CheckURL:         "https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.69/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operator-requirements_openshift-sw-cert-policy-products-managed",
+		KnowledgeBaseURL: "https://access.redhat.com/documentation/en-us/red_hat_software_certification/2024/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operator-requirements_openshift-sw-cert-policy-products-managed",
+		CheckURL:         "https://access.redhat.com/documentation/en-us/red_hat_software_certification/2024/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operator-requirements_openshift-sw-cert-policy-products-managed",
 	}
 }
 
