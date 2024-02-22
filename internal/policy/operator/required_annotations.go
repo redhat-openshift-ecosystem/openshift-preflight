@@ -86,9 +86,8 @@ func (h RequiredAnnotations) Name() string {
 
 func (h RequiredAnnotations) Metadata() check.Metadata {
 	return check.Metadata{
-		Description: "Checks that the CSV has all of the required feature annotations.",
-		// TODO: This will start as warn, but will need to move to `best`
-		Level:            check.LevelWarn,
+		Description:      "Checks that the CSV has all of the required feature annotations.",
+		Level:            check.LevelBest,
 		KnowledgeBaseURL: "https://access.redhat.com/documentation/en-us/red_hat_software_certification/2024/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operator-requirements_openshift-sw-cert-policy-products-managed",
 		CheckURL:         "https://access.redhat.com/documentation/en-us/red_hat_software_certification/2024/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operator-requirements_openshift-sw-cert-policy-products-managed",
 	}
