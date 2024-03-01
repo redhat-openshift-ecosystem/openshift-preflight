@@ -91,7 +91,7 @@ var _ = Describe("Check Container Command", func() {
 		manifestListSrc = fmt.Sprintf("%s/test/cranelist", u.Host)
 		manifests["index"] = manifestListSrc
 
-		platforms := [4]string{"amd64", "arm64", "ppc64le", "s390x"}
+		platforms := [5]string{"amd64", "arm64", "ppc64le", "s390x", "arm"}
 		lst, err := random.Index(1024, 5, int64(len(platforms)+1))
 		Expect(err).ToNot(HaveOccurred())
 
