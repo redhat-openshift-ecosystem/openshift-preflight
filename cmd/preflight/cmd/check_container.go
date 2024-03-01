@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	rt "runtime"
+	"slices"
 	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
@@ -423,7 +424,8 @@ func platformsToBeProcessed(cmd *cobra.Command, cfg *runtime.Config) ([]string, 
 		}
 
 		// Preflight was given a manifest list. --platform was not specified.
-		// Therefore, all platforms in the manifest list should be processed.
+		// Therefore, all platforms in the manifest list that we support
+		// for certification ie: {"arm64", "amd64", "ppc64le", "s390x"}, should be processed.
 		// Create a new slice since the original was for a single platform.
 		containerImagePlatforms = make([]string, 0, len(manifest.Manifests))
 		for _, img := range manifest.Manifests {
@@ -435,6 +437,10 @@ func platformsToBeProcessed(cmd *cobra.Command, cfg *runtime.Config) ([]string, 
 				// This must be an attestation manifest. Skip it.
 				continue
 			}
+			if !slices.Contains(allowedArchitectures(), img.Platform.Architecture) {
+				// The user has a architecture type in the manifest list that we do not support.
+				continue
+			}
 			containerImagePlatforms = append(containerImagePlatforms, img.Platform.Architecture)
 		}
 		if platformChanged && len(containerImagePlatforms) == 0 {
@@ -443,4 +449,10 @@ func platformsToBeProcessed(cmd *cobra.Command, cfg *runtime.Config) ([]string, 
 	}
 
 	return containerImagePlatforms, nil
+}
+
+// allowedArchitectures returns a list of container architectures that are supported for certification.
+// Only supported architectures are "arm64", "amd64", "ppc64le", "s390x".
+func allowedArchitectures() []string {
+	return []string{"arm64", "amd64", "ppc64le", "s390x"}
 }
