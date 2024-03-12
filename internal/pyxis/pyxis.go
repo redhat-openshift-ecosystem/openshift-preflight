@@ -4,14 +4,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/shurcooL/graphql"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 )
 
 const (
@@ -409,6 +412,7 @@ func (p *pyxisClient) updateProject(ctx context.Context, certProject *CertProjec
 }
 
 func (p *pyxisClient) createTestResults(ctx context.Context, testResults *TestResults) (*TestResults, error) {
+	logger := logr.FromContextOrDiscard(ctx)
 	b, err := json.Marshal(testResults)
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal test results: %w", err)
@@ -430,16 +434,25 @@ func (p *pyxisClient) createTestResults(ctx context.Context, testResults *TestRe
 		return nil, fmt.Errorf("could not read body: %w", err)
 	}
 
+	bodyAsString := string(body)
 	if ok := checkStatus(resp.StatusCode); !ok {
+		// checking to see if the users is using an unsupported versions
+		// if so display preflights latest download url to the user
+		if resp.StatusCode == http.StatusBadRequest &&
+			(strings.Contains(bodyAsString, "not recognized") || strings.Contains(bodyAsString, "not supported")) {
+			logger.Error(errors.New("invalid preflight version, please please download the latest version and re-submit"),
+				"release-url", fmt.Sprintf("https://%s/releases/latest", version.Version.Name))
+		}
+
 		return nil, fmt.Errorf(
 			"status code: %d: body: %s",
 			resp.StatusCode,
-			string(body))
+			bodyAsString)
 	}
 
 	newTestResults := TestResults{}
 	if err := json.Unmarshal(body, &newTestResults); err != nil {
-		return nil, fmt.Errorf("could not unmarshal body: %s: %w", string(body), err)
+		return nil, fmt.Errorf("could not unmarshal body: %s: %w", bodyAsString, err)
 	}
 
 	return &newTestResults, nil

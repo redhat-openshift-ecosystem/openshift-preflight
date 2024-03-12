@@ -157,6 +157,12 @@ func pyxisTestResultsHandler(ctx context.Context) http.HandlerFunc {
 		switch {
 		case request.Header["X-Api-Key"][0] == "my-bad-testresults-api-token":
 			response.WriteHeader(http.StatusUnauthorized)
+		case request.Header["X-Api-Key"][0] == "my-unrecognized-perflight-version":
+			response.WriteHeader(http.StatusBadRequest)
+			mustWrite(response, `{"detail":"not recognized"}`)
+		case request.Header["X-Api-Key"][0] == "my-unsupported-perflight-version":
+			response.WriteHeader(http.StatusBadRequest)
+			mustWrite(response, `{"detail":"not supported"}`)
 		default:
 			mustWrite(response, `{"image":"quay.io/awesome/image:latest","passed": true}`)
 		}
