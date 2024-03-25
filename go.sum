@@ -151,10 +151,10 @@ github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.0-rc3 h1:fzg1mXZFj8YdPeNkRXMg+zb88BFV0Ys52cJydRwBkb8=
 github.com/opencontainers/image-spec v1.1.0-rc3/go.mod h1:X4pATf0uXsnn3g5aiGIsVnJBR4mxhKzfwmvK/B2NTm8=
-github.com/openshift/api v0.0.1 h1:i8SdJ41c7gqwssxxr7/V3x1vGDBzulkLZVewfCH6z6I=
-github.com/openshift/api v0.0.1/go.mod h1:yimSGmjsI+XF1mr+AKBs2//fSXIOhhetHGbMlBEfXbs=
-github.com/openshift/client-go v0.0.1 h1:zJ9NsS9rwBtYkYzLCUECkdmrM6jPit3W7Q0+Pxf5gd4=
-github.com/openshift/client-go v0.0.1/go.mod h1:I8qTI1lgErsWc6CVukSjP1PYqpafE7fue0ZPy7A2jiw=
+github.com/openshift/api v0.0.0-20240312165059-c691737fdcf9 h1:rmndyxDqBKdP5JQzuWOZGxvZj9+MPxZYtbVXYFfKjdY=
+github.com/openshift/api v0.0.0-20240312165059-c691737fdcf9/go.mod h1:CxgbWAlvu2iQB0UmKTtRu1YfepRg1/vJ64n2DlIEVz4=
+github.com/openshift/client-go v0.0.0-20240312121557-60dd5f9fbf8d h1:vdrC3QYkFcs6a1Cz2/p5RcV7dMQ22tbgIonx+8HIJc0=
+github.com/openshift/client-go v0.0.0-20240312121557-60dd5f9fbf8d/go.mod h1:Y5Hp789dTrF6Fq8cA5YQlpwffmlLy8mc2un/CY0cg7Q=
 github.com/operator-framework/api v0.22.0 h1:UZSn+iaQih4rCReezOnWTTJkMyawwV5iLnIItaOzytY=
 github.com/operator-framework/api v0.22.0/go.mod h1:p/7YDbr+n4fmESfZ47yLAV1SvkfE6NU2aX8KhcfI0GA=
 github.com/operator-framework/operator-manifest-tools v0.5.0 h1:qCp6/YB2FuUa+LZznPkEllDMMIIh3+At+2+Y7h85Kxg=
