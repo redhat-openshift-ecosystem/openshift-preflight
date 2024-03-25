@@ -5,12 +5,12 @@ go 1.21
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bombsimon/logrusr/v4 v4.1.0
-	github.com/docker/cli v25.0.4+incompatible
+	github.com/docker/cli v26.0.0+incompatible
 	github.com/glebarez/go-sqlite v1.22.0
 	github.com/go-logr/logr v1.4.1
 	github.com/google/go-containerregistry v0.19.1
 	github.com/knqyf263/go-rpmdb v0.1.0
-	github.com/onsi/ginkgo/v2 v2.17.0
+	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.32.0
 	github.com/openshift/api v0.0.0-20240312165059-c691737fdcf9
 	github.com/openshift/client-go v0.0.0-20240312121557-60dd5f9fbf8d
