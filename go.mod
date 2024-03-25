@@ -12,8 +12,8 @@ require (
 	github.com/knqyf263/go-rpmdb v0.1.0
 	github.com/onsi/ginkgo/v2 v2.17.0
 	github.com/onsi/gomega v1.32.0
-	github.com/openshift/api v0.0.1
-	github.com/openshift/client-go v0.0.1
+	github.com/openshift/api v0.0.0-20240312165059-c691737fdcf9
+	github.com/openshift/client-go v0.0.0-20240312121557-60dd5f9fbf8d
 	github.com/operator-framework/api v0.22.0
 	github.com/operator-framework/operator-manifest-tools v0.5.0
 	github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466
