@@ -27,7 +27,7 @@ functional, and in your path.
 
 | Name             | Tool cli          | Minimum version |
 |----------------- |:-----------------:|----------------:|
-| OperatorSDK      | `operator-sdk`    |         v1.33.0 |
+| OperatorSDK      | `operator-sdk`    |         v1.34.1 |
 
 See our [Vagrantfile](Vagrantfile) for more information on setting up a
 development environment. Some checks may also require access to an OpenShift

@@ -28,7 +28,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 				"kind": "Test",
 				"apiVersion": "scorecard.operatorframework.io/v1alpha3",
 				"spec": {
-				  "image": "quay.io/operator-framework/scorecard-test:latest",
+				  "image": "quay.io/operator-framework/scorecard-test:1.34.1",
 				  "entrypoint": [
 					"scorecard-test",
 					"olm-bundle-validation"
