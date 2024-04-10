@@ -305,6 +305,38 @@ var _ = Describe("Pyxis Submit", func() {
 		})
 	})
 
+	Context("createTestResults 400 version not supported", func() {
+		BeforeEach(func() {
+			pyxisClient.APIToken = "my-unsupported-preflight-version"
+			pyxisClient.ProjectID = "my-awesome-project-id"
+		})
+		Context("when a project is submitted", func() {
+			Context("and an unsupported preflight version is sent to createTestResults", func() {
+				It("should error", func() {
+					certResults, err := pyxisClient.SubmitResults(ctx, &certInput)
+					Expect(err).To(HaveOccurred())
+					Expect(certResults).To(BeNil())
+				})
+			})
+		})
+	})
+
+	Context("createTestResults 400 version not recognized", func() {
+		BeforeEach(func() {
+			pyxisClient.APIToken = "my-unrecognized-preflight-version"
+			pyxisClient.ProjectID = "my-awesome-project-id"
+		})
+		Context("when a project is submitted", func() {
+			Context("and an unrecognized preflight version is sent to createTestResults", func() {
+				It("should error", func() {
+					certResults, err := pyxisClient.SubmitResults(ctx, &certInput)
+					Expect(err).To(HaveOccurred())
+					Expect(certResults).To(BeNil())
+				})
+			})
+		})
+	})
+
 	Context("GetProject", func() {
 		Context("when a project is submitted", func() {
 			Context("and it is not already In Progress", func() {
