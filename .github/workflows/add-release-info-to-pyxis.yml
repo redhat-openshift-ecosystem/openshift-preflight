@@ -1,0 +1,51 @@
+name: Add Release Info to Pyxis
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      commit:
+        required: true
+        type: string
+      host:
+        required: true
+        type: string
+    secrets:
+      certificate:
+        required: true
+      key:
+        required: true
+      certificatePassword:
+        required: true
+
+env:
+  CERT_FILE_LOCATION: '/tmp/preflight-release.crt'
+  KEY_FILE_LOCATION: '/tmp/preflight-release.key'
+
+jobs:
+  call-pyxis-endpoint:
+    name: Add Release Info
+    runs-on: ubuntu-latest
+    steps:
+      - name: Save Certificate and Key
+        run: |
+          echo -en "${{ secrets.certificate }}" > ${{ env.CERT_FILE_LOCATION }}
+          echo -en "${{ secrets.key }}" > ${{ env.KEY_FILE_LOCATION }}
+
+      - name: Call Pyxis API
+        run: |
+          curl --fail-with-body \
+          --cert '${{ env.CERT_FILE_LOCATION }}' \
+          --key '${{ env.KEY_FILE_LOCATION }}' \
+          --pass '${{ secrets.certificatePassword }}' \
+          -H 'Content-Type: application/json' \
+          -d '{"commit":"${{ inputs.commit }}","enabled_for_testing":true,"name":"github.com/redhat-openshift-ecosystem/openshift-preflight","version":"${{ inputs.tag }}"}' \
+          -X POST \
+          'https://${{ inputs.host }}/v1/tools' | jq
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f ${{ env.CERT_FILE_LOCATION }} ${{ env.KEY_FILE_LOCATION }} || true
