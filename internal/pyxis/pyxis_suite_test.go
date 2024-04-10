@@ -157,6 +157,12 @@ func pyxisTestResultsHandler(ctx context.Context) http.HandlerFunc {
 		switch {
 		case request.Header["X-Api-Key"][0] == "my-bad-testresults-api-token":
 			response.WriteHeader(http.StatusUnauthorized)
+		case request.Header["X-Api-Key"][0] == "my-unrecognized-preflight-version":
+			response.WriteHeader(http.StatusBadRequest)
+			mustWrite(response, `{"detail":"not recognized"}`)
+		case request.Header["X-Api-Key"][0] == "my-unsupported-preflight-version":
+			response.WriteHeader(http.StatusBadRequest)
+			mustWrite(response, `{"detail":"not supported"}`)
 		case request.Method == http.MethodPatch && request.Header["X-Api-Key"][0] == "my-bad-results-patch-api-token":
 			response.WriteHeader(http.StatusInternalServerError)
 		default:
