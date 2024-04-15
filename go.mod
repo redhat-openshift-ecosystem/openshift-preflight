@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bombsimon/logrusr/v4 v4.1.0
-	github.com/docker/cli v26.0.0+incompatible
+	github.com/docker/cli v26.0.1+incompatible
 	github.com/glebarez/go-sqlite v1.22.0
 	github.com/go-logr/logr v1.4.1
 	github.com/google/go-containerregistry v0.19.1
@@ -26,7 +26,7 @@ require (
 	k8s.io/api v0.29.3
 	k8s.io/apimachinery v0.29.3
 	k8s.io/client-go v0.29.3
-	sigs.k8s.io/controller-runtime v0.17.2
+	sigs.k8s.io/controller-runtime v0.17.3
 	sigs.k8s.io/yaml v1.4.0
 )
 
