@@ -86,6 +86,6 @@ jobs:
         if: ${{ inputs.sign == true && github.event.release && github.event.action == 'published' }}
         run: |
           cosign verify \
-            --certificate-identity https://github.com/redhat-openshift-ecosystem/openshift-preflight/.github/workflows/build-multiarch.yml@refs/tags/${{ inputs.tag }} \
+            --certificate-identity https://github.com/${{ github.repository }}/.github/workflows/build-multiarch.yml@refs/tags/${{ inputs.tag }} \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}
