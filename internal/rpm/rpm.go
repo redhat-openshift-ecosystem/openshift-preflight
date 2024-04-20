@@ -33,6 +33,7 @@ func GetPackageList(ctx context.Context, basePath string) ([]*rpmdb.PackageInfo,
 	if err != nil {
 		return nil, fmt.Errorf("could not open rpm db: %v", err)
 	}
+	defer db.Close()
 	pkgList, err := db.ListPackages()
 	if err != nil {
 		return nil, fmt.Errorf("could not list packages: %v", err)
