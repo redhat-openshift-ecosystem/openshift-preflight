@@ -445,6 +445,44 @@ func (p *pyxisClient) createTestResults(ctx context.Context, testResults *TestRe
 	return &newTestResults, nil
 }
 
+func (p *pyxisClient) updateTestResults(ctx context.Context, testResults *TestResults) (*TestResults, error) {
+	b, err := json.Marshal(testResults)
+	if err != nil {
+		return nil, fmt.Errorf("could not marshal test results: %w", err)
+	}
+
+	req, err := p.newRequestWithAPIToken(ctx, http.MethodPatch, p.getPyxisURL(fmt.Sprintf("projects/certification/test-results/id/%s", testResults.ID)), bytes.NewReader(b))
+	if err != nil {
+		return nil, fmt.Errorf("could not create new request: %w", err)
+	}
+
+	resp, err := p.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("could not update test results in pyxis: %w", err)
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("could not read body: %w", err)
+	}
+
+	if ok := checkStatus(resp.StatusCode); !ok {
+		return nil, fmt.Errorf(
+			"status code: %d: body: %s",
+			resp.StatusCode,
+			string(body))
+	}
+
+	newTestResults := TestResults{}
+	if err := json.Unmarshal(body, &newTestResults); err != nil {
+		return nil, fmt.Errorf("could not unmarshal body: %s: %w", string(body), err)
+	}
+
+	return &newTestResults, nil
+}
+
 func (p *pyxisClient) createArtifact(ctx context.Context, artifact *Artifact) (*Artifact, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 

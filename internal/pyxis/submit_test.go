@@ -17,6 +17,8 @@ var _ = Describe("Pyxis Submit", func() {
 
 	// These go from most explicit to least explicit. They will be check that way by the ServeMux.
 	mux.HandleFunc("/api/v1/projects/certification/id/my-awesome-project-id/test-results", pyxisTestResultsHandler(ctx))
+	mux.HandleFunc("/api/v1/projects/certification/id/my-image-project-id/test-results", pyxisTestResultsHandler(ctx))
+	mux.HandleFunc("/api/v1/projects/certification/test-results/id/54321", pyxisTestResultsHandler(ctx))
 	mux.HandleFunc("/api/v1/projects/certification/id/my-image-project-id/images", pyxisImageHandler(ctx))
 	mux.HandleFunc("/api/v1/projects/certification/id/", pyxisProjectHandler(ctx))
 	mux.HandleFunc("/api/v1/images/id/updateImage", pyxisImageHandler(ctx))
@@ -96,6 +98,16 @@ var _ = Describe("Pyxis Submit", func() {
 				certInput.CertImage = &CertImage{}
 			})
 			It("should get invalid cert image error", func() {
+				certResults, err := pyxisClient.SubmitResults(ctx, &certInput)
+				Expect(err).To(HaveOccurred())
+				Expect(certResults).To(BeNil())
+			})
+		})
+		Context("and POST call to test-results is success and PATCH is a failure", func() {
+			JustBeforeEach(func() {
+				pyxisClient.APIToken = "my-bad-results-patch-api-token"
+			})
+			It("should get an unknown error", func() {
 				certResults, err := pyxisClient.SubmitResults(ctx, &certInput)
 				Expect(err).To(HaveOccurred())
 				Expect(certResults).To(BeNil())

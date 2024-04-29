@@ -12,6 +12,7 @@ var _ = Describe("Pyxis", func() {
 	ctx := context.Background()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/query/", pyxisGraphqlFindImagesHandler(ctx))
+	mux.HandleFunc("/api/v1/projects/certification/test-results/id/54321", pyxisTestResultsHandler(ctx))
 	pyxisClient := NewPyxisClient("my.pyxis.host/query/", "my-spiffy-api-token", "my-awesome-project-id", &http.Client{Transport: localRoundTripper{handler: mux}})
 
 	Context("Find Images", func() {

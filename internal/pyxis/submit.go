@@ -15,8 +15,20 @@ var defaultRegistryAlias = "docker.io"
 func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *CertificationInput) (*CertificationResults, error) {
 	var err error
 
-	certProject := certInput.CertProject
 	certImage := certInput.CertImage
+	// You must have an existing repository.
+	if len(certImage.Repositories) == 0 {
+		return nil, fmt.Errorf("certImage has not been properly populated")
+	}
+
+	// Create the test results, so we can fail fast if version check throws error.
+	testResults := certInput.TestResults
+	testResults, err = p.createTestResults(ctx, testResults)
+	if err != nil {
+		return nil, fmt.Errorf("could not create test results: %v", err)
+	}
+
+	certProject := certInput.CertProject
 
 	// Submission effectively starts the certification process, so switch
 	// the status to reflect this if needed. This only needs to be done for net new projects.
@@ -26,11 +38,6 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 	// the project back to "In Process" and there would still be nothing that preflight need to update on the project.
 	if certProject.CertificationStatus == "Started" {
 		certProject.CertificationStatus = "In Progress"
-	}
-
-	// You must have an existing repository.
-	if len(certImage.Repositories) == 0 {
-		return nil, fmt.Errorf("certImage has not been properly populated")
 	}
 
 	// Always set the project's metadata to match the image that we're certifying. These values will always be sent
@@ -108,19 +115,22 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 		}
 	}
 
-	// Create the test results.
-	testResults := certInput.TestResults
-	testResults.ImageID = certImage.ID
-	testResults, err = p.createTestResults(ctx, testResults)
+	// Update the test results with the certification image id to link the results to the image.
+	updatedTestResults := &TestResults{
+		ID:      testResults.ID,
+		ImageID: certImage.ID,
+	}
+
+	updatedTestResults, err = p.updateTestResults(ctx, updatedTestResults)
 	if err != nil {
-		return nil, fmt.Errorf("could not create test results: %v", err)
+		return nil, fmt.Errorf("could not update test results: %v", err)
 	}
 
 	// Return the results with up-to-date information.
 	return &CertificationResults{
 		CertProject: certProject,
 		CertImage:   certImage,
-		TestResults: testResults,
+		TestResults: updatedTestResults,
 	}, nil
 }
 
