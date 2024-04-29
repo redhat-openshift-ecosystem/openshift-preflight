@@ -157,8 +157,10 @@ func pyxisTestResultsHandler(ctx context.Context) http.HandlerFunc {
 		switch {
 		case request.Header["X-Api-Key"][0] == "my-bad-testresults-api-token":
 			response.WriteHeader(http.StatusUnauthorized)
+		case request.Method == http.MethodPatch && request.Header["X-Api-Key"][0] == "my-bad-results-patch-api-token":
+			response.WriteHeader(http.StatusInternalServerError)
 		default:
-			mustWrite(response, `{"image":"quay.io/awesome/image:latest","passed": true}`)
+			mustWrite(response, `{"_id": "54321","image": "quay.io/awesome/image:latest","passed": true}`)
 		}
 	}
 }
