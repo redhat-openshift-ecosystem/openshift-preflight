@@ -419,6 +419,7 @@ func untar(ctx context.Context, dst string, r io.Reader) error {
 
 			// copy over contents
 			if _, err := io.Copy(f, tr); err != nil {
+				f.Close()
 				return err
 			}
 
