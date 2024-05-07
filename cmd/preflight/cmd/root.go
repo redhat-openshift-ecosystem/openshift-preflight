@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	spfviper "github.com/spf13/viper"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var configFileUsed bool
@@ -133,5 +134,12 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 
 	logger := logrusr.New(l)
 	ctx := logr.NewContext(cmd.Context(), logger)
+
+	// Setting the controller-runtime logger to a no-op logger by default,
+	// unless debug mode is enabled. This is because the controller-runtime
+	// logger is *very* verbose even at info level. This is not really needed,
+	// but otherwise we get a warning from the controller-runtime.
+	ctrl.SetLogger(logr.Discard())
+
 	cmd.SetContext(ctx)
 }
