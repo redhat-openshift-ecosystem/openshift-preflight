@@ -45,6 +45,15 @@ linters-settings:
       - github.com/onsi/ginkgo/v2
   goimports:
     local-prefixes: github.com/redhat-openshift-ecosystem/openshift-preflight
+  depguard:
+    rules:
+      main:
+        list-mode: lax
+        files:
+          - !$test
+        allow:
+          - $gostd
 
 output:
-  format: tab
+  formats:
+    - format: tab
