@@ -3,7 +3,7 @@ ARG release_tag=0.0.0
 ARG ARCH=amd64
 ARG OS=linux
 
-FROM docker.io/golang:1.21 AS builder
+FROM docker.io/golang:1.22 AS builder
 ARG quay_expiration
 ARG release_tag
 ARG ARCH
