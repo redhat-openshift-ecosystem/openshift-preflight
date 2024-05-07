@@ -116,12 +116,9 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 	}
 
 	// Update the test results with the certification image id to link the results to the image.
-	updatedTestResults := &TestResults{
-		ID:      testResults.ID,
-		ImageID: certImage.ID,
-	}
+	testResults.ImageID = certImage.ID
 
-	updatedTestResults, err = p.updateTestResults(ctx, updatedTestResults)
+	testResults, err = p.updateTestResults(ctx, testResults)
 	if err != nil {
 		return nil, fmt.Errorf("could not update test results: %v", err)
 	}
@@ -130,7 +127,7 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 	return &CertificationResults{
 		CertProject: certProject,
 		CertImage:   certImage,
-		TestResults: updatedTestResults,
+		TestResults: testResults,
 	}, nil
 }
 
