@@ -17,6 +17,7 @@ var _ = Describe("cmd package check command", func() {
 		var (
 			projectID = "this-is-my-project-id"
 			imageID   = "my-image-id"
+			resultsID = "my-results-id"
 		)
 		BeforeEach(func() {
 			viper.Instance().SetEnvPrefix("pflt")
@@ -28,7 +29,7 @@ var _ = Describe("cmd package check command", func() {
 		})
 		Context("Regular Connect URL", func() {
 			It("should return a URL with just a project ID", func() {
-				expected := "https://connect.redhat.com/projects/this-is-my-project-id"
+				expected := "https://connect.redhat.com/component/view/this-is-my-project-id"
 				actual := lib.BuildConnectURL(projectID)
 				Expect(expected).To(Equal(actual))
 			})
@@ -38,28 +39,28 @@ var _ = Describe("cmd package check command", func() {
 				os.Setenv("PFLT_PYXIS_ENV", "qa")
 			})
 			It("should return a URL for QA", func() {
-				expected := "https://connect.qa.redhat.com/projects/this-is-my-project-id"
+				expected := "https://connect.qa.redhat.com/component/view/this-is-my-project-id"
 				actual := lib.BuildConnectURL(projectID)
 				Expect(expected).To(Equal(actual))
 			})
 		})
-		Context("UAT Scan Results URL", func() {
+		Context("UAT Test Results URL", func() {
 			BeforeEach(func() {
 				os.Setenv("PFLT_PYXIS_ENV", "uat")
 			})
 			It("should return a URL for UAT", func() {
-				expected := "https://connect.uat.redhat.com/projects/this-is-my-project-id/images/my-image-id/scan-results"
-				actual := lib.BuildScanResultsURL(projectID, imageID)
+				expected := "https://connect.uat.redhat.com/component/view/this-is-my-project-id/certification/test-results/my-results-id"
+				actual := lib.BuildTestResultsURL(projectID, resultsID)
 				Expect(expected).To(Equal(actual))
 			})
 		})
-		Context("QA Overview URL", func() {
+		Context("QA Images URL", func() {
 			BeforeEach(func() {
 				os.Setenv("PFLT_PYXIS_ENV", "qa")
 			})
 			It("should return a URL for QA", func() {
-				expected := "https://connect.qa.redhat.com/projects/this-is-my-project-id/overview"
-				actual := lib.BuildOverviewURL(projectID)
+				expected := "https://connect.qa.redhat.com/component/view/this-is-my-project-id/images"
+				actual := lib.BuildImagesURL(projectID)
 				Expect(expected).To(Equal(actual))
 			})
 		})
@@ -67,14 +68,19 @@ var _ = Describe("cmd package check command", func() {
 			BeforeEach(func() {
 				os.Setenv("PFLT_PYXIS_HOST", "my.pyxis.host/some/path")
 			})
-			It("should return a Prod overview URL", func() {
-				expected := "https://connect.redhat.com/projects/this-is-my-project-id/overview"
-				actual := lib.BuildOverviewURL(projectID)
+			It("should return a Prod Images URL", func() {
+				expected := "https://connect.redhat.com/component/view/this-is-my-project-id/images"
+				actual := lib.BuildImagesURL(projectID)
 				Expect(expected).To(Equal(actual))
 			})
-			It("should return a Prod scan URL", func() {
-				expected := "https://connect.redhat.com/projects/this-is-my-project-id/images/my-image-id/scan-results"
-				actual := lib.BuildScanResultsURL(projectID, imageID)
+			It("should return a Prod Test Results URL", func() {
+				expected := "https://connect.redhat.com/component/view/this-is-my-project-id/certification/test-results/my-results-id"
+				actual := lib.BuildTestResultsURL(projectID, resultsID)
+				Expect(expected).To(Equal(actual))
+			})
+			It("should return a Prod Vulnerabilities URL", func() {
+				expected := "https://connect.redhat.com/component/view/this-is-my-project-id/security/vulnerabilities/my-image-id"
+				actual := lib.BuildVulnerabilitiesURL(projectID, imageID)
 				Expect(expected).To(Equal(actual))
 			})
 		})
