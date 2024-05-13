@@ -193,8 +193,9 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 	logger.Info("Test results have been submitted to Red Hat.")
 	logger.Info("These results will be reviewed by Red Hat for final certification.")
 	logger.Info(fmt.Sprintf("The container's image id is: %s.", certResults.CertImage.ID))
-	logger.Info(fmt.Sprintf("Please check %s to view scan results.", BuildScanResultsURL(s.CertificationProjectID, certResults.CertImage.ID)))
-	logger.Info(fmt.Sprintf("Please check %s to monitor the progress.", BuildOverviewURL(s.CertificationProjectID)))
+	logger.Info(fmt.Sprintf("Please check %s to view test results.", BuildTestResultsURL(s.CertificationProjectID, certResults.TestResults.ID)))
+	logger.Info(fmt.Sprintf("Please check %s to view security vulnerabilities.", BuildVulnerabilitiesURL(s.CertificationProjectID, certResults.CertImage.ID)))
+	logger.Info(fmt.Sprintf("Please check %s to monitor the progress.", BuildImagesURL(s.CertificationProjectID)))
 
 	return nil
 }
@@ -238,20 +239,24 @@ func (s *NoopSubmitter) SetReason(reason string) {
 }
 
 func BuildConnectURL(projectID string) string {
-	connectURL := fmt.Sprintf("https://connect.redhat.com/projects/%s", projectID)
+	connectURL := fmt.Sprintf("https://connect.redhat.com/component/view/%s", projectID)
 
 	pyxisEnv := viper.Instance().GetString("pyxis_env")
 	if len(pyxisEnv) > 0 && pyxisEnv != "prod" {
-		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/projects/%s", viper.Instance().GetString("pyxis_env"), projectID)
+		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/component/view/%s", viper.Instance().GetString("pyxis_env"), projectID)
 	}
 
 	return connectURL
 }
 
-func BuildOverviewURL(projectID string) string {
-	return fmt.Sprintf("%s/overview", BuildConnectURL(projectID))
+func BuildImagesURL(projectID string) string {
+	return fmt.Sprintf("%s/images", BuildConnectURL(projectID))
 }
 
-func BuildScanResultsURL(projectID string, imageID string) string {
-	return fmt.Sprintf("%s/images/%s/scan-results", BuildConnectURL(projectID), imageID)
+func BuildTestResultsURL(projectID string, testResultsID string) string {
+	return fmt.Sprintf("%s/certification/test-results/%s", BuildConnectURL(projectID), testResultsID)
+}
+
+func BuildVulnerabilitiesURL(projectID string, imageID string) string {
+	return fmt.Sprintf("%s/security/vulnerabilities/%s", BuildConnectURL(projectID), imageID)
 }

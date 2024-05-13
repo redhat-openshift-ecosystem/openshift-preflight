@@ -55,7 +55,7 @@ func (pc *FakePyxisClient) baseProject(projectID string) pyxis.CertProject {
 
 // successfulCertResults returns a pyxis.CertificationResults for use in tests emulating successful
 // submission.
-func (pc *FakePyxisClient) successfulCertResults(projectID, certImageID string) pyxis.CertificationResults {
+func (pc *FakePyxisClient) successfulCertResults(projectID, certImageID, testResultsID string) pyxis.CertificationResults {
 	pid := "000000000000"
 	if len(projectID) > 0 {
 		pid = projectID
@@ -65,12 +65,21 @@ func (pc *FakePyxisClient) successfulCertResults(projectID, certImageID string) 
 	if len(certImageID) > 0 {
 		ciid = certImageID
 	}
+
+	trid := "222222222222"
+	if len(testResultsID) > 0 {
+		trid = testResultsID
+	}
+
 	return pyxis.CertificationResults{
 		CertProject: &pyxis.CertProject{
 			ID: pid,
 		},
 		CertImage: &pyxis.CertImage{
 			ID: ciid,
+		},
+		TestResults: &pyxis.TestResults{
+			ID: trid,
 		},
 	}
 }
@@ -85,7 +94,7 @@ func (pc *FakePyxisClient) setGPFuncReturnBaseProject(projectID string) {
 
 func (pc *FakePyxisClient) setSRFuncSubmitSuccessfully(projectID, certImageID string) {
 	baseproj := pc.baseProject(projectID)
-	certresults := pc.successfulCertResults(baseproj.ID, certImageID)
+	certresults := pc.successfulCertResults(baseproj.ID, certImageID, "")
 	pc.submitResultsFunc = func(context.Context, *pyxis.CertificationInput) (*pyxis.CertificationResults, error) {
 		return &certresults, nil
 	}
