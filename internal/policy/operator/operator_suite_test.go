@@ -105,7 +105,7 @@ var pods = corev1.PodList{
 var csv = operatorsv1alpha1.ClusterServiceVersion{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "csv-v0.0.0",
-		Namespace: "testPackage-target",
+		Namespace: "p-testPackage-target",
 	},
 	Spec: operatorsv1alpha1.ClusterServiceVersionSpec{},
 	Status: operatorsv1alpha1.ClusterServiceVersionStatus{
@@ -152,8 +152,8 @@ var secret = corev1.Secret{
 
 var sub = operatorsv1alpha1.Subscription{
 	ObjectMeta: metav1.ObjectMeta{
-		Name:      "testPackage",
-		Namespace: "testPackage",
+		Name:      "p-testPackage",
+		Namespace: "p-testPackage",
 	},
 	Status: operatorsv1alpha1.SubscriptionStatus{
 		InstalledCSV: "csv-v0.0.0",
@@ -162,8 +162,8 @@ var sub = operatorsv1alpha1.Subscription{
 
 var og = operatorsv1.OperatorGroup{
 	ObjectMeta: metav1.ObjectMeta{
-		Name:      "testPackage",
-		Namespace: "testPackage",
+		Name:      "p-testPackage",
+		Namespace: "p-testPackage",
 	},
 	Status: operatorsv1.OperatorGroupStatus{
 		LastUpdated: nil,
