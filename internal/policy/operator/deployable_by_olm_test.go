@@ -72,7 +72,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 
 				// changing the namespace since OwnNamespace operators CSV get applied to `InstallNamespace`
 				ownCSV := csv.DeepCopy()
-				ownCSV.Namespace = "testPackage"
+				ownCSV.Namespace = "p-testPackage"
 
 				deployableByOLMCheck.client = clientBuilder.
 					WithObjects(ownCSV).
@@ -108,8 +108,8 @@ var _ = Describe("DeployableByOLMCheck", func() {
 			BeforeEach(func() {
 				badSub := sub
 				Expect(deployableByOLMCheck.client.Get(testcontext, crclient.ObjectKey{
-					Name:      "testPackage",
-					Namespace: "testPackage",
+					Name:      "p-testPackage",
+					Namespace: "p-testPackage",
 				}, &badSub)).To(Succeed())
 				badSub.Status.InstalledCSV = ""
 				Expect(deployableByOLMCheck.client.Update(testcontext, &badSub, &crclient.UpdateOptions{})).To(Succeed())

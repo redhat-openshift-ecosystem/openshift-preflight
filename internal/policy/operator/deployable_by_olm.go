@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/validation"
 	ctrl "sigs.k8s.io/controller-runtime"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -214,6 +215,8 @@ func checkImageSource(ctx context.Context, operatorImages []string) bool {
 }
 
 func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef image.ImageReference) (*operatorData, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
 	// retrieve the operator metadata from bundle image
 	annotationsFileName := filepath.Join(bundleRef.ImageFSPath, "metadata", "annotations.yaml")
 	annotationsFile, err := os.Open(annotationsFileName)
@@ -248,13 +251,22 @@ func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef i
 		installModes[val.Type] = val
 	}
 
+	// validating that package name complies with DNS-1035 labeling constraints
+	// ensuring that CatalogSources can be created/referenced in cluster and reconciles properly
+	// if there is an error we need to prefix the name so the install/reconciles can continue
+	appName := packageName
+	if msgs := validation.IsDNS1035Label(packageName); len(msgs) != 0 {
+		logger.V(log.DBG).Info(fmt.Sprintf("package name %s does not comply with DNS-1035, prefixing to avoid errors", packageName))
+		appName = "p-" + packageName
+	}
+
 	return &operatorData{
 		CatalogImage:     catalogImage,
 		Channel:          channel,
 		PackageName:      packageName,
-		App:              packageName,
-		InstallNamespace: packageName,
-		TargetNamespace:  packageName + "-target",
+		App:              appName,
+		InstallNamespace: appName,
+		TargetNamespace:  appName + "-target",
 		InstallModes:     installModes,
 	}, nil
 }
