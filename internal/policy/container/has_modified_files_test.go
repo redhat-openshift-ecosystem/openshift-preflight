@@ -5,6 +5,9 @@ import (
 	"context"
 	"path"
 
+	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/spf13/afero"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 
 	"github.com/bombsimon/logrusr/v4"
@@ -399,6 +402,37 @@ var _ = Describe("HasModifiedFiles", func() {
 			badPkgList[0].DirNames = []string{dirname, "extradir"}
 			_, err := installedFileMapWithExclusions(context.TODO(), badPkgList)
 			Expect(err).To(HaveOccurred())
+		})
+	})
+
+	When("multiple no-op layers with the same IDs split layers containing RPMDB modifications", func() {
+		// Test case ensures that we properly deduplicate layer hashes in our file mapping to avoid cases where
+		// a later layer with the same ID as an earlier layer doesn't overwrite the earlier layer's file mapping.
+		var img image.ImageReference
+		var actualLayerCount int
+		BeforeEach(func() {
+			// TODO: The containerfile that generates this test fixture is stored in-repo tests/containerfiles.
+			// The external call here avoids having to store the image locally. A crane-built image runs into
+			// issues because we cannot run `microdnf` commands using Crane, and need to have multiple layers
+			// containing RPMDBs to test this issue correctly.
+			const dupeLayerTestFixture = "quay.io/opdev/preflight-test-fixture:duplicate-layers"
+			cImg, pullError := crane.Pull(dupeLayerTestFixture)
+			Expect(pullError).ToNot(HaveOccurred())
+			img = image.ImageReference{
+				ImageInfo: cImg,
+			}
+
+			layers, err := img.ImageInfo.Layers()
+			Expect(err).ToNot(HaveOccurred())
+			actualLayerCount = len(layers)
+		})
+
+		It("should validate and have matching layer counts", func() {
+			fs := afero.NewOsFs()
+			layerIDs, layerRefs, err := hasModifiedFiles.gatherDataToValidate(context.TODO(), img, fs)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(layerIDs)).To(Equal(actualLayerCount))
+			Expect(len(layerRefs)).To(Equal(actualLayerCount))
 		})
 	})
 
