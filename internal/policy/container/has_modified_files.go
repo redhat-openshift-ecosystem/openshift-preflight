@@ -60,7 +60,12 @@ type packageFilesRef struct {
 // Validate runs the check of whether any Red Hat files were modified
 func (p *HasModifiedFilesCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	fs := afero.NewOsFs()
-	layerIDs, packageFiles, packageDist, err := p.gatherDataToValidate(ctx, imgRef, fs)
+	layerIDs, packageFiles, err := p.gatherDataToValidate(ctx, imgRef, fs)
+	if err != nil {
+		return false, fmt.Errorf("could not generate modified files list: %v", err)
+	}
+
+	packageDist, err := p.parsePackageDist(ctx, imgRef.ImageFSPath, fs)
 	if err != nil {
 		return false, fmt.Errorf("could not generate modified files list: %v", err)
 	}
@@ -68,28 +73,56 @@ func (p *HasModifiedFilesCheck) Validate(ctx context.Context, imgRef image.Image
 	return p.validate(ctx, layerIDs, packageFiles, packageDist)
 }
 
+// parsePackageDist returns the platform's distribution value from the
+// os-release contents in the extracted image.
+func (p *HasModifiedFilesCheck) parsePackageDist(_ context.Context, extractedImageFSPath string, fs afero.Fs) (string, error) {
+	osRelease, err := fs.Open(filepath.Join(extractedImageFSPath, "etc", "os-release"))
+	if err != nil {
+		return "", fmt.Errorf("could not open os-release: %v", err)
+	}
+	defer osRelease.Close()
+	scanner := bufio.NewScanner(osRelease)
+	packageDist := "unknown"
+	for scanner.Scan() {
+		line := scanner.Text()
+		r, _ := regexp.Compile(`PLATFORM_ID="platform:([[:alnum:]]+)"`)
+		m := r.FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		packageDist = m[1]
+		break
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("error while scanning for package dist: %v", err)
+	}
+
+	return packageDist, nil
+}
+
 // gatherDataToValidate returns a map from layer digest to a struct containing the list of files
 // (packageFilesRef.LayerPackageFiles) installed via packages (packageFilesRef.LayerPackages)
 // from the container image, and the list of files (packageFilesRef.LayerFiles) modified/added
 // via layers in the image.
-func (p *HasModifiedFilesCheck) gatherDataToValidate(ctx context.Context, imgRef image.ImageReference, fs afero.Fs) ([]string, map[string]packageFilesRef, string, error) {
+func (p *HasModifiedFilesCheck) gatherDataToValidate(ctx context.Context, imgRef image.ImageReference, fs afero.Fs) ([]string, map[string]packageFilesRef, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 
 	layerDir, err := afero.TempDir(fs, "", "rpm-layers-")
 	if err != nil {
-		return nil, nil, "", err
+		return nil, nil, err
 	}
 	defer func() {
 		_ = fs.RemoveAll(layerDir)
 	}()
 
 	if imgRef.ImageInfo == nil {
-		return nil, nil, "", fmt.Errorf("image reference invalid")
+		return nil, nil, fmt.Errorf("image reference invalid")
 	}
 
 	layers, err := imgRef.ImageInfo.Layers()
 	if err != nil {
-		return nil, nil, "", err
+		return nil, nil, err
 	}
 
 	layerIDs := make([]string, 0, len(layers))
@@ -102,21 +135,36 @@ func (p *HasModifiedFilesCheck) gatherDataToValidate(ctx context.Context, imgRef
 	for idx, layer := range layers {
 		layerIDHash, err := layer.Digest()
 		if err != nil {
-			return nil, nil, "", fmt.Errorf("unable to retrieve diff id for layer: %w", err)
+			return nil, nil, fmt.Errorf("unable to retrieve diff id for layer: %w", err)
 		}
-		layerID := layerIDHash.String()
 
-		layerDir := filepath.Join(layerDir, fmt.Sprintf("%02d-%s", idx, layerID))
+		// Capture the diff ID to aid in debugging. We don't technically care if
+		// there's an error returned here because we don't use the layerDiffID
+		// value for anything meaningful.
+		layerDiffID := "unknown"
+		layerDiffHash, err := layer.DiffID()
+		if err == nil && layerDiffHash.String() != "" {
+			layerDiffID = layerDiffHash.String()
+		}
+
+		rawLayerID := layerIDHash.String()
+		// Map everything using a combination of the layer index and the layer
+		// ID to avoid problems when images have multiple scattered layers with
+		// the same ID.
+		layerID := fmt.Sprintf("%02d-%s", idx, rawLayerID)
+		logger.V(log.TRC).Info("generating unique layer ID", "uniqueLayerID", layerID, "layerID", rawLayerID, "layerDiffID", layerDiffID)
+
+		layerDir := filepath.Join(layerDir, layerID)
 		err = fs.Mkdir(layerDir, 0o755)
 		if err != nil {
-			return nil, nil, "", fmt.Errorf("could not create layer directory: %w", err)
+			return nil, nil, fmt.Errorf("could not create layer directory: %w", err)
 		}
 
 		layerIDs = append(layerIDs, layerID)
 
 		files, err := generateChangesFor(ctx, layer)
 		if err != nil {
-			return nil, nil, "", err
+			return nil, nil, err
 		}
 
 		found, pkgList := findRPMDB(ctx, layer)
@@ -142,7 +190,7 @@ func (p *HasModifiedFilesCheck) gatherDataToValidate(ctx context.Context, imgRef
 
 		packageFiles, err := installedFileMapWithExclusions(ctx, pkgList)
 		if err != nil {
-			return nil, nil, "", err
+			return nil, nil, err
 		}
 
 		layerRefs[layerID] = packageFilesRef{
@@ -153,29 +201,7 @@ func (p *HasModifiedFilesCheck) gatherDataToValidate(ctx context.Context, imgRef
 		}
 	}
 
-	osRelease, err := fs.Open(filepath.Join(imgRef.ImageFSPath, "etc", "os-release"))
-	if err != nil {
-		return nil, nil, "", fmt.Errorf("could not open os-release: %v", err)
-	}
-	defer osRelease.Close()
-	scanner := bufio.NewScanner(osRelease)
-	packageDist := "unknown"
-	for scanner.Scan() {
-		line := scanner.Text()
-		r, _ := regexp.Compile(`PLATFORM_ID="platform:([[:alnum:]]+)"`)
-		m := r.FindStringSubmatch(line)
-		if m == nil {
-			continue
-		}
-		packageDist = m[1]
-		break
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, nil, "", fmt.Errorf("error while scanning for package dist: %v", err)
-	}
-
-	return layerIDs, layerRefs, packageDist, nil
+	return layerIDs, layerRefs, nil
 }
 
 // validate compares the list of LayerFiles and PackageFiles to see what PackageFiles
