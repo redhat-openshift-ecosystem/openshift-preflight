@@ -251,6 +251,9 @@ func (oe openshiftClient) CreateCatalogSource(ctx context.Context, data CatalogS
 			Image:       data.Image,
 			DisplayName: data.Name,
 			Secrets:     data.Secrets,
+			GrpcPodConfig: &operatorsv1alpha1.GrpcPodConfig{
+				SecurityContextConfig: operatorsv1alpha1.Restricted,
+			},
 		},
 	}
 	err := oe.Client.Create(ctx, catalogSource)
