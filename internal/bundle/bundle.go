@@ -30,9 +30,10 @@ var ocpToKubeVersion = map[string]string{
 	"4.14": "1.27",
 	"4.15": "1.28",
 	"4.16": "1.29",
+	"4.17": "1.30",
 }
 
-const latestReleasedVersion = "4.15"
+const latestReleasedVersion = "4.16"
 
 func Validate(ctx context.Context, imagePath string) (*Report, error) {
 	logger := logr.FromContextOrDiscard(ctx)
