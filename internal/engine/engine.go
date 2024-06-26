@@ -412,6 +412,13 @@ func untar(ctx context.Context, dst string, r io.Reader) error {
 
 		// if it's a file create it
 		case tar.TypeReg:
+			// If the file's parent dir doesn't exist, create it.
+			dirname := filepath.Dir(target)
+			if _, err := os.Stat(dirname); err != nil {
+				if err := os.MkdirAll(dirname, 0o755); err != nil {
+					return err
+				}
+			}
 			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
 			if err != nil {
 				return err
@@ -429,13 +436,64 @@ func untar(ctx context.Context, dst string, r io.Reader) error {
 
 			// if it's a link create it
 		case tar.TypeSymlink:
-			err := os.Symlink(header.Linkname, filepath.Join(dst, header.Name))
+			nobaseLinkname, nobaseName := resolveLinkPaths(header.Linkname, header.Name)
+			fullLinkname := filepath.Join(dst, nobaseLinkname)
+			fullName := filepath.Join(dst, nobaseName)
+			// Safeguard for cases where we're trying to link to something
+			// outside of our base fs.
+			if !strings.HasPrefix(fullLinkname, dst) {
+				logger.V(log.DBG).Info("Error processing symlink. Symlink would reach outside of the image archive. Skipping this link", "link", header.Name, "linkedTo", header.Linkname, "resolvedTo", fullLinkname)
+				continue
+			}
+			// Create the new link's directory if it doesn't exist.
+			dirname := filepath.Dir(fullName)
+			if _, err := os.Stat(dirname); err != nil {
+				if err := os.MkdirAll(dirname, 0o755); err != nil {
+					return err
+				}
+			}
+			err := os.Symlink(fullLinkname, fullName)
 			if err != nil {
-				logger.V(log.DBG).Info(fmt.Sprintf("Error creating link: %s. Ignoring.", header.Name))
+				logger.V(log.DBG).Info(fmt.Sprintf("Error creating symlink: %s. Ignoring.", header.Name), "link", fullName, "linkedTo", fullLinkname, "reason", err)
+				continue
+			}
+		case tar.TypeLink:
+			// We assume hard links will not contain relative pathing in the archive.
+			original := filepath.Join(dst, header.Linkname)
+			// Create the new link's directory if it doesn't exist.
+			dirname := filepath.Dir(target)
+			if _, err := os.Stat(dirname); err != nil {
+				if err := os.MkdirAll(dirname, 0o755); err != nil {
+					return err
+				}
+			}
+			err := os.Link(original, target)
+			if err != nil {
+				logger.V(log.DBG).Info(fmt.Sprintf("Error creating hard link: %s. Ignoring.", header.Name), "link", target, "linkedTo", original, "reason", err)
 				continue
 			}
 		}
 	}
+}
+
+// resolveLinkPaths determines if oldname is an absolute path or a relative
+// path, and returns oldname relative to newname if necessary.
+func resolveLinkPaths(oldname, newname string) (string, string) {
+	if filepath.IsAbs(oldname) {
+		return oldname, newname
+	}
+
+	linkDir := filepath.Dir(newname)
+	// If the newname is at the root of the filesystem, but the oldname is
+	// relative, we'll swap out the value we get from filepath.Dir for a / to
+	// allow relative pathing to resolve. This strips `..` references given the
+	// link exists at the very base of the filesystem. In effect, it converts
+	// oldname to an absolute path
+	if linkDir == "." {
+		linkDir = "/"
+	}
+
+	return filepath.Join(linkDir, oldname), newname
 }
 
 // writeCertImage takes imageRef and writes it to disk as JSON representing a pyxis.CertImage
