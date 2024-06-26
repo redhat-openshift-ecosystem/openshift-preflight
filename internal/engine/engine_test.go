@@ -379,6 +379,21 @@ var _ = Describe("Check Name Queries", func() {
 	})
 })
 
+var _ = Describe("Link Path Resolution", func() {
+	DescribeTable(
+		"Link targets should resolve correctly",
+		func(old, new, expectedOld, expectedNew string) {
+			resO, resN := resolveLinkPaths(old, new)
+			Expect(resO).To(Equal(expectedOld))
+			Expect(resN).To(Equal(expectedNew))
+		},
+		Entry("Link at root with relative origin", "../usr/lib/file", "file", "/usr/lib/file", "file"),
+		Entry("Origin is absolute", "/usr/lib/file", "file", "/usr/lib/file", "file"),
+		Entry("Link in dir with relative origin", "../usr/lib/file", "etc/file", "usr/lib/file", "etc/file"),
+		Entry("Link in dir with relative origin and up multiple levels", "../../cfg/file", "etc/foo/file", "cfg/file", "etc/foo/file"),
+	)
+})
+
 // writeTarball writes a tar archive to out with filename containing contents at the base path
 // with extra bytes written at the end of length extraBytes.
 // note: this should only be used as a helper function in tests
