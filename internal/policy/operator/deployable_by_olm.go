@@ -467,9 +467,12 @@ func csvStatusSucceeded(ctx context.Context, client openshift.Client, name, name
 		return "", false, fmt.Errorf("failed to fetch the csv %s from namespace %s: %w", name, namespace, err)
 	}
 	// if the CSV phase is succeeded, stop the querying
-	if csv != nil && csv.Status.Phase == operatorsv1alpha1.CSVPhaseSucceeded {
-		logger.V(log.DBG).Info("CSV created successfully", "namespace", namespace, "name", name)
-		return name, true, nil
+	if csv != nil {
+		if csv.Status.Phase == operatorsv1alpha1.CSVPhaseSucceeded {
+			logger.V(log.DBG).Info("CSV created successfully", "namespace", namespace, "name", name)
+			return name, true, nil
+		}
+		logger.V(log.DBG).Info("CSV was created, but it's not yet ready", "namespace", namespace, "name", name, "status", csv.Status.Phase)
 	}
 	return "", false, nil
 }
@@ -598,6 +601,15 @@ func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData operato
 	} else {
 		if err := p.writeToFile(ctx, targetNamespace); err != nil {
 			logger.Error(err, "could not write target namespace to storage")
+		}
+	}
+
+	csv, err := p.openshiftClient.GetCSV(ctx, operatorData.InstalledCsv, operatorData.InstallNamespace)
+	if err != nil {
+		logger.Info("warning: unable to retrieve the CSV")
+	} else {
+		if err := p.writeToFile(ctx, csv); err != nil {
+			logger.Error(err, "could not write CSV to storage")
 		}
 	}
 
