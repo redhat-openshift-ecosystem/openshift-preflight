@@ -34,8 +34,10 @@ func printChecks(w io.Writer) {
 	fmt.Fprintln(w, formattedPolicyBlock("Container", engine.ContainerPolicy(context.TODO()), "invoked on container images"))
 	fmt.Fprintln(w, formattedPolicyBlock("Container Root Exception", engine.RootExceptionContainerPolicy(context.TODO()),
 		"automatically applied for container images if preflight determines a root exception flag has been added to your Red Hat Connect project"))
-	fmt.Fprintln(w, formattedPolicyBlock("Container Scratch Exception", engine.ScratchContainerPolicy(context.TODO()),
+	fmt.Fprintln(w, formattedPolicyBlock("Container Scratch (NonRoot) Exception", engine.ScratchNonRootContainerPolicy(context.TODO()),
 		"automatically applied for container checks if preflight determines a scratch exception flag has been added to your Red Hat Connect project"))
+	fmt.Fprintln(w, formattedPolicyBlock("Container Scratch (Root) Exception", engine.ScratchRootContainerPolicy(context.TODO()),
+		"automatically applied for container checks if preflight determines scratch and root exception flags have both been added to your Red Hat Connect project"))
 }
 
 // formattedPolicyBlock accepts information about the checklist

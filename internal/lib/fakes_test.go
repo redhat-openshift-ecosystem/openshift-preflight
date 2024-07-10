@@ -157,6 +157,17 @@ func gpFuncReturnRootException(ctx context.Context) (*pyxis.CertProject, error) 
 	}, nil
 }
 
+// gpFuncReturnScratchRootException implements gpFunc and returns a root exception.
+func gpFuncReturnScratchRootException(ctx context.Context) (*pyxis.CertProject, error) {
+	return &pyxis.CertProject{
+		Container: pyxis.Container{
+			DockerConfigJSON: "",
+			OsContentType:    "Scratch Image",
+			Privileged:       true,
+		},
+	}, nil
+}
+
 // gpFuncReturnNoException implements gpFunc and returns no exception indicators.
 func gpFuncReturnNoException(ctx context.Context) (*pyxis.CertProject, error) {
 	return &pyxis.CertProject{

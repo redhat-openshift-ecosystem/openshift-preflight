@@ -46,7 +46,7 @@ func (c *containerCheck) Run(ctx context.Context) (certification.Results, error)
 	cfg := runtime.Config{
 		Image:              c.image,
 		DockerConfig:       c.dockerconfigjson,
-		Scratch:            c.policy == policy.PolicyScratch,
+		Scratch:            c.policy == policy.PolicyScratchNonRoot || c.policy == policy.PolicyScratchRoot,
 		Bundle:             false,
 		Insecure:           c.insecure,
 		Platform:           c.platform,

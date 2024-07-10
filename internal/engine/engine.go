@@ -784,13 +784,20 @@ func InitializeContainerChecks(ctx context.Context, p policy.Policy, cfg Contain
 				cfg.CertificationProjectID,
 				&http.Client{Timeout: 60 * time.Second})),
 		}, nil
-	case policy.PolicyScratch:
+	case policy.PolicyScratchNonRoot:
 		return []check.Check{
 			&containerpol.HasLicenseCheck{},
 			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig),
 			&containerpol.MaxLayersCheck{},
 			&containerpol.HasRequiredLabelsCheck{},
 			&containerpol.RunAsNonRootCheck{},
+		}, nil
+	case policy.PolicyScratchRoot:
+		return []check.Check{
+			&containerpol.HasLicenseCheck{},
+			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig),
+			&containerpol.MaxLayersCheck{},
+			&containerpol.HasRequiredLabelsCheck{},
 		}, nil
 	}
 
@@ -812,7 +819,7 @@ func makeCheckList(checks []check.Check) []string {
 func checkNamesFor(ctx context.Context, p policy.Policy) []string {
 	var c []check.Check
 	switch p {
-	case policy.PolicyContainer, policy.PolicyRoot, policy.PolicyScratch:
+	case policy.PolicyContainer, policy.PolicyRoot, policy.PolicyScratchNonRoot, policy.PolicyScratchRoot:
 		c, _ = InitializeContainerChecks(ctx, p, ContainerCheckConfig{})
 	case policy.PolicyOperator:
 		c, _ = InitializeOperatorChecks(ctx, p, OperatorCheckConfig{})
@@ -833,10 +840,16 @@ func ContainerPolicy(ctx context.Context) []string {
 	return checkNamesFor(ctx, policy.PolicyContainer)
 }
 
-// ScratchContainerPolicy returns the names of checks in the
+// ScratchNonRootContainerPolicy returns the names of checks in the
 // container policy with scratch exception.
-func ScratchContainerPolicy(ctx context.Context) []string {
-	return checkNamesFor(ctx, policy.PolicyScratch)
+func ScratchNonRootContainerPolicy(ctx context.Context) []string {
+	return checkNamesFor(ctx, policy.PolicyScratchNonRoot)
+}
+
+// ScratchRootContainerPolicy returns the names of checks in the
+// container policy with scratch and root exception.
+func ScratchRootContainerPolicy(ctx context.Context) []string {
+	return checkNamesFor(ctx, policy.PolicyScratchRoot)
 }
 
 // RootExceptionContainerPolicy returns the names of checks in the
