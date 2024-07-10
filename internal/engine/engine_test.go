@@ -300,7 +300,11 @@ var _ = Describe("Check Initialization", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 		It("should properly return checks for the scratch policy", func() {
-			_, err := InitializeContainerChecks(context.TODO(), policy.PolicyScratch, ContainerCheckConfig{})
+			_, err := InitializeContainerChecks(context.TODO(), policy.PolicyScratchNonRoot, ContainerCheckConfig{})
+			Expect(err).ToNot(HaveOccurred())
+		})
+		It("should properly return checks for the scratch and root policy", func() {
+			_, err := InitializeContainerChecks(context.TODO(), policy.PolicyScratchRoot, ContainerCheckConfig{})
 			Expect(err).ToNot(HaveOccurred())
 		})
 		It("should properly return checks for the root policy", func() {
@@ -353,12 +357,18 @@ var _ = Describe("Check Name Queries", func() {
 			"FollowsRestrictedNetworkEnablementGuidelines",
 			"RequiredAnnotations",
 		}),
-		Entry("scratch container policy", ScratchContainerPolicy, []string{
+		Entry("scratch container policy", ScratchNonRootContainerPolicy, []string{
 			"HasLicense",
 			"HasUniqueTag",
 			"LayerCountAcceptable",
 			"HasRequiredLabel",
 			"RunAsNonRoot",
+		}),
+		Entry("scratch container policy", ScratchRootContainerPolicy, []string{
+			"HasLicense",
+			"HasUniqueTag",
+			"LayerCountAcceptable",
+			"HasRequiredLabel",
 		}),
 		Entry("root container policy", RootExceptionContainerPolicy, []string{
 			"HasLicense",

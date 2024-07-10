@@ -39,8 +39,17 @@ func GetContainerPolicyExceptions(ctx context.Context, pc PyxisClient) (policy.P
 		return "", fmt.Errorf("could not retrieve project: %w", err)
 	}
 	logger.V(log.DBG).Info("certification project", "name", certProject.Name)
+
+	// if the partner has gotten a scratch exception from the business and os_content_type == "Scratch Image"
+	// and a partner sets `Host Level Access` in connect to `Privileged`, enable ScratchRootContainerPolicy checks
+	if certProject.ScratchProject() && certProject.Container.Privileged {
+		return policy.PolicyScratchRoot, nil
+	}
+
+	// if the partner has gotten a scratch exception from the business and os_content_type == "Scratch Image",
+	// enable ScratchNonRootContainerPolicy checks
 	if certProject.ScratchProject() {
-		return policy.PolicyScratch, nil
+		return policy.PolicyScratchNonRoot, nil
 	}
 
 	// if a partner sets `Host Level Access` in connect to `Privileged`, enable RootExceptionContainerPolicy checks
