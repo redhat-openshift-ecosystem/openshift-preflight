@@ -76,6 +76,11 @@ func (p *certifiedImagesCheck) dataToValidate(ctx context.Context, imagePath str
 func (p *certifiedImagesCheck) validate(ctx context.Context, imageDigests []string) (bool, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 
+	if len(imageDigests) == 0 {
+		logger.Info("warning: pinned images are expected but none were discovered")
+		return false, nil
+	}
+
 	pyxisImages, err := p.imageFinder.FindImagesByDigest(ctx, imageDigests)
 	if err != nil {
 		return false, err
@@ -99,7 +104,8 @@ func (p *certifiedImagesCheck) validate(ctx context.Context, imageDigests []stri
 			p.nonCertifiedImages = append(p.nonCertifiedImages, fullImg)
 		}
 	}
-	return true, nil
+
+	return len(p.nonCertifiedImages) == 0, nil
 }
 
 func (p *certifiedImagesCheck) Name() string {
