@@ -143,11 +143,11 @@ spec:
 		AfterEach(func() {
 			certifiedImagesCheck.imageFinder = &certifiedImageFinder{}
 		})
-		It("should still succeed", func() {
+		It("should fail", func() {
 			certifiedImagesCheck.imageFinder = &uncertifiedImageFinder{}
 			result, err := certifiedImagesCheck.Validate(context.TODO(), imageRef)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(result).To(BeTrue())
+			Expect(result).To(BeFalse())
 			Expect(certifiedImagesCheck.nonCertifiedImages).To(HaveLen(1))
 		})
 	})
@@ -155,11 +155,11 @@ spec:
 		AfterEach(func() {
 			certifiedImagesCheck.imageFinder = &certifiedImageFinder{}
 		})
-		It("should still succeed", func() {
+		It("should fail", func() {
 			certifiedImagesCheck.imageFinder = &missingImageFinder{}
 			result, err := certifiedImagesCheck.Validate(context.TODO(), imageRef)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(result).To(BeTrue())
+			Expect(result).To(BeFalse())
 			Expect(certifiedImagesCheck.nonCertifiedImages).To(HaveLen(1))
 		})
 	})
@@ -184,7 +184,7 @@ spec:
 		})
 	})
 	When("the images in the CSV aren't pinned", func() {
-		It("should succeed, but mark the image as non-certified", func() {
+		It("should fail", func() {
 			csvContents := `kind: ClusterServiceVersion
 apiVersion: operators.coreos.com/v1alpha1
 spec:
@@ -200,7 +200,7 @@ spec:
 			Expect(os.WriteFile(filepath.Join(imageRef.ImageFSPath, manifestsDir, clusterServiceVersionFilename), []byte(csvContents), 0o644)).To(Succeed())
 			result, err := certifiedImagesCheck.Validate(context.TODO(), imageRef)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(result).To(BeTrue())
+			Expect(result).To(BeFalse())
 			Expect(certifiedImagesCheck.nonCertifiedImages).To(HaveLen(1))
 		})
 	})
