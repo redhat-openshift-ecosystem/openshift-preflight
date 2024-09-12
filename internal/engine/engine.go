@@ -217,9 +217,11 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 	// execute checks
 	logger.V(log.DBG).Info("executing checks")
 	for _, executedCheck := range c.checks {
+		logger := logger.WithValues("check", executedCheck.Name())
+		ctx := logr.NewContext(ctx, logger)
 		c.results.TestedImage = c.image
 
-		logger.V(log.DBG).Info("running check", "check", executedCheck.Name())
+		logger.V(log.DBG).Info("running check")
 		if executedCheck.Metadata().Level == check.LevelOptional || executedCheck.Metadata().Level == check.LevelWarn {
 			logger.Info(fmt.Sprintf("Check %s is not currently being enforced.", executedCheck.Name()))
 		}
@@ -230,7 +232,7 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 		checkElapsedTime := time.Since(checkStartTime)
 
 		if err != nil {
-			logger.WithValues("result", "ERROR", "err", err.Error()).Info("check completed", "check", executedCheck.Name())
+			logger.WithValues("result", "ERROR", "err", err.Error()).Info("check completed")
 			result := certification.Result{Check: executedCheck, ElapsedTime: checkElapsedTime}
 			c.results.Errors = appendUnlessOptional(c.results.Errors, *result.WithError(err))
 			continue
@@ -239,16 +241,16 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 		if !checkPassed {
 			// if a test doesn't pass but is of level warn include it in warning results, instead of failed results
 			if executedCheck.Metadata().Level == check.LevelWarn {
-				logger.WithValues("result", "WARNING").Info("check completed", "check", executedCheck.Name())
+				logger.WithValues("result", "WARNING").Info("check completed")
 				c.results.Warned = appendUnlessOptional(c.results.Warned, certification.Result{Check: executedCheck, ElapsedTime: checkElapsedTime})
 				continue
 			}
-			logger.WithValues("result", "FAILED").Info("check completed", "check", executedCheck.Name())
+			logger.WithValues("result", "FAILED").Info("check completed")
 			c.results.Failed = appendUnlessOptional(c.results.Failed, certification.Result{Check: executedCheck, ElapsedTime: checkElapsedTime})
 			continue
 		}
 
-		logger.WithValues("result", "PASSED").Info("check completed", "check", executedCheck.Name())
+		logger.WithValues("result", "PASSED").Info("check completed")
 		c.results.Passed = appendUnlessOptional(c.results.Passed, certification.Result{Check: executedCheck, ElapsedTime: checkElapsedTime})
 	}
 
