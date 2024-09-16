@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"os"
+	"time"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/option"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
@@ -37,6 +38,7 @@ type Config struct {
 	Channel           string
 	IndexImage        string
 	Kubeconfig        string
+	CSVTimeout        time.Duration
 }
 
 // ReadOnly returns an uneditably configuration.
@@ -83,6 +85,7 @@ func (c *Config) storeOperatorPolicyConfiguration(vcfg viper.Viper) {
 	c.ScorecardWaitTime = vcfg.GetString("scorecard_wait_time")
 	c.Channel = vcfg.GetString("channel")
 	c.IndexImage = vcfg.GetString("indeximage")
+	c.CSVTimeout = vcfg.GetDuration("csv_timeout")
 }
 
 // This is to satisfy the CraneConfig interface

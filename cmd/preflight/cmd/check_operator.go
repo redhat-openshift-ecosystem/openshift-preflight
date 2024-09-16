@@ -52,6 +52,12 @@ func checkOperatorCmd(runpreflight runPreflight) *cobra.Command {
 		"If empty, the default operator channel in bundle's annotations file is used.. (env: PFLT_CHANNEL)")
 	_ = viper.BindPFlag("channel", checkOperatorCmd.Flags().Lookup("channel"))
 
+	checkOperatorCmd.Flags().Duration("csv-timeout", 0, "The Duration of time to wait for the ClusterServiceVersion to become healthy.\n"+
+		"If empty the default of 180s will be used. (env: PFLT_CSV_TIMEOUT)")
+	_ = viper.BindPFlag("csv_timeout", checkOperatorCmd.Flags().Lookup("csv-timeout"))
+
+	_ = checkOperatorCmd.Flags().MarkHidden("csv-timeout")
+
 	return checkOperatorCmd
 }
 
@@ -167,6 +173,10 @@ func generateOperatorCheckOptions(cfg *runtime.Config) []operator.Option {
 
 	if cfg.Insecure {
 		opts = append(opts, operator.WithInsecureConnection())
+	}
+
+	if cfg.CSVTimeout != 0 {
+		opts = append(opts, operator.WithCSVTimeout(cfg.CSVTimeout))
 	}
 
 	return opts
