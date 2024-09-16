@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	goruntime "runtime"
+	"time"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	preflighterr "github.com/redhat-openshift-ecosystem/openshift-preflight/errors"
@@ -92,6 +93,7 @@ func (c *operatorCheck) resolve(ctx context.Context) error {
 		DockerConfig:            c.dockerConfigFilePath,
 		Channel:                 c.operatorChannel,
 		Kubeconfig:              c.kubeconfig,
+		CSVTimeout:              c.csvTimeout,
 	})
 	if err != nil {
 		return fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
@@ -164,6 +166,14 @@ func WithInsecureConnection() Option {
 	}
 }
 
+// WithCSVTimeout overrides the default csvTimeout value, for operators that take
+// additional time to install.
+func WithCSVTimeout(csvTimeout time.Duration) Option {
+	return func(oc *operatorCheck) {
+		oc.csvTimeout = csvTimeout
+	}
+}
+
 type operatorCheck struct {
 	// required
 	image      string
@@ -180,4 +190,5 @@ type operatorCheck struct {
 	checks                  []check.Check
 	resolved                bool
 	policy                  policy.Policy
+	csvTimeout              time.Duration
 }

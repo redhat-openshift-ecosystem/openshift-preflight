@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 
@@ -88,6 +89,9 @@ func initConfig(viper *spfviper.Viper) {
 
 	// Set up scorecard wait time default
 	viper.SetDefault("scorecard_wait_time", DefaultScorecardWaitTime)
+
+	// Set up csv timout default
+	viper.SetDefault("csv_timeout", runtime.DefaultCSVTimeout)
 }
 
 // preRunConfig is used by cobra.PreRun in all non-root commands to load all necessary configurations
