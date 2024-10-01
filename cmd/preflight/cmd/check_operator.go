@@ -56,7 +56,12 @@ func checkOperatorCmd(runpreflight runPreflight) *cobra.Command {
 		"If empty the default of 180s will be used. (env: PFLT_CSV_TIMEOUT)")
 	_ = viper.BindPFlag("csv_timeout", checkOperatorCmd.Flags().Lookup("csv-timeout"))
 
+	checkOperatorCmd.Flags().Duration("subscription-timeout", 0, "The Duration of time to wait for the Subscription to become healthy.\n"+
+		"If empty the default of 180s will be used. (env: PFLT_SUBSCRIPTION_TIMEOUT)")
+	_ = viper.BindPFlag("subscription_timeout", checkOperatorCmd.Flags().Lookup("subscription-timeout"))
+
 	_ = checkOperatorCmd.Flags().MarkHidden("csv-timeout")
+	_ = checkOperatorCmd.Flags().MarkHidden("subscription-timeout")
 
 	return checkOperatorCmd
 }
@@ -177,6 +182,10 @@ func generateOperatorCheckOptions(cfg *runtime.Config) []operator.Option {
 
 	if cfg.CSVTimeout != 0 {
 		opts = append(opts, operator.WithCSVTimeout(cfg.CSVTimeout))
+	}
+
+	if cfg.SubscriptionTimeout != 0 {
+		opts = append(opts, operator.WithSubscriptionTimeout(cfg.SubscriptionTimeout))
 	}
 
 	return opts

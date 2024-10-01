@@ -92,6 +92,9 @@ func initConfig(viper *spfviper.Viper) {
 
 	// Set up csv timout default
 	viper.SetDefault("csv_timeout", runtime.DefaultCSVTimeout)
+
+	// Set up subscription timeout default
+	viper.SetDefault("subscription_timeout", runtime.DefaultSubscriptionTimeout)
 }
 
 // preRunConfig is used by cobra.PreRun in all non-root commands to load all necessary configurations

@@ -22,10 +22,11 @@ const defaultScorecardWaitTime = "240"
 // NewCheck is a check runner that executes the Operator Policy.
 func NewCheck(image, indeximage string, kubeconfig []byte, opts ...Option) *operatorCheck {
 	c := &operatorCheck{
-		image:             image,
-		kubeconfig:        kubeconfig,
-		indeximage:        indeximage,
-		scorecardWaitTime: defaultScorecardWaitTime,
+		image:               image,
+		kubeconfig:          kubeconfig,
+		indeximage:          indeximage,
+		scorecardWaitTime:   defaultScorecardWaitTime,
+		subscriptionTimeout: runtime.DefaultSubscriptionTimeout,
 	}
 
 	for _, opt := range opts {
@@ -94,6 +95,7 @@ func (c *operatorCheck) resolve(ctx context.Context) error {
 		Channel:                 c.operatorChannel,
 		Kubeconfig:              c.kubeconfig,
 		CSVTimeout:              c.csvTimeout,
+		SubscriptionTimeout:     c.subscriptionTimeout,
 	})
 	if err != nil {
 		return fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
@@ -174,6 +176,13 @@ func WithCSVTimeout(csvTimeout time.Duration) Option {
 	}
 }
 
+// WithSubscriptionTimeout customizes how long to wait for a subscription to become healthy.
+func WithSubscriptionTimeout(subscriptionTimeout time.Duration) Option {
+	return func(oc *operatorCheck) {
+		oc.subscriptionTimeout = subscriptionTimeout
+	}
+}
+
 type operatorCheck struct {
 	// required
 	image      string
@@ -191,4 +200,5 @@ type operatorCheck struct {
 	resolved                bool
 	policy                  policy.Policy
 	csvTimeout              time.Duration
+	subscriptionTimeout     time.Duration
 }

@@ -27,16 +27,13 @@ var _ = Describe("DeployableByOLMCheck", func() {
 	)
 
 	BeforeEach(func() {
-		// override default timeout
-		subscriptionTimeout = 1 * time.Second
-
 		fakeImage := fakecranev1.FakeImage{}
 		imageRef.ImageInfo = &fakeImage
 		imageRef.ImageFSPath = "./testdata/all_namespaces"
 
 		now := metav1.Now()
 		og.Status.LastUpdated = &now
-		deployableByOLMCheck = *NewDeployableByOlmCheck("test_indeximage", "", "", WithCSVTimeout(1*time.Second))
+		deployableByOLMCheck = *NewDeployableByOlmCheck("test_indeximage", "", "", WithCSVTimeout(1*time.Second), WithSubscriptionTimeout(1*time.Second))
 		scheme := apiruntime.NewScheme()
 		Expect(openshift.AddSchemes(scheme)).To(Succeed())
 		clientBuilder = fake.NewClientBuilder().

@@ -57,11 +57,12 @@ type DeployableByOlmCheck struct {
 	// channel is optional. If empty, we will introspect.
 	channel string
 
-	openshiftClient openshift.Client
-	client          crclient.Client
-	csvReady        bool
-	validImages     bool
-	csvTimeout      time.Duration
+	openshiftClient     openshift.Client
+	client              crclient.Client
+	csvReady            bool
+	validImages         bool
+	csvTimeout          time.Duration
+	subscriptionTimeout time.Duration
 }
 
 func (p *DeployableByOlmCheck) initClient() error {
@@ -103,6 +104,13 @@ func (p *DeployableByOlmCheck) initOpenShifeEngine() {
 func WithCSVTimeout(csvTimeout time.Duration) Option {
 	return func(oc *DeployableByOlmCheck) {
 		oc.csvTimeout = csvTimeout
+	}
+}
+
+// WithSubscriptionTimeout customizes how long to wait for a subscription to become healthy.
+func WithSubscriptionTimeout(subscriptionTimeout time.Duration) Option {
+	return func(oc *DeployableByOlmCheck) {
+		oc.subscriptionTimeout = subscriptionTimeout
 	}
 }
 
@@ -549,7 +557,7 @@ func (p *DeployableByOlmCheck) installedCSV(ctx context.Context, operatorData op
 	var wg sync.WaitGroup
 	// query API server for the installed CSV field of the created subscription
 	wg.Add(1)
-	go watch(ctx, p.openshiftClient, &wg, operatorData.App, operatorData.InstallNamespace, subscriptionTimeout, installedCSVChannel, subscriptionCsvIsInstalled)
+	go watch(ctx, p.openshiftClient, &wg, operatorData.App, operatorData.InstallNamespace, p.subscriptionTimeout, installedCSVChannel, subscriptionCsvIsInstalled)
 
 	go func() {
 		wg.Wait()
