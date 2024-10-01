@@ -110,6 +110,7 @@ var _ = Describe("BundleValidateCheck", func() {
 		Entry(">= 4.15", "v4.15", latestReleasedVersion, true),
 		Entry(">= 4.16, which is more than released", "v4.16", latestReleasedVersion, true),
 		Entry(">= 4.17, which is more than released", "v4.17", "4.17", true),
+		Entry(">= 4.18, which is more than released", "v4.18", "4.18", true),
 		Entry("begins = with error", "=foo", "", false),
 		Entry("bare version with error", "vfoo", "", false),
 		Entry("range with error", "v4.6-vfoo", "", false),
