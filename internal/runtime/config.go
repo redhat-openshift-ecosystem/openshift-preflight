@@ -31,14 +31,15 @@ type Config struct {
 	Offline                bool
 	ManifestListDigest     string
 	// Operator-Specific Fields
-	Namespace         string
-	ServiceAccount    string
-	ScorecardImage    string
-	ScorecardWaitTime string
-	Channel           string
-	IndexImage        string
-	Kubeconfig        string
-	CSVTimeout        time.Duration
+	Namespace           string
+	ServiceAccount      string
+	ScorecardImage      string
+	ScorecardWaitTime   string
+	Channel             string
+	IndexImage          string
+	Kubeconfig          string
+	CSVTimeout          time.Duration
+	SubscriptionTimeout time.Duration
 }
 
 // ReadOnly returns an uneditably configuration.
@@ -86,6 +87,7 @@ func (c *Config) storeOperatorPolicyConfiguration(vcfg viper.Viper) {
 	c.Channel = vcfg.GetString("channel")
 	c.IndexImage = vcfg.GetString("indeximage")
 	c.CSVTimeout = vcfg.GetDuration("csv_timeout")
+	c.SubscriptionTimeout = vcfg.GetDuration("subscription_timeout")
 }
 
 // This is to satisfy the CraneConfig interface

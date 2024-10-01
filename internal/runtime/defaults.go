@@ -2,4 +2,7 @@ package runtime
 
 import "time"
 
-var DefaultCSVTimeout = 180 * time.Second
+var (
+	DefaultCSVTimeout          = 180 * time.Second
+	DefaultSubscriptionTimeout = 180 * time.Second
+)

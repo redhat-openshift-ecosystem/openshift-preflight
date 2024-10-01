@@ -1,8 +1,6 @@
 package operator
 
 import (
-	"time"
-
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 )
 
@@ -30,8 +28,6 @@ const (
 )
 
 var (
-	subscriptionTimeout time.Duration = 180 * time.Second
-
 	approvedRegistries = map[string]struct{}{
 		"registry.connect.dev.redhat.com":   {},
 		"registry.connect.qa.redhat.com":    {},
