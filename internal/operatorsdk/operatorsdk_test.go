@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
@@ -27,6 +28,13 @@ var _ = Describe("OperatorSdk", func() {
 		Expect(err).ToNot(HaveOccurred())
 		DeferCleanup(os.RemoveAll, tmpdir)
 		aw, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(tmpdir))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = os.WriteFile(filepath.Join(tmpdir, "operator-sdk"), []byte("testcontents"), 0o755)
+		Expect(err).ToNot(HaveOccurred())
+
+		// updating PATH env to include the directory created in the test
+		err = os.Setenv("PATH", os.Getenv("PATH")+":"+tmpdir)
 		Expect(err).ToNot(HaveOccurred())
 
 		testcontext = artifacts.ContextWithWriter(context.Background(), aw)

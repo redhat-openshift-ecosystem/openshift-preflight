@@ -34,6 +34,12 @@ type execContext = func(name string, arg ...string) *exec.Cmd
 func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorSdkScorecardOptions) (*OperatorSdkScorecardReport, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 
+	// checking to make sure operator-sdk is in the $PATH
+	_, err := exec.LookPath("operator-sdk")
+	if err != nil {
+		return nil, err
+	}
+
 	cmdArgs := []string{"scorecard"}
 	if opts.OutputFormat == "" {
 		opts.OutputFormat = "json"
