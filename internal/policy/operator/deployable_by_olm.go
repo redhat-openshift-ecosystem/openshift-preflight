@@ -33,6 +33,8 @@ import (
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+type Option func(*DeployableByOlmCheck)
+
 var _ check.Check = &DeployableByOlmCheck{}
 
 type operatorData struct {
@@ -59,6 +61,7 @@ type DeployableByOlmCheck struct {
 	client          crclient.Client
 	csvReady        bool
 	validImages     bool
+	csvTimeout      time.Duration
 }
 
 func (p *DeployableByOlmCheck) initClient() error {
@@ -95,6 +98,14 @@ func (p *DeployableByOlmCheck) initOpenShifeEngine() {
 	}
 }
 
+// WithCSVTimeout overrides the default csvTimeout value, for operators that take
+// additional time to install.
+func WithCSVTimeout(csvTimeout time.Duration) Option {
+	return func(oc *DeployableByOlmCheck) {
+		oc.csvTimeout = csvTimeout
+	}
+}
+
 // NewDeployableByOlmCheck will return a check that validates if an operator
 // is deployable by OLM. An empty dockerConfig value implies that the images
 // in scope are public. An empty channel value implies that the check should
@@ -103,12 +114,18 @@ func NewDeployableByOlmCheck(
 	indexImage,
 	dockerConfig,
 	channel string,
+	opts ...Option,
 ) *DeployableByOlmCheck {
-	return &DeployableByOlmCheck{
+	c := &DeployableByOlmCheck{
 		dockerConfig: dockerConfig,
 		indexImage:   indexImage,
 		channel:      channel,
 	}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
 }
 
 func (p *DeployableByOlmCheck) Validate(ctx context.Context, bundleRef image.ImageReference) (bool, error) {
@@ -491,7 +508,7 @@ func (p *DeployableByOlmCheck) isCSVReady(ctx context.Context, operatorData oper
 
 	for _, CsvNamespace := range CsvNamespaces {
 		wg.Add(1)
-		go watch(ctx, p.openshiftClient, &wg, operatorData.InstalledCsv, CsvNamespace, csvTimeout, csvChannel, csvStatusSucceeded)
+		go watch(ctx, p.openshiftClient, &wg, operatorData.InstalledCsv, CsvNamespace, p.csvTimeout, csvChannel, csvStatusSucceeded)
 	}
 
 	go func() {

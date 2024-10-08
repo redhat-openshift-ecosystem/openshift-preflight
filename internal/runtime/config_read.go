@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"time"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/config"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 )
@@ -100,4 +102,8 @@ func (ro *ReadOnlyConfig) Platform() string {
 
 func (ro *ReadOnlyConfig) Insecure() bool {
 	return ro.cfg.Insecure
+}
+
+func (ro *ReadOnlyConfig) CSVTimeout() time.Duration {
+	return ro.cfg.CSVTimeout
 }

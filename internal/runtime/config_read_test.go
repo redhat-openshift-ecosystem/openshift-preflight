@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -30,6 +32,7 @@ var _ = Describe("Runtime ReadOnlyConfig test", func() {
 			Channel:                "channel",
 			IndexImage:             "indeximg",
 			Kubeconfig:             "kubeconfig",
+			CSVTimeout:             180 * time.Second,
 		}
 		cro := c.ReadOnly()
 		It("should return values assigned to corresponding struct fields", func() {
@@ -55,6 +58,7 @@ var _ = Describe("Runtime ReadOnlyConfig test", func() {
 			Expect(cro.Channel()).To(Equal("channel"))
 			Expect(cro.IndexImage()).To(Equal("indeximg"))
 			Expect(cro.Kubeconfig()).To(Equal("kubeconfig"))
+			Expect(cro.CSVTimeout()).To(Equal(180 * time.Second))
 		})
 	})
 })

@@ -722,6 +722,7 @@ type OperatorCheckConfig struct {
 	ScorecardImage, ScorecardWaitTime, ScorecardNamespace, ScorecardServiceAccount string
 	IndexImage, DockerConfig, Channel                                              string
 	Kubeconfig                                                                     []byte
+	CSVTimeout                                                                     time.Duration
 }
 
 // InitializeOperatorChecks returns opeartor checks for policy p give cfg.
@@ -731,7 +732,7 @@ func InitializeOperatorChecks(ctx context.Context, p policy.Policy, cfg Operator
 		return []check.Check{
 			operatorpol.NewScorecardBasicSpecCheck(operatorsdk.New(cfg.ScorecardImage, exec.Command), cfg.ScorecardNamespace, cfg.ScorecardServiceAccount, cfg.Kubeconfig, cfg.ScorecardWaitTime),
 			operatorpol.NewScorecardOlmSuiteCheck(operatorsdk.New(cfg.ScorecardImage, exec.Command), cfg.ScorecardNamespace, cfg.ScorecardServiceAccount, cfg.Kubeconfig, cfg.ScorecardWaitTime),
-			operatorpol.NewDeployableByOlmCheck(cfg.IndexImage, cfg.DockerConfig, cfg.Channel),
+			operatorpol.NewDeployableByOlmCheck(cfg.IndexImage, cfg.DockerConfig, cfg.Channel, operatorpol.WithCSVTimeout(cfg.CSVTimeout)),
 			operatorpol.NewValidateOperatorBundleCheck(),
 			operatorpol.NewCertifiedImagesCheck(pyxis.NewPyxisClient(
 				check.DefaultPyxisHost,

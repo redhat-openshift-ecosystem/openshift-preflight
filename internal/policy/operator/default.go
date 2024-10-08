@@ -32,8 +32,6 @@ const (
 var (
 	subscriptionTimeout time.Duration = 180 * time.Second
 
-	csvTimeout time.Duration = 180 * time.Second
-
 	approvedRegistries = map[string]struct{}{
 		"registry.connect.dev.redhat.com":   {},
 		"registry.connect.qa.redhat.com":    {},
