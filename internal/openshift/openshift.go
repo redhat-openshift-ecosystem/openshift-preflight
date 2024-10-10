@@ -405,7 +405,7 @@ func (oe *openshiftClient) GetImages(ctx context.Context) (map[string]struct{}, 
 	}
 	for _, imageStream := range imageStreamList.Items {
 		for _, tag := range imageStream.Spec.Tags {
-			if tag.From.Kind == "DockerImage" {
+			if tag.From != nil && tag.From.Kind == "DockerImage" {
 				imageList[tag.From.Name] = struct{}{}
 			}
 		}

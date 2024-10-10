@@ -81,6 +81,15 @@ var _ = Describe("OpenShift Engine", func() {
 						},
 					},
 				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "imagestream-empty-objectref",
+						Namespace: "testns",
+					},
+					Spec: imagestreamv1.ImageStreamSpec{
+						Tags: []imagestreamv1.TagReference{},
+					},
+				},
 			},
 		}
 
