@@ -99,8 +99,7 @@ func (p *DeployableByOlmCheck) initOpenShifeEngine() {
 	}
 }
 
-// WithCSVTimeout overrides the default csvTimeout value, for operators that take
-// additional time to install.
+// WithCSVTimeout customizes how long to wait for a ClusterServiceVersion to become healthy.
 func WithCSVTimeout(csvTimeout time.Duration) Option {
 	return func(oc *DeployableByOlmCheck) {
 		oc.csvTimeout = csvTimeout
