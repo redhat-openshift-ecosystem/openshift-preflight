@@ -16,16 +16,14 @@ import (
 
 type Option = func(*operatorCheck)
 
-// TODO(): replace this value when the default in package cmd is moved to a central location
-const defaultScorecardWaitTime = "240"
-
 // NewCheck is a check runner that executes the Operator Policy.
 func NewCheck(image, indeximage string, kubeconfig []byte, opts ...Option) *operatorCheck {
 	c := &operatorCheck{
 		image:               image,
 		kubeconfig:          kubeconfig,
 		indeximage:          indeximage,
-		scorecardWaitTime:   defaultScorecardWaitTime,
+		scorecardWaitTime:   runtime.DefaultScorecardWaitTime,
+		csvTimeout:          runtime.DefaultCSVTimeout,
 		subscriptionTimeout: runtime.DefaultSubscriptionTimeout,
 	}
 
@@ -168,8 +166,7 @@ func WithInsecureConnection() Option {
 	}
 }
 
-// WithCSVTimeout overrides the default csvTimeout value, for operators that take
-// additional time to install.
+// WithCSVTimeout customizes how long to wait for a ClusterServiceVersion to become healthy.
 func WithCSVTimeout(csvTimeout time.Duration) Option {
 	return func(oc *operatorCheck) {
 		oc.csvTimeout = csvTimeout

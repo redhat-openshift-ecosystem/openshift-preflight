@@ -88,7 +88,7 @@ func initConfig(viper *spfviper.Viper) {
 	viper.SetDefault("serviceaccount", DefaultServiceAccount)
 
 	// Set up scorecard wait time default
-	viper.SetDefault("scorecard_wait_time", DefaultScorecardWaitTime)
+	viper.SetDefault("scorecard_wait_time", runtime.DefaultScorecardWaitTime)
 
 	// Set up csv timout default
 	viper.SetDefault("csv_timeout", runtime.DefaultCSVTimeout)
