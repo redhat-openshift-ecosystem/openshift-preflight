@@ -96,6 +96,7 @@ func (c *containerCheck) resolve(ctx context.Context) error {
 		DockerConfig:           c.dockerconfigjson,
 		PyxisAPIToken:          c.pyxisToken,
 		CertificationProjectID: c.certificationProjectID,
+		PyxisHost:              c.pyxisHost,
 	})
 	if err != nil {
 		return fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)

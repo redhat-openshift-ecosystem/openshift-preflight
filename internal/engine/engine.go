@@ -753,7 +753,7 @@ func InitializeOperatorChecks(ctx context.Context, p policy.Policy, cfg Operator
 
 // ContainerCheckConfig contains configuration relevant to an individual check's execution.
 type ContainerCheckConfig struct {
-	DockerConfig, PyxisAPIToken, CertificationProjectID string
+	DockerConfig, PyxisAPIToken, CertificationProjectID, PyxisHost string
 }
 
 // InitializeContainerChecks returns the appropriate checks for policy p given cfg.
@@ -769,7 +769,7 @@ func InitializeContainerChecks(ctx context.Context, p policy.Policy, cfg Contain
 			&containerpol.RunAsNonRootCheck{},
 			&containerpol.HasModifiedFilesCheck{},
 			containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisClient(
-				check.DefaultPyxisHost,
+				cfg.PyxisHost,
 				cfg.PyxisAPIToken,
 				cfg.CertificationProjectID,
 				&http.Client{Timeout: 60 * time.Second})),
@@ -783,7 +783,7 @@ func InitializeContainerChecks(ctx context.Context, p policy.Policy, cfg Contain
 			&containerpol.HasRequiredLabelsCheck{},
 			&containerpol.HasModifiedFilesCheck{},
 			containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisClient(
-				check.DefaultPyxisHost,
+				cfg.PyxisHost,
 				cfg.PyxisAPIToken,
 				cfg.CertificationProjectID,
 				&http.Client{Timeout: 60 * time.Second})),
