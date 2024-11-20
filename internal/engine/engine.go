@@ -765,6 +765,7 @@ func InitializeContainerChecks(ctx context.Context, p policy.Policy, cfg Contain
 				cfg.PyxisAPIToken,
 				cfg.CertificationProjectID,
 				&http.Client{Timeout: 60 * time.Second})),
+			&containerpol.HasProhibitedContainerName{},
 		}, nil
 	case policy.PolicyRoot:
 		return []check.Check{
@@ -779,6 +780,7 @@ func InitializeContainerChecks(ctx context.Context, p policy.Policy, cfg Contain
 				cfg.PyxisAPIToken,
 				cfg.CertificationProjectID,
 				&http.Client{Timeout: 60 * time.Second})),
+			&containerpol.HasProhibitedContainerName{},
 		}, nil
 	case policy.PolicyScratchNonRoot:
 		return []check.Check{
@@ -787,6 +789,7 @@ func InitializeContainerChecks(ctx context.Context, p policy.Policy, cfg Contain
 			&containerpol.MaxLayersCheck{},
 			&containerpol.HasRequiredLabelsCheck{},
 			&containerpol.RunAsNonRootCheck{},
+			&containerpol.HasProhibitedContainerName{},
 		}, nil
 	case policy.PolicyScratchRoot:
 		return []check.Check{
@@ -794,6 +797,7 @@ func InitializeContainerChecks(ctx context.Context, p policy.Policy, cfg Contain
 			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig),
 			&containerpol.MaxLayersCheck{},
 			&containerpol.HasRequiredLabelsCheck{},
+			&containerpol.HasProhibitedContainerName{},
 		}, nil
 	}
 
