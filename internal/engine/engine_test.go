@@ -345,6 +345,7 @@ var _ = Describe("Check Name Queries", func() {
 			"RunAsNonRoot",
 			"HasModifiedFiles",
 			"BasedOnUbi",
+			"HasProhibitedContainerName",
 		}),
 		Entry("default operator policy", OperatorPolicy, []string{
 			"ScorecardBasicSpecCheck",
@@ -363,12 +364,14 @@ var _ = Describe("Check Name Queries", func() {
 			"LayerCountAcceptable",
 			"HasRequiredLabel",
 			"RunAsNonRoot",
+			"HasProhibitedContainerName",
 		}),
 		Entry("scratch container policy", ScratchRootContainerPolicy, []string{
 			"HasLicense",
 			"HasUniqueTag",
 			"LayerCountAcceptable",
 			"HasRequiredLabel",
+			"HasProhibitedContainerName",
 		}),
 		Entry("root container policy", RootExceptionContainerPolicy, []string{
 			"HasLicense",
@@ -378,6 +381,7 @@ var _ = Describe("Check Name Queries", func() {
 			"HasRequiredLabel",
 			"HasModifiedFiles",
 			"BasedOnUbi",
+			"HasProhibitedContainerName",
 		}),
 	)
 

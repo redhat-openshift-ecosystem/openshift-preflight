@@ -11,9 +11,10 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 
-func getLabels(bad bool) map[string]string {
+func getLabels(override string) map[string]string {
 	labels := map[string]string{
-		"name":        "name",
+		"name":        "Something for Red Hat OpenShift",
+		"maintainer":  "maintainer",
 		"vendor":      "vendor",
 		"version":     "version",
 		"release":     "release",
@@ -21,8 +22,11 @@ func getLabels(bad bool) map[string]string {
 		"description": "description",
 	}
 
-	if bad {
+	switch override {
+	case "remove-label":
 		delete(labels, "description")
+	case "violates-trademark":
+		labels["name"] = "Red Hat"
 	}
 
 	return labels
@@ -31,15 +35,23 @@ func getLabels(bad bool) map[string]string {
 func getConfigFile() (*cranev1.ConfigFile, error) {
 	return &cranev1.ConfigFile{
 		Config: cranev1.Config{
-			Labels: getLabels(false),
+			Labels: getLabels(""),
 		},
 	}, nil
 }
 
-func getBadConfigFile() (*cranev1.ConfigFile, error) {
+func getRemoveLabelConfigFile() (*cranev1.ConfigFile, error) {
 	return &cranev1.ConfigFile{
 		Config: cranev1.Config{
-			Labels: getLabels(true),
+			Labels: getLabels("remove-label"),
+		},
+	}, nil
+}
+
+func getViolatesTrademarkConfigFile() (*cranev1.ConfigFile, error) {
+	return &cranev1.ConfigFile{
+		Config: cranev1.Config{
+			Labels: getLabels("violates-trademark"),
 		},
 	}, nil
 }
@@ -68,11 +80,24 @@ var _ = Describe("HasRequiredLabels", func() {
 		Context("When it does not have required labels", func() {
 			BeforeEach(func() {
 				fakeImage := fakecranev1.FakeImage{
-					ConfigFileStub: getBadConfigFile,
+					ConfigFileStub: getRemoveLabelConfigFile,
 				}
 				imageRef.ImageInfo = &fakeImage
 			})
 			It("should not succeed the check", func() {
+				ok, err := hasRequiredLabelsCheck.Validate(context.TODO(), imageRef)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeFalse())
+			})
+		})
+		Context("When label.name violates Red Hat Trademark", func() {
+			BeforeEach(func() {
+				fakeImage := fakecranev1.FakeImage{
+					ConfigFileStub: getViolatesTrademarkConfigFile,
+				}
+				imageRef.ImageInfo = &fakeImage
+			})
+			It("should not succeed the check and throw an error", func() {
 				ok, err := hasRequiredLabelsCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
