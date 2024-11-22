@@ -38,7 +38,6 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
-	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/cache"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 )
@@ -96,12 +95,6 @@ type craneEngine struct {
 	results  certification.Results
 }
 
-func export(img cranev1.Image, w io.Writer) error {
-	fs := mutate.Extract(img)
-	_, err := io.Copy(w, fs)
-	return err
-}
-
 func (c *craneEngine) CranePlatform() string {
 	return c.platform
 }
@@ -152,28 +145,27 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 		return fmt.Errorf("failed to create container expansion directory: %s: %v", containerFSPath, err)
 	}
 
-	// export/flatten, and extract
-	logger.V(log.DBG).Info("exporting and flattening image")
-	r, w := io.Pipe()
-	go func() {
-		logger.V(log.DBG).Info("writing container filesystem", "outputDirectory", containerFSPath)
+	// Wrap this critical section in a closure to that we can close the
+	// mutate.Extract reader sooner than the end of the checks
+	if err := func() error {
+		// export/flatten, and extract
+		logger.V(log.DBG).Info("exporting and flattening image")
+		fs := mutate.Extract(img)
+		defer fs.Close()
 
-		// Close the writer with any errors encountered during
-		// extraction. These errors will be returned by the reader end
-		// on subsequent reads. If err == nil, the reader will return
-		// EOF.
-		w.CloseWithError(export(img, w))
-	}()
+		logger.V(log.DBG).Info("extracting container filesystem", "path", containerFSPath)
+		if err := untar(ctx, containerFSPath, fs); err != nil {
+			return fmt.Errorf("failed to extract tarball: %v", err)
+		}
 
-	logger.V(log.DBG).Info("extracting container filesystem", "path", containerFSPath)
-	if err := untar(ctx, containerFSPath, r); err != nil {
-		return fmt.Errorf("failed to extract tarball: %v", err)
-	}
-
-	// explicitly discarding from the reader for cases where there is data in the reader after it sends an EOF
-	_, err = io.Copy(io.Discard, r)
-	if err != nil {
-		return fmt.Errorf("failed to drain io reader: %v", err)
+		// explicitly discarding from the reader for cases where there is data in the reader after it sends an EOF
+		_, err = io.Copy(io.Discard, fs)
+		if err != nil {
+			return fmt.Errorf("failed to drain io reader: %v", err)
+		}
+		return nil
+	}(); err != nil {
+		return err
 	}
 
 	reference, err := name.ParseReference(c.image)
