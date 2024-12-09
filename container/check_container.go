@@ -129,7 +129,21 @@ func WithDockerConfigJSONFromFile(s string) Option {
 // allowing for the project's metadata to change the certification (if necessary).
 // An example might be the Scratch or Privileged flags on a project allowing for
 // the corresponding policy to be executed.
+//
+// Deprecated: Use WithCertificationComponent instead
 func WithCertificationProject(id, token string) Option {
+	return withCertificationComponent(id, token)
+}
+
+// WithCertificationComponent adds the component's id and pyxis token to the check
+// allowing for the copmonent's metadata to change the certification (if necessary).
+// An example might be the Scratch or Privileged flags on a project allowing for
+// the corresponding policy to be executed.
+func WithCertificationComponent(id, token string) Option {
+	return withCertificationComponent(id, token)
+}
+
+func withCertificationComponent(id, token string) Option {
 	return func(cc *containerCheck) {
 		cc.pyxisToken = token
 		cc.certificationProjectID = id
