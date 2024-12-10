@@ -22,7 +22,10 @@ func (p HasProhibitedContainerName) Validate(ctx context.Context, imageReference
 func (p HasProhibitedContainerName) getDataForValidate(imageRepository string) string {
 	// splitting on '/' to get container name, at this point we know that
 	// crane's ParseReference has set ImageReference.imageRepository in a valid format
-	return strings.Split(imageRepository, "/")[1]
+	repository := strings.Split(imageRepository, "/")
+
+	// always return last element which is container name
+	return repository[len(repository)-1]
 }
 
 func (p HasProhibitedContainerName) validate(ctx context.Context, containerName string) (bool, error) {
