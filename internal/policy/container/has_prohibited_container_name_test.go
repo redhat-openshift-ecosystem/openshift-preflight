@@ -26,6 +26,16 @@ var _ = Describe("HasProhibitedContainerName", func() {
 				Expect(ok).To(BeTrue())
 			})
 		})
+		Context("When a local registry container name does not violate trademark", func() {
+			BeforeEach(func() {
+				imageRef.ImageRepository = "simple-demo-operator"
+			})
+			It("should pass Validate", func() {
+				ok, err := hasProhibitedContainerName.Validate(context.TODO(), imageRef)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
+			})
+		})
 		Context("When a container name violates trademark", func() {
 			BeforeEach(func() {
 				imageRef.ImageRepository = "opdev/red-hat-container"
