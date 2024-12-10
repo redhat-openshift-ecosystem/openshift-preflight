@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	rt "runtime"
+	"runtime/pprof"
 	"slices"
 	"strings"
 
@@ -89,6 +90,9 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 	flags.String("platform", rt.GOARCH, "Architecture of image to pull. Defaults to runtime platform.")
 	_ = viper.BindPFlag("platform", flags.Lookup("platform"))
 
+	_ = viper.BindEnv("cpuprofile")
+	_ = viper.BindEnv("memprofile")
+
 	return checkContainerCmd
 }
 
@@ -100,6 +104,21 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 		return fmt.Errorf("invalid logging configuration")
 	}
 	logger.Info("certification library version", "version", version.Version.String())
+
+	if viper.Instance().IsSet("cpuprofile") {
+		f, err := os.Create(viper.Instance().GetString("cpuprofile"))
+		if err != nil {
+			logger.Error(err, "could not create CPU profile")
+			return err
+		}
+		defer f.Close()
+
+		if err := pprof.StartCPUProfile(f); err != nil {
+			logger.Error(err, "could not start CPU profile")
+			return err
+		}
+		defer pprof.StopCPUProfile()
+	}
 
 	containerImage := args[0]
 
@@ -194,6 +213,19 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 		}
 	}
 
+	if viper.Instance().IsSet("memprofile") {
+		f, err := os.Create(viper.Instance().GetString("memprofile"))
+		if err != nil {
+			logger.Error(err, "could not create memory profile")
+		}
+		defer f.Close()
+
+		rt.GC() // get up-to-date statistics
+		if err := pprof.Lookup("allocs").WriteTo(f, 0); err != nil {
+			logger.Error(err, "could not start memory profile")
+			return err
+		}
+	}
 	return nil
 }
 
