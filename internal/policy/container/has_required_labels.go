@@ -71,7 +71,7 @@ func (p *HasRequiredLabelsCheck) Name() string {
 
 func (p *HasRequiredLabelsCheck) Metadata() check.Metadata {
 	return check.Metadata{
-		Description: "Checking if the required labels (name, vendor, version, release, summary, description, maintainer) are present in the container metadata." +
+		Description: "Checking if the required labels (name, vendor, version, release, summary, description, maintainer) are present in the container metadata " +
 			"and that they do not violate Red Hat trademark.",
 		Level:            "good",
 		KnowledgeBaseURL: certDocumentationURL,
@@ -82,7 +82,7 @@ func (p *HasRequiredLabelsCheck) Metadata() check.Metadata {
 func (p *HasRequiredLabelsCheck) Help() check.HelpText {
 	return check.HelpText{
 		Message: "Check HasRequiredLabel encountered an error. Please review the preflight.log file for more information.",
-		Suggestion: "Add the following labels to your Dockerfile or Containerfile: name, vendor, version, release, summary, description, maintainer" +
+		Suggestion: "Add the following labels to your Dockerfile or Containerfile: name, vendor, version, release, summary, description, maintainer " +
 			"and validate that they do not violate Red Hat trademark.",
 	}
 }
