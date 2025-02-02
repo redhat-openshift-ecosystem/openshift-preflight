@@ -158,7 +158,7 @@ You will also need:
 - A Docker Auth file, can be specified multiple ways
   - If PFLT_DOCKERCONFIG envvar is set, or --docker-config is passed on the command line, this will be used to pull images.
     If also submitting, the file specified will be sent to Red Hat. If the image under test is on a public registry, there is
-    no need to pass this parameter.
+    no need to pass this parameter. For DockerHub registries, this is required even if the registry is public.
 
 ### Testing a Container
 Running container policy checks against a container iteratively until all tests pass.
