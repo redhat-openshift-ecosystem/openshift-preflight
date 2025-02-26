@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 
 	"github.com/go-logr/logr"
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
@@ -20,7 +21,9 @@ var _ check.Check = &HasRequiredLabelsCheck{}
 
 // HasRequiredLabelsCheck evaluates the image manifest to ensure that the appropriate metadata
 // labels are present on the image asset as it exists in its current container registry.
-type HasRequiredLabelsCheck struct{}
+type HasRequiredLabelsCheck struct {
+	Policy policy.Policy
+}
 
 func (p *HasRequiredLabelsCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	labels, err := p.getDataForValidate(imgRef.ImageInfo)
@@ -40,9 +43,11 @@ func (p *HasRequiredLabelsCheck) validate(ctx context.Context, labels map[string
 	logger := logr.FromContextOrDiscard(ctx)
 
 	trademarkViolationLabels := []string{}
-	for _, label := range trademarkLabels {
-		if violatesRedHatTrademark(labels[label]) {
-			trademarkViolationLabels = append(trademarkViolationLabels, label)
+	if p.Policy != policy.PolicyKonflux {
+		for _, label := range trademarkLabels {
+			if violatesRedHatTrademark(labels[label]) {
+				trademarkViolationLabels = append(trademarkViolationLabels, label)
+			}
 		}
 	}
 

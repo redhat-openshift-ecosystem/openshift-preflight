@@ -25,6 +25,7 @@ func checkCmd() *cobra.Command {
 
 	checkCmd.AddCommand(checkOperatorCmd(cli.RunPreflight))
 	checkCmd.AddCommand(checkContainerCmd(cli.RunPreflight))
+	checkCmd.AddCommand(checkContainerKonfluxCmd(cli.RunPreflight))
 
 	return checkCmd
 }
