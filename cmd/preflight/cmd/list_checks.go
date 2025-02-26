@@ -38,6 +38,7 @@ func printChecks(w io.Writer) {
 		"automatically applied for container checks if preflight determines a scratch exception flag has been added to your Red Hat Connect project"))
 	fmt.Fprintln(w, formattedPolicyBlock("Container Scratch (Root) Exception", engine.ScratchRootContainerPolicy(context.TODO()),
 		"automatically applied for container checks if preflight determines scratch and root exception flags have both been added to your Red Hat Connect project"))
+	// todo-adam should we add konflux here?
 }
 
 // formattedPolicyBlock accepts information about the checklist

@@ -10,11 +10,11 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 )
 
-// ResolveSubmitter will build out a ResultSubmitter if the provided pyxisClient, pc, is not nil.
-// The pyxisClient is a required component of the submitter. If pc is nil, then a noop submitter
-// is returned instead, which does nothing.
-func ResolveSubmitter(pc PyxisClient, projectID, dockerconfig, logfile string) ResultSubmitter {
-	if pc != nil {
+// ResolveSubmitter will build out a ResultSubmitter if the provided pyxisClient, pc, is not nil,
+// The pyxisClient is a required component of the submitter. If pc is nil or if konflux is false,
+// then a noop submitter is returned instead, which does nothing.
+func ResolveSubmitter(pc PyxisClient, projectID, dockerconfig, logfile string, konflux bool) ResultSubmitter {
+	if pc != nil && !konflux {
 		return &ContainerCertificationSubmitter{
 			CertificationProjectID: projectID,
 			Pyxis:                  pc,

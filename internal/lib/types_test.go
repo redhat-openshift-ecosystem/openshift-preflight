@@ -115,7 +115,7 @@ var _ = Describe("Submitter Resolution", func() {
 			Expect(pc).ToNot(BeNil())
 
 			It("should return a containerCertificationSubmitter", func() {
-				submitter := ResolveSubmitter(pc, "projectID", "dockerconfig", "logfile")
+				submitter := ResolveSubmitter(pc, "projectID", "dockerconfig", "logfile", false)
 				typed, ok := submitter.(*ContainerCertificationSubmitter)
 				Expect(typed).ToNot(BeNil())
 				Expect(ok).To(BeTrue())
@@ -124,7 +124,7 @@ var _ = Describe("Submitter Resolution", func() {
 
 		Context("With no pyxis client", func() {
 			It("should return a no-op submitter", func() {
-				submitter := ResolveSubmitter(nil, "", "", "")
+				submitter := ResolveSubmitter(nil, "", "", "", false)
 				typed, ok := submitter.(*NoopSubmitter)
 				Expect(typed).ToNot(BeNil())
 				Expect(ok).To(BeTrue())
