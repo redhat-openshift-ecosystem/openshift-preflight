@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/authn"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/option"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 )
@@ -58,6 +60,7 @@ func (p *hasUniqueTagCheck) getDataToValidate(ctx context.Context, image string)
 	options := []crane.Option{
 		crane.WithContext(ctx),
 		crane.WithAuthFromKeychain(authn.PreflightKeychain(ctx, authn.WithDockerConfig(p.dockercfg))),
+		option.RetryOnceAfter(5 * time.Second),
 	}
 
 	return crane.ListTags(image, options...)
