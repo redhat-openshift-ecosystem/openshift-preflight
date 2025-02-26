@@ -311,6 +311,10 @@ var _ = Describe("Check Initialization", func() {
 			_, err := InitializeContainerChecks(context.TODO(), policy.PolicyRoot, ContainerCheckConfig{})
 			Expect(err).ToNot(HaveOccurred())
 		})
+		It("should properly return checks for the konflux policy", func() {
+			_, err := InitializeContainerChecks(context.TODO(), policy.PolicyKonflux, ContainerCheckConfig{})
+			Expect(err).ToNot(HaveOccurred())
+		})
 		It("should throw an error if the policy is unknown", func() {
 			_, err := InitializeContainerChecks(context.TODO(), policy.Policy("foo"), ContainerCheckConfig{})
 			Expect(err).To(HaveOccurred())
@@ -342,6 +346,7 @@ var _ = Describe("Check Name Queries", func() {
 			"LayerCountAcceptable",
 			"HasNoProhibitedPackages",
 			"HasRequiredLabel",
+			"HasNoProhibitedLabels",
 			"RunAsNonRoot",
 			"HasModifiedFiles",
 			"BasedOnUbi",
@@ -358,19 +363,21 @@ var _ = Describe("Check Name Queries", func() {
 			"FollowsRestrictedNetworkEnablementGuidelines",
 			"RequiredAnnotations",
 		}),
-		Entry("scratch container policy", ScratchNonRootContainerPolicy, []string{
+		Entry("scratch nonroot container policy", ScratchNonRootContainerPolicy, []string{
 			"HasLicense",
 			"HasUniqueTag",
 			"LayerCountAcceptable",
 			"HasRequiredLabel",
+			"HasNoProhibitedLabels",
 			"RunAsNonRoot",
 			"HasProhibitedContainerName",
 		}),
-		Entry("scratch container policy", ScratchRootContainerPolicy, []string{
+		Entry("scratch root container policy", ScratchRootContainerPolicy, []string{
 			"HasLicense",
 			"HasUniqueTag",
 			"LayerCountAcceptable",
 			"HasRequiredLabel",
+			"HasNoProhibitedLabels",
 			"HasProhibitedContainerName",
 		}),
 		Entry("root container policy", RootExceptionContainerPolicy, []string{
@@ -379,9 +386,20 @@ var _ = Describe("Check Name Queries", func() {
 			"LayerCountAcceptable",
 			"HasNoProhibitedPackages",
 			"HasRequiredLabel",
+			"HasNoProhibitedLabels",
 			"HasModifiedFiles",
 			"BasedOnUbi",
 			"HasProhibitedContainerName",
+		}),
+		Entry("konflux container policy", KonfluxContainerPolicy, []string{
+			"HasLicense",
+			"HasUniqueTag",
+			"LayerCountAcceptable",
+			"HasNoProhibitedPackages",
+			"HasRequiredLabel",
+			"RunAsNonRoot",
+			"HasModifiedFiles",
+			"BasedOnUbi",
 		}),
 	)
 

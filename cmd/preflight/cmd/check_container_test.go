@@ -432,6 +432,18 @@ var _ = Describe("Check Container Command", func() {
 			})
 		})
 	})
+	Context("when PFLT_KONFLUX env is set to true", func() {
+		BeforeEach(func() {
+			viper.Reset()
+			initConfig(viper.Instance())
+			os.Setenv("PFLT_KONFLUX", "true")
+			DeferCleanup(os.Unsetenv, "PFLT_KONFLUX")
+		})
+		It("should run successfully", func() {
+			_, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnNil), logr.Discard(), src)
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
 })
 
 func mockRunPreflightReturnNil(context.Context, func(ctx context.Context) (certification.Results, error), cli.CheckConfig, formatters.ResponseFormatter, lib.ResultWriter, lib.ResultSubmitter) error {

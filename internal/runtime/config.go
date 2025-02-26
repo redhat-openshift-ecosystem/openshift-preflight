@@ -30,6 +30,7 @@ type Config struct {
 	Insecure               bool
 	Offline                bool
 	ManifestListDigest     string
+	Konflux                bool
 	// Operator-Specific Fields
 	Namespace           string
 	ServiceAccount      string
@@ -74,6 +75,7 @@ func (c *Config) storeContainerPolicyConfiguration(vcfg viper.Viper) {
 	c.Platform = vcfg.GetString("platform")
 	c.Insecure = vcfg.GetBool("insecure")
 	c.Offline = vcfg.GetBool("offline")
+	c.Konflux = vcfg.GetBool("konflux")
 }
 
 // storeOperatorPolicyConfiguration reads operator-policy-specific config
