@@ -39,7 +39,7 @@ func GenerateCraneOptions(ctx context.Context, craneConfig CraneConfig) []crane.
 			OS:           "linux",
 			Architecture: craneConfig.CranePlatform(),
 		}),
-		retryOnceAfter(5 * time.Second),
+		RetryOnceAfter(5 * time.Second),
 	}
 
 	if craneConfig.CraneInsecure() {
@@ -60,8 +60,8 @@ func GenerateCraneOptions(ctx context.Context, craneConfig CraneConfig) []crane.
 	return options
 }
 
-// retryOnceAfter is a crane option that retries once after t duration.
-func retryOnceAfter(t time.Duration) crane.Option {
+// RetryOnceAfter is a crane option that retries once after t duration.
+func RetryOnceAfter(t time.Duration) crane.Option {
 	return func(o *crane.Options) {
 		o.Remote = append(o.Remote, remote.WithRetryBackoff(remote.Backoff{
 			Duration: t,
