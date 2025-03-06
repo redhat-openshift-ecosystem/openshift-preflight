@@ -21,12 +21,14 @@ var _ = Describe("Container Check initialization", func() {
 			pyxishost := "pyxishost"
 			platform := "arm64"
 			insecure := true
+			manfiestListDigest := "12345"
 			c := NewCheck(img,
 				WithCertificationProject(certproject, token),
 				WithDockerConfigJSONFromFile(dockerconfigjson),
 				WithPyxisHost(pyxishost),
 				WithPlatform(platform),
 				WithInsecureConnection(),
+				WithManifestListDigest(manfiestListDigest),
 			)
 
 			Expect(c.image).To(Equal(img))
