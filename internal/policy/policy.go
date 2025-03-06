@@ -8,4 +8,5 @@ const (
 	PolicyScratchNonRoot Policy = "scratch-nonroot"
 	PolicyScratchRoot    Policy = "scratch-root"
 	PolicyRoot           Policy = "root"
+	PolicyKonflux        Policy = "konflux"
 )

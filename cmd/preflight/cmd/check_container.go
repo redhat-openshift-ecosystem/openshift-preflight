@@ -174,7 +174,8 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 		)
 
 		pc := lib.NewPyxisClient(ctx, cfg.CertificationProjectID, cfg.PyxisAPIToken, cfg.PyxisHost)
-		resultSubmitter := lib.ResolveSubmitter(pc, cfg.CertificationProjectID, cfg.DockerConfig, cfg.LogFile)
+
+		resultSubmitter := lib.ResolveSubmitter(pc, cfg.CertificationProjectID, cfg.DockerConfig, cfg.LogFile, cfg.Konflux)
 
 		// Run the  container check.
 		cmd.SilenceUsage = true
@@ -341,6 +342,10 @@ func generateContainerCheckOptions(cfg *runtime.Config) []container.Option {
 		// This is a secondary check to be safe.
 		cfg.Submit = false
 		o = append(o, container.WithInsecureConnection())
+	}
+
+	if cfg.Konflux {
+		o = append(o, container.WithKonflux())
 	}
 
 	return o

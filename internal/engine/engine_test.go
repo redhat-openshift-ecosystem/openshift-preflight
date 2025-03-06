@@ -342,6 +342,7 @@ var _ = Describe("Check Name Queries", func() {
 			"LayerCountAcceptable",
 			"HasNoProhibitedPackages",
 			"HasRequiredLabel",
+			"HasProhibitedLabelsCheck",
 			"RunAsNonRoot",
 			"HasModifiedFiles",
 			"BasedOnUbi",
@@ -358,19 +359,21 @@ var _ = Describe("Check Name Queries", func() {
 			"FollowsRestrictedNetworkEnablementGuidelines",
 			"RequiredAnnotations",
 		}),
-		Entry("scratch container policy", ScratchNonRootContainerPolicy, []string{
+		Entry("scratch nonroot container policy", ScratchNonRootContainerPolicy, []string{
 			"HasLicense",
 			"HasUniqueTag",
 			"LayerCountAcceptable",
 			"HasRequiredLabel",
+			"HasProhibitedLabelsCheck",
 			"RunAsNonRoot",
 			"HasProhibitedContainerName",
 		}),
-		Entry("scratch container policy", ScratchRootContainerPolicy, []string{
+		Entry("scratch root container policy", ScratchRootContainerPolicy, []string{
 			"HasLicense",
 			"HasUniqueTag",
 			"LayerCountAcceptable",
 			"HasRequiredLabel",
+			"HasProhibitedLabelsCheck",
 			"HasProhibitedContainerName",
 		}),
 		Entry("root container policy", RootExceptionContainerPolicy, []string{
@@ -379,6 +382,7 @@ var _ = Describe("Check Name Queries", func() {
 			"LayerCountAcceptable",
 			"HasNoProhibitedPackages",
 			"HasRequiredLabel",
+			"HasProhibitedLabelsCheck",
 			"HasModifiedFiles",
 			"BasedOnUbi",
 			"HasProhibitedContainerName",
