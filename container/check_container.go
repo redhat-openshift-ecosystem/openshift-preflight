@@ -92,6 +92,10 @@ func (c *containerCheck) resolve(ctx context.Context) error {
 		c.policy = override
 	}
 
+	if c.konflux {
+		c.policy = policy.PolicyKonflux
+	}
+
 	newChecks, err := engine.InitializeContainerChecks(ctx, c.policy, engine.ContainerCheckConfig{
 		DockerConfig:           c.dockerconfigjson,
 		PyxisAPIToken:          c.pyxisToken,
@@ -193,6 +197,13 @@ func WithManifestListDigest(manifestListDigest string) Option {
 	}
 }
 
+// WithKonflux signifies that we are running on the konflux platform
+func WithKonflux() Option {
+	return func(cc *containerCheck) {
+		cc.konflux = true
+	}
+}
+
 type containerCheck struct {
 	image                  string
 	dockerconfigjson       string
@@ -205,4 +216,5 @@ type containerCheck struct {
 	checks                 []check.Check
 	resolved               bool
 	policy                 policy.Policy
+	konflux                bool
 }

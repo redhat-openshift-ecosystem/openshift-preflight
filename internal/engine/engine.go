@@ -758,6 +758,7 @@ func InitializeContainerChecks(ctx context.Context, p policy.Policy, cfg Contain
 			&containerpol.MaxLayersCheck{},
 			&containerpol.HasNoProhibitedPackagesCheck{},
 			&containerpol.HasRequiredLabelsCheck{},
+			&containerpol.HasNoProhibitedLabelsCheck{},
 			&containerpol.RunAsNonRootCheck{},
 			&containerpol.HasModifiedFilesCheck{},
 			containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisClient(
@@ -774,6 +775,7 @@ func InitializeContainerChecks(ctx context.Context, p policy.Policy, cfg Contain
 			&containerpol.MaxLayersCheck{},
 			&containerpol.HasNoProhibitedPackagesCheck{},
 			&containerpol.HasRequiredLabelsCheck{},
+			&containerpol.HasNoProhibitedLabelsCheck{},
 			&containerpol.HasModifiedFilesCheck{},
 			containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisClient(
 				cfg.PyxisHost,
@@ -788,6 +790,7 @@ func InitializeContainerChecks(ctx context.Context, p policy.Policy, cfg Contain
 			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig),
 			&containerpol.MaxLayersCheck{},
 			&containerpol.HasRequiredLabelsCheck{},
+			&containerpol.HasNoProhibitedLabelsCheck{},
 			&containerpol.RunAsNonRootCheck{},
 			&containerpol.HasProhibitedContainerName{},
 		}, nil
@@ -797,7 +800,23 @@ func InitializeContainerChecks(ctx context.Context, p policy.Policy, cfg Contain
 			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig),
 			&containerpol.MaxLayersCheck{},
 			&containerpol.HasRequiredLabelsCheck{},
+			&containerpol.HasNoProhibitedLabelsCheck{},
 			&containerpol.HasProhibitedContainerName{},
+		}, nil
+	case policy.PolicyKonflux:
+		return []check.Check{
+			&containerpol.HasLicenseCheck{},
+			containerpol.NewHasUniqueTagCheck(cfg.DockerConfig),
+			&containerpol.MaxLayersCheck{},
+			&containerpol.HasNoProhibitedPackagesCheck{},
+			&containerpol.HasRequiredLabelsCheck{},
+			&containerpol.RunAsNonRootCheck{},
+			&containerpol.HasModifiedFilesCheck{},
+			containerpol.NewBasedOnUbiCheck(pyxis.NewPyxisClient(
+				cfg.PyxisHost,
+				cfg.PyxisAPIToken,
+				cfg.CertificationProjectID,
+				&http.Client{Timeout: 60 * time.Second})),
 		}, nil
 	}
 
@@ -819,7 +838,7 @@ func makeCheckList(checks []check.Check) []string {
 func checkNamesFor(ctx context.Context, p policy.Policy) []string {
 	var c []check.Check
 	switch p {
-	case policy.PolicyContainer, policy.PolicyRoot, policy.PolicyScratchNonRoot, policy.PolicyScratchRoot:
+	case policy.PolicyContainer, policy.PolicyRoot, policy.PolicyScratchNonRoot, policy.PolicyScratchRoot, policy.PolicyKonflux:
 		c, _ = InitializeContainerChecks(ctx, p, ContainerCheckConfig{})
 	case policy.PolicyOperator:
 		c, _ = InitializeOperatorChecks(ctx, p, OperatorCheckConfig{})
@@ -856,4 +875,10 @@ func ScratchRootContainerPolicy(ctx context.Context) []string {
 // container policy with root exception.
 func RootExceptionContainerPolicy(ctx context.Context) []string {
 	return checkNamesFor(ctx, policy.PolicyRoot)
+}
+
+// KonfluxContainerPolicy returns the names of checks to be used in
+// a konflux pipeline
+func KonfluxContainerPolicy(ctx context.Context) []string {
+	return checkNamesFor(ctx, policy.PolicyKonflux)
 }

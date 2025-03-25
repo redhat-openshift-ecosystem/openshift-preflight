@@ -22,6 +22,7 @@ var _ = Describe("Container Check initialization", func() {
 			platform := "arm64"
 			insecure := true
 			manfiestListDigest := "12345"
+			konflux := true
 			c := NewCheck(img,
 				WithCertificationProject(certproject, token),
 				WithDockerConfigJSONFromFile(dockerconfigjson),
@@ -29,6 +30,7 @@ var _ = Describe("Container Check initialization", func() {
 				WithPlatform(platform),
 				WithInsecureConnection(),
 				WithManifestListDigest(manfiestListDigest),
+				WithKonflux(),
 			)
 
 			Expect(c.image).To(Equal(img))
@@ -38,6 +40,7 @@ var _ = Describe("Container Check initialization", func() {
 			Expect(c.pyxisHost).To(Equal(pyxishost))
 			Expect(c.platform).To(Equal(platform))
 			Expect(c.insecure).To(Equal(insecure))
+			Expect(c.konflux).To(Equal(konflux))
 		})
 		Context("with the pyxisenv option", func() {
 			var env string
@@ -72,7 +75,7 @@ var _ = Describe("Container Check Execution", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(chk.policy).To(Equal("container"))
 			Expect(chk.resolved).To(Equal(true))
-			Expect(len(chk.checks)).To(Equal(9))
+			Expect(len(chk.checks)).To(Equal(10))
 		})
 
 		It("Should list checks without issue", func() {
@@ -80,7 +83,43 @@ var _ = Describe("Container Check Execution", func() {
 			policy, checks, err := chk.List(ctx)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(policy).To(Equal("container"))
-			Expect(len(checks)).To(Equal(9))
+			Expect(len(checks)).To(Equal(10))
+		})
+
+		It("Should run without issue", func() {
+			ctx := context.TODO()
+			results, err := chk.Run(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(results).ToNot(Equal(certification.Results{}))
+			Expect(results.TestedImage).To(Equal(goodImage))
+			Expect(len(results.Failed)).To(Equal(0))
+			Expect(len(results.Errors)).To(Equal(0))
+		})
+	})
+
+	When("testing against a known good image and konflux is true", func() {
+		var chk *containerCheck
+		goodImage := "quay.io/opdev/simple-demo-operator:latest"
+		BeforeEach(func() {
+			chk = NewCheck(goodImage)
+			chk.konflux = true
+		})
+
+		It("Should resolve checks without issue", func() {
+			ctx := context.TODO()
+			err := chk.resolve(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(chk.policy).To(Equal("konflux"))
+			Expect(chk.resolved).To(Equal(true))
+			Expect(len(chk.checks)).To(Equal(8))
+		})
+
+		It("Should list checks without issue", func() {
+			ctx := context.TODO()
+			policy, checks, err := chk.List(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(policy).To(Equal("konflux"))
+			Expect(len(checks)).To(Equal(8))
 		})
 
 		It("Should run without issue", func() {
