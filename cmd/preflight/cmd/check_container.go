@@ -136,6 +136,9 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 	}
 
 	containerImage := args[0]
+	if strings.Contains(containerImage, "@sha256:") {
+		return fmt.Errorf("SHA-based references are not supported")
+	}
 
 	// Render the Viper configuration as a runtime.Config
 	cfg, err := runtime.NewConfigFrom(*viper.Instance())
