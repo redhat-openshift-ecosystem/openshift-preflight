@@ -85,6 +85,6 @@ func (p *BasedOnUBICheck) Metadata() check.Metadata {
 func (p *BasedOnUBICheck) Help() check.HelpText {
 	return check.HelpText{
 		Message:    "Check BasedOnUbi encountered an error. Please review the preflight.log file for more information.",
-		Suggestion: "Change the FROM directive in your Dockerfile or Containerfile to FROM registry.access.redhat.com/ubi8/ubi",
+		Suggestion: "Change the FROM directive in your Dockerfile or Containerfile, for the latest list of images and details refer to: https://catalog.redhat.com/software/base-images",
 	}
 }
