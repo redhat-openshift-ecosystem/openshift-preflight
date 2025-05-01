@@ -6,12 +6,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-logr/logr"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/authn"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/option"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 
-	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
 
 var _ check.Check = &hasUniqueTagCheck{}
@@ -30,6 +33,7 @@ type hasUniqueTagCheck struct {
 }
 
 func (p *hasUniqueTagCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
+	logger := logr.FromContextOrDiscard(ctx)
 	imgRepo := fmt.Sprintf("%s/%s", imgRef.ImageRegistry, imgRef.ImageRepository)
 
 	tags := make([]string, 0)
@@ -40,6 +44,8 @@ func (p *hasUniqueTagCheck) Validate(ctx context.Context, imgRef image.ImageRefe
 		if err != nil {
 			return false, fmt.Errorf("failed to get tags list for %s: %v", imgRepo, err)
 		}
+
+		logger.V(log.DBG).WithValues("tags", tags).Info(fmt.Sprintf("got tags list for %s", imgRepo))
 	}
 
 	// if tags is of length zero we know that either
@@ -57,13 +63,49 @@ func (p *hasUniqueTagCheck) Validate(ctx context.Context, imgRef image.ImageRefe
 }
 
 func (p *hasUniqueTagCheck) getDataToValidate(ctx context.Context, image string) ([]string, error) {
-	options := []crane.Option{
-		crane.WithContext(ctx),
-		crane.WithAuthFromKeychain(authn.PreflightKeychain(ctx, authn.WithDockerConfig(p.dockercfg))),
-		option.RetryOnceAfter(5 * time.Second),
+	repo, err := name.NewRepository(image)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse image name: %v", err)
 	}
 
-	return crane.ListTags(image, options...)
+	options := []remote.Option{
+		remote.WithContext(ctx),
+		remote.WithAuthFromKeychain(authn.PreflightKeychain(ctx, authn.WithDockerConfig(p.dockercfg))),
+
+		// A smaller query is fine for evaluating the HasUniqueTag check
+		// https://github.com/redhat-openshift-ecosystem/openshift-preflight/pull/1268#discussion_r2085387116
+		remote.WithPageSize(10),
+
+		remote.WithRetryBackoff(remote.Backoff{
+			Duration: 5 * time.Second,
+			Factor:   1.0,
+			Jitter:   0.1,
+			Steps:    2,
+		}),
+	}
+
+	puller, err := remote.NewPuller(options...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create puller: %v", err)
+	}
+
+	lister, err := puller.Lister(ctx, repo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create lister: %v", err)
+	}
+
+	if lister.HasNext() {
+		tags, err := lister.Next(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get tags: %v", err)
+		}
+
+		if tags != nil {
+			return tags.Tags, nil
+		}
+	}
+
+	return nil, nil
 }
 
 func (p *hasUniqueTagCheck) validate(tags []string) (bool, error) {
