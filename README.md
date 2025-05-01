@@ -65,7 +65,7 @@ To check a container, utilize the `check container` sub-command:
 ```text
 preflight check container quay.io/example-namespace/example-container:0.0.1 \
 --pyxis-api-token=abcdefghijklmnopqrstuvwxyz123456 \
---certification-project-id=1234567890a987654321bcde 
+--certification-component-id=1234567890a987654321bcde 
 ```
 
 To check an Operator bundle, utilize the `check Operator` sub-command:
