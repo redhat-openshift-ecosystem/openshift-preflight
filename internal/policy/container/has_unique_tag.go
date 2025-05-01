@@ -9,9 +9,9 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/authn"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/option"
 
-	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
 
 var _ check.Check = &hasUniqueTagCheck{}
@@ -57,13 +57,44 @@ func (p *hasUniqueTagCheck) Validate(ctx context.Context, imgRef image.ImageRefe
 }
 
 func (p *hasUniqueTagCheck) getDataToValidate(ctx context.Context, image string) ([]string, error) {
-	options := []crane.Option{
-		crane.WithContext(ctx),
-		crane.WithAuthFromKeychain(authn.PreflightKeychain(ctx, authn.WithDockerConfig(p.dockercfg))),
-		option.RetryOnceAfter(5 * time.Second),
+	repo, err := name.NewRepository(image)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse image name: %v", err)
 	}
 
-	return crane.ListTags(image, options...)
+	options := []remote.Option{
+		remote.WithContext(ctx),
+		remote.WithAuthFromKeychain(authn.PreflightKeychain(ctx, authn.WithDockerConfig(p.dockercfg))),
+		remote.WithRetryBackoff(remote.Backoff{
+			Duration: 5 * time.Second,
+			Factor:   1.0,
+			Jitter:   0.1,
+			Steps:    2,
+		}),
+	}
+
+	puller, err := remote.NewPuller(options...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create puller: %v", err)
+	}
+
+	lister, err := puller.Lister(ctx, repo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create lister: %v", err)
+	}
+
+	if lister.HasNext() {
+		tags, err := lister.Next(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get tags: %v", err)
+		}
+
+		results := []string{}
+		results = append(results, tags.Tags...)
+		return results, nil
+	}
+
+	return nil, nil
 }
 
 func (p *hasUniqueTagCheck) validate(tags []string) (bool, error) {
