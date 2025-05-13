@@ -49,7 +49,7 @@ var _ = Describe("Formatters", func() {
 	Describe("When creating a new generic formatter", func() {
 		Context("with improper arguments", func() {
 			expectedResult := []byte(fmt.Errorf("failed to create a new generic formatter: formatter name is required").Error())
-			var fn formatters.FormatterFunc //nolint:gosimple // We want to be explicit here for clarity
+			var fn formatters.FormatterFunc //nolint:staticcheck // We want to be explicit here for clarity
 			fn = func(context.Context, certification.Results) ([]byte, error) {
 				return expectedResult, nil
 			}
@@ -65,7 +65,7 @@ var _ = Describe("Formatters", func() {
 			expectedResult := []byte("this is a test")
 			name := "testFormatter"
 			extension := "txt"
-			var fn formatters.FormatterFunc //nolint:gosimple // We want to be explicit here for clarity
+			var fn formatters.FormatterFunc //nolint:staticcheck // We want to be explicit here for clarity
 			fn = func(context.Context, certification.Results) ([]byte, error) {
 				return expectedResult, nil
 			}

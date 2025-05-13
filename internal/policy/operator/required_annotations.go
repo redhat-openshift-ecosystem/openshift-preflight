@@ -62,6 +62,7 @@ func (h RequiredAnnotations) validate(ctx context.Context, bundledir string) (bo
 			continue
 		}
 		// the only string values allowed are lower case 'true' or 'false'
+		// nolint:staticcheck // the conditional is more readable with negation on the outside
 		if !(value == "true" || value == "false") {
 			incorrectValues[annotation] = value
 		}
