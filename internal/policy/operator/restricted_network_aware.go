@@ -37,7 +37,10 @@ func (p FollowsRestrictedNetworkEnablementGuidelines) validate(ctx context.Conte
 		return false, err
 	}
 
+	// in this case, it is more readable to declare the variable first and have subsequent conditional assignments
+	// nolint:staticcheck
 	restrictedNetworkSupport := false
+
 	// If the CSV does not claim to support disconnected environments, there's no reason to check that it followed guidelines.
 	if libcsv.HasDisconnectedAnnotation(csv) && libcsv.SupportsDisconnected(csv.Annotations[libcsv.DisconnectedAnnotation]) {
 		restrictedNetworkSupport = true

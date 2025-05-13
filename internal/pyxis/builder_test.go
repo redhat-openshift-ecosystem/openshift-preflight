@@ -143,7 +143,7 @@ var _ = Describe("Pyxis Builder tests", func() {
 				)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(input.TestResults.ID).To(Equal(results.ID))
-				Expect(input.TestResults.UserResponse.Image).To(Equal(results.UserResponse.Image))
+				Expect(input.TestResults.Image).To(Equal(results.Image))
 			})
 
 			It("should not bind an invalid preflight results from file", func() {
