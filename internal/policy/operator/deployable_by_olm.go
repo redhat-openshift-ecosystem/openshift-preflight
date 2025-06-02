@@ -24,6 +24,7 @@ import (
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	validationerrors "github.com/operator-framework/api/pkg/validation/errors"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
@@ -47,6 +48,7 @@ type operatorData struct {
 	InstallModes     map[operatorsv1alpha1.InstallModeType]operatorsv1alpha1.InstallMode
 	CsvNamespaces    []string
 	InstalledCsv     string
+	DeploymentNames  []string
 }
 
 type DeployableByOlmCheck struct {
@@ -70,6 +72,10 @@ func (p *DeployableByOlmCheck) initClient() error {
 		return nil
 	}
 	scheme := apiruntime.NewScheme()
+	if err := appsv1.AddToScheme(scheme); err != nil {
+		return fmt.Errorf("could not add appsv1 scheme to scheme: %w", err)
+	}
+
 	if err := openshift.AddSchemes(scheme); err != nil {
 		return fmt.Errorf("could not add new schemes to client: %w", err)
 	}
@@ -284,6 +290,11 @@ func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef i
 		appName = "p-" + packageName
 	}
 
+	deploymentNames := make([]string, 0, len(bundle.CSV.Spec.InstallStrategy.StrategySpec.DeploymentSpecs))
+	for _, deployment := range bundle.CSV.Spec.InstallStrategy.StrategySpec.DeploymentSpecs {
+		deploymentNames = append(deploymentNames, deployment.Name)
+	}
+
 	return &operatorData{
 		CatalogImage:     catalogImage,
 		Channel:          channel,
@@ -292,6 +303,7 @@ func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef i
 		InstallNamespace: appName,
 		TargetNamespace:  appName + "-target",
 		InstallModes:     installModes,
+		DeploymentNames:  deploymentNames,
 	}, nil
 }
 
@@ -625,6 +637,18 @@ func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData operato
 		}
 	}
 
+	for _, deploymentName := range operatorData.DeploymentNames {
+		deployment, err := p.openshiftClient.GetDeployment(ctx, deploymentName, operatorData.InstallNamespace)
+		if err != nil {
+			logger.Info(fmt.Sprintf("warning: unable to retrieve deployment: %s", err))
+			continue
+		}
+
+		if err := p.writeToFile(ctx, deployment); err != nil {
+			logger.Error(err, "could not write deployment to storage")
+		}
+	}
+
 	logger.V(log.TRC).Info("deleting the resources created by DeployableByOLM Check")
 	_ = p.openshiftClient.DeleteSubscription(ctx, operatorData.App, operatorData.InstallNamespace)
 	_ = p.openshiftClient.DeleteCatalogSource(ctx, operatorData.App, operatorData.InstallNamespace)
@@ -672,6 +696,10 @@ func (p *DeployableByOlmCheck) writeToFile(ctx context.Context, data interface{}
 		group = ""
 		version = "v1"
 		kind = "Namespace"
+	case *appsv1.Deployment:
+		group = "apps"
+		version = "v1"
+		kind = "Deployment"
 	default:
 		return fmt.Errorf("go type unsupported")
 	}
