@@ -11,6 +11,7 @@ import (
 	imagestreamv1 "github.com/openshift/api/image/v1"
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -498,4 +499,23 @@ func (oe *openshiftClient) DeleteRoleBinding(ctx context.Context, name string, n
 		return fmt.Errorf("could not delete rolebinding: %s/%s: %v", namespace, name, err)
 	}
 	return nil
+}
+
+// GetDeployment can return an ErrNotFound
+func (oe *openshiftClient) GetDeployment(ctx context.Context, name string, namespace string) (*appsv1.Deployment, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
+	logger.V(log.TRC).Info("fetching deployment", "namespace", namespace, "name", name)
+	deployment := appsv1.Deployment{}
+	err := oe.Client.Get(ctx, crclient.ObjectKey{
+		Name:      name,
+		Namespace: namespace,
+	}, &deployment)
+	if apierrors.IsNotFound(err) {
+		return nil, fmt.Errorf("could not retrieve deployment: %s/%s: %w: %v", namespace, name, ErrNotFound, err)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve deployment: %s/%s: %v", namespace, name, err)
+	}
+	return &deployment, nil
 }
