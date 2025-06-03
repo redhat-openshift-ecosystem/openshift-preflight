@@ -84,9 +84,9 @@ func (p *HasModifiedFilesCheck) parsePackageDist(_ context.Context, extractedIma
 	defer osRelease.Close()
 	scanner := bufio.NewScanner(osRelease)
 	packageDist := "unknown"
+	r := regexp.MustCompile(`PLATFORM_ID="platform:([[:alnum:]]+)"`)
 	for scanner.Scan() {
 		line := scanner.Text()
-		r, _ := regexp.Compile(`PLATFORM_ID="platform:([[:alnum:]]+)"`)
 		m := r.FindStringSubmatch(line)
 		if m == nil {
 			continue
