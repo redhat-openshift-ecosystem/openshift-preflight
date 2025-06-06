@@ -8,6 +8,7 @@ import (
 
 	imagestreamv1 "github.com/openshift/api/image/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
@@ -100,11 +101,19 @@ var _ = Describe("OpenShift Engine", func() {
 			},
 		}
 
+		deployment := appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "testdeployment",
+				Namespace: "testns",
+			},
+		}
+
 		scheme := apiruntime.NewScheme()
 		Expect(AddSchemes(scheme)).To(Succeed())
+		Expect(appsv1.AddToScheme(scheme)).To(Succeed())
 		cl := fake.NewClientBuilder().
 			WithScheme(scheme).
-			WithObjects(&csv).
+			WithObjects(&csv, &deployment).
 			WithLists(&pods, &isList).
 			Build()
 		oc = NewClient(cl)
@@ -350,6 +359,19 @@ var _ = Describe("OpenShift Engine", func() {
 		})
 		It("should error if CSV doesn't exist", func() {
 			csv, err := oc.GetCSV(context.TODO(), "badcsv", "badns")
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ErrNotFound))
+			Expect(csv).To(BeNil())
+		})
+	})
+	Context("Deployments", func() {
+		It("should get a Deployment", func() {
+			deployment, err := oc.GetDeployment(context.TODO(), "testdeployment", "testns")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(deployment).ToNot(BeNil())
+		})
+		It("should error if Deployment doesn't exist", func() {
+			csv, err := oc.GetDeployment(context.TODO(), "baddeployment", "badns")
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ErrNotFound))
 			Expect(csv).To(BeNil())

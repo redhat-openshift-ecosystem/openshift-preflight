@@ -5,6 +5,7 @@ import (
 
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 )
@@ -56,4 +57,5 @@ type Client interface {
 	CreateRoleBinding(ctx context.Context, data RoleBindingData, namespace string) (*rbacv1.RoleBinding, error)
 	GetRoleBinding(ctx context.Context, name string, namespace string) (*rbacv1.RoleBinding, error)
 	DeleteRoleBinding(ctx context.Context, name string, namespace string) error
+	GetDeployment(ctx context.Context, name string, namespace string) (*appsv1.Deployment, error)
 }
