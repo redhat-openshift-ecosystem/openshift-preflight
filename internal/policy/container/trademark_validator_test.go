@@ -8,7 +8,8 @@ import (
 var _ = Describe("TrademarkValidator", func() {
 	DescribeTable("Test all presentations of `Red Hat`",
 		func(trademarkText string, expected bool) {
-			result := violatesRedHatTrademark(trademarkText)
+			result, err := violatesRedHatTrademark(trademarkText)
+			Expect(err).To(BeNil())
 			Expect(result).To(Equal(expected))
 		},
 
