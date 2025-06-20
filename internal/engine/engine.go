@@ -628,19 +628,27 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 
 	// covert rpm struct to pxyis struct
 	rpms := make([]pyxis.RPM, 0, len(pkgList))
+	rpmSuffixRegexp, err := regexp.Compile("(-[0-9].*)")
+	if err != nil {
+		return fmt.Errorf("error while compiling regexp: %w", err)
+	}
+	pgpKeyIdRegexp, err := regexp.Compile(".*, Key ID (.*)")
+	if err != nil {
+		return fmt.Errorf("error while compiling regexp: %w", err)
+	}
 	for _, packageInfo := range pkgList {
 		var bgName, endChop, srpmNevra, pgpKeyID string
 
 		// accounting for the fact that not all packages have a source rpm
 		if len(packageInfo.SourceRpm) > 0 {
 			bgName = getBgName(packageInfo.SourceRpm)
-			endChop = strings.TrimPrefix(strings.TrimSuffix(regexp.MustCompile("(-[0-9].*)").FindString(packageInfo.SourceRpm), ".rpm"), "-")
+			endChop = strings.TrimPrefix(strings.TrimSuffix(rpmSuffixRegexp.FindString(packageInfo.SourceRpm), ".rpm"), "-")
 
 			srpmNevra = fmt.Sprintf("%s-%d:%s", bgName, packageInfo.Epoch, endChop)
 		}
 
 		if len(packageInfo.PGP) > 0 {
-			matches := regexp.MustCompile(".*, Key ID (.*)").FindStringSubmatch(packageInfo.PGP)
+			matches := pgpKeyIdRegexp.FindStringSubmatch(packageInfo.PGP)
 			if matches != nil {
 				pgpKeyID = matches[1]
 			} else {

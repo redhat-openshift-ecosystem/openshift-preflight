@@ -31,7 +31,12 @@ func (p *HasNoProhibitedLabelsCheck) validate(ctx context.Context, labels map[st
 
 	trademarkViolationLabels := []string{}
 	for _, label := range trademarkLabels {
-		if violatesRedHatTrademark(labels[label]) {
+		result, err := violatesRedHatTrademark(labels[label])
+		if err != nil {
+			return false, fmt.Errorf("error while validating label: %w", err)
+		}
+
+		if result {
 			trademarkViolationLabels = append(trademarkViolationLabels, label)
 		}
 	}

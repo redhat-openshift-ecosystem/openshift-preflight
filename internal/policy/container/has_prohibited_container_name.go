@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -31,7 +32,12 @@ func (p HasProhibitedContainerName) getDataForValidate(imageRepository string) s
 func (p HasProhibitedContainerName) validate(ctx context.Context, containerName string) (bool, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 
-	if violatesRedHatTrademark(containerName) {
+	result, err := violatesRedHatTrademark(containerName)
+	if err != nil {
+		return false, fmt.Errorf("error while validating container name: %w", err)
+	}
+
+	if result {
 		logger.V(log.DBG).Info("container name violate Red Hat trademark", "container-name", containerName)
 		return false, nil
 	}

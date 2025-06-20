@@ -138,7 +138,7 @@ func projectIDValidation(id string) error {
 		return errors.New("please remove leading characters ospid- from project id")
 	}
 
-	isAlphaNumeric := regexp.MustCompile(`^[a-zA-Z0-9]*$`).MatchString(id)
+	isAlphaNumeric, _ := regexp.MatchString(`^[a-zA-Z0-9]*$`, id)
 	if !isAlphaNumeric {
 		return errors.New("please remove all special characters from project id")
 	}
