@@ -473,6 +473,40 @@ var _ = Describe("HasModifiedFiles", func() {
 		})
 	})
 
+	When("parsing the platform distribution value from /etc/os-release", func() {
+		var mmfs afero.Fs
+		BeforeEach(func() {
+			mmfs = afero.NewMemMapFs()
+			Expect(mmfs.Mkdir("/etc", 0o755)).To(Succeed())
+		})
+
+		It("should return the platform value when it exists", func() {
+			contents := []byte("NAME=\"Red Hat Enterprise Linux\"\nID=\"rhel\"\nPLATFORM_ID=\"platform:el10\"\nLOGO=\"fedora-logo-icon\"\n")
+			f, err := mmfs.Create("/etc/os-release")
+			Expect(err).ToNot(HaveOccurred())
+			defer f.Close()
+			_, err = f.Write(contents)
+			Expect(err).ToNot(HaveOccurred())
+
+			platform, err := hasModifiedFiles.parsePackageDist(context.TODO(), "/", mmfs)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(platform).To(Equal("el10"))
+		})
+
+		It("should return unknown when it does not exist", func() {
+			contents := []byte("NAME=\"My Custom Linux\"\nID=\"special\"")
+			f, err := mmfs.Create("/etc/os-release")
+			Expect(err).ToNot(HaveOccurred())
+			defer f.Close()
+			_, err = f.Write(contents)
+			Expect(err).ToNot(HaveOccurred())
+
+			platform, err := hasModifiedFiles.parsePackageDist(context.TODO(), "/", mmfs)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(platform).To(Equal("unknown"))
+		})
+	})
+
 	When("building the installed file list for installed packages", func() {
 		const (
 			basename = "foobasename"
