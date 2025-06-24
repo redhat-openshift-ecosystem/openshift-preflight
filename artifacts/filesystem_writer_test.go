@@ -45,6 +45,17 @@ var _ = Describe("Filesystem Artifact Writer", func() {
 			readin, err := os.ReadFile(fullpath)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(readin).To(Equal(contents))
+
+			exist, err := aw.Exists(filename)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exist).To(BeTrue())
+
+			err = aw.Remove(filename)
+			Expect(err).ToNot(HaveOccurred())
+
+			exist, err = aw.Exists(filename)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exist).To(BeFalse())
 		})
 	})
 })
