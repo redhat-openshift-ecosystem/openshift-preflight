@@ -444,6 +444,50 @@ var _ = Describe("Check Container Command", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
+
+	Context("when PFLT_CPUPROFILE env is set", func() {
+		var f *os.File
+		var err error
+		BeforeEach(func() {
+			viper.Reset()
+			initConfig(viper.Instance())
+			f, err = os.CreateTemp("", "preflight-cpuprofile-")
+			Expect(err).ToNot(HaveOccurred())
+			defer os.Remove(f.Name())
+			os.Setenv("PFLT_CPUPROFILE", f.Name())
+			DeferCleanup(os.Unsetenv, "PFLT_CPUPROFILE")
+		})
+		It("should generate a CPU profile", func() {
+			_, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnNil), logr.Discard(), src)
+			Expect(err).ToNot(HaveOccurred())
+
+			info, err := os.Stat(f.Name())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(info.Size()).ToNot(BeZero())
+		})
+	})
+
+	Context("when PFLT_MEMPROFILE env is set", func() {
+		var f *os.File
+		var err error
+		BeforeEach(func() {
+			viper.Reset()
+			initConfig(viper.Instance())
+			f, err = os.CreateTemp("", "preflight-memprofile-")
+			Expect(err).ToNot(HaveOccurred())
+			defer os.Remove(f.Name())
+			os.Setenv("PFLT_MEMPROFILE", f.Name())
+			DeferCleanup(os.Unsetenv, "PFLT_MEMPROFILE")
+		})
+		It("should generate a memory profile", func() {
+			_, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnNil), logr.Discard(), src)
+			Expect(err).ToNot(HaveOccurred())
+
+			info, err := os.Stat(f.Name())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(info.Size()).ToNot(BeZero())
+		})
+	})
 })
 
 func mockRunPreflightReturnNil(context.Context, func(ctx context.Context) (certification.Results, error), cli.CheckConfig, formatters.ResponseFormatter, lib.ResultWriter, lib.ResultSubmitter) error {
