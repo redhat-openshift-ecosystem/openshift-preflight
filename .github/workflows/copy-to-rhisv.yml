@@ -27,17 +27,6 @@ jobs:
     name: Mirror Images
     runs-on: ubuntu-latest
     steps:
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: 1.19
-
-    - name: Install Skopeo
-      run: |
-        sudo apt-get update && sudo apt-get install libgpgme-dev libdevmapper-dev libbtrfs-dev -y
-        go install github.com/containers/skopeo/cmd/skopeo@v1.7.0
-        skopeo -v
-
     - name: Podman Login
       uses: redhat-actions/podman-login@v1
       with:
