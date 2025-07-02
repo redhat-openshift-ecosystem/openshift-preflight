@@ -46,19 +46,16 @@ jobs:
         image: ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}-${{ matrix.platform }}-${{ matrix.architecture }}
         path: /usr/local/bin/preflight
 
-    - name: Rename the binary
-      uses: canastro/copy-file-action@master
-      with:
-        source: ${{ steps.extract.outputs.destination }}/preflight
-        target: ${{ steps.extract.outputs.destination }}/preflight-${{ matrix.platform }}-${{ matrix.architecture }}
-
-    - name: Upload binaries to the release
-      uses: AButler/upload-release-assets@v3.0
-      id: upload-release-asset
-      with:
-        files: ${{ steps.extract.outputs.destination }}/preflight-${{ matrix.platform }}-${{ matrix.architecture }}
-        repo-token: ${{ secrets.token }}
-        release-tag: ${{ inputs.tag }}
+    - name: Rename and upload the binary
+      run:
+        mv --verbose "${outputs_dir}/preflight" "${outputs_dir}/preflight-${platform}-${architecture}"
+        gh release upload --repo "${GITHUB_REPOSITORY}" "${tag}" "${outputs_dir}/preflight-${platform}-${architecture}"
+      env:
+        outputs_dir: ${{ steps.extract.outputs.destination }}
+        platform: ${{ matrix.platform }}
+        architecture: ${{ matrix.architecture }}
+        tag: ${{ inputs.tag }}
+        GH_TOKEN: ${{ secrets.token }}
 
   # an ugly workaround to build binaries for mac.  builds locally and pushes to the release.
   add-darwin-bins:
@@ -79,9 +76,8 @@ jobs:
         run: make build-multi-arch-mac
 
       - name: Upload binaries to the release
-        uses: AButler/upload-release-assets@v3.0
-        id: upload-release-asset
-        with:
-          files: preflight-darwin-*
-          repo-token: ${{ secrets.token }}
-          release-tag: ${{ inputs.tag }}
+        run:
+          gh release upload --repo "${GITHUB_REPOSITORY}" "${tag}" preflight-darwin-*
+        env:
+          tag: ${{ inputs.tag }}
+          GH_TOKEN: ${{ secrets.token }}
