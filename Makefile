@@ -12,7 +12,7 @@ ARCHITECTURES_MAC=amd64 arm64
 
 .PHONY: build
 build:
-	CGO_ENABLED=0 go build -o $(BINARY) -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG)" cmd/preflight/main.go
+	CGO_ENABLED=0 go build -o $(BINARY) -trimpath -ldflags "-s -w -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG)" cmd/preflight/main.go
 	@ls | grep -e '^preflight$$' &> /dev/null
 
 .PHONY: build-multi-arch-linux
@@ -21,7 +21,7 @@ build-multi-arch-linux: $(addprefix build-linux-,$(ARCHITECTURES_LINUX))
 define LINUX_ARCHITECTURE_template
 .PHONY: build-linux-$(1)
 build-linux-$(1):
-	GOOS=linux GOARCH=$(1) CGO_ENABLED=0 go build -o $(BINARY)-linux-$(1) -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) \
+	GOOS=linux GOARCH=$(1) CGO_ENABLED=0 go build -o $(BINARY)-linux-$(1) -trimpath -ldflags "-s -w -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) \
 				-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG)" cmd/preflight/main.go
 endef
 
@@ -33,7 +33,7 @@ build-multi-arch-mac: $(addprefix build-mac-,$(ARCHITECTURES_MAC))
 define MAC_ARCHITECTURE_template
 .PHONY: build-mac-$(1)
 build-mac-$(1):
-	GOOS=darwin GOARCH=$(1) go build -o $(BINARY)-darwin-$(1) -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) \
+	GOOS=darwin GOARCH=$(1) go build -o $(BINARY)-darwin-$(1) -trimpath -ldflags "-s -w -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) \
 				-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG)" cmd/preflight/main.go
 endef
 
