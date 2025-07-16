@@ -14,8 +14,8 @@ COPY . /go/src/preflight
 WORKDIR /go/src/preflight
 RUN make build RELEASE_TAG=${release_tag}
 
-# ubi8:latest
-FROM registry.access.redhat.com/ubi9/ubi:latest
+# ubi10:latest
+FROM registry.access.redhat.com/ubi10/ubi:latest
 ARG quay_expiration
 ARG release_tag
 ARG preflight_commit
@@ -51,7 +51,7 @@ COPY --from=builder /go/src/preflight/preflight /usr/local/bin/preflight
 RUN dnf install -y \
       bzip2 \
       gzip \
-      iptables \
+      nftables \
       findutils \
       podman \
     && dnf clean all
