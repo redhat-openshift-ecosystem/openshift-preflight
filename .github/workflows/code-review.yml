@@ -1,0 +1,25 @@
+
+name: Gemini AI Code Review
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  code-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Gemini AI Code Review
+        uses: sshnaidm/gemini-code-review-action@v1
+        with:
+          gemini-key: ${{ secrets.GEMINI_API_KEY }}
+          prompt: |
+            Please review this code for security vulnerabilities, adherence to best practices, and potential optimizations. Provide specific feedback and suggestions for improvement.
+
