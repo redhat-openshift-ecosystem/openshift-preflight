@@ -1,0 +1,67 @@
+name: Gemini AI Code Review
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  handle-label:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run_review: ${{ steps.prep.outputs.should_run_review }}
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Handle review label
+        id: prep
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          HAS_LABEL=$(echo '${{ toJSON(github.event.pull_request.labels.*.name) }}' | jq 'any(. == "gemini-review")')
+          EVENT_ACTION="${{ github.event.action }}"
+
+          if [[ "$HAS_LABEL" == "true" && "$EVENT_ACTION" != "labeled" ]]; then
+            echo "gemini-review label found on a '${EVENT_ACTION}' event. Removing label and skipping review."
+            gh pr edit "$PR_NUMBER" --remove-label "gemini-review"
+            echo "should_run_review=false" >> $GITHUB_OUTPUT
+          elif [[ "$HAS_LABEL" == "true" ]]; then
+            echo "gemini-review label found. Proceeding with review."
+            echo "should_run_review=true" >> $GITHUB_OUTPUT
+          else
+            echo "gemini-review label not found. Skipping review."
+            echo "should_run_review=false" >> $GITHUB_OUTPUT
+          fi
+
+  gemini-code-review:
+    runs-on: ubuntu-latest
+    needs: [handle-label]
+    if: needs.handle-label.outputs.should_run_review == 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gemini AI Code Review
+        uses: sshnaidm/gemini-code-review-action@d4ccdaf0e2cad5cb79f80f6db07857c0e7fff28f
+        with:
+          gemini-key: ${{ secrets.GEMINI_API_KEY }}
+          model: 'gemini-2.5-flash'
+          prompt: |
+            Please review this code with focus on:
+            - Security vulnerabilities
+            - Adherence to best practices
+            - Performance optimizations
+            - Idiomatic Go
+            Provide specific feedback and suggestions for improvement.
