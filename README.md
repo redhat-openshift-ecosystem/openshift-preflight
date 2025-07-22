@@ -1,3 +1,4 @@
+
 # Preflight
 
 [![Build Status](https://github.com/redhat-openshift-ecosystem/openshift-preflight/actions/workflows/go.yml/badge.svg)](https://github.com/redhat-openshift-ecosystem/openshift-preflight/actions?workflow=go)
