@@ -1,0 +1,38 @@
+name: Gemini AI Code Review
+
+on:
+  pull_request_target:
+    types: [labeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  gemini-code-review:
+    runs-on: ubuntu-latest
+    if: github.event.label.name == 'approved' || github.event.label.name == 'ok-to-test'
+    steps:
+      - name: PR Info
+        run: |
+          echo "Label added: ${{ github.event.label.name }}"
+          echo "PR Number: ${{ github.event.number }}"
+          echo "Repository: ${{ github.repository }}"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gemini AI Code Review
+        uses: sshnaidm/gemini-code-review-action@d4ccdaf0e2cad5cb79f80f6db07857c0e7fff28f
+        with:
+          gemini-key: ${{ secrets.GEMINI_API_KEY }}
+          model: 'gemini-2.5-flash'
+          prompt: |
+            Please review this code with focus on:
+            - Security vulnerabilities
+            - Adherence to best practices
+            - Performance optimizations
+            - Idiomatic Go
+            Provide specific feedback and suggestions for improvement.
