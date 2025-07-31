@@ -42,6 +42,15 @@ jobs:
         dockerfiles: |
           ./Dockerfile
 
+    - name: Run and Validate Image
+      run: |
+        if ! podman run --rm ${IMAGE_WITH_TAG} version; then
+            echo "Image validation failed. The 'podman run' command returned a non-zero exit code."
+            exit 1
+        fi
+      env:
+        IMAGE_WITH_TAG: ${{ steps.build-image.outputs.image-with-tag }}
+
     - name: Push Image
       id: push-image
       uses: redhat-actions/push-to-registry@v2
