@@ -33,14 +33,14 @@ jobs:
           - s390x
     steps:
     - name: Docker Login
-      uses: docker/login-action@v3
+      uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
       with:
         registry: ${{ secrets.registry }}
         username: ${{ secrets.user }}
         password: ${{ secrets.password }}
 
     - name: Extract executable
-      uses: shrink/actions-docker-extract@v3
+      uses: shrink/actions-docker-extract@04c17c51a5b9fd93b7aed2e05e86c8fe2d90ee52 # v3.1.0
       id: extract
       with:
         image: ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}-${{ matrix.platform }}-${{ matrix.architecture }}
@@ -62,7 +62,10 @@ jobs:
     name: Release binaries for MacOS
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
       - name: Set Env Tags
         run: echo RELEASE_TAG=$(echo $GITHUB_REF | cut -d '/' -f 3) >> $GITHUB_ENV
   
