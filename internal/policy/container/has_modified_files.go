@@ -82,12 +82,14 @@ func (p *HasModifiedFilesCheck) parsePackageDist(_ context.Context, extractedIma
 		return "", fmt.Errorf("could not open os-release: %v", err)
 	}
 	defer osRelease.Close()
-	scanner := bufio.NewScanner(osRelease)
-	packageDist := "unknown"
+
 	r, err := regexp.Compile(`PLATFORM_ID="platform:([[:alnum:]]+)"`)
 	if err != nil {
 		return "", fmt.Errorf("error while compiling regexp: %w", err)
 	}
+
+	scanner := bufio.NewScanner(osRelease)
+	packageDist := "unknown"
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -336,7 +338,8 @@ func (p HasModifiedFilesCheck) Metadata() check.Metadata {
 func extractPackageNameVersionRelease(pkgList []*rpmdb.PackageInfo) map[string]packageMeta {
 	pkgNameList := make(map[string]packageMeta, len(pkgList))
 	for _, pkg := range pkgList {
-		pkgNameList[strings.Join([]string{pkg.Name, pkg.Version, pkg.Release, pkg.Arch}, "-")] = packageMeta{
+		nvra := pkg.Name + "-" + pkg.Version + "-" + pkg.Release + "-" + pkg.Arch
+		pkgNameList[nvra] = packageMeta{
 			Name:        pkg.Name,
 			Version:     pkg.Version,
 			Release:     pkg.Release,
@@ -448,7 +451,9 @@ func installedFileMapWithExclusions(ctx context.Context, pkglist []*rpmdb.Packag
 		rpmdb.RPMFILE_README |
 		rpmdb.RPMFILE_ARTIFACT |
 		rpmdb.RPMFILE_GHOST
-	m := map[string]string{}
+	// Estimate map size based on typical package file counts
+	estimatedFiles := len(pkglist) * 50 // rough estimate of files per package
+	m := make(map[string]string, estimatedFiles)
 	for _, pkg := range pkglist {
 		files, err := pkg.InstalledFiles()
 		if err != nil {
@@ -456,7 +461,7 @@ func installedFileMapWithExclusions(ctx context.Context, pkglist []*rpmdb.Packag
 		}
 
 		// converting directories to a map so we can filter them out quicker
-		pkgDirNamesMap := make(map[string]struct{})
+		pkgDirNamesMap := make(map[string]struct{}, len(pkg.DirNames))
 		for _, dir := range pkg.DirNames {
 			pkgDirNamesMap[dir] = struct{}{}
 		}
@@ -472,6 +477,7 @@ func installedFileMapWithExclusions(ctx context.Context, pkglist []*rpmdb.Packag
 				continue
 			}
 
+			// Cache normalized path to avoid repeated filepath operations
 			normalized := normalize(file.Path)
 			if pathIsExcluded(ctx, normalized) || directoryIsExcluded(ctx, normalized) || prefixAndSuffixIsExcluded(ctx, normalized) {
 				// It is either an explicitly excluded path or directory. Skip it.
@@ -483,15 +489,16 @@ func installedFileMapWithExclusions(ctx context.Context, pkglist []*rpmdb.Packag
 			// this is to support cross architecture file ownership,
 			// the 2nd architecture we encounter, we can skip it.
 			if val, found := m[normalized]; found {
-				s := strings.Split(val, "-")
-				name, version, release, arch := s[0], s[1], s[2], s[3]
-
-				if name == pkg.Name && version == pkg.Version && release == pkg.Release && arch != pkg.Arch {
-					continue
+				// Cache the split to avoid repeated string operations
+				if parts := strings.SplitN(val, "-", 4); len(parts) == 4 {
+					name, version, release, arch := parts[0], parts[1], parts[2], parts[3]
+					if name == pkg.Name && version == pkg.Version && release == pkg.Release && arch != pkg.Arch {
+						continue
+					}
 				}
 			}
 
-			m[normalized] = strings.Join([]string{pkg.Name, pkg.Version, pkg.Release, pkg.Arch}, "-")
+			m[normalized] = pkg.Name + "-" + pkg.Version + "-" + pkg.Release + "-" + pkg.Arch
 		}
 	}
 
@@ -512,8 +519,8 @@ func generateChangesFor(ctx context.Context, layer v1.Layer) (map[string]fileInf
 	defer layerReader.Close()
 	tarReader := tar.NewReader(layerReader)
 	// Use a map so we can remove items easily. Will turn this into a string slice before returning
-	filelist := make(map[string]fileInfo)
-	var links []string
+	filelist := make(map[string]fileInfo, 100) // pre-allocate with estimated size
+	links := make([]string, 0, 10)             // pre-allocate slice for links
 	for {
 		header, err := tarReader.Next()
 		if errors.Is(err, io.EOF) {
