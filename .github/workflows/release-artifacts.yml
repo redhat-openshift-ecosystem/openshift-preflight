@@ -47,7 +47,7 @@ jobs:
         path: /usr/local/bin/preflight
 
     - name: Rename and upload the binary
-      run:
+      run: |
         mv --verbose "${outputs_dir}/preflight" "${outputs_dir}/preflight-${platform}-${architecture}"
         gh release upload --repo "${GITHUB_REPOSITORY}" "${tag}" "${outputs_dir}/preflight-${platform}-${architecture}"
       env:
