@@ -3,11 +3,15 @@ ARG release_tag=0.0.0
 ARG ARCH=amd64
 ARG OS=linux
 
-FROM docker.io/golang:1.24 AS builder
+FROM registry.access.redhat.com/ubi10/go-toolset:1.24 AS builder
 ARG quay_expiration
 ARG release_tag
 ARG ARCH
 ARG OS
+
+# Switching to root user, since default users is 1001,
+# which prohibits copying from `/tmp` during make build cmd
+USER root
 
 # Build the preflight binary
 COPY . /go/src/preflight
