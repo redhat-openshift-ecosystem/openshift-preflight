@@ -57,10 +57,13 @@ jobs:
         tag: ${{ inputs.tag }}
         GH_TOKEN: ${{ secrets.token }}
 
-  # an ugly workaround to build binaries for mac.  builds locally and pushes to the release.
+  # builds mac binaries in parallel using matrix strategy
   add-darwin-bins:
     name: Release binaries for MacOS
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        architecture: [amd64, arm64]
     steps:
       - uses: actions/checkout@v4
       - name: Set Env Tags
@@ -72,12 +75,12 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Build Multi-arch-mac
-        run: make build-multi-arch-mac
+      - name: Build Mac binary for ${{ matrix.architecture }}
+        run: make build-mac-${{ matrix.architecture }}
 
-      - name: Upload binaries to the release
+      - name: Upload binary to the release
         run:
-          gh release upload --repo "${GITHUB_REPOSITORY}" "${tag}" preflight-darwin-*
+          gh release upload --repo "${GITHUB_REPOSITORY}" "${tag}" preflight-darwin-${{ matrix.architecture }}
         env:
           tag: ${{ inputs.tag }}
           GH_TOKEN: ${{ secrets.token }}
