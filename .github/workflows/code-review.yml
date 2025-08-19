@@ -1,12 +1,18 @@
 name: Gemini AI Code Review
 
-on:
+# pull_request_target is needed to access the Gemini key and modify (set/remove labels, comment on)
+# the pull request.
+on: # zizmor: ignore[dangerous-triggers]
   pull_request_target:
     types: [opened, synchronize, reopened, labeled]
 
+# TODO: Assign permissions in individual jobs rather than at the
+# workflow level to avoid blindly handing out `pull-requests: write`
+# at the workflow level to all jobs (particularly if new jobs are
+# added in this workflow in the future).
 permissions:
   contents: read
-  pull-requests: write
+  pull-requests: write # zizmor: ignore[excessive-permissions]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
@@ -21,26 +27,30 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
       - name: Handle review label
         id: prep
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          LABEL_JSON: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          EVENT_ACTION: ${{ github.event.action }}
         run: |
-          HAS_LABEL=$(echo '${{ toJSON(github.event.pull_request.labels.*.name) }}' | jq 'any(. == "gemini-review")')
-          EVENT_ACTION="${{ github.event.action }}"
+          HAS_LABEL=$(jq -n 'env.LABEL_JSON | fromjson | any(. == "gemini-review")')
 
-          if [[ "$HAS_LABEL" == "true" && "$EVENT_ACTION" != "labeled" ]]; then
+          if [[ "${HAS_LABEL}" == "true" && "${EVENT_ACTION}" != "labeled" ]]; then
             echo "gemini-review label found on a '${EVENT_ACTION}' event. Removing label and skipping review."
-            gh pr edit "$PR_NUMBER" --remove-label "gemini-review"
-            echo "should_run_review=false" >> $GITHUB_OUTPUT
-          elif [[ "$HAS_LABEL" == "true" ]]; then
+            gh pr edit "${PR_NUMBER}" --remove-label "gemini-review"
+            echo "should_run_review=false" >> "${GITHUB_OUTPUT}"
+          elif [[ "${HAS_LABEL}" == "true" ]]; then
             echo "gemini-review label found. Proceeding with review."
-            echo "should_run_review=true" >> $GITHUB_OUTPUT
+            echo "should_run_review=true" >> "${GITHUB_OUTPUT}"
           else
             echo "gemini-review label not found. Skipping review."
-            echo "should_run_review=false" >> $GITHUB_OUTPUT
+            echo "should_run_review=false" >> "${GITHUB_OUTPUT}"
           fi
 
   gemini-code-review:
@@ -49,13 +59,14 @@ jobs:
     if: needs.handle-label.outputs.should_run_review == 'true'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           ref: refs/pull/${{ github.event.pull_request.number }}/merge
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Gemini AI Code Review
-        uses: sshnaidm/gemini-code-review-action@d4ccdaf0e2cad5cb79f80f6db07857c0e7fff28f
+        uses: sshnaidm/gemini-code-review-action@d4ccdaf0e2cad5cb79f80f6db07857c0e7fff28f # v1
         with:
           gemini-key: ${{ secrets.GEMINI_API_KEY }}
           model: 'gemini-2.5-flash'

@@ -37,13 +37,16 @@ jobs:
       - name: Call Pyxis API
         run: |
           curl --fail-with-body \
-          --cert '${{ env.CERT_FILE_LOCATION }}' \
-          --key '${{ env.KEY_FILE_LOCATION }}' \
+          --cert "${CERT_FILE_LOCATION}" \
+          --key "${KEY_FILE_LOCATION}" \
           --pass '${{ secrets.certificatePassword }}' \
           -H 'Content-Type: application/json' \
-          -d '{"commit":"${{ inputs.commit }}","enabled_for_testing":true,"name":"github.com/redhat-openshift-ecosystem/openshift-preflight","version":"${{ inputs.tag }}"}' \
+          -d "${DATA_PAYLOAD}" \
           -X POST \
-          'https://${{ inputs.host }}/v1/tools' | jq
+          "${PYXIS_ENDPOINT}" | jq
+        env:
+          DATA_PAYLOAD: '{"commit":"${{ inputs.commit }}","enabled_for_testing":true,"name":"github.com/redhat-openshift-ecosystem/openshift-preflight","version":"${{ inputs.tag }}"}'
+          PYXIS_ENDPOINT: 'https://${{ inputs.host }}/v1/tools'
 
       - name: Cleanup
         if: always()

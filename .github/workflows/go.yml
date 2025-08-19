@@ -8,15 +8,19 @@ on:
 
 jobs:
   build:
+    # TODO: Set explicit permissions for this job.
+    # zizmor: ignore[excessive-permissions]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      with:
+        persist-credentials: false
 
     - name: Install system deps
       run: 'sudo apt update && sudo apt install -y libgpgme-dev libbtrfs-dev libdevmapper-dev'
 
     - name: Set up Go
-      uses: actions/setup-go@v6
+      uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
       with:
         go-version-file: go.mod
 
@@ -36,7 +40,7 @@ jobs:
       run: make cover
 
     - name: Coveralls
-      uses: coverallsapp/github-action@v2
+      uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b # v2.3.6
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         file: coverage.out
