@@ -28,9 +28,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Podman Login
-      uses: redhat-actions/podman-login@v1
+      uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
       with:
-        registry: ${{ secrets.destImageRegistry }}
+        registry: ${DEST_IMAGE_REGISTRY}
         username: ${{ secrets.destRegistryUser }}
         password: ${{ secrets.destRegistryPassword }}
 
@@ -38,8 +38,14 @@ jobs:
       id: skopeo-copy-image
       run: |
         skopeo -v
-        skopeo copy --all --preserve-digests docker://${{ secrets.sourceImageRegistry }}/${{ inputs.sourceImageName }}:${{ inputs.sourceImageTag }}-linux-amd64 docker://${{ secrets.destImageRegistry }}/${{ inputs.destImageName }}:${{ inputs.sourceImageTag }}-linux-amd64
-        skopeo copy --all --preserve-digests docker://${{ secrets.sourceImageRegistry }}/${{ inputs.sourceImageName }}:${{ inputs.sourceImageTag }}-linux-ppc64le docker://${{ secrets.destImageRegistry }}/${{ inputs.destImageName }}:${{ inputs.sourceImageTag }}-linux-ppc64le
-        skopeo copy --all --preserve-digests docker://${{ secrets.sourceImageRegistry }}/${{ inputs.sourceImageName }}:${{ inputs.sourceImageTag }}-linux-arm64 docker://${{ secrets.destImageRegistry }}/${{ inputs.destImageName }}:${{ inputs.sourceImageTag }}-linux-arm64
-        skopeo copy --all --preserve-digests docker://${{ secrets.sourceImageRegistry }}/${{ inputs.sourceImageName }}:${{ inputs.sourceImageTag }}-linux-s390x docker://${{ secrets.destImageRegistry }}/${{ inputs.destImageName }}:${{ inputs.sourceImageTag }}-linux-s390x
-        skopeo copy --all --preserve-digests docker://${{ secrets.sourceImageRegistry }}/${{ inputs.sourceImageName }}:${{ inputs.sourceImageTag }} docker://${{ secrets.destImageRegistry }}/${{ inputs.destImageName }}:${{ inputs.sourceImageTag }}
+        skopeo copy --all --preserve-digests "docker://${SOURCE_IMAGE_REGISTRY}/${SOURCE_IMAGE_NAME}:${SOURCE_IMAGE_TAG}-linux-amd64" "docker://${DEST_IMAGE_REGISTRY}/${DEST_IMAGE_NAME}:${SOURCE_IMAGE_TAG}-linux-amd64"
+        skopeo copy --all --preserve-digests "docker://${SOURCE_IMAGE_REGISTRY}/${SOURCE_IMAGE_NAME}:${SOURCE_IMAGE_TAG}-linux-ppc64le" "docker://${DEST_IMAGE_REGISTRY}/${DEST_IMAGE_NAME}:${SOURCE_IMAGE_TAG}-linux-ppc64le"
+        skopeo copy --all --preserve-digests "docker://${SOURCE_IMAGE_REGISTRY}/${SOURCE_IMAGE_NAME}:${SOURCE_IMAGE_TAG}-linux-arm64" "docker://${DEST_IMAGE_REGISTRY}/${DEST_IMAGE_NAME}:${SOURCE_IMAGE_TAG}-linux-arm64"
+        skopeo copy --all --preserve-digests "docker://${SOURCE_IMAGE_REGISTRY}/${SOURCE_IMAGE_NAME}:${SOURCE_IMAGE_TAG}-linux-s390x" "docker://${DEST_IMAGE_REGISTRY}/${DEST_IMAGE_NAME}:${SOURCE_IMAGE_TAG}-linux-s390x"
+        skopeo copy --all --preserve-digests "docker://${SOURCE_IMAGE_REGISTRY}/${SOURCE_IMAGE_NAME}:${SOURCE_IMAGE_TAG}" "docker://${DEST_IMAGE_REGISTRY}/${DEST_IMAGE_NAME}:${SOURCE_IMAGE_TAG}"
+      env:
+        SOURCE_IMAGE_REGISTRY: ${{ secrets.sourceImageRegistry }}
+        SOURCE_IMAGE_NAME: ${{ inputs.sourceImageName }}
+        SOURCE_IMAGE_TAG: ${{ inputs.sourceImageTag }}
+        DEST_IMAGE_REGISTRY: ${{ secrets.destImageRegistry }}
+        DEST_IMAGE_NAME: ${{ inputs.destImageName }}
