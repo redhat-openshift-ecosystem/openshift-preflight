@@ -41,8 +41,29 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         file: coverage.out
 
-    - name: Build Multi-arch-linux
-      run: make build-multi-arch-linux
+  build-linux-binaries:
+    name: Build Multi-arch-linux
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [ linux ]
+        architecture:
+          - amd64
+          - arm64
+          - ppc64le
+          - s390x
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build linux binary for ${{ matrix.architecture }}
+        run: make build-linux-${{ matrix.architecture }}
 
-    - name: Build Multi-arch-mac
-      run: make build-multi-arch-mac
+  build-mac-binaries:
+    name: Build Multi-arch-mac
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        architecture: [ amd64, arm64 ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Mac binary for ${{ matrix.architecture }}
+        run: make build-mac-${{ matrix.architecture }}
