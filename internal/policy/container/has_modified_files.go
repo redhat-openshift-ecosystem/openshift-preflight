@@ -82,12 +82,14 @@ func (p *HasModifiedFilesCheck) parsePackageDist(_ context.Context, extractedIma
 		return "", fmt.Errorf("could not open os-release: %v", err)
 	}
 	defer osRelease.Close()
-	scanner := bufio.NewScanner(osRelease)
-	packageDist := "unknown"
+
 	r, err := regexp.Compile(`PLATFORM_ID="platform:([[:alnum:]]+)"`)
 	if err != nil {
 		return "", fmt.Errorf("error while compiling regexp: %w", err)
 	}
+
+	scanner := bufio.NewScanner(osRelease)
+	packageDist := "unknown"
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -448,7 +450,9 @@ func installedFileMapWithExclusions(ctx context.Context, pkglist []*rpmdb.Packag
 		rpmdb.RPMFILE_README |
 		rpmdb.RPMFILE_ARTIFACT |
 		rpmdb.RPMFILE_GHOST
-	m := map[string]string{}
+	// Estimate map size based on typical package file counts
+	estimatedFiles := len(pkglist) * 200 // average files across all UBI versions/variants plus some headroom
+	m := make(map[string]string, estimatedFiles)
 	for _, pkg := range pkglist {
 		files, err := pkg.InstalledFiles()
 		if err != nil {
@@ -456,7 +460,7 @@ func installedFileMapWithExclusions(ctx context.Context, pkglist []*rpmdb.Packag
 		}
 
 		// converting directories to a map so we can filter them out quicker
-		pkgDirNamesMap := make(map[string]struct{})
+		pkgDirNamesMap := make(map[string]struct{}, len(pkg.DirNames))
 		for _, dir := range pkg.DirNames {
 			pkgDirNamesMap[dir] = struct{}{}
 		}
@@ -512,8 +516,8 @@ func generateChangesFor(ctx context.Context, layer v1.Layer) (map[string]fileInf
 	defer layerReader.Close()
 	tarReader := tar.NewReader(layerReader)
 	// Use a map so we can remove items easily. Will turn this into a string slice before returning
-	filelist := make(map[string]fileInfo)
-	var links []string
+	filelist := make(map[string]fileInfo, 200) // average files across all UBI versions/variants plus some headroom
+	links := make([]string, 0, 10)             // pre-allocate slice for links with estimate
 	for {
 		header, err := tarReader.Next()
 		if errors.Is(err, io.EOF) {
