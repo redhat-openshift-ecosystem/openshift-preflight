@@ -18,7 +18,7 @@ the binary to your path.
 
 You will also need:
 
-- Your bundle image published to a container registry,
+- Your bundle image published to a container registry.
 - An Index Image containing your operator's new bundle published to a container
   registry.
 - A Kubeconfig for a user with cluster-admin privileges to an OpenShift 4.5+
@@ -41,7 +41,7 @@ it on your workstation, but you will likely want to leverage a few volume mounts
 to pass through various artifacts back to your host system for review at a later
 time.
 
-The below example has had its container-tool abstraced out, but you should be
+The below example has had its container-tool abstracted out, but you should be
 able to run this with either Podman or Docker without issue.
 
 Here, we explicitly set the location in the container where we would like
