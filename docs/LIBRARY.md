@@ -5,7 +5,7 @@
 You can now apply the Operator and Container policy checks programmatically, in
 the same way that the `preflight` cli executes tests.
 
-Here is an annotated example execting the container policy. The operator policy
+Here is an annotated example executing the container policy. The operator policy
 is very similar to this, but has a few additional required parameters.
 
 ```go
