@@ -359,7 +359,7 @@ func findRPMDB(ctx context.Context, layer v1.Layer) (found bool, pkglist []*rpmd
 		id, _ := layer.Digest()
 		logger.V(log.TRC).Info("findRPMDB found an RPM db", "layer", id.String())
 		found = true
-		return
+		return found, pkglist
 	}
 
 	return found, pkglist
