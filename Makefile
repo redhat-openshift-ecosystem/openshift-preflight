@@ -119,8 +119,9 @@ $(GOLANGCI_LINT):
 	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION))
 
 GOFUMPT = $(shell pwd)/bin/gofumpt
+GOFUMPT_VERSION ?= v0.9.0
 gofumpt: ## Download envtest-setup locally if necessary.
-	$(call go-install-tool,$(GOFUMPT),mvdan.cc/gofumpt@latest)
+	$(call go-install-tool,$(GOFUMPT),mvdan.cc/gofumpt@$(GOFUMPT_VERSION))
 
 COSIGN = $(shell pwd)/bin/cosign
 COSIGN_VERSION ?= v2.0.0
