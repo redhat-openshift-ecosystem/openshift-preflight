@@ -12,6 +12,8 @@ env:
 
 jobs:
   build-release:
+    # TODO: Set explicit permissions for this job.
+    # zizmor: ignore[excessive-permissions]
     name: Build and push tag images
     strategy:
       matrix:
@@ -19,16 +21,19 @@ jobs:
         platform: [linux]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      with:
+        persist-credentials: false
+
     - name: Set Env Tags
-      run: echo RELEASE_TAG=$(echo $GITHUB_REF | cut -d '/' -f 3) >> $GITHUB_ENV
+      run: echo "RELEASE_TAG=$(echo "${GITHUB_REF}" | cut -d '/' -f 3)" >> "${GITHUB_ENV}"
 
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+      uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
 
     - name: Build Image
       id: build-image
-      uses: redhat-actions/buildah-build@v2
+      uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2.13
       with:
         image: ${{ secrets.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: ${{ env.RELEASE_TAG }}-${{ matrix.platform }}-${{ matrix.architecture }}
@@ -41,7 +46,7 @@ jobs:
 
     - name: Push Image
       id: push-image
-      uses: redhat-actions/push-to-registry@v2
+      uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2.8
       with:
         image: ${{ env.IMAGE_NAME }}
         tags: ${{ env.RELEASE_TAG }}-${{ matrix.platform }}-${{ matrix.architecture }}
@@ -50,7 +55,9 @@ jobs:
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
     - name: Print image url
-      run: echo "Image pushed to ${{ steps.push-image.outputs.registry-paths }}"
+      run: echo "Image pushed to ${REGISTRY_PATHS}"
+      env:
+        REGISTRY_PATHS: ${{ steps.push-image.outputs.registry-paths }}
 
     outputs:
       imageName: ${{ env.IMAGE_NAME }}
@@ -78,6 +85,8 @@ jobs:
       token: ${{ secrets.GITHUB_TOKEN }}
 
   extract-assets:
+    # TODO: Set explicit permissions for this job.
+    # zizmor: ignore[excessive-permissions]
     needs: build-release
     uses: ./.github/workflows/release-artifacts.yml
     with:
@@ -90,6 +99,8 @@ jobs:
       token: ${{ secrets.GITHUB_TOKEN }}
 
   add-release-info-to-pyxis:
+    # TODO: Set explicit permissions for this job.
+    # zizmor: ignore[excessive-permissions]
     needs: [build-release, extract-assets]
     uses: ./.github/workflows/add-release-info-to-pyxis.yml
     if: "!github.event.release.prerelease"
@@ -103,6 +114,8 @@ jobs:
       certificatePassword: ${{ secrets.PREFLIGHT_RELEASE_PASSWORD }}
 
   copy-to-rhisv:
+    # TODO: Set explicit permissions for this job.
+    # zizmor: ignore[excessive-permissions]
     needs: [build-release, build-multiarch]
     uses: ./.github/workflows/copy-to-rhisv.yml
     with:
