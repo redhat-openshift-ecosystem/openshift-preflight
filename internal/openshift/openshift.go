@@ -3,6 +3,7 @@ package openshift
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/go-logr/logr"
 
@@ -518,4 +519,30 @@ func (oe *openshiftClient) GetDeployment(ctx context.Context, name string, names
 		return nil, fmt.Errorf("could not retrieve deployment: %s/%s: %v", namespace, name, err)
 	}
 	return &deployment, nil
+}
+
+// GetDeploymentPods can return an ErrNotFound
+func (oe *openshiftClient) GetDeploymentPods(ctx context.Context, name string, namespace string) ([]corev1.Pod, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
+	deployment, err := oe.GetDeployment(ctx, name, namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	selectorLabels := deployment.Spec.Selector.MatchLabels
+	if len(selectorLabels) == 0 {
+		logger.V(log.TRC).Info("deployment has no selector labels defined", "namespace", namespace, "name", name)
+	}
+
+	labelSelector := crclient.MatchingLabels{}
+	maps.Copy(labelSelector, selectorLabels)
+
+	podList := corev1.PodList{}
+	err = oe.Client.List(ctx, &podList, labelSelector)
+	if err != nil {
+		return nil, fmt.Errorf("could not list pods matching label selector: %v", err)
+	}
+
+	return podList.Items, nil
 }
