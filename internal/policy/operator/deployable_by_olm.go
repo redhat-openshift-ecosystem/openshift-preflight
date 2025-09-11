@@ -30,6 +30,7 @@ import (
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -61,6 +62,7 @@ type DeployableByOlmCheck struct {
 
 	openshiftClient     openshift.Client
 	client              crclient.Client
+	k8sClientset        kubernetes.Interface
 	csvReady            bool
 	validImages         bool
 	csvTimeout          time.Duration
@@ -96,12 +98,20 @@ func (p *DeployableByOlmCheck) initClient() error {
 	}
 
 	p.client = client
+
+	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
+	if err != nil {
+		return fmt.Errorf("could not get k8s clientset: %w", err)
+	}
+
+	p.k8sClientset = k8sClientset
+
 	return nil
 }
 
 func (p *DeployableByOlmCheck) initOpenShiftEngine() {
 	if p.openshiftClient == nil {
-		p.openshiftClient = openshift.NewClient(p.client)
+		p.openshiftClient = openshift.NewClient(p.client, p.k8sClientset)
 	}
 }
 

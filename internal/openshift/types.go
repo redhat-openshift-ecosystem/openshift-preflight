@@ -1,6 +1,7 @@
 package openshift
 
 import (
+	"bytes"
 	"context"
 
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
@@ -59,4 +60,6 @@ type Client interface {
 	DeleteRoleBinding(ctx context.Context, name string, namespace string) error
 	GetDeployment(ctx context.Context, name string, namespace string) (*appsv1.Deployment, error)
 	GetDeploymentPods(ctx context.Context, name string, namespace string) ([]corev1.Pod, error)
+	GetPod(ctx context.Context, name string, namespace string) (*corev1.Pod, error)
+	GetPodLogs(ctx context.Context, name string, namespace string) (map[string]*bytes.Buffer, error)
 }

@@ -1,8 +1,10 @@
 package openshift
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"maps"
 
 	"github.com/go-logr/logr"
@@ -18,19 +20,22 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type openshiftClient struct {
-	Client crclient.Client
+	Client       crclient.Client
+	K8sInterface kubernetes.Interface
 }
 
 // NewClient provides a wrapper around the passed in client in
 // order to present convenience functions for each of the object
 // types that are interacted with.
-func NewClient(client crclient.Client) Client {
+func NewClient(client crclient.Client, k8sInterface kubernetes.Interface) Client {
 	var osclient Client = &openshiftClient{
-		Client: client,
+		Client:       client,
+		K8sInterface: k8sInterface,
 	}
 	return osclient
 }
@@ -532,17 +537,97 @@ func (oe *openshiftClient) GetDeploymentPods(ctx context.Context, name string, n
 
 	selectorLabels := deployment.Spec.Selector.MatchLabels
 	if len(selectorLabels) == 0 {
-		logger.V(log.TRC).Info("deployment has no selector labels defined", "namespace", namespace, "name", name)
+		logger.V(log.TRC).Info("deployment has no selector labels defined, returning empty pod list", "namespace", namespace, "name", name)
+		return []corev1.Pod{}, nil
 	}
 
 	labelSelector := crclient.MatchingLabels{}
 	maps.Copy(labelSelector, selectorLabels)
 
 	podList := corev1.PodList{}
-	err = oe.Client.List(ctx, &podList, labelSelector)
+	err = oe.Client.List(ctx, &podList, labelSelector, crclient.InNamespace(namespace))
 	if err != nil {
 		return nil, fmt.Errorf("could not list pods matching label selector: %v", err)
 	}
 
 	return podList.Items, nil
+}
+
+// GetPod can return an ErrNotFound
+func (oe *openshiftClient) GetPod(ctx context.Context, name string, namespace string) (*corev1.Pod, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
+	logger.V(log.TRC).Info("fetching pod", "namespace", namespace, "name", name)
+	pod := corev1.Pod{}
+	err := oe.Client.Get(ctx, crclient.ObjectKey{
+		Name:      name,
+		Namespace: namespace,
+	}, &pod)
+	if apierrors.IsNotFound(err) {
+		return nil, fmt.Errorf("could not retrieve pod: %s/%s: %w: %v", namespace, name, ErrNotFound, err)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve pod: %s/%s: %v", namespace, name, err)
+	}
+	return &pod, nil
+}
+
+func (oe *openshiftClient) getContainerLogs(ctx context.Context, namespace string, pod string, container string) (*bytes.Buffer, error) {
+	podLogOpts := corev1.PodLogOptions{
+		Container: container,
+	}
+	req := oe.K8sInterface.CoreV1().Pods(namespace).GetLogs(pod, &podLogOpts)
+	logs, err := req.Stream(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open log stream: %s/%s/%s: %v", namespace, pod, container, err)
+	}
+	defer logs.Close()
+	buf := new(bytes.Buffer)
+	_, err = io.Copy(buf, logs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy log stream: %s/%s/%s: %v", namespace, pod, container, err)
+	}
+
+	return buf, nil
+}
+
+// GetPodLogs can return an ErrNotFound
+func (oe *openshiftClient) GetPodLogs(ctx context.Context, name string, namespace string) (map[string]*bytes.Buffer, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
+	pod, err := oe.GetPod(ctx, name, namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	results := map[string]*bytes.Buffer{}
+
+	for _, container := range pod.Spec.InitContainers {
+		buf, err := oe.getContainerLogs(ctx, namespace, name, container.Name)
+		if err != nil {
+			logger.V(log.TRC).Info("failed to get pod logs", "error", err)
+			continue
+		}
+		results[container.Name] = buf
+	}
+
+	for _, container := range pod.Spec.Containers {
+		buf, err := oe.getContainerLogs(ctx, namespace, name, container.Name)
+		if err != nil {
+			logger.V(log.TRC).Info("failed to get pod logs", "error", err)
+			continue
+		}
+		results[container.Name] = buf
+	}
+
+	for _, container := range pod.Spec.EphemeralContainers {
+		buf, err := oe.getContainerLogs(ctx, namespace, name, container.Name)
+		if err != nil {
+			logger.V(log.TRC).Info("failed to get pod logs", "error", err)
+			continue
+		}
+		results[container.Name] = buf
+	}
+
+	return results, nil
 }
