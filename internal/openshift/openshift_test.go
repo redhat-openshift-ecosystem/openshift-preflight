@@ -23,6 +23,9 @@ var _ = Describe("OpenShift Engine", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pod1",
 				Namespace: "testns",
+				Labels: map[string]string{
+					"app": "testapp1",
+				},
 			},
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
@@ -42,6 +45,9 @@ var _ = Describe("OpenShift Engine", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pod2",
 				Namespace: "testns",
+				Labels: map[string]string{
+					"app": "testapp2",
+				},
 			},
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
@@ -101,10 +107,45 @@ var _ = Describe("OpenShift Engine", func() {
 			},
 		}
 
-		deployment := appsv1.Deployment{
+		deployment1 := appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testdeployment",
+				Name:      "testdeployment1",
 				Namespace: "testns",
+			},
+			Spec: appsv1.DeploymentSpec{
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app": "testapp1",
+					},
+				},
+			},
+		}
+
+		deployment2 := appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "testdeployment2",
+				Namespace: "testns",
+			},
+			Spec: appsv1.DeploymentSpec{
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app": "testapp2",
+					},
+				},
+			},
+		}
+
+		deployment3 := appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "testdeployment3",
+				Namespace: "testns",
+			},
+			Spec: appsv1.DeploymentSpec{
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app": "testapp3",
+					},
+				},
 			},
 		}
 
@@ -113,7 +154,7 @@ var _ = Describe("OpenShift Engine", func() {
 		Expect(appsv1.AddToScheme(scheme)).To(Succeed())
 		cl := fake.NewClientBuilder().
 			WithScheme(scheme).
-			WithObjects(&csv, &deployment).
+			WithObjects(&csv, &deployment1, &deployment2, &deployment3).
 			WithLists(&pods, &isList).
 			Build()
 		oc = NewClient(cl)
@@ -366,15 +407,36 @@ var _ = Describe("OpenShift Engine", func() {
 	})
 	Context("Deployments", func() {
 		It("should get a Deployment", func() {
-			deployment, err := oc.GetDeployment(context.TODO(), "testdeployment", "testns")
+			deployment, err := oc.GetDeployment(context.TODO(), "testdeployment1", "testns")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(deployment).ToNot(BeNil())
 		})
 		It("should error if Deployment doesn't exist", func() {
-			csv, err := oc.GetDeployment(context.TODO(), "baddeployment", "badns")
+			deployment, err := oc.GetDeployment(context.TODO(), "baddeployment", "badns")
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ErrNotFound))
-			Expect(csv).To(BeNil())
+			Expect(deployment).To(BeNil())
+		})
+		It("should get the pods of a Deployment", func() {
+			pods, err := oc.GetDeploymentPods(context.TODO(), "testdeployment1", "testns")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(pods)).To(Equal(1))
+			Expect(pods[0].ObjectMeta.Name).To(Equal("pod1"))
+
+			pods, err = oc.GetDeploymentPods(context.TODO(), "testdeployment2", "testns")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(pods)).To(Equal(1))
+			Expect(pods[0].ObjectMeta.Name).To(Equal("pod2"))
+
+			pods, err = oc.GetDeploymentPods(context.TODO(), "testdeployment3", "testns")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pods).To(BeEmpty())
+		})
+		It("should error while getting pods if Deployment doesn't exist", func() {
+			pods, err := oc.GetDeploymentPods(context.TODO(), "baddeployment", "badns")
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ErrNotFound))
+			Expect(pods).To(BeNil())
 		})
 	})
 })

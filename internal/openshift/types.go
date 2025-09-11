@@ -58,4 +58,5 @@ type Client interface {
 	GetRoleBinding(ctx context.Context, name string, namespace string) (*rbacv1.RoleBinding, error)
 	DeleteRoleBinding(ctx context.Context, name string, namespace string) error
 	GetDeployment(ctx context.Context, name string, namespace string) (*appsv1.Deployment, error)
+	GetDeploymentPods(ctx context.Context, name string, namespace string) ([]corev1.Pod, error)
 }
