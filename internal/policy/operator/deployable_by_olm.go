@@ -99,7 +99,7 @@ func (p *DeployableByOlmCheck) initClient() error {
 	return nil
 }
 
-func (p *DeployableByOlmCheck) initOpenShifeEngine() {
+func (p *DeployableByOlmCheck) initOpenShiftEngine() {
 	if p.openshiftClient == nil {
 		p.openshiftClient = openshift.NewClient(p.client)
 	}
@@ -147,7 +147,7 @@ func (p *DeployableByOlmCheck) Validate(ctx context.Context, bundleRef image.Ima
 	if err := p.initClient(); err != nil {
 		return false, fmt.Errorf("%v", err)
 	}
-	p.initOpenShifeEngine()
+	p.initOpenShiftEngine()
 	report, err := bundle.Validate(ctx, bundleRef.ImageFSPath)
 	if err != nil {
 		return false, fmt.Errorf("%v", err)
