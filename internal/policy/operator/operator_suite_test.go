@@ -14,6 +14,7 @@ import (
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -95,10 +96,33 @@ var pod2 = corev1.Pod{
 	},
 }
 
+var pod3 = corev1.Pod{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "pod3",
+		Namespace: "p-testPackage",
+		Labels: map[string]string{
+			"app": "testapp1",
+		},
+	},
+	Spec: corev1.PodSpec{
+		Containers: []corev1.Container{
+			{
+				Name:  "cont4",
+				Image: "my.container/image/my1:2",
+			},
+			{
+				Name:  "cont5",
+				Image: "my.container/image/3:4",
+			},
+		},
+	},
+}
+
 var pods = corev1.PodList{
 	Items: []corev1.Pod{
 		pod1,
 		pod2,
+		pod3,
 	},
 }
 
@@ -186,6 +210,20 @@ var isList = imagestreamv1.ImageStreamList{
 						},
 					},
 				},
+			},
+		},
+	},
+}
+
+var deployment = appsv1.Deployment{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "memcached-operator-controller-manager",
+		Namespace: "p-testPackage",
+	},
+	Spec: appsv1.DeploymentSpec{
+		Selector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"app": "testapp1",
 			},
 		},
 	},
