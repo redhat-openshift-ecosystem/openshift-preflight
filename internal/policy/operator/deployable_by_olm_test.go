@@ -12,8 +12,10 @@ import (
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	fakecg "k8s.io/client-go/kubernetes/fake"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -36,14 +38,17 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		deployableByOLMCheck = *NewDeployableByOlmCheck("test_indeximage", "", "", WithCSVTimeout(1*time.Second), WithSubscriptionTimeout(1*time.Second))
 		scheme := apiruntime.NewScheme()
 		Expect(openshift.AddSchemes(scheme)).To(Succeed())
+		Expect(appsv1.AddToScheme(scheme)).To(Succeed())
 		clientBuilder = fake.NewClientBuilder().
 			WithScheme(scheme).
-			WithObjects(&csvDefault, &csvMarketplace, &ns, &secret, &sub, &og).
+			WithObjects(&csvDefault, &csvMarketplace, &ns, &secret, &sub, &og, &deployment).
 			WithLists(&pods, &isList)
 
 		deployableByOLMCheck.client = clientBuilder.
 			WithObjects(&csv).
 			Build()
+
+		deployableByOLMCheck.k8sClientset = fakecg.NewClientset()
 
 		// Temp artifacts dir
 		tmpDir, err := os.MkdirTemp("", "deployable-by-olm-*")

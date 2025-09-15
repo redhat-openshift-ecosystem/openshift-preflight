@@ -34,6 +34,8 @@ results-junit.xml
 *Subscription.json
 *BasicSpecCheck.json
 *OlmSuiteCheck.json
+*Deployment.json
+*PodStatus.json
 hashes.txt
 artifacts.tar
 

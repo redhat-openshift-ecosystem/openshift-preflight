@@ -657,6 +657,41 @@ func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData operato
 		if err := p.writeToFile(ctx, deployment); err != nil {
 			logger.Error(err, "could not write deployment to storage")
 		}
+
+		pods, err := p.openshiftClient.GetDeploymentPods(ctx, deploymentName, operatorData.InstallNamespace)
+		if err != nil {
+			logger.Info(fmt.Sprintf("warning: unable to retrieve deployment pods: %s", err))
+			continue
+		}
+
+		for _, pod := range pods {
+			jsonManifest, err := json.Marshal(pod.Status)
+			if err != nil {
+				logger.Error(err, "unable to marshal to json")
+			}
+
+			filename := fmt.Sprintf("%s-PodStatus.json", pod.Name)
+			if artifactWriter := artifacts.WriterFromContext(ctx); artifactWriter != nil {
+				if _, err := artifactWriter.WriteFile(filename, bytes.NewReader(jsonManifest)); err != nil {
+					logger.Error(err, "failed to write the PodStatus to the file")
+				}
+			}
+
+			logs, err := p.openshiftClient.GetPodLogs(ctx, pod.Name, pod.Namespace)
+			if err != nil {
+				logger.Info(fmt.Sprintf("warning: unable to retrieve pod logs: %s", err))
+				continue
+			}
+
+			for container, logContents := range logs {
+				filename := fmt.Sprintf("%s-%s.log", pod.Name, container)
+				if artifactWriter := artifacts.WriterFromContext(ctx); artifactWriter != nil {
+					if _, err := artifactWriter.WriteFile(filename, logContents); err != nil {
+						logger.Error(err, "failed to write the pod logs to the file")
+					}
+				}
+			}
+		}
 	}
 
 	logger.V(log.TRC).Info("deleting the resources created by DeployableByOLM Check")
