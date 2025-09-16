@@ -30,6 +30,7 @@ import (
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -61,6 +62,7 @@ type DeployableByOlmCheck struct {
 
 	openshiftClient     openshift.Client
 	client              crclient.Client
+	k8sClientset        kubernetes.Interface
 	csvReady            bool
 	validImages         bool
 	csvTimeout          time.Duration
@@ -96,12 +98,20 @@ func (p *DeployableByOlmCheck) initClient() error {
 	}
 
 	p.client = client
+
+	k8sClientset, err := kubernetes.NewForConfig(kubeconfig)
+	if err != nil {
+		return fmt.Errorf("could not get k8s clientset: %w", err)
+	}
+
+	p.k8sClientset = k8sClientset
+
 	return nil
 }
 
 func (p *DeployableByOlmCheck) initOpenShiftEngine() {
 	if p.openshiftClient == nil {
-		p.openshiftClient = openshift.NewClient(p.client)
+		p.openshiftClient = openshift.NewClient(p.client, p.k8sClientset)
 	}
 }
 
@@ -646,6 +656,41 @@ func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData operato
 
 		if err := p.writeToFile(ctx, deployment); err != nil {
 			logger.Error(err, "could not write deployment to storage")
+		}
+
+		pods, err := p.openshiftClient.GetDeploymentPods(ctx, deploymentName, operatorData.InstallNamespace)
+		if err != nil {
+			logger.Info(fmt.Sprintf("warning: unable to retrieve deployment pods: %s", err))
+			continue
+		}
+
+		for _, pod := range pods {
+			jsonManifest, err := json.Marshal(pod.Status)
+			if err != nil {
+				logger.Error(err, "unable to marshal to json")
+			}
+
+			filename := fmt.Sprintf("%s-PodStatus.json", pod.Name)
+			if artifactWriter := artifacts.WriterFromContext(ctx); artifactWriter != nil {
+				if _, err := artifactWriter.WriteFile(filename, bytes.NewReader(jsonManifest)); err != nil {
+					logger.Error(err, "failed to write the PodStatus to the file")
+				}
+			}
+
+			logs, err := p.openshiftClient.GetPodLogs(ctx, pod.Name, pod.Namespace)
+			if err != nil {
+				logger.Info(fmt.Sprintf("warning: unable to retrieve pod logs: %s", err))
+				continue
+			}
+
+			for container, logContents := range logs {
+				filename := fmt.Sprintf("%s-%s.log", pod.Name, container)
+				if artifactWriter := artifacts.WriterFromContext(ctx); artifactWriter != nil {
+					if _, err := artifactWriter.WriteFile(filename, logContents); err != nil {
+						logger.Error(err, "failed to write the pod logs to the file")
+					}
+				}
+			}
 		}
 	}
 
