@@ -14,6 +14,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 
 	"github.com/go-logr/logr"
 )
@@ -83,6 +84,10 @@ func RunPreflight(
 	}
 
 	logger.Info(fmt.Sprintf("Preflight result: %s", convertPassedOverall(results.PassedOverall)))
+
+	if !results.PassedOverall && viper.Instance().GetBool("exit_with_failure") {
+		return fmt.Errorf("one or more checks did not pass")
+	}
 
 	return nil
 }
