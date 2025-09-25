@@ -45,6 +45,9 @@ func rootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().String("loglevel", "", "The verbosity of the preflight tool itself. Ex. warn, debug, trace, info, error. (env: PFLT_LOGLEVEL)")
 	_ = viper.BindPFlag("loglevel", rootCmd.PersistentFlags().Lookup("loglevel"))
 
+	rootCmd.PersistentFlags().Bool("exit-with-failure", false, "Exit with a non-zero exit code if any checks do not pass. (env: PFLT_EXIT_WITH_FAILURE)")
+	_ = viper.BindPFlag("exit_with_failure", rootCmd.PersistentFlags().Lookup("exit-with-failure"))
+
 	rootCmd.AddCommand(checkCmd())
 	rootCmd.AddCommand(listChecksCmd())
 	rootCmd.AddCommand(runtimeAssetsCmd())
