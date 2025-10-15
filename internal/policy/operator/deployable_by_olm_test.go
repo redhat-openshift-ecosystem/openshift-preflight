@@ -70,8 +70,12 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				ownCSV := csv.DeepCopy()
 				ownCSV.Namespace = "p-testPackage"
 
-				deployableByOLMCheck.client = clientBuilder.
-					WithObjects(ownCSV).
+				scheme := apiruntime.NewScheme()
+				Expect(openshift.AddSchemes(scheme)).To(Succeed())
+				deployableByOLMCheck.client = fake.NewClientBuilder().
+					WithScheme(scheme).
+					WithObjects(&csvDefault, &csvMarketplace, &ns, &secret, &sub, &og, ownCSV).
+					WithLists(&pods, &isList).
 					Build()
 			})
 			It("OperatorGroup should use InstallNamespace and Should pass Validate", func() {
