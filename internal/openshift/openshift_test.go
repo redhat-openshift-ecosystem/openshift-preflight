@@ -12,7 +12,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	fakecg "k8s.io/client-go/kubernetes/fake"
+	fakecr "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var _ = Describe("OpenShift Engine", func() {
@@ -23,8 +24,17 @@ var _ = Describe("OpenShift Engine", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pod1",
 				Namespace: "testns",
+				Labels: map[string]string{
+					"app": "testapp1",
+				},
 			},
 			Spec: corev1.PodSpec{
+				InitContainers: []corev1.Container{
+					{
+						Name:  "cont3",
+						Image: "my.container/image/3:4",
+					},
+				},
 				Containers: []corev1.Container{
 					{
 						Name:  "cont1",
@@ -35,6 +45,14 @@ var _ = Describe("OpenShift Engine", func() {
 						Image: "my.container/image/2:3",
 					},
 				},
+				EphemeralContainers: []corev1.EphemeralContainer{
+					{
+						EphemeralContainerCommon: corev1.EphemeralContainerCommon{
+							Name:  "cont4",
+							Image: "my.container/image/4:5",
+						},
+					},
+				},
 			},
 		}
 
@@ -42,6 +60,9 @@ var _ = Describe("OpenShift Engine", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pod2",
 				Namespace: "testns",
+				Labels: map[string]string{
+					"app": "testapp2",
+				},
 			},
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
@@ -101,22 +122,70 @@ var _ = Describe("OpenShift Engine", func() {
 			},
 		}
 
-		deployment := appsv1.Deployment{
+		deployment1 := appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testdeployment",
+				Name:      "testdeployment1",
 				Namespace: "testns",
+			},
+			Spec: appsv1.DeploymentSpec{
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app": "testapp1",
+					},
+				},
+			},
+		}
+
+		deployment2 := appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "testdeployment2",
+				Namespace: "testns",
+			},
+			Spec: appsv1.DeploymentSpec{
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app": "testapp2",
+					},
+				},
+			},
+		}
+
+		deployment3 := appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "testdeployment3",
+				Namespace: "testns",
+			},
+			Spec: appsv1.DeploymentSpec{
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app": "testapp3",
+					},
+				},
+			},
+		}
+
+		deployment4 := appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "testdeployment4",
+				Namespace: "testns",
+			},
+			Spec: appsv1.DeploymentSpec{
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{},
+				},
 			},
 		}
 
 		scheme := apiruntime.NewScheme()
 		Expect(AddSchemes(scheme)).To(Succeed())
 		Expect(appsv1.AddToScheme(scheme)).To(Succeed())
-		cl := fake.NewClientBuilder().
+		cl := fakecr.NewClientBuilder().
 			WithScheme(scheme).
-			WithObjects(&csv, &deployment).
+			WithObjects(&csv, &deployment1, &deployment2, &deployment3, &deployment4).
 			WithLists(&pods, &isList).
 			Build()
-		oc = NewClient(cl)
+		cls := fakecg.NewClientset()
+		oc = NewClient(cl, cls)
 	})
 	Context("Namespaces", func() {
 		It("should exercise Namespaces", func() {
@@ -366,15 +435,64 @@ var _ = Describe("OpenShift Engine", func() {
 	})
 	Context("Deployments", func() {
 		It("should get a Deployment", func() {
-			deployment, err := oc.GetDeployment(context.TODO(), "testdeployment", "testns")
+			deployment, err := oc.GetDeployment(context.TODO(), "testdeployment1", "testns")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(deployment).ToNot(BeNil())
 		})
 		It("should error if Deployment doesn't exist", func() {
-			csv, err := oc.GetDeployment(context.TODO(), "baddeployment", "badns")
+			deployment, err := oc.GetDeployment(context.TODO(), "baddeployment", "badns")
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ErrNotFound))
-			Expect(csv).To(BeNil())
+			Expect(deployment).To(BeNil())
+		})
+		It("should get the pods of a Deployment", func() {
+			pods, err := oc.GetDeploymentPods(context.TODO(), "testdeployment1", "testns")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(pods)).To(Equal(1))
+			Expect(pods[0].ObjectMeta.Name).To(Equal("pod1"))
+
+			pods, err = oc.GetDeploymentPods(context.TODO(), "testdeployment2", "testns")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(pods)).To(Equal(1))
+			Expect(pods[0].ObjectMeta.Name).To(Equal("pod2"))
+
+			pods, err = oc.GetDeploymentPods(context.TODO(), "testdeployment3", "testns")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pods).To(BeEmpty())
+
+			// If the deployment has no selector labels defined, return an
+			// empty list instead of all pods. This differs from the default
+			// k8s behavior.
+			pods, err = oc.GetDeploymentPods(context.TODO(), "testdeployment4", "testns")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pods).To(BeEmpty())
+		})
+		It("should error while getting pods if Deployment doesn't exist", func() {
+			pods, err := oc.GetDeploymentPods(context.TODO(), "baddeployment", "badns")
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ErrNotFound))
+			Expect(pods).To(BeNil())
+		})
+	})
+	Context("Pods", func() {
+		It("should get a Pod", func() {
+			pod, err := oc.GetPod(context.TODO(), "pod1", "testns")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pod).ToNot(BeNil())
+		})
+		It("should error if Pod doesn't exist", func() {
+			pod, err := oc.GetPod(context.TODO(), "pod3", "badns")
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ErrNotFound))
+			Expect(pod).To(BeNil())
+		})
+		It("should get Pod logs", func() {
+			logs, err := oc.GetPodLogs(context.TODO(), "pod1", "testns")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(logs)).To(Equal(4))
+			for _, logContents := range logs {
+				Expect(logContents.String()).To(Equal("fake logs"))
+			}
 		})
 	})
 })
