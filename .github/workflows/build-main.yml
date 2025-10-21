@@ -6,9 +6,11 @@ on:
 
 env:
   IMAGE_NAME: preflight
-  
+
 jobs:
   build-main:
+    # TODO: Set explicit permissions for this job.
+    # zizmor: ignore[excessive-permissions]
     name: Build and push main snapshot images
     strategy: 
       matrix:
@@ -16,21 +18,26 @@ jobs:
         platform: [linux]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      with:
+        persist-credentials: false
     - name: Fetch latest release version
-      uses: reloc8/action-latest-release-version@1.0.0
+      uses: reloc8/action-latest-release-version@b8d6337f30390558e7874a044d6a3c1314314bab # 1.0.0
       id: fetch-latest-release
-    - name: Set Env Tags
-      run: echo RELEASE_TAG=${{ steps.fetch-latest-release.outputs.latest-release }} >> $GITHUB_ENV
-    - name: set short sha
-      run: echo SHA_SHORT=$(git rev-parse --short HEAD) >> $GITHUB_ENV
+
+    - name: Set release tag and short SHA
+      run: |
+        echo "RELEASE_TAG=${RELEASE_TAG}" >> "${GITHUB_ENV}"
+        echo "SHA_SHORT=$(git rev-parse --short HEAD)" >> "${GITHUB_ENV}"
+      env:
+        RELEASE_TAG: ${{ steps.fetch-latest-release.outputs.latest-release }}
 
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+      uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
         
     - name: Build Image
       id: build-image
-      uses: redhat-actions/buildah-build@v2
+      uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2.13
       with:
         image: ${{ secrets.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: ${{ env.SHA_SHORT }}-${{ matrix.platform }}-${{ matrix.architecture }}
@@ -44,7 +51,7 @@ jobs:
 
     - name: Run and Validate Image
       run: |
-        if ! podman run --rm ${IMAGE_WITH_TAG} version; then
+        if ! podman run --rm "${IMAGE_WITH_TAG}" version; then
             echo "Image validation failed. The 'podman run' command returned a non-zero exit code."
             exit 1
         fi
@@ -53,7 +60,7 @@ jobs:
 
     - name: Push Image
       id: push-image
-      uses: redhat-actions/push-to-registry@v2
+      uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2.8
       with:
         image: ${{ env.IMAGE_NAME }}
         tags: ${{ env.SHA_SHORT }}-${{ matrix.platform }}-${{ matrix.architecture }}
@@ -62,22 +69,28 @@ jobs:
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
     - name: Print image url
-      run: echo "Image pushed to ${{ steps.push-image.outputs.registry-paths }}"
+      run: echo "Image pushed to ${REGISTRY_PATHS}"
+      env:
+        REGISTRY_PATHS: ${{ steps.push-image.outputs.registry-paths }}
     
     outputs:
       imageName: ${{ env.IMAGE_NAME }}
       imageVersion: ${{ env.SHA_SHORT }}
 
   build-coverage:
+    # TODO: Set explicit permissions for this job.
+    # zizmor: ignore[excessive-permissions]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      with:
+        persist-credentials: false
 
     - name: Install system deps
       run: 'sudo apt update && sudo apt install -y libgpgme-dev libbtrfs-dev libdevmapper-dev'
 
     - name: Set up Go
-      uses: actions/setup-go@v6
+      uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
       with:
         go-version-file: go.mod
 
@@ -94,12 +107,14 @@ jobs:
       run: make cover
      
     - name: Coveralls
-      uses: coverallsapp/github-action@v2
+      uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b # v2.3.6
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         file: coverage.out
 
   build-multiarch:
+    # TODO: Set explicit permissions for this job.
+    # zizmor: ignore[excessive-permissions]
     needs: build-main
     uses: ./.github/workflows/build-multiarch.yml
     with:

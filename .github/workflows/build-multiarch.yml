@@ -55,7 +55,7 @@ jobs:
 
       # Authenticate to container image registry to push the image
       - name: Podman Login
-        uses: redhat-actions/podman-login@v1
+        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
         with:
           registry: ${{ secrets.registry }}
           username: ${{ secrets.user }}
@@ -63,29 +63,41 @@ jobs:
 
       - name: Create and add to manifest
         run: |
-          buildah manifest create ${{ inputs.name }}
-          buildah manifest add ${{ inputs.name }} ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}-linux-amd64
-          buildah manifest add ${{ inputs.name }} ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}-linux-ppc64le
-          buildah manifest add ${{ inputs.name }} ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}-linux-arm64
-          buildah manifest add ${{ inputs.name }} ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}-linux-s390x
+          buildah manifest create "${INPUT_NAME}"
+          buildah manifest add "${INPUT_NAME}" "${{ secrets.registry }}/${INPUT_NAME}:${INPUT_TAG}-linux-amd64"
+          buildah manifest add "${INPUT_NAME}" "${{ secrets.registry }}/${INPUT_NAME}:${INPUT_TAG}-linux-ppc64le"
+          buildah manifest add "${INPUT_NAME}" "${{ secrets.registry }}/${INPUT_NAME}:${INPUT_TAG}-linux-arm64"
+          buildah manifest add "${INPUT_NAME}" "${{ secrets.registry }}/${INPUT_NAME}:${INPUT_TAG}-linux-s390x"
+        env:
+          INPUT_NAME: ${{ inputs.name }}
+          INPUT_TAG: ${{ inputs.tag }}
 
       - name: Push manifest
         id: push-manifest
         run: |
-            podman manifest push --digestfile imagedigest ${{ inputs.name }} ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}  --all
-            echo "digest=$(cat imagedigest)" | tee -a $GITHUB_OUTPUT
+            podman manifest push --digestfile imagedigest "${INPUT_NAME}" "${{ secrets.registry }}/${INPUT_NAME}:${INPUT_TAG}" --all
+            echo "digest=$(cat imagedigest)" | tee -a "${GITHUB_OUTPUT}"
+        env:
+          INPUT_NAME: ${{ inputs.name }}
+          INPUT_TAG: ${{ inputs.tag }}
 
       - name: Sign the published manifest
         # only sign if release is published, not for ghactions branch push
         # which is used for testing and development.
         if: ${{ inputs.sign == true && github.event.release && github.event.action == 'published' }}
         run: |
-          cosign sign --yes --recursive ${{ secrets.registry }}/${{ inputs.name }}@${{ steps.push-manifest.outputs.digest }}
+          cosign sign --yes --recursive "${{ secrets.registry }}/${INPUT_NAME}@${DIGEST}"
+        env:
+          DIGEST: ${{ steps.push-manifest.outputs.digest }}
+          INPUT_NAME: ${{ inputs.name }}
 
       - name: Verify the image signature
         if: ${{ inputs.sign == true && github.event.release && github.event.action == 'published' }}
         run: |
           cosign verify \
-            --certificate-identity https://github.com/${{ github.repository }}/.github/workflows/build-multiarch.yml@refs/tags/${{ inputs.tag }} \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/build-multiarch.yml@refs/tags/${INPUT_TAG}" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            ${{ secrets.registry }}/${{ inputs.name }}:${{ inputs.tag }}
+            "${{ secrets.registry }}/${INPUT_NAME}:${INPUT_TAG}"
+        env:
+          INPUT_NAME: ${{ inputs.name }}
+          INPUT_TAG: ${{ inputs.tag }}

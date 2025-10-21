@@ -6,6 +6,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 4
     groups:
       dev-dependencies:
         dependency-type: "development"
@@ -15,4 +17,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 4
 
