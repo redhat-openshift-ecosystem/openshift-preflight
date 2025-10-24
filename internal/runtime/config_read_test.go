@@ -10,29 +10,29 @@ import (
 var _ = Describe("Runtime ReadOnlyConfig test", func() {
 	Context("When calling ReadOnly on a config", func() {
 		c := &Config{
-			Image:                  "image",
-			Policy:                 "policy",
-			ResponseFormat:         "format",
-			Bundle:                 true,
-			Scratch:                true,
-			LogFile:                "logfile",
-			Artifacts:              "artifacts",
-			WriteJUnit:             true,
-			CertificationProjectID: "certprojid",
-			PyxisHost:              "pyxishost",
-			PyxisAPIToken:          "pyxisapitoken",
-			DockerConfig:           "dockercfg",
-			Submit:                 true,
-			Platform:               "s390x",
-			Insecure:               true,
-			Namespace:              "ns",
-			ServiceAccount:         "sa",
-			ScorecardImage:         "scorecardimg",
-			ScorecardWaitTime:      "waittime",
-			Channel:                "channel",
-			IndexImage:             "indeximg",
-			Kubeconfig:             "kubeconfig",
-			CSVTimeout:             180 * time.Second,
+			Image:                    "image",
+			Policy:                   "policy",
+			ResponseFormat:           "format",
+			Bundle:                   true,
+			Scratch:                  true,
+			LogFile:                  "logfile",
+			Artifacts:                "artifacts",
+			WriteJUnit:               true,
+			CertificationComponentID: "certprojid",
+			PyxisHost:                "pyxishost",
+			PyxisAPIToken:            "pyxisapitoken",
+			DockerConfig:             "dockercfg",
+			Submit:                   true,
+			Platform:                 "s390x",
+			Insecure:                 true,
+			Namespace:                "ns",
+			ServiceAccount:           "sa",
+			ScorecardImage:           "scorecardimg",
+			ScorecardWaitTime:        "waittime",
+			Channel:                  "channel",
+			IndexImage:               "indeximg",
+			Kubeconfig:               "kubeconfig",
+			CSVTimeout:               180 * time.Second,
 		}
 		cro := c.ReadOnly()
 		It("should return values assigned to corresponding struct fields", func() {
@@ -44,7 +44,7 @@ var _ = Describe("Runtime ReadOnlyConfig test", func() {
 			Expect(cro.LogFile()).To(Equal("logfile"))
 			Expect(cro.Artifacts()).To(Equal("artifacts"))
 			Expect(cro.WriteJUnit()).To(Equal(true))
-			Expect(cro.CertificationProjectID()).To(Equal("certprojid"))
+			Expect(cro.CertificationComponentID()).To(Equal("certprojid"))
 			Expect(cro.PyxisHost()).To(Equal("pyxishost"))
 			Expect(cro.PyxisAPIToken()).To(Equal("pyxisapitoken"))
 			Expect(cro.DockerConfig()).To(Equal("dockercfg"))
