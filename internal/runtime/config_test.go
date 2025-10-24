@@ -35,8 +35,8 @@ var _ = Describe("Viper to Runtime Config", func() {
 		expectedRuntimeCfg.Submit = true
 		baseViperCfg.Set("pyxis_env", "prod")
 		expectedRuntimeCfg.PyxisHost = "catalog.redhat.com/api/containers"
-		baseViperCfg.Set("certification_project_id", "000000000000")
-		expectedRuntimeCfg.CertificationProjectID = "000000000000"
+		baseViperCfg.Set("certification_component_id", "000000000000")
+		expectedRuntimeCfg.CertificationComponentID = "000000000000"
 		baseViperCfg.Set("platform", "s390x")
 		expectedRuntimeCfg.Platform = "s390x"
 		baseViperCfg.Set("insecure", true)

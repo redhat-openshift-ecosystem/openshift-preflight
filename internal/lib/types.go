@@ -40,7 +40,7 @@ type PyxisClient interface {
 }
 
 // NewPyxisClient initializes a pyxisClient with relevant information from cfg.
-// If the the CertificationProjectID, PyxisAPIToken, or PyxisHost are empty, then nil is returned.
+// If the the CertificationComponentID, PyxisAPIToken, or PyxisHost are empty, then nil is returned.
 // Callers should treat a nil pyxis client as an indicator that pyxis calls should not be made.
 func NewPyxisClient(ctx context.Context, projectID, token, host string) PyxisClient {
 	if projectID == "" || token == "" || host == "" {
