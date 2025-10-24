@@ -168,14 +168,8 @@ var _ = Describe("Check Container Command", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(out).To(ContainSubstring(errString))
 			},
-			Entry("certification-project-id or certification-component-id and pyxis-api-token are not supplied", "certification component ID must be specified when --submit is present", []string{"--submit", "foo"}),
-			Entry("certification-project-id is supplied and pyxis-api-token is not supplied", "pyxis API Token must be specified when --submit is present", []string{"foo", "--submit", "--certification-project-id=fooid"}),
-			Entry("certification-project-id or certification-component-id is not supplied", "certification component ID must be specified when --submit is present", []string{"--submit", "foo", "--pyxis-api-token=footoken"}),
-			Entry("certification-project-id and pyxis-api-token flag is present but empty because of '='", "cannot be empty when --submit is present", []string{"foo", "--submit", "--certification-project-id=fooid", "--pyxis-api-token="}),
-			Entry("certification-project-id flag is present but empty because of '='", "cannot be empty when --submit is present", []string{"foo", "--submit", "--certification-project-id=", "--pyxis-api-token=footoken"}),
-			Entry("submit is passed after empty api token with certification-project-id", "pyxis API token and certification component ID are required when --submit is present", []string{"foo", "--certification-project-id=fooid", "--pyxis-api-token", "--submit"}),
-			Entry("certification-project-id and submit is passed with explicit value after empty api token", "pyxis API token and certification component ID are required when --submit is present", []string{"foo", "--certification-project-id=fooid", "--pyxis-api-token", "--submit=true"}),
-			Entry("certification-project-id and submit is passed and insecure is specified", "if any flags in the group [submit insecure] are set", []string{"foo", "--submit", "--insecure", "--certification-project-id=fooid", "--pyxis-api-token=footoken"}),
+			Entry("certification-component-id and pyxis-api-token are not supplied", "certification component ID must be specified when --submit is present", []string{"--submit", "foo"}),
+			Entry("certification-component-id is not supplied", "certification component ID must be specified when --submit is present", []string{"--submit", "foo", "--pyxis-api-token=footoken"}),
 			Entry("certification-component-id is supplied and pyxis-api-token is not supplied", "pyxis API Token must be specified when --submit is present", []string{"foo", "--submit", "--certification-component-id=fooid"}),
 			Entry("certification-component-id and pyxis-api-token flag is present but empty because of '='", "cannot be empty when --submit is present", []string{"foo", "--submit", "--certification-component-id=fooid", "--pyxis-api-token="}),
 			Entry("certification-component-id flag is present but empty because of '='", "cannot be empty when --submit is present", []string{"foo", "--submit", "--certification-component-id=", "--pyxis-api-token=footoken"}),
@@ -200,44 +194,10 @@ var _ = Describe("Check Container Command", func() {
 					err := checkContainerPositionalArgs(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
 					Expect(err).ToNot(HaveOccurred())
 					Expect(viper.Instance().GetString("pyxis_api_token")).To(Equal("tokenid"))
-					Expect(viper.Instance().GetString("certification_project_id")).To(Equal("certcompenvid"))
-				})
-			})
-			When("old environment variable is used for certification ID", func() {
-				BeforeEach(func() {
-					viper.Reset()
-					initConfig(viper.Instance())
-					os.Setenv("PFLT_CERTIFICATION_PROJECT_ID", "certprojenvid")
-					os.Setenv("PFLT_PYXIS_API_TOKEN", "tokenid")
-					DeferCleanup(os.Unsetenv, "PFLT_CERTIFICATION_PROJECT_ID")
-					DeferCleanup(os.Unsetenv, "PFLT_PYXIS_API_TOKEN")
-				})
-				It("should still execute with no error", func() {
-					submit = true
-
-					err := checkContainerPositionalArgs(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
-					Expect(err).ToNot(HaveOccurred())
-					Expect(viper.Instance().GetString("pyxis_api_token")).To(Equal("tokenid"))
-					Expect(viper.Instance().GetString("certification_project_id")).To(Equal("certprojenvid"))
+					Expect(viper.Instance().GetString("certification_component_id")).To(Equal("certcompenvid"))
 				})
 			})
 			When("a config file is used", func() {
-				When("the deprecated certification_project_id config file is used", func() {
-					JustBeforeEach(func() {
-						viper.Reset()
-						viper.Instance().AddConfigPath("testdata/project/")
-					})
-					It("should still execute with no error", func() {
-						// Make sure that we've read the config file
-						initConfig(viper.Instance())
-						submit = true
-
-						err := checkContainerPositionalArgs(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
-						Expect(err).ToNot(HaveOccurred())
-						Expect(viper.Instance().GetString("pyxis_api_token")).To(Equal("mytoken"))
-						Expect(viper.Instance().GetString("certification_project_id")).To(Equal("myprojectid"))
-					})
-				})
 				When("certification_component_id config file is used", func() {
 					JustBeforeEach(func() {
 						viper.Reset()
@@ -251,7 +211,7 @@ var _ = Describe("Check Container Command", func() {
 						err := checkContainerPositionalArgs(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
 						Expect(err).ToNot(HaveOccurred())
 						Expect(viper.Instance().GetString("pyxis_api_token")).To(Equal("mytoken"))
-						Expect(viper.Instance().GetString("certification_project_id")).To(Equal("mycomponentcertid"))
+						Expect(viper.Instance().GetString("certification_component_id")).To(Equal("mycomponentcertid"))
 					})
 				})
 			})
@@ -261,43 +221,43 @@ var _ = Describe("Check Container Command", func() {
 	Context("When validating the certification-component-id flag", func() {
 		Context("and the flag is set properly", func() {
 			BeforeEach(func() {
-				viper.Instance().Set("certification_project_id", "123456789")
-				DeferCleanup(viper.Instance().Set, "certification_project_id", "")
+				viper.Instance().Set("certification_component_id", "123456789")
+				DeferCleanup(viper.Instance().Set, "certification_component_id", "")
 			})
 			It("should not change the flag value", func() {
-				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
+				err := validateCertificationComponentID(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
 				Expect(err).ToNot(HaveOccurred())
-				Expect(viper.Instance().GetString("certification_project_id")).To(Equal("123456789"))
+				Expect(viper.Instance().GetString("certification_component_id")).To(Equal("123456789"))
 			})
 		})
 		Context("and a valid ospid format is provided", func() {
 			BeforeEach(func() {
-				viper.Instance().Set("certification_project_id", "ospid-123456789")
-				DeferCleanup(viper.Instance().Set, "certification_project_id", "")
+				viper.Instance().Set("certification_component_id", "ospid-123456789")
+				DeferCleanup(viper.Instance().Set, "certification_component_id", "")
 			})
 			It("should strip ospid- from the flag value", func() {
-				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
+				err := validateCertificationComponentID(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
 				Expect(err).ToNot(HaveOccurred())
-				Expect(viper.Instance().GetString("certification_project_id")).To(Equal("123456789"))
+				Expect(viper.Instance().GetString("certification_component_id")).To(Equal("123456789"))
 			})
 		})
 		Context("and a legacy format with ospid is provided", func() {
 			BeforeEach(func() {
-				viper.Instance().Set("certification_project_id", "ospid-62423-f26c346-6cc1dc7fae92")
-				DeferCleanup(viper.Instance().Set, "certification_project_id", "")
+				viper.Instance().Set("certification_component_id", "ospid-62423-f26c346-6cc1dc7fae92")
+				DeferCleanup(viper.Instance().Set, "certification_component_id", "")
 			})
 			It("should throw an error", func() {
-				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
+				err := validateCertificationComponentID(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
 				Expect(err).To(HaveOccurred())
 			})
 		})
 		Context("and a legacy format without ospid is provided", func() {
 			BeforeEach(func() {
-				viper.Instance().Set("certification_project_id", "62423-f26c346-6cc1dc7fae92")
-				DeferCleanup(viper.Instance().Set, "certification_project_id", "")
+				viper.Instance().Set("certification_component_id", "62423-f26c346-6cc1dc7fae92")
+				DeferCleanup(viper.Instance().Set, "certification_component_id", "")
 			})
 			It("should throw an error", func() {
-				err := validateCertificationProjectID(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
+				err := validateCertificationComponentID(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
 				Expect(err).To(HaveOccurred())
 			})
 		})

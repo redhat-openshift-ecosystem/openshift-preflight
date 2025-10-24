@@ -34,10 +34,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var (
-	submit      bool
-	componentID string
-)
+var submit bool
 
 // runPreflight is introduced to make testing of this command possible, it has the same method signature as cli.RunPreflight.
 type runPreflight func(context.Context, func(ctx context.Context) (certification.Results, error), cli.CheckConfig, formatters.ResponseFormatter, lib.ResultWriter, lib.ResultSubmitter) error
@@ -50,7 +47,7 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 		Args:  checkContainerPositionalArgs,
 		// this fmt.Sprintf is in place to keep spacing consistent with cobras two spaces that's used in: Usage, Flags, etc
 		Example: fmt.Sprintf("  %s", "preflight check container quay.io/repo-name/container-name:version"),
-		PreRunE: validateCertificationProjectID,
+		PreRunE: validateCertificationComponentID,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return checkContainerRunE(cmd, args, runpreflight)
 		},
@@ -86,21 +83,9 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 	flags.String("pyxis-env", check.DefaultPyxisEnv, "Env to use for Pyxis submissions.")
 	_ = viper.BindPFlag("pyxis_env", flags.Lookup("pyxis-env"))
 
-	flags.String("certification-project-id", "", fmt.Sprintf("Certification project ID from connect.redhat.com/projects/{certification-project-id}/overview\n"+
-		"URL paramater. This value may differ from the PID on the overview page. (env: PFLT_CERTIFICATION_PROJECT_ID)"))
-	_ = viper.BindPFlag("certification_project_id", flags.Lookup("certification-project-id"))
-	_ = flags.MarkDeprecated("certification-project-id", "please use --certification-component-id instead")
-
-	// Use a bound package-level var here. We are going to leave the rest of the code
-	// using the Viper id of 'certification_project_id' in order to minimize changes
-	// in the overall code base.
-	// When --certification-project-id is fully removed, this should become bound in Viper
-	flags.StringVar(&componentID, "certification-component-id", "", fmt.Sprintf("Certification component ID from connect.redhat.com/component/view/{certification-component-id}/images\n"+
+	flags.String("certification-component-id", "", fmt.Sprintf("Certification component ID from connect.redhat.com/component/view/{certification-component-id}/images\n"+
 		"URL paramater. This value may differ from the component PID on the overview page. (env: PFLT_CERTIFICATION_COMPONENT_ID)"))
-	// Here, we are forcing an env binding, so we can check that later. This should also
-	// be moved to "automatic" once the old project id is removed
-	_ = viper.BindEnv("certification_component_id")
-	checkContainerCmd.MarkFlagsMutuallyExclusive("certification-project-id", "certification-component-id")
+	_ = viper.BindPFlag("certification_component_id", flags.Lookup("certification-component-id"))
 
 	flags.String("platform", rt.GOARCH, "Architecture of image to pull. Defaults to runtime platform.")
 	_ = viper.BindPFlag("platform", flags.Lookup("platform"))
@@ -173,8 +158,8 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 			opts...,
 		)
 
-		pc := lib.NewPyxisClient(ctx, cfg.CertificationProjectID, cfg.PyxisAPIToken, cfg.PyxisHost)
-		resultSubmitter := lib.ResolveSubmitter(pc, cfg.CertificationProjectID, cfg.DockerConfig, cfg.LogFile)
+		pc := lib.NewPyxisClient(ctx, cfg.CertificationComponentID, cfg.PyxisAPIToken, cfg.PyxisHost)
+		resultSubmitter := lib.ResolveSubmitter(pc, cfg.CertificationComponentID, cfg.DockerConfig, cfg.LogFile)
 
 		// use a noop submitter, since the konflux system has no need to submit results to pyxis.
 		if cfg.Konflux {
@@ -264,22 +249,10 @@ func checkContainerPositionalArgs(cmd *cobra.Command, args []string) error {
 
 	viper := viper.Instance()
 
-	// If the new flag is set, use that
-	if cmd.Flag("certification-component-id").Changed {
-		cmd.Flag("certification-project-id").Changed = true
-		cmd.Flag("certification-component-id").Changed = false
-		viper.Set("certification_project_id", componentID)
-	}
-
-	// However, if the new env var is set, that's the priority
-	if viper.IsSet("certification_component_id") {
-		viper.Set("certification_project_id", viper.GetString("certification_component_id"))
-	}
-
 	// --submit was specified
 	if submit {
 		// If the flag is not marked as changed AND viper hasn't gotten it from environment, it's an error
-		if !cmd.Flag("certification-project-id").Changed && !viper.IsSet("certification_project_id") {
+		if !cmd.Flag("certification-component-id").Changed && !viper.IsSet("certification_component_id") {
 			return fmt.Errorf("certification component ID must be specified when --submit is present")
 		}
 		if !cmd.Flag("pyxis-api-token").Changed && !viper.IsSet("pyxis_api_token") {
@@ -287,15 +260,15 @@ func checkContainerPositionalArgs(cmd *cobra.Command, args []string) error {
 		}
 
 		// If the flag is marked as changed AND it's still empty, it's an error
-		if cmd.Flag("certification-project-id").Changed && viper.GetString("certification_project_id") == "" {
+		if cmd.Flag("certification-component-id").Changed && viper.GetString("certification_component_id") == "" {
 			return fmt.Errorf("certification component ID cannot be empty when --submit is present")
 		}
 		if cmd.Flag("pyxis-api-token").Changed && viper.GetString("pyxis_api_token") == "" {
 			return fmt.Errorf("pyxis API Token cannot be empty when --submit is present")
 		}
 
-		// Finally, if either certification project id or pyxis api token start with '--', it's an error
-		if strings.HasPrefix(viper.GetString("pyxis_api_token"), "--") || strings.HasPrefix(viper.GetString("certification_project_id"), "--") {
+		// Finally, if either certification component id or pyxis api token start with '--', it's an error
+		if strings.HasPrefix(viper.GetString("pyxis_api_token"), "--") || strings.HasPrefix(viper.GetString("certification_component_id"), "--") {
 			return fmt.Errorf("pyxis API token and certification component ID are required when --submit is present")
 		}
 	}
@@ -303,23 +276,22 @@ func checkContainerPositionalArgs(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// validateCertificationProjectID validates that the certification project id is in the proper format
+// validateCertificationComponentID validates that the certification component id is in the proper format
 // and throws an error if the value provided is in a legacy format that is not usable to query pyxis
-func validateCertificationProjectID(cmd *cobra.Command, args []string) error {
+func validateCertificationComponentID(cmd *cobra.Command, args []string) error {
 	viper := viper.Instance()
 
-	// From here on out, we just treat project ID like we did before.
-	certificationProjectID := viper.GetString("certification_project_id")
-	// splitting the certification project id into parts. if there are more than 2 elements in the array,
-	// we know they inputted a legacy project id, which can not be used to query pyxis
-	parts := strings.Split(certificationProjectID, "-")
+	certificationComponentID := viper.GetString("certification_component_id")
+	// splitting the certification component id into parts. if there are more than 2 elements in the array,
+	// we know they inputted a legacy component id, which can not be used to query pyxis
+	parts := strings.Split(certificationComponentID, "-")
 
 	if len(parts) > 2 {
-		return fmt.Errorf("certification component id: %s is improperly formatted see help command for instructions on obtaining proper value", certificationProjectID)
+		return fmt.Errorf("certification component id: %s is improperly formatted see help command for instructions on obtaining proper value", certificationComponentID)
 	}
 
 	if parts[0] == "ospid" {
-		viper.Set("certification_project_id", parts[1])
+		viper.Set("certification_component_id", parts[1])
 	}
 
 	return nil
@@ -328,7 +300,7 @@ func validateCertificationProjectID(cmd *cobra.Command, args []string) error {
 // generateContainerCheckOptions returns appropriate container.Options based on cfg.
 func generateContainerCheckOptions(cfg *runtime.Config) []container.Option {
 	o := []container.Option{
-		container.WithCertificationComponent(cfg.CertificationProjectID, cfg.PyxisAPIToken),
+		container.WithCertificationComponent(cfg.CertificationComponentID, cfg.PyxisAPIToken),
 		container.WithDockerConfigJSONFromFile(cfg.DockerConfig),
 		// Always add PyxisHost, since the value is always set in viper config parsing.
 		container.WithPyxisHost(cfg.PyxisHost),
@@ -337,8 +309,8 @@ func generateContainerCheckOptions(cfg *runtime.Config) []container.Option {
 	}
 
 	// set auth information if both are present in config.
-	if cfg.PyxisAPIToken != "" && cfg.CertificationProjectID != "" {
-		o = append(o, container.WithCertificationComponent(cfg.CertificationProjectID, cfg.PyxisAPIToken))
+	if cfg.PyxisAPIToken != "" && cfg.CertificationComponentID != "" {
+		o = append(o, container.WithCertificationComponent(cfg.CertificationComponentID, cfg.PyxisAPIToken))
 	}
 
 	if cfg.Insecure {

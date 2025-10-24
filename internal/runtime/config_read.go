@@ -40,8 +40,8 @@ func (ro *ReadOnlyConfig) LogFile() string {
 	return ro.cfg.LogFile
 }
 
-func (ro *ReadOnlyConfig) CertificationProjectID() string {
-	return ro.cfg.CertificationProjectID
+func (ro *ReadOnlyConfig) CertificationComponentID() string {
+	return ro.cfg.CertificationComponentID
 }
 
 func (ro *ReadOnlyConfig) PyxisHost() string {

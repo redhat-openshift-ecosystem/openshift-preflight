@@ -25,7 +25,7 @@ type commonConfig interface {
 // container certification.
 type containerConfig interface {
 	IsScratch() bool
-	CertificationProjectID() string
+	CertificationComponentID() string
 	PyxisHost() string
 	PyxisAPIToken() string
 	Submit() bool
