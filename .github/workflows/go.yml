@@ -57,7 +57,7 @@ jobs:
           - ppc64le
           - s390x
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build linux binary for ${{ matrix.architecture }}
         run: make build-linux-${{ matrix.architecture }}
 
@@ -68,6 +68,6 @@ jobs:
       matrix:
         architecture: [ amd64, arm64 ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build Mac binary for ${{ matrix.architecture }}
         run: make build-mac-${{ matrix.architecture }}
