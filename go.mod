@@ -1,6 +1,6 @@
 module github.com/redhat-openshift-ecosystem/openshift-preflight
 
-go 1.24.4
+go 1.24.6
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
