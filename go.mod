@@ -5,7 +5,7 @@ go 1.24.6
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bombsimon/logrusr/v4 v4.1.0
-	github.com/docker/cli v28.5.1+incompatible
+	github.com/docker/cli v28.5.2+incompatible
 	github.com/glebarez/go-sqlite v1.22.0
 	github.com/go-logr/logr v1.4.3
 	github.com/google/go-containerregistry v0.20.6
@@ -14,7 +14,7 @@ require (
 	github.com/onsi/gomega v1.38.2
 	github.com/openshift/api v0.0.0-20251015135203-5d856d3e8354
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235
-	github.com/operator-framework/api v0.35.0
+	github.com/operator-framework/api v0.36.0
 	github.com/operator-framework/operator-manifest-tools v0.10.0
 	github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466
 	github.com/sirupsen/logrus v1.9.3
@@ -26,7 +26,7 @@ require (
 	k8s.io/api v0.34.1
 	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v0.34.1
-	sigs.k8s.io/controller-runtime v0.22.3
+	sigs.k8s.io/controller-runtime v0.22.4
 	sigs.k8s.io/yaml v1.6.0
 )
 
