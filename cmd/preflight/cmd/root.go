@@ -3,11 +3,13 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
@@ -45,6 +47,9 @@ func rootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().String("loglevel", "", "The verbosity of the preflight tool itself. Ex. warn, debug, trace, info, error. (env: PFLT_LOGLEVEL)")
 	_ = viper.BindPFlag("loglevel", rootCmd.PersistentFlags().Lookup("loglevel"))
 
+	rootCmd.PersistentFlags().Bool("exit-with-failure", false, "Exit with exit code 1 if any checks encounter an error or exit code 2 if any checks fail. (env: PFLT_EXIT_WITH_FAILURE)")
+	_ = viper.BindPFlag("exit_with_failure", rootCmd.PersistentFlags().Lookup("exit-with-failure"))
+
 	rootCmd.AddCommand(checkCmd())
 	rootCmd.AddCommand(listChecksCmd())
 	rootCmd.AddCommand(runtimeAssetsCmd())
@@ -53,8 +58,24 @@ func rootCmd() *cobra.Command {
 	return rootCmd
 }
 
+type ChecksFailedError = cli.ChecksFailedError
+
+type ChecksErroredError = cli.ChecksErroredError
+
 func Execute() error {
-	return rootCmd().ExecuteContext(context.Background())
+	exit_with_failure := viper.Instance().GetBool("exit_with_failure")
+	err := rootCmd().ExecuteContext(context.Background())
+	if errors.Is(err, &cli.ChecksErroredError{}) && exit_with_failure {
+		return err
+	}
+	if errors.Is(err, &cli.ChecksFailedError{}) && exit_with_failure {
+		return err
+	}
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func initConfig(viper *spfviper.Viper) {
