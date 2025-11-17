@@ -30,7 +30,7 @@ jobs:
     - name: Podman Login
       uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
       with:
-        registry: ${DEST_IMAGE_REGISTRY}
+        registry: ${{ secrets.destImageRegistry }}
         username: ${{ secrets.destRegistryUser }}
         password: ${{ secrets.destRegistryPassword }}
 
