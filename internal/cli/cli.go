@@ -23,18 +23,6 @@ type CheckConfig struct {
 	SubmitResults       bool
 }
 
-type ChecksFailedError struct{}
-
-func (e *ChecksFailedError) Error() string {
-	return "one or more checks failed"
-}
-
-type ChecksErroredError struct{}
-
-func (e *ChecksErroredError) Error() string {
-	return "one or more checks encountered an error"
-}
-
 // RunPreflight executes checks, writes logs, results, and submits results if requested.
 func RunPreflight(
 	ctx context.Context,
@@ -95,14 +83,6 @@ func RunPreflight(
 	}
 
 	logger.Info(fmt.Sprintf("Preflight result: %s", convertPassedOverall(results.PassedOverall)))
-
-	if len(results.Errors) > 0 {
-		return &ChecksErroredError{}
-	}
-
-	if len(results.Failed) > 0 {
-		return &ChecksFailedError{}
-	}
 
 	return nil
 }
