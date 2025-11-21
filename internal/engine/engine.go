@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -547,7 +548,10 @@ func writeCertImage(ctx context.Context, imageRef image.ImageReference) error {
 	}
 
 	manifestLayers := make([]string, 0, len(manifest.Layers))
-	for _, layer := range manifest.Layers {
+
+	// CertImage expects the layers to be stored in the order from base to top.
+	// Index 0 is the base layer, and the last index is the top layer.
+	for _, layer := range slices.Backward(manifest.Layers) {
 		manifestLayers = append(manifestLayers, layer.Digest.String())
 	}
 
