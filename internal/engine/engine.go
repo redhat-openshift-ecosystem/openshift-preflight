@@ -547,8 +547,11 @@ func writeCertImage(ctx context.Context, imageRef image.ImageReference) error {
 	}
 
 	manifestLayers := make([]string, 0, len(manifest.Layers))
-	for _, layer := range manifest.Layers {
-		manifestLayers = append(manifestLayers, layer.Digest.String())
+
+	// CertImage expects the layers to be stored in the order from base to top.
+	// Index 0 is the base layer, and the last index is the top layer.
+	for i := len(manifest.Layers) - 1; i >= 0; i-- {
+		manifestLayers = append(manifestLayers, manifest.Layers[i].Digest.String())
 	}
 
 	sumLayersSizeBytes := sumLayerSizeBytes(layerSizes)
