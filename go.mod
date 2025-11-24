@@ -5,7 +5,7 @@ go 1.24.6
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bombsimon/logrusr/v4 v4.1.0
-	github.com/docker/cli v29.0.1+incompatible
+	github.com/docker/cli v29.0.3+incompatible
 	github.com/glebarez/go-sqlite v1.22.0
 	github.com/go-logr/logr v1.4.3
 	github.com/google/go-containerregistry v0.20.6
@@ -15,7 +15,7 @@ require (
 	github.com/openshift/api v0.0.0-20251015135203-5d856d3e8354
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235
 	github.com/operator-framework/api v0.36.0
-	github.com/operator-framework/operator-manifest-tools v0.10.0
+	github.com/operator-framework/operator-manifest-tools v0.11.0
 	github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/afero v1.15.0
