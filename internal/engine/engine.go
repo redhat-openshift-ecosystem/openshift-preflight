@@ -583,7 +583,6 @@ func writeCertImage(ctx context.Context, imageRef image.ImageReference) error {
 			Architecture:           config.Architecture,
 			Command:                strings.Join(config.Config.Cmd, " "),
 			Created:                config.Created.String(),
-			DockerVersion:          config.DockerVersion,
 			ImageID:                digest.String(),
 			Labels:                 labels,
 			Layers:                 manifestLayers,
