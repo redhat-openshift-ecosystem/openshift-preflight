@@ -7,7 +7,7 @@ updates:
     schedule:
       interval: "weekly"
     cooldown:
-      default-days: 4
+      default-days: 7
     groups:
       dev-dependencies:
         dependency-type: "development"
@@ -18,5 +18,4 @@ updates:
     schedule:
       interval: "weekly"
     cooldown:
-      default-days: 4
-
+      default-days: 7
