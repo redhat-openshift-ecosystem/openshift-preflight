@@ -49,7 +49,6 @@ type ParsedData struct {
 	Comment                string   `json:"comment,omitempty"`
 	Container              string   `json:"container,omitempty"`
 	Created                string   `json:"created,omitempty"`
-	DockerVersion          string   `json:"docker_version,omitempty"`
 	ImageID                string   `json:"image_id,omitempty"`
 	Labels                 []Label  `json:"labels,omitempty"` // required
 	Layers                 []string `json:"layers,omitempty"` // required
