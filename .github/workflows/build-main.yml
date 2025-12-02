@@ -21,16 +21,12 @@ jobs:
     - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
       with:
         persist-credentials: false
-    - name: Fetch latest release version
-      uses: reloc8/action-latest-release-version@b8d6337f30390558e7874a044d6a3c1314314bab # 1.0.0
-      id: fetch-latest-release
 
     - name: Set release tag and short SHA
       run: |
-        echo "RELEASE_TAG=${RELEASE_TAG}" >> "${GITHUB_ENV}"
+        git fetch --tags
+        echo "RELEASE_TAG=$(git describe --abbrev=0 --tags)" >> "${GITHUB_ENV}"
         echo "SHA_SHORT=$(git rev-parse --short HEAD)" >> "${GITHUB_ENV}"
-      env:
-        RELEASE_TAG: ${{ steps.fetch-latest-release.outputs.latest-release }}
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
