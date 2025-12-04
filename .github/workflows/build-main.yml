@@ -21,10 +21,12 @@ jobs:
     - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
       with:
         persist-credentials: false
+        # Get tags and all history in order to find latest tag in later step
+        fetch-depth: 0
+        fetch-tags: true
 
     - name: Set release tag and short SHA
       run: |
-        git fetch --tags
         echo "RELEASE_TAG=$(git describe --abbrev=0 --tags)" >> "${GITHUB_ENV}"
         echo "SHA_SHORT=$(git rev-parse --short HEAD)" >> "${GITHUB_ENV}"
 
