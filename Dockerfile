@@ -3,7 +3,7 @@ ARG release_tag=0.0.0
 ARG ARCH=amd64
 ARG OS=linux
 
-FROM registry.access.redhat.com/ubi10/go-toolset:1.24 AS builder
+FROM registry.access.redhat.com/ubi10/go-toolset:1.25 AS builder
 ARG quay_expiration
 ARG release_tag
 ARG ARCH
