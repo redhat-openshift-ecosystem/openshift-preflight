@@ -14,7 +14,7 @@ import (
 var _ = Describe("runtime-assets test", func() {
 	Context("When formatting JSON data", func() {
 		It("should be formatted in a standard format", func() {
-			in := map[string]interface{}{
+			in := map[string]any{
 				"foo":  "bar",
 				"this": []string{"that", "theother"},
 			}
