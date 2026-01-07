@@ -20,10 +20,25 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-var configFileUsed bool
+var (
+	configFileUsed bool
+	logFiles       []*os.File
+)
 
 func init() {
 	cobra.OnInitialize(func() { initConfig(viper.Instance()) })
+	cobra.OnFinalize(func() {
+		// Close files opened in the rootCmd's PersistentPreRun. Ideally, we
+		// would close them in the rootCmd's PersistentPostRun, but that hook
+		// is not called when the command exits with an error.
+		// TODO: Consider closing files in the rootCmd's PersistentPostRun once
+		// https://github.com/spf13/cobra/issues/1893 is fixed.
+		for _, f := range logFiles {
+			if f != nil {
+				f.Close()
+			}
+		}
+	})
 }
 
 func rootCmd() *cobra.Command {
@@ -107,6 +122,7 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 	logname := viper.GetString("logfile")
 	logFile, err := os.OpenFile(logname, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err == nil {
+		logFiles = append(logFiles, logFile)
 		mw := io.MultiWriter(os.Stderr, logFile)
 		l.SetOutput(mw)
 	} else {
@@ -127,6 +143,7 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 
 		artifactsLogFile, err := os.OpenFile(filepath.Join(artifacts, baseLogName), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 		if err == nil {
+			logFiles = append(logFiles, artifactsLogFile)
 			mw := io.MultiWriter(os.Stderr, logFile, artifactsLogFile)
 			l.SetOutput(mw)
 		}
