@@ -718,7 +718,7 @@ func (p *DeployableByOlmCheck) cleanUp(ctx context.Context, operatorData operato
 	_ = p.openshiftClient.DeleteNamespace(ctx, operatorData.TargetNamespace)
 }
 
-func (p *DeployableByOlmCheck) writeToFile(ctx context.Context, data interface{}) error {
+func (p *DeployableByOlmCheck) writeToFile(ctx context.Context, data any) error {
 	obj, err := apiruntime.DefaultUnstructuredConverter.ToUnstructured(data)
 	if err != nil {
 		return fmt.Errorf("unable to convert the object to unstructured.Unstructured: %w", err)
