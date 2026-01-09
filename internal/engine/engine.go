@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	goruntime "runtime"
 	"slices"
 	"sort"
 	"strings"
@@ -39,8 +40,8 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/cache"
-	"github.com/google/go-containerregistry/pkg/v1/mutate"
 )
 
 // New creates a new CraneEngine from the passed params
@@ -114,60 +115,19 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 	logger := logr.FromContextOrDiscard(ctx)
 	logger.Info("target image", "image", c.image)
 
-	// pull the image and save to fs
-	logger.V(log.DBG).Info("pulling image from target registry")
-	options := option.GenerateCraneOptions(ctx, c)
-	img, err := crane.Pull(c.image, options...)
+	img, containerFSPath, err := c.pullAndSave(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to pull remote container: %v", err)
+		return err
 	}
 
-	// create tmpdir to receive extracted fs
-	tmpdir, err := os.MkdirTemp(os.TempDir(), "preflight-*")
-	if err != nil {
-		return fmt.Errorf("failed to create temporary directory: %v", err)
-	}
-	logger.V(log.DBG).Info("created temporary directory", "path", tmpdir)
+	// Cleanup temp directory after checks complete
 	defer func() {
+		// Extract tmpdir from containerFSPath (it's tmpdir/fs)
+		tmpdir := filepath.Dir(containerFSPath)
 		if err := os.RemoveAll(tmpdir); err != nil {
 			logger.Error(err, "unable to clean up tmpdir", "tempDir", tmpdir)
 		}
 	}()
-
-	imageTarPath := path.Join(tmpdir, "cache")
-	if err := os.Mkdir(imageTarPath, 0o755); err != nil {
-		return fmt.Errorf("failed to create cache directory: %s: %v", imageTarPath, err)
-	}
-
-	img = cache.Image(img, cache.NewFilesystemCache(imageTarPath))
-
-	containerFSPath := path.Join(tmpdir, "fs")
-	if err := os.Mkdir(containerFSPath, 0o755); err != nil {
-		return fmt.Errorf("failed to create container expansion directory: %s: %v", containerFSPath, err)
-	}
-
-	// Wrap this critical section in a closure to that we can close the
-	// mutate.Extract reader sooner than the end of the checks
-	if err := func() error {
-		// export/flatten, and extract
-		logger.V(log.DBG).Info("exporting and flattening image")
-		fs := mutate.Extract(img)
-		defer fs.Close()
-
-		logger.V(log.DBG).Info("extracting container filesystem", "path", containerFSPath)
-		if err := untar(ctx, containerFSPath, fs); err != nil {
-			return fmt.Errorf("failed to extract tarball: %v", err)
-		}
-
-		// explicitly discarding from the reader for cases where there is data in the reader after it sends an EOF
-		_, err = io.Copy(io.Discard, fs)
-		if err != nil {
-			return fmt.Errorf("failed to drain io reader: %v", err)
-		}
-		return nil
-	}(); err != nil {
-		return err
-	}
 
 	reference, err := name.ParseReference(c.image)
 	if err != nil {
@@ -279,6 +239,125 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 	return nil
 }
 
+// extractImageLayers extracts image layers to disk with proper resource management.
+// Unlike mutate.Extract(), this function explicitly closes each layer reader immediately
+// after processing it, preventing memory accumulation from deferred closes in a loop.
+func extractImageLayers(ctx context.Context, img v1.Image, targetDir string) error {
+	logger := logr.FromContextOrDiscard(ctx)
+
+	layers, err := img.Layers()
+	if err != nil {
+		return fmt.Errorf("retrieving image layers: %w", err)
+	}
+
+	logger.V(log.DBG).Info("processing layers", "count", len(layers))
+
+	// Log memory stats at start
+	var memStart goruntime.MemStats
+	goruntime.ReadMemStats(&memStart)
+	logger.V(log.TRC).Info("memory at extraction start", "alloc_mb", memStart.Alloc/1024/1024, "sys_mb", memStart.Sys/1024/1024)
+
+	// Track files to handle whiteouts and overlays
+	fileMap := make(map[string]bool)
+
+	// Process layers in reverse order (top to bottom) for efficient whiteout handling
+	for i := len(layers) - 1; i >= 0; i-- {
+		layer := layers[i]
+
+		// Get layer size for logging
+		layerSize, _ := layer.Size()
+		logger.V(log.DBG).Info("processing layer", "index", i+1, "total", len(layers), "size_mb", layerSize/1024/1024)
+
+		// Get layer reader - this downloads the layer if not cached
+		layerReader, err := layer.Uncompressed()
+		if err != nil {
+			return fmt.Errorf("reading layer %d contents: %w", i, err)
+		}
+		logger.V(log.TRC).Info("layer reader opened", "layer", i+1)
+
+		// Extract this layer using untar with whiteout/overlay support
+		if err := untar(ctx, targetDir, layerReader, fileMap); err != nil {
+			layerReader.Close()
+			return fmt.Errorf("extracting layer %d: %w", i, err)
+		}
+
+		// Explicitly close layer reader immediately after processing
+		// This is critical for memory efficiency - allows GC to reclaim resources
+		logger.V(log.TRC).Info("closing layer reader", "layer", i+1)
+		if err := layerReader.Close(); err != nil {
+			logger.V(log.DBG).Info("error closing layer reader", "layer", i+1, "error", err)
+		}
+		logger.V(log.TRC).Info("layer reader closed, resources released", "layer", i+1)
+
+		// Log memory after each layer to show it's being released
+		var memAfterLayer goruntime.MemStats
+		goruntime.ReadMemStats(&memAfterLayer)
+		logger.V(log.TRC).Info("memory after layer processed", "layer", i+1, "alloc_mb", memAfterLayer.Alloc/1024/1024)
+	}
+
+	// Log final memory stats
+	var memEnd goruntime.MemStats
+	goruntime.ReadMemStats(&memEnd)
+	logger.V(log.TRC).Info("memory at extraction end", "alloc_mb", memEnd.Alloc/1024/1024, "sys_mb", memEnd.Sys/1024/1024)
+
+	return nil
+}
+
+// inWhiteoutDir checks if a file is in a whited-out parent directory
+func inWhiteoutDir(fileMap map[string]bool, file string) bool {
+	for file != "" {
+		dirname := filepath.Dir(file)
+		if file == dirname {
+			break
+		}
+		if val, ok := fileMap[dirname]; ok && val {
+			return true
+		}
+		file = dirname
+	}
+	return false
+}
+
+func (c *craneEngine) pullAndSave(ctx context.Context) (v1.Image, string, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+
+	// pull the image and save to fs
+	logger.V(log.DBG).Info("pulling image from target registry")
+	options := option.GenerateCraneOptions(ctx, c)
+	img, err := crane.Pull(c.image, options...)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to pull remote container: %v", err)
+	}
+
+	// create tmpdir to receive extracted fs
+	tmpdir, err := os.MkdirTemp(os.TempDir(), "preflight-*")
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create temporary directory: %v", err)
+	}
+	logger.V(log.DBG).Info("created temporary directory", "path", tmpdir)
+
+	imageTarPath := path.Join(tmpdir, "cache")
+	if err := os.Mkdir(imageTarPath, 0o755); err != nil {
+		return nil, "", fmt.Errorf("failed to create cache directory: %s: %v", imageTarPath, err)
+	}
+
+	img = cache.Image(img, cache.NewFilesystemCache(imageTarPath))
+
+	containerFSPath := path.Join(tmpdir, "fs")
+	if err := os.Mkdir(containerFSPath, 0o755); err != nil {
+		return nil, "", fmt.Errorf("failed to create container expansion directory: %s: %v", containerFSPath, err)
+	}
+
+	// Extract image layers to filesystem with proper resource management
+	// This replaces mutate.Extract to avoid accumulating deferred layer readers
+	logger.V(log.DBG).Info("extracting image layers to filesystem", "path", containerFSPath)
+	if err := extractImageLayers(ctx, img, containerFSPath); err != nil {
+		return nil, "", fmt.Errorf("failed to extract image layers: %v", err)
+	}
+
+	return img, containerFSPath, nil
+}
+
 func appendUnlessOptional(results []certification.Result, result certification.Result) []certification.Result {
 	if result.Check.Metadata().Level == "optional" {
 		return results
@@ -365,9 +444,13 @@ func (c *craneEngine) Results(ctx context.Context) certification.Results {
 	return c.results
 }
 
-// Untar takes a destination path and a reader; a tar reader loops over the tarfile
-// creating the file structure at 'dst' along the way, and writing any files
-func untar(ctx context.Context, dst string, r io.Reader) error {
+// untar extracts a tar stream to disk with support for overlay filesystem semantics.
+// The fileMap parameter tracks files across layers to handle whiteouts and overlays.
+// When fileMap is nil, all files are extracted (traditional tar extraction).
+// When fileMap is provided, it handles Podman image layer semantics:
+//   - Files marked with .wh. prefix are whiteout files (deletions)
+//   - Files already in fileMap are skipped (overlay - lower layers don't override upper)
+func untar(ctx context.Context, dst string, r io.Reader, fileMap map[string]bool) error {
 	logger := logr.FromContextOrDiscard(ctx)
 	tr := tar.NewReader(r)
 
@@ -388,12 +471,45 @@ func untar(ctx context.Context, dst string, r io.Reader) error {
 			continue
 		}
 
+		// Clean the path to avoid duplicates
+		header.Name = filepath.Clean(header.Name)
+
+		// Handle whiteouts and overlays when fileMap is provided
+		if fileMap != nil {
+			basename := filepath.Base(header.Name)
+			dirname := filepath.Dir(header.Name)
+			tombstone := strings.HasPrefix(basename, ".wh.")
+			if tombstone {
+				basename = basename[4:] // Remove ".wh." prefix
+			}
+
+			// Determine the actual file name
+			name := header.Name
+			if header.Typeflag != tar.TypeDir {
+				name = filepath.Join(dirname, basename)
+			}
+
+			// Skip if we've already seen this file in a higher layer
+			if _, ok := fileMap[name]; ok {
+				continue
+			}
+
+			// Skip if in a whited-out parent directory
+			if inWhiteoutDir(fileMap, name) {
+				continue
+			}
+
+			// Mark file as handled
+			fileMap[name] = tombstone || (header.Typeflag != tar.TypeDir)
+
+			// Skip extraction for tombstone files
+			if tombstone {
+				continue
+			}
+		}
+
 		// the target location where the dir/file should be created
 		target := filepath.Join(dst, header.Name)
-
-		// the following switch could also be done using fi.Mode(), not sure if there
-		// a benefit of using one vs. the other.
-		// fi := header.FileInfo()
 
 		// check the file type
 		switch header.Typeflag {
