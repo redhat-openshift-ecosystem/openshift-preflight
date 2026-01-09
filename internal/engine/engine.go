@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"net/http"
 	"os"
 	"os/exec"
@@ -16,7 +17,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
@@ -335,12 +335,9 @@ func generateBundleHash(ctx context.Context, bundlePath string) (string, error) 
 		return nil
 	})
 
-	keys := make([]string, 0, len(files))
-	for k := range files {
-		keys = append(keys, k)
-	}
+	keys := slices.Collect(maps.Keys(files))
+	slices.Sort(keys)
 
-	sort.Strings(keys)
 	for _, k := range keys {
 		hashBuffer.WriteString(fmt.Sprintf("%s  %s\n", k, files[k]))
 	}

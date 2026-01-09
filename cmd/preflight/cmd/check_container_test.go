@@ -40,7 +40,7 @@ func createPlatformImage(arch string, addlLayers int) cranev1.Image {
 	img, err := random.Image(1024, 5)
 	Expect(err).ToNot(HaveOccurred())
 
-	for i := 0; i < addlLayers; i++ {
+	for range addlLayers {
 		newLayer, err := random.Layer(1024, cranev1types.OCILayer)
 		Expect(err).ToNot(HaveOccurred())
 		img, err = mutate.AppendLayers(img, newLayer)

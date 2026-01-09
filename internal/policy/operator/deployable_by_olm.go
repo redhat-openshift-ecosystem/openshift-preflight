@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -234,10 +236,7 @@ func checkImageSource(ctx context.Context, operatorImages []string) bool {
 
 	logger.V(log.DBG).Info("checking that images are from approved sources")
 
-	registries := make([]string, 0, len(approvedRegistries))
-	for registry := range approvedRegistries {
-		registries = append(registries, registry)
-	}
+	registries := slices.Collect(maps.Keys(approvedRegistries))
 
 	logger.V(log.DBG).Info("list of approved registries", "registries", registries)
 	allApproved := true
