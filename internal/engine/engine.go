@@ -371,6 +371,9 @@ func untar(ctx context.Context, dst string, r io.Reader) error {
 	logger := logr.FromContextOrDiscard(ctx)
 	tr := tar.NewReader(r)
 
+	// Buffer for io.CopyBuffer operations to reduce allocations
+	buf := make([]byte, 32*1024)
+
 	for {
 		header, err := tr.Next()
 
@@ -420,7 +423,7 @@ func untar(ctx context.Context, dst string, r io.Reader) error {
 			}
 
 			// copy over contents
-			if _, err := io.Copy(f, tr); err != nil {
+			if _, err := io.CopyBuffer(f, tr, buf); err != nil {
 				f.Close()
 				return err
 			}
