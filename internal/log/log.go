@@ -35,11 +35,11 @@ func (s bufferSink) Enabled(level int) bool {
 	return true
 }
 
-func (s bufferSink) Error(err error, msg string, keysAndValues ...interface{}) {
+func (s bufferSink) Error(err error, msg string, keysAndValues ...any) {
 	fmt.Fprintf(s.buffer, "%s %v %s %v\n", s.name, err.Error(), msg, keysAndValues)
 }
 
-func (s bufferSink) Info(level int, msg string, keysAndValues ...interface{}) {
+func (s bufferSink) Info(level int, msg string, keysAndValues ...any) {
 	fmt.Fprintf(s.buffer, "%s %s %v\n", s.name, msg, keysAndValues)
 }
 
@@ -53,6 +53,6 @@ func (s bufferSink) WithName(name string) logr.LogSink {
 	return newSink
 }
 
-func (s bufferSink) WithValues(keysAndValues ...interface{}) logr.LogSink {
+func (s bufferSink) WithValues(keysAndValues ...any) logr.LogSink {
 	return nil
 }

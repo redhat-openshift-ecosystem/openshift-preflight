@@ -44,7 +44,7 @@ func printAssets(ctx context.Context, w io.Writer) error {
 
 // prettyPrintJSON marhals v with standard pretty print spacing and returns
 // it in string form.
-func prettyPrintJSON(v interface{}) (string, error) {
+func prettyPrintJSON(v any) (string, error) {
 	json, err := json.MarshalIndent(v, "", "    ")
 	if err != nil {
 		return "", err

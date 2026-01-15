@@ -130,7 +130,7 @@ func WithArtifact(r io.Reader, filename string) CertificationInputOption {
 	}
 }
 
-func readAndUnmarshal(r io.Reader, submission interface{}) error {
+func readAndUnmarshal(r io.Reader, submission any) error {
 	bytes, err := io.ReadAll(r)
 	if err != nil {
 		return err

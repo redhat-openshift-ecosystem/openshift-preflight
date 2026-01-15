@@ -42,7 +42,7 @@ func (p *pyxisClient) CertifiedImagesContainingLayers(ctx context.Context, uncom
 	}
 
 	// variables to feed to our graphql filter
-	variables := map[string]interface{}{
+	variables := map[string]any{
 		"contImageLayers": layerIds,
 		"registries":      []graphql.String{"registry.access.redhat.com"},
 	}

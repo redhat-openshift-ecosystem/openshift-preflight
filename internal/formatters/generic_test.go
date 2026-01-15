@@ -58,7 +58,7 @@ func TestGenericJSONFormatter(t *testing.T) {
 	for _, tc := range testCases {
 		// Patch the function if we expect an error
 		if tc.marshalIndentFailure {
-			jsonMarshalIndent = func(v interface{}, prefix, indent string) ([]byte, error) {
+			jsonMarshalIndent = func(v any, prefix, indent string) ([]byte, error) {
 				return nil, errors.New("this is an error")
 			}
 		} else {
@@ -134,7 +134,7 @@ func TestGenericXMLFormatter(t *testing.T) {
 	for _, tc := range testCases {
 		// Patch the function if we expect an error
 		if tc.marshalIndentFailure {
-			xmlMarshalIndent = func(v interface{}, prefix, indent string) ([]byte, error) {
+			xmlMarshalIndent = func(v any, prefix, indent string) ([]byte, error) {
 				return nil, errors.New("this is an error")
 			}
 		} else {

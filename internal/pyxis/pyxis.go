@@ -210,7 +210,7 @@ func (p *pyxisClient) FindImagesByDigest(ctx context.Context, digests []string) 
 		graphqlDigests[idx] = graphql.String(digest)
 	}
 	// variables to feed to our graphql filter
-	variables := map[string]interface{}{
+	variables := map[string]any{
 		"digests": graphqlDigests,
 	}
 
