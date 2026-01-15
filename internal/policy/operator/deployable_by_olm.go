@@ -262,6 +262,7 @@ func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef i
 	if err != nil {
 		return nil, fmt.Errorf("could not open annotations.yaml: %w", err)
 	}
+	defer annotationsFile.Close()
 	annotations, err := bundle.LoadAnnotations(ctx, annotationsFile)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get annotations.yaml from the bundle: %w", err)
