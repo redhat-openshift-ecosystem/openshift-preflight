@@ -23,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       should_run_review: ${{ steps.prep.outputs.should_run_review }}
+      # For future use
+      additional_context: ""
     permissions:
       pull-requests: write
     steps:
@@ -54,26 +56,16 @@ jobs:
           fi
 
   gemini-code-review:
-    runs-on: ubuntu-latest
     needs: [handle-label]
     if: needs.handle-label.outputs.should_run_review == 'true'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: refs/pull/${{ github.event.pull_request.number }}/merge
-          persist-credentials: false
-          fetch-depth: 0
+    uses: './.github/workflows/gemini-review.yml'
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+      issues: 'write'
+      pull-requests: 'write'
+    with:
+      additional_context: '${{ needs.handle-label.outputs.additional_context }}'
+    secrets:
+      GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
 
-      - name: Gemini AI Code Review
-        uses: sshnaidm/gemini-code-review-action@d4ccdaf0e2cad5cb79f80f6db07857c0e7fff28f # v1
-        with:
-          gemini-key: ${{ secrets.GEMINI_API_KEY }}
-          model: 'gemini-2.5-flash'
-          prompt: |
-            Please review this code with focus on:
-            - Security vulnerabilities
-            - Adherence to best practices
-            - Performance optimizations
-            - Idiomatic Go
-            Provide specific feedback and suggestions for improvement.

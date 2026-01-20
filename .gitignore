@@ -60,3 +60,7 @@ e2e_test_artifacts/
 
 # Vagrant
 .vagrant
+
+# Gemini
+.gemini/
+gha-creds-*.json
