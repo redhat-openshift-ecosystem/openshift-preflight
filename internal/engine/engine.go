@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -365,13 +366,19 @@ func (c *craneEngine) Results(ctx context.Context) certification.Results {
 // Untar takes a destination path and a reader; a tar reader loops over the tarfile
 // creating the file structure at 'dst' along the way, and writing any files. This
 // function uses a pre-allocated buffer to reduce allocations and is not goroutine-safe.
+// Uses os.Root to restrict extraction to dst.
 func untar(ctx context.Context, dst string, r io.Reader) error {
 	logger := logr.FromContextOrDiscard(ctx)
 	tr := tar.NewReader(r)
+	dst = filepath.Clean(dst)
+	dstRoot, err := os.OpenRoot(dst)
+	if err != nil {
+		return fmt.Errorf("untar error, unable to open extraction destination %s: %w", dst, err)
+	}
+	defer dstRoot.Close()
 
 	// Buffer for io.CopyBuffer operations to reduce allocations
 	buf := make([]byte, 32*1024)
-
 	for {
 		header, err := tr.Next()
 
@@ -389,33 +396,28 @@ func untar(ctx context.Context, dst string, r io.Reader) error {
 			continue
 		}
 
-		// the target location where the dir/file should be created
-		target := filepath.Join(dst, header.Name)
-
-		// the following switch could also be done using fi.Mode(), not sure if there
-		// a benefit of using one vs. the other.
-		// fi := header.FileInfo()
-
 		// check the file type
 		switch header.Typeflag {
 		// if its a dir and it doesn't exist create it
 		case tar.TypeDir:
-			if _, err := os.Stat(target); err != nil {
-				if err := os.MkdirAll(target, 0o755); err != nil {
+			if _, err := dstRoot.Stat(header.Name); err != nil {
+				if err := dstRoot.MkdirAll(header.Name, 0o755); err != nil {
 					return err
 				}
 			}
 
 		// if it's a file create it
 		case tar.TypeReg:
-			// If the file's parent dir doesn't exist, create it.
-			dirname := filepath.Dir(target)
-			if _, err := os.Stat(dirname); err != nil {
-				if err := os.MkdirAll(dirname, 0o755); err != nil {
+			dirname := filepath.Dir(header.Name)
+			if _, err := dstRoot.Stat(dirname); err != nil {
+				if err := dstRoot.MkdirAll(dirname, 0o755); err != nil {
 					return err
 				}
 			}
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+
+			// Mask non-permission bits, which are not supported by dstRoot.OpenFile
+			fileMode := os.FileMode(header.Mode & 0o777)
+			f, err := dstRoot.OpenFile(header.Name, os.O_CREATE|os.O_RDWR, fileMode)
 			if err != nil {
 				return err
 			}
@@ -430,42 +432,37 @@ func untar(ctx context.Context, dst string, r io.Reader) error {
 			// to wait until all operations have completed.
 			f.Close()
 
-			// if it's a link create it
-		case tar.TypeSymlink:
-			nobaseLinkname, nobaseName := resolveLinkPaths(header.Linkname, header.Name)
-			fullLinkname := filepath.Join(dst, nobaseLinkname)
-			fullName := filepath.Join(dst, nobaseName)
-			// Safeguard for cases where we're trying to link to something
-			// outside of our base fs.
-			if !strings.HasPrefix(fullLinkname, dst) {
-				logger.V(log.DBG).Info("Error processing symlink. Symlink would reach outside of the image archive. Skipping this link", "link", header.Name, "linkedTo", header.Linkname, "resolvedTo", fullLinkname)
-				continue
-			}
+		// if it's a link create it
+		case tar.TypeSymlink, tar.TypeLink:
 			// Create the new link's directory if it doesn't exist.
-			dirname := filepath.Dir(fullName)
-			if _, err := os.Stat(dirname); err != nil {
-				if err := os.MkdirAll(dirname, 0o755); err != nil {
+			dirname := filepath.Dir(header.Name)
+			if _, err := dstRoot.Stat(dirname); err != nil {
+				if err := dstRoot.MkdirAll(dirname, 0o755); err != nil {
 					return err
 				}
 			}
-			err := os.Symlink(fullLinkname, fullName)
-			if err != nil {
-				logger.V(log.DBG).Info(fmt.Sprintf("Error creating symlink: %s. Ignoring.", header.Name), "link", fullName, "linkedTo", fullLinkname, "reason", err)
-				continue
-			}
-		case tar.TypeLink:
-			// We assume hard links will not contain relative pathing in the archive.
-			original := filepath.Join(dst, header.Linkname)
-			// Create the new link's directory if it doesn't exist.
-			dirname := filepath.Dir(target)
-			if _, err := os.Stat(dirname); err != nil {
-				if err := os.MkdirAll(dirname, 0o755); err != nil {
-					return err
+
+			linkFn := dstRoot.Link
+			if header.Typeflag == tar.TypeSymlink {
+				// for dstRoot, basepath enforcement is not done on
+				// oldname when symlinking, so we'll do it here instead.
+				linkFn = func(oldname, newname string) error {
+					// resolved the oldname relative to the new name
+					resolvedON, _ := resolveLinkPaths(oldname, newname)
+					// Identify extraction root traversal with post resolution
+					finalOldname := filepath.Join(dstRoot.Name(), resolvedON)
+					if finalOldname != dstRoot.Name() && !strings.HasPrefix(finalOldname, dstRoot.Name()+string(os.PathSeparator)) {
+						return errors.New("link resolves to path outside of extraction root")
+					}
+
+					// otherwise, link the two. newname validation is done by dstRoot.
+					return dstRoot.Symlink(finalOldname, newname)
 				}
 			}
-			err := os.Link(original, target)
+
+			err := linkFn(header.Linkname, header.Name)
 			if err != nil {
-				logger.V(log.DBG).Info(fmt.Sprintf("Error creating hard link: %s. Ignoring.", header.Name), "link", target, "linkedTo", original, "reason", err)
+				logger.V(log.DBG).Info(fmt.Sprintf("Error creating: %s. Ignoring.", header.Name), "link", header.Name, "linkedTo", header.Linkname, "type", header.Typeflag, "reason", err.Error())
 				continue
 			}
 		}
