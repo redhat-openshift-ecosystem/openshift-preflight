@@ -529,13 +529,22 @@ func writeCertImage(ctx context.Context, imageRef image.ImageReference) error {
 			return fmt.Errorf("could not get layer by diff id: %w", err)
 		}
 
-		uncompressed, err := layer.Uncompressed()
+		written, err := func() (int64, error) {
+			uncompressed, err := layer.Uncompressed()
+			if err != nil {
+				return 0, fmt.Errorf("could not get uncompressed layer: %w", err)
+			}
+			defer uncompressed.Close()
+
+			written, err := io.Copy(io.Discard, uncompressed)
+			if err != nil {
+				return written, fmt.Errorf("could not copy from layer: %w", err)
+			}
+
+			return written, nil
+		}()
 		if err != nil {
-			return fmt.Errorf("could not get uncompressed layer: %w", err)
-		}
-		written, err := io.Copy(io.Discard, uncompressed)
-		if err != nil {
-			return fmt.Errorf("could not copy from layer: %w", err)
+			return err
 		}
 
 		pyxisLayer := pyxis.Layer{
