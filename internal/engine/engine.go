@@ -380,6 +380,7 @@ func untar(ctx context.Context, dst string, r io.Reader) error {
 
 	// Buffer for io.CopyBuffer operations to reduce allocations
 	buf := make([]byte, 32*1024)
+	var totalWritten int64
 	for {
 		header, err := tr.Next()
 
@@ -424,7 +425,7 @@ func untar(ctx context.Context, dst string, r io.Reader) error {
 			}
 
 			// copy over contents
-			sw := &SyncWriter{w: f, logger: logger}
+			sw := &SyncWriter{w: f, written: &totalWritten, logger: logger}
 			if _, err := io.CopyBuffer(sw, tr, buf); err != nil {
 				f.Close()
 				return err
@@ -898,7 +899,7 @@ const syncThreshold = 100 * 1024 * 1024 // 100MB
 
 type SyncWriter struct {
 	w       *os.File
-	written int64
+	written *int64
 	logger  logr.Logger
 }
 
@@ -907,11 +908,12 @@ func (sw *SyncWriter) Write(p []byte) (n int, err error) {
 	if err != nil {
 		return n, err
 	}
-	sw.written += int64(n)
-	if sw.written >= syncThreshold {
-		sw.written = 0
-		if err := sw.w.Sync(); err != nil {
-			return n, fmt.Errorf("failed to sync file: %w", err)
+	*sw.written += int64(n)
+	if *sw.written >= syncThreshold {
+		*sw.written = 0
+		// Use Syncfs to flush all dirty pages on the filesystem to handle multiple small files
+		if err := unix.Syncfs(int(sw.w.Fd())); err != nil {
+			return n, fmt.Errorf("failed to syncfs: %w", err)
 		}
 		if err := unix.Fadvise(int(sw.w.Fd()), 0, 0, unix.FADV_DONTNEED); err != nil {
 			sw.logger.V(log.DBG).Info("failed to fadvise file", "error", err)
