@@ -42,6 +42,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/cache"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
+	"golang.org/x/sys/unix"
 )
 
 // New creates a new CraneEngine from the passed params
@@ -423,7 +424,8 @@ func untar(ctx context.Context, dst string, r io.Reader) error {
 			}
 
 			// copy over contents
-			if _, err := io.CopyBuffer(f, tr, buf); err != nil {
+			sw := &SyncWriter{w: f, logger: logger}
+			if _, err := io.CopyBuffer(sw, tr, buf); err != nil {
 				f.Close()
 				return err
 			}
@@ -890,4 +892,30 @@ func RootExceptionContainerPolicy(ctx context.Context) []string {
 // a konflux pipeline
 func KonfluxContainerPolicy(ctx context.Context) []string {
 	return checkNamesFor(ctx, policy.PolicyKonflux)
+}
+
+const syncThreshold = 100 * 1024 * 1024 // 100MB
+
+type SyncWriter struct {
+	w       *os.File
+	written int64
+	logger  logr.Logger
+}
+
+func (sw *SyncWriter) Write(p []byte) (n int, err error) {
+	n, err = sw.w.Write(p)
+	if err != nil {
+		return n, err
+	}
+	sw.written += int64(n)
+	if sw.written >= syncThreshold {
+		sw.written = 0
+		if err := sw.w.Sync(); err != nil {
+			return n, fmt.Errorf("failed to sync file: %w", err)
+		}
+		if err := unix.Fadvise(int(sw.w.Fd()), 0, 0, unix.FADV_DONTNEED); err != nil {
+			sw.logger.V(log.DBG).Info("failed to fadvise file", "error", err)
+		}
+	}
+	return n, nil
 }
