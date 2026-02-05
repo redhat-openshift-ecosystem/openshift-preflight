@@ -19,6 +19,9 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/cache"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -34,10 +37,6 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/rpm"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
-
-	"github.com/google/go-containerregistry/pkg/crane"
-	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1/cache"
 )
 
 // New creates a new CraneEngine from the passed params
@@ -56,6 +55,7 @@ func New(ctx context.Context,
 		platform:           cfg.Platform,
 		insecure:           cfg.Insecure,
 		manifestListDigest: cfg.ManifestListDigest,
+		tempDir:            cfg.TempDir,
 	}, nil
 }
 
@@ -89,6 +89,9 @@ type craneEngine struct {
 	// ManifestListDigest is the sha256 digest for the manifest list
 	manifestListDigest string
 
+	// tempDir is optional. If empty, will use an OS tmp dir.
+	tempDir string
+
 	imageRef image.ImageReference
 	results  certification.Results
 }
@@ -111,35 +114,40 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 	logger := logr.FromContextOrDiscard(ctx)
 	logger.Info("target image", "image", c.image)
 
-	// pull the image and save to fs
+	logger.V(log.TRC).Info("temp directory", "dir", c.tempDir)
+	tempdir := c.tempDir
+	if tempdir == "" {
+		var err error
+
+		// create tmpdir to receive extracted fs
+		tempdir, err = os.MkdirTemp(os.TempDir(), "preflight-*")
+		if err != nil {
+			return fmt.Errorf("failed to create temporary directory: %v", err)
+		}
+		logger.V(log.DBG).Info("created temporary directory", "path", tempdir)
+		defer func() {
+			if err := os.RemoveAll(tempdir); err != nil {
+				logger.Error(err, "unable to clean up tmpdir", "tempDir", tempdir)
+			}
+		}()
+	}
+
+	imageTarPath := path.Join(tempdir, "cache")
+	if err := os.MkdirAll(imageTarPath, 0o755); err != nil && !os.IsExist(err) {
+		return fmt.Errorf("failed to create cache directory: %s: %v", imageTarPath, err)
+	}
+
+	// pull the image manifest
 	logger.V(log.DBG).Info("pulling image from target registry")
 	options := option.GenerateCraneOptions(ctx, c)
 	img, err := crane.Pull(c.image, options...)
 	if err != nil {
 		return fmt.Errorf("failed to pull remote container: %v", err)
 	}
-
-	// create tmpdir to receive extracted fs
-	tmpdir, err := os.MkdirTemp(os.TempDir(), "preflight-*")
-	if err != nil {
-		return fmt.Errorf("failed to create temporary directory: %v", err)
-	}
-	logger.V(log.DBG).Info("created temporary directory", "path", tmpdir)
-	defer func() {
-		if err := os.RemoveAll(tmpdir); err != nil {
-			logger.Error(err, "unable to clean up tmpdir", "tempDir", tmpdir)
-		}
-	}()
-
-	imageTarPath := path.Join(tmpdir, "cache")
-	if err := os.Mkdir(imageTarPath, 0o755); err != nil {
-		return fmt.Errorf("failed to create cache directory: %s: %v", imageTarPath, err)
-	}
-
 	img = cache.Image(img, cache.NewFilesystemCache(imageTarPath))
 
-	containerFSPath := path.Join(tmpdir, "fs")
-	if err := os.Mkdir(containerFSPath, 0o755); err != nil {
+	containerFSPath := path.Join(tempdir, "fs")
+	if err := os.MkdirAll(containerFSPath, 0o755); err != nil && !os.IsExist(err) {
 		return fmt.Errorf("failed to create container expansion directory: %s: %v", containerFSPath, err)
 	}
 

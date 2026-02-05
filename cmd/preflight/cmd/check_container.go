@@ -92,6 +92,7 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 
 	_ = viper.BindEnv("cpuprofile")
 	_ = viper.BindEnv("memprofile")
+	_ = viper.BindEnv("tempDir")
 
 	return checkContainerCmd
 }
@@ -306,6 +307,7 @@ func generateContainerCheckOptions(cfg *runtime.Config) []container.Option {
 		container.WithPyxisHost(cfg.PyxisHost),
 		container.WithPlatform(cfg.Platform),
 		container.WithManifestListDigest(cfg.ManifestListDigest),
+		container.WithTempDir(cfg.TempDir),
 	}
 
 	// set auth information if both are present in config.

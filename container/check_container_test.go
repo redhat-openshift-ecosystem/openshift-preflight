@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	preflighterr "github.com/redhat-openshift-ecosystem/openshift-preflight/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/test"
 )
 
 var _ = Describe("Container Check initialization", func() {
@@ -87,7 +88,7 @@ var _ = Describe("Container Check Execution", func() {
 		})
 
 		It("Should run without issue", func() {
-			ctx := context.TODO()
+			ctx := test.NewTestLoggerContext(context.TODO())
 			results, err := chk.Run(ctx)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(results).ToNot(Equal(certification.Results{}))

@@ -51,6 +51,7 @@ func (c *containerCheck) Run(ctx context.Context) (certification.Results, error)
 		Insecure:           c.insecure,
 		Platform:           c.platform,
 		ManifestListDigest: c.manifestListDigest,
+		TempDir:            c.tempDir,
 	}
 	eng, err := engine.New(ctx, c.checks, nil, cfg)
 	if err != nil {
@@ -204,6 +205,13 @@ func WithKonflux() Option {
 	}
 }
 
+// WithTempDir sets the temporary directory for cache and filesystem
+func WithTempDir(tempDir string) Option {
+	return func(cc *containerCheck) {
+		cc.tempDir = tempDir
+	}
+}
+
 type containerCheck struct {
 	image                  string
 	dockerconfigjson       string
@@ -217,4 +225,5 @@ type containerCheck struct {
 	resolved               bool
 	policy                 policy.Policy
 	konflux                bool
+	tempDir                string
 }

@@ -74,6 +74,6 @@ var _ = Describe("Viper to Runtime Config", func() {
 		// accurate in confirming that the derived configuration from viper
 		// matches.
 		keys := reflect.TypeOf(Config{}).NumField()
-		Expect(keys).To(Equal(27))
+		Expect(keys).To(Equal(28))
 	})
 })

@@ -4,10 +4,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/spf13/viper"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/option"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
-
-	"github.com/spf13/viper"
 )
 
 // Config contains configuration details for running preflight.
@@ -20,6 +20,7 @@ type Config struct {
 	LogFile        string
 	Artifacts      string
 	WriteJUnit     bool
+	TempDir        string
 	// Container-Specific Fields
 	CertificationComponentID string
 	PyxisHost                string
@@ -60,6 +61,7 @@ func NewConfigFrom(vcfg viper.Viper) (*Config, error) {
 	cfg.DockerConfig = vcfg.GetString("dockerConfig")
 	cfg.Artifacts = vcfg.GetString("artifacts")
 	cfg.WriteJUnit = vcfg.GetBool("junit")
+	cfg.TempDir = vcfg.GetString("tempDir")
 	cfg.storeContainerPolicyConfiguration(vcfg)
 	cfg.storeOperatorPolicyConfiguration(vcfg)
 	return &cfg, nil
