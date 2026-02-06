@@ -40,6 +40,11 @@ var ocpToKubeVersion = map[string]string{
 
 const latestReleasedVersion = "4.21"
 
+var BundleFiles = []string{
+	"/manifests/*",
+	"/metadata/annotations.yaml",
+}
+
 func Validate(ctx context.Context, imagePath string) (*Report, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 	logger.V(log.TRC).Info("reading annotations file from the bundle")

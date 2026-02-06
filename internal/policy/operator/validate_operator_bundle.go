@@ -70,3 +70,7 @@ func (p *ValidateOperatorBundleCheck) Help() check.HelpText {
 		Suggestion: "Valid bundles are defined by bundle spec, so make sure that this bundle conforms to that spec. More Information: https://github.com/operator-framework/operator-registry/blob/master/docs/design/operator-bundle.md",
 	}
 }
+
+func (p *ValidateOperatorBundleCheck) RequiredFilePatterns() []string {
+	return bundle.BundleFiles
+}

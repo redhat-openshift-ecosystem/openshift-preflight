@@ -335,6 +335,10 @@ func (p HasModifiedFilesCheck) Metadata() check.Metadata {
 	}
 }
 
+func (p HasModifiedFilesCheck) RequiredFilePatterns() []string {
+	return []string{"/etc/os-release", "/usr/lib/os-release"}
+}
+
 func extractPackageNameVersionRelease(pkgList []*rpmdb.PackageInfo) map[string]packageMeta {
 	pkgNameList := make(map[string]packageMeta, len(pkgList))
 	for _, pkg := range pkgList {

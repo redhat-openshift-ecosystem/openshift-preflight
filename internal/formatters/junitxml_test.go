@@ -38,7 +38,8 @@ var _ = Describe("JUnitXML Formatter", func() {
 							check.HelpText{
 								Message:    "helptext",
 								Suggestion: "suggestion",
-							}),
+							},
+							nil),
 						ElapsedTime: 0,
 					},
 				},
@@ -55,7 +56,8 @@ var _ = Describe("JUnitXML Formatter", func() {
 							check.HelpText{
 								Message:    "helptext",
 								Suggestion: "suggestion",
-							}),
+							},
+							nil),
 						ElapsedTime: 0,
 					},
 				},
@@ -74,7 +76,8 @@ var _ = Describe("JUnitXML Formatter", func() {
 							check.HelpText{
 								Message:    "helptext",
 								Suggestion: "suggestion",
-							}),
+							},
+							nil),
 						ElapsedTime: 0,
 					},
 				},
@@ -91,7 +94,8 @@ var _ = Describe("JUnitXML Formatter", func() {
 							check.HelpText{
 								Message:    "helptext",
 								Suggestion: "suggestion",
-							}),
+							},
+							nil),
 						ElapsedTime: 0,
 					},
 					{
@@ -106,7 +110,8 @@ var _ = Describe("JUnitXML Formatter", func() {
 							check.HelpText{
 								Message:    "helptext",
 								Suggestion: "suggestion",
-							}),
+							},
+							nil),
 						ElapsedTime: 0,
 					},
 				},

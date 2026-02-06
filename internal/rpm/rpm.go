@@ -12,21 +12,26 @@ import (
 	_ "github.com/glebarez/go-sqlite"
 )
 
+var RpmdbPaths = []string{
+	// Explicitly check /usr/lib/sysimage/rpm. A compatibility symlink from
+	// /var/lib/rpm may not necessarily exist.
+	"/usr/lib/sysimage/rpm/rpmdb.sqlite",
+	"/var/lib/rpm/rpmdb.sqlite",
+	"/var/lib/rpm/Packages",
+}
+
 // GetPackageList returns the list of packages in the rpm database from
 // /var/lib/rpm/rpmdb.sqlite, /var/lib/rpm/Packages or /usr/lib/sysimage/rpm/rpmdb.sqlite.
 // If neither exists, this returns an error of type os.ErrNotExists
 func GetPackageList(ctx context.Context, basePath string) ([]*rpmdb.PackageInfo, error) {
-	rpmdbPaths := []string{
-		// Explicitly check /usr/lib/sysimage/rpm. A compatibility symlink from
-		// /var/lib/rpm may not necessarily exist.
-		filepath.Join(basePath, "usr", "lib", "sysimage", "rpm", "rpmdb.sqlite"),
-		filepath.Join(basePath, "var", "lib", "rpm", "rpmdb.sqlite"),
-		filepath.Join(basePath, "var", "lib", "rpm", "Packages"),
+	localRpmdbPaths := make([]string, len(RpmdbPaths))
+	for i, v := range RpmdbPaths {
+		localRpmdbPaths[i] = filepath.Join(basePath, v)
 	}
 
 	var rpmdbPath string
-	errs := make([]error, 0, len(rpmdbPaths))
-	for _, path := range rpmdbPaths {
+	errs := make([]error, 0, len(localRpmdbPaths))
+	for _, path := range localRpmdbPaths {
 		if _, err := os.Stat(path); err != nil {
 			errs = append(errs, err)
 			continue
