@@ -86,6 +86,10 @@ func (p *HasNoProhibitedPackagesCheck) Help() check.HelpText {
 	}
 }
 
+func (p *HasNoProhibitedPackagesCheck) RequiredFilePatterns() []string {
+	return rpm.RpmdbPaths
+}
+
 // prohibitedPackageList is a list of packages commonly present in the RHEL container images that are not redistributable
 // without proper licensing (i.e. packages that are not under the same availability as those found in UBI).
 // Implementation detail: Use a map[string]struct{} so that lookups can be done, and determine their existence

@@ -95,3 +95,7 @@ func (p *securityContextConstraintsInCSV) Help() check.HelpText {
 		Suggestion: "If no scc is detected the default restricted scc will be used.",
 	}
 }
+
+func (p *securityContextConstraintsInCSV) RequiredFilePatterns() []string {
+	return bundle.BundleFiles
+}

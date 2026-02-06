@@ -1,12 +1,10 @@
 package engine
 
 import (
-	"archive/tar"
 	"bytes"
 	"context"
 	"crypto/md5"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -15,7 +13,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -41,7 +38,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/cache"
-	"github.com/google/go-containerregistry/pkg/v1/mutate"
 )
 
 // New creates a new CraneEngine from the passed params
@@ -147,26 +143,23 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 		return fmt.Errorf("failed to create container expansion directory: %s: %v", containerFSPath, err)
 	}
 
-	// Wrap this critical section in a closure to that we can close the
-	// mutate.Extract reader sooner than the end of the checks
-	if err := func() error {
-		// export/flatten, and extract
-		logger.V(log.DBG).Info("exporting and flattening image")
-		fs := mutate.Extract(img)
-		defer fs.Close()
+	requiredFilePatternsCount := 0
+	for _, check := range c.checks {
+		requiredFilePatternsCount += len(check.RequiredFilePatterns())
+	}
 
-		logger.V(log.DBG).Info("extracting container filesystem", "path", containerFSPath)
-		if err := untar(ctx, containerFSPath, fs); err != nil {
-			return fmt.Errorf("failed to extract tarball: %v", err)
-		}
+	requiredFilePatterns := make([]string, 0, requiredFilePatternsCount)
+	for _, check := range c.checks {
+		requiredFilePatterns = append(requiredFilePatterns, check.RequiredFilePatterns()...)
+	}
+	for i, pattern := range requiredFilePatterns {
+		requiredFilePatterns[i] = strings.TrimLeft(pattern, "/")
+	}
 
-		// explicitly discarding from the reader for cases where there is data in the reader after it sends an EOF
-		_, err = io.Copy(io.Discard, fs)
-		if err != nil {
-			return fmt.Errorf("failed to drain io reader: %v", err)
-		}
-		return nil
-	}(); err != nil {
+	slices.Sort(requiredFilePatterns)
+	requiredFilePatterns = slices.Compact(requiredFilePatterns)
+
+	if err := untar(ctx, containerFSPath, img, requiredFilePatterns); err != nil {
 		return err
 	}
 
@@ -361,132 +354,6 @@ func generateBundleHash(ctx context.Context, bundlePath string) (string, error) 
 // Results will return the results of check execution.
 func (c *craneEngine) Results(ctx context.Context) certification.Results {
 	return c.results
-}
-
-// Untar takes a destination path and a reader; a tar reader loops over the tarfile
-// creating the file structure at 'dst' along the way, and writing any files. This
-// function uses a pre-allocated buffer to reduce allocations and is not goroutine-safe.
-// Uses os.Root to restrict extraction to dst.
-func untar(ctx context.Context, dst string, r io.Reader) error {
-	logger := logr.FromContextOrDiscard(ctx)
-	tr := tar.NewReader(r)
-	dst = filepath.Clean(dst)
-	dstRoot, err := os.OpenRoot(dst)
-	if err != nil {
-		return fmt.Errorf("untar error, unable to open extraction destination %s: %w", dst, err)
-	}
-	defer dstRoot.Close()
-
-	// Buffer for io.CopyBuffer operations to reduce allocations
-	buf := make([]byte, 32*1024)
-	for {
-		header, err := tr.Next()
-
-		switch {
-		// if no more files are found return
-		case err == io.EOF:
-			return nil
-
-		// return any other error
-		case err != nil:
-			return err
-
-		// if the header is nil, just skip it (not sure how this happens)
-		case header == nil:
-			continue
-		}
-
-		// check the file type
-		switch header.Typeflag {
-		// if its a dir and it doesn't exist create it
-		case tar.TypeDir:
-			if _, err := dstRoot.Stat(header.Name); err != nil {
-				if err := dstRoot.MkdirAll(header.Name, 0o755); err != nil {
-					return err
-				}
-			}
-
-		// if it's a file create it
-		case tar.TypeReg:
-			dirname := filepath.Dir(header.Name)
-			if _, err := dstRoot.Stat(dirname); err != nil {
-				if err := dstRoot.MkdirAll(dirname, 0o755); err != nil {
-					return err
-				}
-			}
-
-			// Mask non-permission bits, which are not supported by dstRoot.OpenFile
-			fileMode := os.FileMode(header.Mode & 0o777)
-			f, err := dstRoot.OpenFile(header.Name, os.O_CREATE|os.O_RDWR, fileMode)
-			if err != nil {
-				return err
-			}
-
-			// copy over contents
-			if _, err := io.CopyBuffer(f, tr, buf); err != nil {
-				f.Close()
-				return err
-			}
-
-			// manually close here after each file operation; defering would cause each file close
-			// to wait until all operations have completed.
-			f.Close()
-
-		// if it's a link create it
-		case tar.TypeSymlink, tar.TypeLink:
-			// Create the new link's directory if it doesn't exist.
-			dirname := filepath.Dir(header.Name)
-			if _, err := dstRoot.Stat(dirname); err != nil {
-				if err := dstRoot.MkdirAll(dirname, 0o755); err != nil {
-					return err
-				}
-			}
-
-			linkFn := dstRoot.Link
-			if header.Typeflag == tar.TypeSymlink {
-				// for dstRoot, basepath enforcement is not done on
-				// oldname when symlinking, so we'll do it here instead.
-				linkFn = func(oldname, newname string) error {
-					// resolved the oldname relative to the new name
-					resolvedON, _ := resolveLinkPaths(oldname, newname)
-					// Identify extraction root traversal with post resolution
-					finalOldname := filepath.Join(dstRoot.Name(), resolvedON)
-					if finalOldname != dstRoot.Name() && !strings.HasPrefix(finalOldname, dstRoot.Name()+string(os.PathSeparator)) {
-						return errors.New("link resolves to path outside of extraction root")
-					}
-
-					// otherwise, link the two. newname validation is done by dstRoot.
-					return dstRoot.Symlink(finalOldname, newname)
-				}
-			}
-
-			err := linkFn(header.Linkname, header.Name)
-			if err != nil {
-				logger.V(log.DBG).Info(fmt.Sprintf("Error creating: %s. Ignoring.", header.Name), "link", header.Name, "linkedTo", header.Linkname, "type", header.Typeflag, "reason", err.Error())
-				continue
-			}
-		}
-	}
-}
-
-// resolveLinkPaths determines if oldname is an absolute path or a relative
-// path, and returns oldname relative to newname if necessary.
-func resolveLinkPaths(oldname, newname string) (string, string) {
-	if filepath.IsAbs(oldname) {
-		return oldname, newname
-	}
-
-	linkDir := filepath.Dir(newname)
-	// If the newname is at the root of the filesystem, but the oldname is
-	// relative, we'll swap out the value we get from filepath.Dir for a / to
-	// allow relative pathing to resolve. This strips `..` references given the
-	// link exists at the very base of the filesystem. In effect, it converts
-	// oldname to an absolute path
-	if linkDir == "." {
-		linkDir = "/"
-	}
-
-	return filepath.Join(linkDir, oldname), newname
 }
 
 // writeCertImage takes imageRef and writes it to disk as JSON representing a pyxis.CertImage

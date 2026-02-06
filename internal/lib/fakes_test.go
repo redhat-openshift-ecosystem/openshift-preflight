@@ -218,6 +218,7 @@ func (e fakeCheckEngine) generateCheck() check.Check {
 		doNothing,
 		check.Metadata{},
 		check.HelpText{},
+		nil,
 	)
 }
 

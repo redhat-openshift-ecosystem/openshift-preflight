@@ -72,3 +72,7 @@ func (p *RunAsNonRootCheck) Help() check.HelpText {
 		Suggestion: "Indicate a specific USER in the dockerfile or containerfile",
 	}
 }
+
+func (p *RunAsNonRootCheck) RequiredFilePatterns() []string {
+	return nil
+}

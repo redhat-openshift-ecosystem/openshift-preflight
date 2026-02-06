@@ -36,6 +36,7 @@ var _ = Describe("Generic check tests", func() {
 				validatorFn,
 				metadata,
 				helpText,
+				nil,
 			)
 			imgRef = image.ImageReference{}
 		})

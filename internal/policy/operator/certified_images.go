@@ -127,3 +127,7 @@ func (p *certifiedImagesCheck) Help() check.HelpText {
 		Suggestion: "Ensure that any images referenced in the CSV, including the relatedImages section, have been certified.",
 	}
 }
+
+func (p *certifiedImagesCheck) RequiredFilePatterns() []string {
+	return []string{"/manifests/*"}
+}

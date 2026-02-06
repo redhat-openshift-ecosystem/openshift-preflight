@@ -21,6 +21,9 @@ type Check interface {
 	Validate(ctx context.Context, imageReference image.ImageReference) (result bool, err error)
 	// Name returns the name of the check.
 	Name() string
+	// RequiredFilePatterns returns a list of file patterns to extract
+	// matching files from the container filesystem.
+	RequiredFilePatterns() []string
 	// Metadata returns the check's metadata.
 	Metadata() Metadata
 	// Help return the check's help information

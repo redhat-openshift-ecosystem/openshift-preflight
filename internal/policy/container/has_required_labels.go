@@ -65,3 +65,7 @@ func (p *HasRequiredLabelsCheck) Help() check.HelpText {
 		Suggestion: "Add the following labels to your Dockerfile or Containerfile: name, vendor, version, release, summary, description, maintainer.",
 	}
 }
+
+func (p *HasRequiredLabelsCheck) RequiredFilePatterns() []string {
+	return nil
+}

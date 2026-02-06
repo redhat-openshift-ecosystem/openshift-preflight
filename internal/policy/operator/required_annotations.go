@@ -8,6 +8,7 @@ import (
 	"github.com/operator-framework/api/pkg/manifests"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/bundle"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	libcsv "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/csv"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
@@ -99,4 +100,8 @@ func (h RequiredAnnotations) Help() check.HelpText {
 		Message:    "Check that the CSV has all of the required feature annotations.",
 		Suggestion: "Add all of the required annotations, and make sure the value is set to either 'true' or 'false'",
 	}
+}
+
+func (h RequiredAnnotations) RequiredFilePatterns() []string {
+	return bundle.BundleFiles
 }

@@ -88,3 +88,7 @@ func (p *BasedOnUBICheck) Help() check.HelpText {
 		Suggestion: "Change the FROM directive in your Dockerfile or Containerfile, for the latest list of images and details refer to: https://catalog.redhat.com/software/base-images",
 	}
 }
+
+func (p *BasedOnUBICheck) RequiredFilePatterns() []string {
+	return nil
+}

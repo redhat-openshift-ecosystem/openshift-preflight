@@ -800,3 +800,7 @@ func (p *DeployableByOlmCheck) Help() check.HelpText {
 		Suggestion: "Follow the guidelines on the operator-sdk website to learn how to package your operator https://sdk.operatorframework.io/docs/olm-integration/cli-overview/",
 	}
 }
+
+func (p *DeployableByOlmCheck) RequiredFilePatterns() []string {
+	return bundle.BundleFiles
+}

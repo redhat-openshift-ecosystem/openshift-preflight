@@ -64,3 +64,7 @@ func (p HasProhibitedContainerName) Help() check.HelpText {
 		Suggestion: "Update container-name ie (quay.io/repo-name/container-name) to not violate Red Hat trademark.",
 	}
 }
+
+func (p HasProhibitedContainerName) RequiredFilePatterns() []string {
+	return nil
+}
