@@ -11,10 +11,11 @@ import (
 type ValidatorFunc = func(context.Context, image.ImageReference) (bool, error)
 
 type genericCheckDefinition struct {
-	name        string
-	validatorFn ValidatorFunc
-	metadata    Metadata
-	helpText    HelpText
+	name                 string
+	validatorFn          ValidatorFunc
+	metadata             Metadata
+	helpText             HelpText
+	requiredFilePatterns []string
 }
 
 func (pd *genericCheckDefinition) Name() string {
@@ -33,6 +34,10 @@ func (pd *genericCheckDefinition) Help() HelpText {
 	return pd.helpText
 }
 
+func (pd *genericCheckDefinition) RequiredFilePatterns() []string {
+	return pd.requiredFilePatterns
+}
+
 // NewGenericCheck returns a basic check implementation with the provided
 // inputs. This is to enable a quick way to add additional checks to the default
 // checks already enforced.
@@ -45,11 +50,13 @@ func NewGenericCheck(
 	validatorFn ValidatorFunc,
 	metadata Metadata,
 	helptext HelpText,
+	requiredFilePatterns []string,
 ) Check {
 	return &genericCheckDefinition{
-		name:        name,
-		validatorFn: validatorFn,
-		metadata:    metadata,
-		helpText:    helptext,
+		name:                 name,
+		validatorFn:          validatorFn,
+		metadata:             metadata,
+		helpText:             helptext,
+		requiredFilePatterns: requiredFilePatterns,
 	}
 }

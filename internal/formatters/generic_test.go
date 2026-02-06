@@ -22,13 +22,13 @@ func TestGenericJSONFormatter(t *testing.T) {
 			PassedOverall: passed,
 			Passed: []certification.Result{
 				{
-					Check:       check.NewGenericCheck("passed1", nil, check.Metadata{}, check.HelpText{}),
+					Check:       check.NewGenericCheck("passed1", nil, check.Metadata{}, check.HelpText{}, nil),
 					ElapsedTime: 1000 * time.Millisecond,
 				},
 			},
 			Failed: []certification.Result{
 				{
-					Check:       check.NewGenericCheck("failed1", nil, check.Metadata{}, check.HelpText{}),
+					Check:       check.NewGenericCheck("failed1", nil, check.Metadata{}, check.HelpText{}, nil),
 					ElapsedTime: 1001 * time.Millisecond,
 				},
 			},
@@ -98,13 +98,13 @@ func TestGenericXMLFormatter(t *testing.T) {
 			PassedOverall: passed,
 			Passed: []certification.Result{
 				{
-					Check:       check.NewGenericCheck("passed1", nil, check.Metadata{}, check.HelpText{}),
+					Check:       check.NewGenericCheck("passed1", nil, check.Metadata{}, check.HelpText{}, nil),
 					ElapsedTime: 1000 * time.Millisecond,
 				},
 			},
 			Failed: []certification.Result{
 				{
-					Check:       check.NewGenericCheck("failed1", nil, check.Metadata{}, check.HelpText{}),
+					Check:       check.NewGenericCheck("failed1", nil, check.Metadata{}, check.HelpText{}, nil),
 					ElapsedTime: 1001 * time.Millisecond,
 				},
 			},
