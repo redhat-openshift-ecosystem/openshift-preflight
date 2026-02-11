@@ -370,11 +370,12 @@ func findRPMDB(ctx context.Context, layer v1.Layer) (found bool, pkglist []*rpmd
 // directoryIsExcluded excludes a directory and any file contained in that directory.
 func directoryIsExcluded(ctx context.Context, s string) bool {
 	excl := map[string]struct{}{
-		"etc":               {},
-		"var":               {},
-		"run":               {},
-		"usr/lib/.build-id": {},
-		"usr/tmp":           {},
+		"etc":                           {},
+		"var":                           {},
+		"run":                           {},
+		"usr/lib/.build-id":             {},
+		"usr/tmp":                       {},
+		"usr/share/openstack-dashboard": {},
 	}
 
 	for k := range excl {
