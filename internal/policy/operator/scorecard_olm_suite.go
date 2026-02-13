@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/bundle"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
@@ -74,4 +75,8 @@ func (p *ScorecardOlmSuiteCheck) Help() check.HelpText {
 		Message:    "Check ScorecardOlmSuiteCheck encountered an error. Please review the " + scorecardOlmSuiteResult + " file in your execution artifacts for more information.",
 		Suggestion: "See scorecard output for details, artifacts/operator_bundle_scorecard_OlmSuiteCheck.json",
 	}
+}
+
+func (p *ScorecardOlmSuiteCheck) RequiredFilePatterns() []string {
+	return bundle.BundleFiles
 }

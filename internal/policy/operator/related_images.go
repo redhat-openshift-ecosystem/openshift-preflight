@@ -94,3 +94,7 @@ func (p *RelatedImagesCheck) Help() check.HelpText {
 		Suggestion: "Either manually or with a tool, populate the RelatedImages section of the CSV",
 	}
 }
+
+func (p *RelatedImagesCheck) RequiredFilePatterns() []string {
+	return []string{"/manifests/*"}
+}

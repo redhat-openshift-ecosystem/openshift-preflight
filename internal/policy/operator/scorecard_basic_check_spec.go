@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/bundle"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
@@ -74,4 +75,8 @@ func (p *ScorecardBasicSpecCheck) Help() check.HelpText {
 		Message:    "Check ScorecardBasicSpecCheck encountered an error. Please review the " + scorecardBasicCheckResult + " file in your execution artifacts for more information.",
 		Suggestion: "Make sure that all CRs have a spec block",
 	}
+}
+
+func (p *ScorecardBasicSpecCheck) RequiredFilePatterns() []string {
+	return bundle.BundleFiles
 }

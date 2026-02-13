@@ -95,3 +95,7 @@ func (p *HasLicenseCheck) Help() check.HelpText {
 		Suggestion: "Create a directory named /licenses and include all relevant licensing and/or terms and conditions as text file(s) in that directory.",
 	}
 }
+
+func (p *HasLicenseCheck) RequiredFilePatterns() []string {
+	return []string{filepath.Join(licensePath, "*")}
+}

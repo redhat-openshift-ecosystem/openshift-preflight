@@ -11,7 +11,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
@@ -71,6 +70,7 @@ var _ = Describe("Execute Checks tests", func() {
 			},
 			check.Metadata{},
 			check.HelpText{},
+			nil,
 		)
 
 		errorCheck := check.NewGenericCheck(
@@ -80,6 +80,7 @@ var _ = Describe("Execute Checks tests", func() {
 			},
 			check.Metadata{},
 			check.HelpText{},
+			nil,
 		)
 
 		failedCheck := check.NewGenericCheck(
@@ -89,6 +90,7 @@ var _ = Describe("Execute Checks tests", func() {
 			},
 			check.Metadata{},
 			check.HelpText{},
+			nil,
 		)
 
 		optionalCheckPassing := check.NewGenericCheck(
@@ -98,6 +100,7 @@ var _ = Describe("Execute Checks tests", func() {
 			},
 			check.Metadata{Level: "optional"},
 			check.HelpText{},
+			nil,
 		)
 
 		optionalCheckFailing := check.NewGenericCheck(
@@ -107,6 +110,7 @@ var _ = Describe("Execute Checks tests", func() {
 			},
 			check.Metadata{Level: "optional"},
 			check.HelpText{},
+			nil,
 		)
 
 		warningCheckPassing := check.NewGenericCheck(
@@ -116,6 +120,7 @@ var _ = Describe("Execute Checks tests", func() {
 			},
 			check.Metadata{Level: check.LevelWarn},
 			check.HelpText{},
+			nil,
 		)
 
 		warningCheckFailing := check.NewGenericCheck(
@@ -125,6 +130,7 @@ var _ = Describe("Execute Checks tests", func() {
 			},
 			check.Metadata{Level: check.LevelWarn},
 			check.HelpText{},
+			nil,
 		)
 
 		emptyConfig := runtime.Config{}
@@ -412,149 +418,6 @@ var _ = Describe("Check Name Queries", func() {
 	})
 })
 
-var _ = Describe("Link Path Resolution", func() {
-	DescribeTable(
-		"Link targets should resolve correctly",
-		func(old, new, expectedOld, expectedNew string) {
-			resO, resN := resolveLinkPaths(old, new)
-			Expect(resO).To(Equal(expectedOld))
-			Expect(resN).To(Equal(expectedNew))
-		},
-		Entry("Link at root with relative origin", "../usr/lib/file", "file", "/usr/lib/file", "file"),
-		Entry("Origin is absolute", "/usr/lib/file", "file", "/usr/lib/file", "file"),
-		Entry("Link in dir with relative origin", "../usr/lib/file", "etc/file", "usr/lib/file", "etc/file"),
-		Entry("Link in dir with relative origin and up multiple levels", "../../cfg/file", "etc/foo/file", "cfg/file", "etc/foo/file"),
-	)
-})
-
-var _ = Describe("Untar Directory Traversal Protection", func() {
-	var tmpDir string
-
-	BeforeEach(func() {
-		var err error
-		tmpDir, err = os.MkdirTemp("", "untar-traversal-test-*")
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-	AfterEach(func() {
-		os.RemoveAll(tmpDir)
-	})
-
-	DescribeTable("for files and directories",
-		func(targetFilePath string) {
-			content := []byte("malicious content")
-			var buf bytes.Buffer
-
-			err := writeTarball(&buf, content, targetFilePath, 0)
-			Expect(err).ToNot(HaveOccurred())
-
-			// Extract the tar archive - should fail with an error
-			reader := bytes.NewReader(buf.Bytes())
-			err = untar(context.Background(), tmpDir, reader)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("path escapes from parent"))
-		},
-		Entry("has a relative path with single dot-dot", "../malicious.txt"),
-		Entry("has a relative path with multiple dot-dots", "../../../malicious.txt"),
-	)
-
-	It("should allow extraction of legitimate files within the destination directory", func() {
-		content := []byte("legitimate content")
-		var buf bytes.Buffer
-
-		err := writeTarball(&buf, content, "subdir/legitimate.txt", 0)
-		Expect(err).ToNot(HaveOccurred())
-
-		reader := bytes.NewReader(buf.Bytes())
-		err = untar(context.Background(), tmpDir, reader)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Check that the legitimate file was created
-		legitimateFile := filepath.Join(tmpDir, "subdir", "legitimate.txt")
-		fileContent, err := os.ReadFile(legitimateFile)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(fileContent).To(Equal(content))
-	})
-
-	DescribeTable("for (sym)links",
-		func(linkType linkType, linkTarget string) {
-			content := []byte("placeholder")
-			var buf bytes.Buffer
-
-			// Create link with Linkname that tries to escape the extraction
-			// directory. We don't really care about normal-file.txt here.
-			err := writeTarballWithLink(&buf, linkType, content, "normal-file", "malicious-link", linkTarget)
-			Expect(err).ToNot(HaveOccurred())
-
-			reader := bytes.NewReader(buf.Bytes())
-			err = untar(context.Background(), tmpDir, reader)
-			// invalid links do not throw an error, they're just skipped
-			Expect(err).ToNot(HaveOccurred())
-
-			linkPath := filepath.Join(tmpDir, "malicious-link")
-			_, err = os.Stat(linkPath)
-			// link should not exist
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("no such file or directory"), "links should not be untar'd if pointing to path outside of base")
-		},
-
-		Entry("has a hard link with single dot-dot traversal", hardlink, "../../mnt"),
-		Entry("has a hard link with multiple dot-dot traversal", hardlink, "../../../external-file.txt"),
-		Entry("has a hard link with mixed traversal", hardlink, "../../usr/../external-file.txt"),
-		Entry("has a hard link with absolute path oldname", hardlink, "/mnt"),
-		Entry("has a symlink with single dot-dot traversal", symlink, "../../mnt"),
-		Entry("has a symlink with multiple dot-dot traversal", symlink, "../../../external-file.txt"),
-		Entry("has a symlink with mixed traversal", symlink, "../../usr/../external-file.txt"),
-		Entry("has a symlink with absolute path oldname", symlink, "/mnt"),
-	)
-
-	It("should allow creation of legitimate hard links within the destination directory", func() {
-		content := []byte("legitimate content")
-		var buf bytes.Buffer
-		err := writeTarballWithLink(&buf, hardlink, content, "original.txt", "legitimate-hardlink.txt", "original.txt")
-		Expect(err).ToNot(HaveOccurred())
-
-		reader := bytes.NewReader(buf.Bytes())
-		err = untar(context.Background(), tmpDir, reader)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Check that both the original file and hard link were created
-		originalFile := filepath.Join(tmpDir, "original.txt")
-		linkFile := filepath.Join(tmpDir, "legitimate-hardlink.txt")
-
-		originalContent, err := os.ReadFile(originalFile)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(originalContent).To(Equal(content))
-
-		linkContent, err := os.ReadFile(linkFile)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(linkContent).To(Equal(content))
-	})
-
-	It("should allow creation of legitimate symlinks within the destination directory", func() {
-		content := []byte("legitimate content")
-		var buf bytes.Buffer
-		err := writeTarballWithLink(&buf, symlink, content, "original.txt", "legitimate-symlink.txt", "original.txt")
-		Expect(err).ToNot(HaveOccurred())
-
-		reader := bytes.NewReader(buf.Bytes())
-		err = untar(context.Background(), tmpDir, reader)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Check that both the original file and hard link were created
-		originalFile := filepath.Join(tmpDir, "original.txt")
-		linkFile := filepath.Join(tmpDir, "legitimate-symlink.txt")
-
-		originalContent, err := os.ReadFile(originalFile)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(originalContent).To(Equal(content))
-
-		linkContent, err := os.ReadFile(linkFile)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(linkContent).To(Equal(content))
-	})
-})
-
 // writeTarball writes a tar archive to out with filename containing contents at the base path
 // with extra bytes written at the end of length extraBytes.
 // note: this should only be used as a helper function in tests
@@ -589,45 +452,4 @@ func writeTarball(out io.Writer, contents []byte, filename string, extraBytes ui
 	}
 
 	return nil
-}
-
-// linkType a convenience type just to make the consuming functions more clear.
-type linkType = byte
-
-const (
-	hardlink linkType = tar.TypeLink
-	symlink  linkType = tar.TypeSymlink
-)
-
-// writeTarballWithLink writes a tar archive with a regular file and a hard
-// link. The ability to write a regular file allows for testing happy paths.
-// note: this should only be used as a helper function in tests.
-func writeTarballWithLink(out io.Writer, linkTypeFlag linkType, contents []byte, filename string, linkname string, linkTarget string) error {
-	tw := tar.NewWriter(out)
-	defer tw.Close()
-
-	header := &tar.Header{
-		Typeflag: tar.TypeReg,
-		Name:     filename,
-		Size:     int64(len(contents)),
-		Mode:     0o644,
-		Format:   tar.FormatPAX,
-	}
-	err := tw.WriteHeader(header)
-	if err != nil {
-		return err
-	}
-	_, err = tw.Write(contents)
-	if err != nil {
-		return err
-	}
-
-	linkHeader := &tar.Header{
-		Typeflag: linkTypeFlag,
-		Name:     linkname,
-		Linkname: linkTarget,
-		Mode:     0o644,
-		Format:   tar.FormatPAX,
-	}
-	return tw.WriteHeader(linkHeader)
 }

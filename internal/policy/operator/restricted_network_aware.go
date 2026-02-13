@@ -8,6 +8,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/bundle"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	libcsv "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/csv"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
@@ -103,4 +104,8 @@ func (p FollowsRestrictedNetworkEnablementGuidelines) Help() check.HelpText {
 		Message:    "Check for the implementation of guidelines indicating operator readiness for environments with restricted networking.",
 		Suggestion: "If consumers of your operator may need to do so on a restricted network, implement the guidelines outlines in OCP documentation for your cluster version, such as https://docs.openshift.com/container-platform/4.11/operators/operator_sdk/osdk-generating-csvs.html#olm-enabling-operator-for-restricted-network_osdk-generating-csvs for OCP 4.11",
 	}
+}
+
+func (p FollowsRestrictedNetworkEnablementGuidelines) RequiredFilePatterns() []string {
+	return bundle.BundleFiles
 }
