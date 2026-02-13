@@ -58,3 +58,7 @@ func (p *MaxLayersCheck) Help() check.HelpText {
 		Suggestion: "Optimize your Dockerfile to consolidate and minimize the number of layers. Each RUN command will produce a new layer. Try combining RUN commands using && where possible.",
 	}
 }
+
+func (p *MaxLayersCheck) RequiredFilePatterns() []string {
+	return nil
+}

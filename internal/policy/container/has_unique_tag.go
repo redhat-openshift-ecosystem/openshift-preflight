@@ -135,3 +135,7 @@ func (p *hasUniqueTagCheck) Help() check.HelpText {
 		Suggestion: "Add a tag to your image. Consider using Semantic Versioning. https://semver.org/",
 	}
 }
+
+func (p *hasUniqueTagCheck) RequiredFilePatterns() []string {
+	return nil
+}

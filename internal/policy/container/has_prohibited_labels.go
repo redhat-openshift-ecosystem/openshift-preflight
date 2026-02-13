@@ -68,3 +68,7 @@ func (p *HasNoProhibitedLabelsCheck) Help() check.HelpText {
 		Suggestion: "Ensure the name, vendor, and maintainer label on your image do not violate the Red Hat trademark.",
 	}
 }
+
+func (p *HasNoProhibitedLabelsCheck) RequiredFilePatterns() []string {
+	return nil
+}
