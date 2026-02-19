@@ -63,12 +63,13 @@ test:
 	-ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo"
 
 .PHONY: cover
-cover:
+cover: go-ignore-cov
 	go test -v \
 	 -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo" \
 	 $$(go list ./... | grep -v e2e) \
 	 -race \
 	 -cover -coverprofile=coverage.out
+	$(GO_IGNORE_COV) --file coverage.out
 
 .PHONY: vet
 vet:
@@ -128,6 +129,11 @@ COSIGN_VERSION ?= v2.0.0
 cosign: ## Download envtest-setup locally if necessary.
 	$(call go-install-tool,$(COSIGN),github.com/sigstore/cosign/v2/cmd/cosign@$(COSIGN_VERSION))
 
+GO_IGNORE_COV=$(shell pwd)/bin/go-ignore-cov
+GO_IGNORE_COV_VERSION ?= v0.6.1
+go-ignore-cov: $(GO_IGNORE_COV)
+$(GO_IGNORE_COV):
+	$(call go-install-tool,$(GO_IGNORE_COV),github.com/quantumcycle/go-ignore-cov@$(GO_IGNORE_COV_VERSION))
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
