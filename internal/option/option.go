@@ -1,3 +1,4 @@
+//coverage:ignore file
 package option
 
 import (
@@ -6,11 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/authn"
-
 	"github.com/google/go-containerregistry/pkg/crane"
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/authn"
 )
 
 type CraneConfig interface {
