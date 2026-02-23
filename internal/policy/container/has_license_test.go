@@ -42,11 +42,10 @@ var _ = Describe("HasLicense", func() {
 			})
 		})
 		Context("When licenses directory is not found", func() {
-			JustBeforeEach(func() {
-				imgRef.ImageFSPath = "/invalid"
-			})
 			It("Should not pass Validate", func() {
-				ok, err := hasLicense.Validate(context.TODO(), imgRef)
+				badImgRef := imgRef
+				badImgRef.ImageFSPath = "/invalid"
+				ok, err := hasLicense.Validate(context.TODO(), badImgRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})
