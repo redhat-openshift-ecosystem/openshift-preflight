@@ -44,6 +44,7 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         file: coverage.out
+        fail-on-error: 'false'
 
   build-linux-binaries:
     name: Build Multi-arch-linux
