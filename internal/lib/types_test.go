@@ -54,56 +54,63 @@ var _ = Describe("Pyxis Client Instantiation", func() {
 
 var _ = Describe("Policy Resolution", func() {
 	Context("When determining container policy exceptions", func() {
-		var fakePC *FakePyxisClient
-		BeforeEach(func() {
-			// reset the fake pyxis client before each execution
-			// as a precaution.
-			fakePC = &FakePyxisClient{
-				findImagesByDigestFunc: fidbFuncNoop,
-				getProjectsFunc:        gpFuncNoop,
-				submitResultsFunc:      srFuncNoop,
+		It("should return a scratch policy exception if the project has type flag", func() {
+			certProject := &pyxis.CertProject{
+				Container: pyxis.Container{
+					Type: "scratch",
+				},
 			}
-		})
-
-		It("should throw an error if unable to get the project from the API", func() {
-			fakePC.getProjectsFunc = gpFuncReturnError
-			_, err := GetContainerPolicyExceptions(context.TODO(), fakePC)
-			Expect(err).To(HaveOccurred())
-		})
-
-		It("should return a scratch policy exception if the project has type flag in the API", func() {
-			fakePC.getProjectsFunc = gpFuncReturnScratchException
-			p, err := GetContainerPolicyExceptions(context.TODO(), fakePC)
+			p := GetContainerPolicyExceptions(certProject)
 			Expect(p).To(Equal(policy.PolicyScratchNonRoot))
-			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should return a scratch policy exception if the project has os_content_type flag in the API", func() {
-			fakePC.getProjectsFunc = gpFuncReturnScratchImageException
-			p, err := GetContainerPolicyExceptions(context.TODO(), fakePC)
+		It("should return a scratch policy exception if the project has os_content_type flag", func() {
+			certProject := &pyxis.CertProject{
+				Container: pyxis.Container{
+					OsContentType: "Scratch Image",
+				},
+			}
+			p := GetContainerPolicyExceptions(certProject)
 			Expect(p).To(Equal(policy.PolicyScratchNonRoot))
-			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should return a root policy exception if the project has the flag in the API", func() {
-			fakePC.getProjectsFunc = gpFuncReturnRootException
-			p, err := GetContainerPolicyExceptions(context.TODO(), fakePC)
+		It("should return a root policy exception if the project has the flag", func() {
+			certProject := &pyxis.CertProject{
+				Container: pyxis.Container{
+					DockerConfigJSON: "",
+					Privileged:       true,
+				},
+			}
+			p := GetContainerPolicyExceptions(certProject)
 			Expect(p).To(Equal(policy.PolicyRoot))
-			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should return a scratch plus root policy exception if the project has the flag in the API", func() {
-			fakePC.getProjectsFunc = gpFuncReturnScratchRootException
-			p, err := GetContainerPolicyExceptions(context.TODO(), fakePC)
+		It("should return a scratch plus root policy exception if the project has the flag", func() {
+			certProject := &pyxis.CertProject{
+				Container: pyxis.Container{
+					DockerConfigJSON: "",
+					OsContentType:    "Scratch Image",
+					Privileged:       true,
+				},
+			}
+			p := GetContainerPolicyExceptions(certProject)
 			Expect(p).To(Equal(policy.PolicyScratchRoot))
-			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should return a container policy exception if the project no exceptions in the API", func() {
-			fakePC.getProjectsFunc = gpFuncReturnNoException
-			p, err := GetContainerPolicyExceptions(context.TODO(), fakePC)
+		It("should return a container policy exception if the project has no exceptions", func() {
+			certProject := &pyxis.CertProject{
+				Container: pyxis.Container{
+					Type:       "",
+					Privileged: false,
+				},
+			}
+			p := GetContainerPolicyExceptions(certProject)
 			Expect(p).To(Equal(policy.PolicyContainer))
-			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return a container policy exception if called with nil container project", func() {
+			p := GetContainerPolicyExceptions(nil)
+			Expect(p).To(Equal(policy.PolicyContainer))
 		})
 	})
 })

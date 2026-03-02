@@ -138,46 +138,6 @@ func gpFuncReturnScratchException(ctx context.Context) (*pyxis.CertProject, erro
 	}, nil
 }
 
-// gpFuncReturnScratchImageException implements gpFunc and returns a scratch image exception.
-func gpFuncReturnScratchImageException(ctx context.Context) (*pyxis.CertProject, error) {
-	return &pyxis.CertProject{
-		Container: pyxis.Container{
-			OsContentType: "Scratch Image",
-		},
-	}, nil
-}
-
-// gpFuncReturnRootException implements gpFunc and returns a root exception.
-func gpFuncReturnRootException(ctx context.Context) (*pyxis.CertProject, error) {
-	return &pyxis.CertProject{
-		Container: pyxis.Container{
-			DockerConfigJSON: "",
-			Privileged:       true,
-		},
-	}, nil
-}
-
-// gpFuncReturnScratchRootException implements gpFunc and returns a root exception.
-func gpFuncReturnScratchRootException(ctx context.Context) (*pyxis.CertProject, error) {
-	return &pyxis.CertProject{
-		Container: pyxis.Container{
-			DockerConfigJSON: "",
-			OsContentType:    "Scratch Image",
-			Privileged:       true,
-		},
-	}, nil
-}
-
-// gpFuncReturnNoException implements gpFunc and returns no exception indicators.
-func gpFuncReturnNoException(ctx context.Context) (*pyxis.CertProject, error) {
-	return &pyxis.CertProject{
-		Container: pyxis.Container{
-			Type:       "",
-			Privileged: false,
-		},
-	}, nil
-}
-
 // srFuncReturnError implements srFunc and returns a submission error.
 func srFuncReturnError(ctx context.Context, ci *pyxis.CertificationInput) (*pyxis.CertificationResults, error) {
 	return nil, errors.New("some submission error")

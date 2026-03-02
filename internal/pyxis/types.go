@@ -109,6 +109,11 @@ func (cp CertProject) ScratchProject() bool {
 	return cp.Container.Type == "scratch" || cp.Container.OsContentType == "Scratch Image"
 }
 
+func (cp CertProject) BundleProject() bool {
+	// BundleProject returns true if the CertProject is designated as a Bundle in Pyxis.
+	return cp.Container.Type == "operator bundle image"
+}
+
 type Container struct {
 	DockerConfigJSON string `json:"docker_config_json,omitempty"`
 	HostedRegistry   bool   `json:"hosted_registry,omitempty"`

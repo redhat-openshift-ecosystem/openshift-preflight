@@ -1,13 +1,8 @@
 package lib
 
 import (
-	"context"
-	"fmt"
-
-	"github.com/go-logr/logr"
-
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 )
 
 // ResolveSubmitter will build out a ResultSubmitter if the provided pyxisClient, pc, is not nil.
@@ -25,36 +20,33 @@ func ResolveSubmitter(pc PyxisClient, projectID, dockerconfig, logfile string) R
 	return NewNoopSubmitter(true, nil)
 }
 
-// GetContainerPolicyExceptions will query Pyxis to determine if
-// a given project has a certification excemptions, such as root or scratch.
+// GetContainerPolicyExceptions accepts a CertProject to determine if
+// a given project has certification exemptions, such as root or scratch.
 // This will then return the corresponding policy.
 //
 // If no policy exception flags are found on the project, the standard
 // container policy is returned.
-func GetContainerPolicyExceptions(ctx context.Context, pc PyxisClient) (policy.Policy, error) {
-	logger := logr.FromContextOrDiscard(ctx)
-
-	certProject, err := pc.GetProject(ctx)
-	if err != nil {
-		return "", fmt.Errorf("could not retrieve project: %w", err)
+func GetContainerPolicyExceptions(certProject *pyxis.CertProject) policy.Policy {
+	// check for nil first so code doesn't panic later
+	if certProject == nil {
+		return policy.PolicyContainer
 	}
-	logger.V(log.DBG).Info("certification project", "name", certProject.Name)
 
 	// if the partner has gotten a scratch exception from the business and os_content_type == "Scratch Image"
 	// and a partner sets `Host Level Access` in connect to `Privileged`, enable ScratchRootContainerPolicy checks
 	if certProject.ScratchProject() && certProject.Container.Privileged {
-		return policy.PolicyScratchRoot, nil
+		return policy.PolicyScratchRoot
 	}
 
 	// if the partner has gotten a scratch exception from the business and os_content_type == "Scratch Image",
 	// enable ScratchNonRootContainerPolicy checks
 	if certProject.ScratchProject() {
-		return policy.PolicyScratchNonRoot, nil
+		return policy.PolicyScratchNonRoot
 	}
 
 	// if a partner sets `Host Level Access` in connect to `Privileged`, enable RootExceptionContainerPolicy checks
 	if certProject.Container.Privileged {
-		return policy.PolicyRoot, nil
+		return policy.PolicyRoot
 	}
-	return policy.PolicyContainer, nil
+	return policy.PolicyContainer
 }
