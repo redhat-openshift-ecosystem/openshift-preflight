@@ -2,16 +2,20 @@ package container
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	goruntime "runtime"
 	"time"
+
+	"github.com/go-logr/logr"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	preflighterr "github.com/redhat-openshift-ecosystem/openshift-preflight/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/engine"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
@@ -65,6 +69,7 @@ func (c *containerCheck) Run(ctx context.Context) (certification.Results, error)
 }
 
 func (c *containerCheck) resolve(ctx context.Context) error {
+	logger := logr.FromContextOrDiscard(ctx)
 	if c.resolved {
 		return nil
 	}
@@ -76,18 +81,31 @@ func (c *containerCheck) resolve(ctx context.Context) error {
 	c.policy = policy.PolicyContainer
 
 	// If we have enough Pyxis information, resolve the policy.
-	if c.hasPyxisData() {
-		p := pyxis.NewPyxisClient(
-			c.pyxisHost,
-			c.pyxisToken,
-			c.certificationProjectID,
-			&http.Client{Timeout: 60 * time.Second},
-		)
-
-		override, err := lib.GetContainerPolicyExceptions(ctx, p)
-		if err != nil {
-			return fmt.Errorf("%w: %s", preflighterr.ErrCannotResolvePolicyException, err)
+	if c.pyxisClient != nil || c.hasPyxisData() {
+		// Use injected client for testing, otherwise create a new one
+		p := c.pyxisClient
+		if p == nil {
+			p = pyxis.NewPyxisClient(
+				c.pyxisHost,
+				c.pyxisToken,
+				c.certificationProjectID,
+				&http.Client{Timeout: 60 * time.Second},
+			)
 		}
+
+		certProject, err := p.GetProject(ctx)
+		if err != nil {
+			return fmt.Errorf("%w: could not retrieve project: %s", preflighterr.ErrCannotResolvePolicyException, err)
+		}
+		logger.V(log.DBG).Info("certification project", "name", certProject.Name)
+
+		// checking to see if project is an operator bundle, to safeguard against users submitting containers to bundle projects
+		if certProject.BundleProject() {
+			return errors.New("bundle project detected: container submissions are not valid for bundle projects, please run the operator certification workflow instead")
+		}
+
+		// checking for policy exceptions
+		override := lib.GetContainerPolicyExceptions(certProject)
 
 		c.policy = override
 	}
@@ -217,4 +235,5 @@ type containerCheck struct {
 	resolved               bool
 	policy                 policy.Policy
 	konflux                bool
+	pyxisClient            lib.PyxisClient // for testing purposes
 }

@@ -6,6 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	preflighterr "github.com/redhat-openshift-ecosystem/openshift-preflight/errors"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
@@ -147,4 +149,37 @@ var _ = Describe("Container Check Execution", func() {
 			Expect(err).To(MatchError(preflighterr.ErrCannotResolvePolicyException))
 		})
 	})
+
+	When("checking for bundle projects", func() {
+		It("should fail if the project is an operator bundle image", func() {
+			fakeClient := &fakePyxisClient{
+				getProjectFunc: returnBundleProject,
+			}
+			chk := NewCheck("placeholder", withPyxisClient(fakeClient))
+			_, err := chk.Run(context.TODO())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("bundle project detected"))
+			Expect(err.Error()).To(ContainSubstring("operator certification workflow"))
+		})
+
+		It("should succeed if the project is a container project", func() {
+			fakeClient := &fakePyxisClient{
+				getProjectFunc: returnContainerProject,
+			}
+			goodImage := "quay.io/opdev/simple-demo-operator:latest"
+			chk := NewCheck(goodImage, withPyxisClient(fakeClient))
+			results, err := chk.Run(context.TODO())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(results).ToNot(Equal(certification.Results{}))
+			Expect(results.TestedImage).To(Equal(goodImage))
+		})
+	})
 })
+
+// withPyxisClient injects a pyxis client for testing purposes.
+// This is not exported and should only be used in tests.
+func withPyxisClient(client lib.PyxisClient) Option {
+	return func(cc *containerCheck) {
+		cc.pyxisClient = client
+	}
+}
