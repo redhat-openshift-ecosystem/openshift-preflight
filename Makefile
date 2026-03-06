@@ -59,12 +59,12 @@ image-push:
 
 .PHONY: test
 test:
-	go test -v $$(go list ./... | grep -v e2e) \
+	go test -v -tags testing $$(go list ./... | grep -v e2e) \
 	-ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo"
 
 .PHONY: cover
 cover: go-ignore-cov
-	go test -v \
+	go test -v -tags testing \
 	 -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo" \
 	 $$(go list ./... | grep -v e2e) \
 	 -race \
@@ -73,11 +73,11 @@ cover: go-ignore-cov
 
 .PHONY: vet
 vet:
-	go vet ./...
+	go vet -tags testing ./...
 
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter checks.
-	$(GOLANGCI_LINT) run
+	$(GOLANGCI_LINT) run --build-tags testing
 	
 .PHONY: test-e2e
 test-e2e:
