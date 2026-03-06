@@ -216,7 +216,7 @@ var _ = Describe("Untar Directory Traversal Protection", func() {
 			Expect(originalContent).To(Equal(content))
 
 			// Check that the first symlink exists and points to original
-			// Note: untar converts relative symlinks to absolute paths for security
+			// Note: untar keeps relative symlinks as relative (for OSTree compatibility)
 			link1File := filepath.Join(tmpDir, link1Name)
 			link1Info, err := os.Lstat(link1File)
 			Expect(err).ToNot(HaveOccurred())
@@ -224,7 +224,8 @@ var _ = Describe("Untar Directory Traversal Protection", func() {
 
 			link1Target, err := os.Readlink(link1File)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(link1Target).To(Equal(originalFile), "link1.txt should point to original.txt")
+			// The symlink target is relative (e.g., "original.txt")
+			Expect(link1Target).To(Equal(filepath.Base(originalName)), "link1.txt should have relative target to original.txt")
 
 			// Check that the second symlink exists and points to link1
 			link2File := filepath.Join(tmpDir, link2Name)
@@ -234,7 +235,8 @@ var _ = Describe("Untar Directory Traversal Protection", func() {
 
 			link2Target, err := os.Readlink(link2File)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(link2Target).To(Equal(link1File), "link2.txt should point to link1.txt")
+			// The symlink target is relative (e.g., "link1.txt")
+			Expect(link2Target).To(Equal(filepath.Base(link1Name)), "link2.txt should have relative target to link1.txt")
 
 			// Check that reading through the chain of symlinks gives the correct content
 			link1Content, err := os.ReadFile(link1File)
@@ -247,7 +249,7 @@ var _ = Describe("Untar Directory Traversal Protection", func() {
 		}
 	})
 
-	It("should progressively resolve multi-layered symlinks across multiple untarOnce passes", func() {
+	It("should resolve multi-layered symlinks in a single extraction", func() {
 		content := []byte("test content")
 		var buf bytes.Buffer
 
@@ -255,103 +257,212 @@ var _ = Describe("Untar Directory Traversal Protection", func() {
 		link1Name := "progressive-test/link1.txt"
 		link2Name := "progressive-test/link2.txt"
 
-		// Create a tarball in the order of file first, then links. Thus, to resolve
-		// each layer of links, another pass is needed.
+		// Create a tarball with multi-layered symlinks
 		err := writeTarballWithMultiLayerLinks(&buf, content, originalName, link1Name, link2Name, false)
 		Expect(err).ToNot(HaveOccurred())
 
 		img, err := createImageWithLayer(buf.Bytes())
 		Expect(err).ToNot(HaveOccurred())
 
-		state := make(map[string]struct{})
-
-		// First pass: Start with only link2.txt in the filter patterns
-		filterPatterns := []string{link2Name}
-		remaining, err := untarOnce(context.Background(), tmpDir, img, filterPatterns, state)
+		// Extract using the untar function with only link2 as the required file
+		// This should automatically resolve and extract link1 and original as well
+		err = untar(context.Background(), tmpDir, img, []string{link2Name})
 		Expect(err).ToNot(HaveOccurred())
 
-		// After first pass: only link2 should be created (it appears in the tar)
-		// link2 points to link1, which hasn't been extracted yet, so link1 is in remaining
-		_, link1Exists := state[link1Name]
-		_, link2Exists := state[link2Name]
-		_, originalExists := state[originalName]
-		Expect(link2Exists).To(BeTrue(), "link2.txt should be in state after pass 1")
-		Expect(link1Exists).To(BeFalse(), "link1.txt should not be in state after pass 1")
-		Expect(originalExists).To(BeFalse(), "original.txt should not be in state after pass 1")
-		Expect(len(state)).To(Equal(1), "state should only contain one extracted file")
-
+		// Verify all files were extracted
 		link2File := filepath.Join(tmpDir, link2Name)
-		_, err = os.Lstat(link2File)
-		Expect(err).ToNot(HaveOccurred(), "link2.txt should exist on disk after pass 1")
-
 		link1File := filepath.Join(tmpDir, link1Name)
-		_, err = os.Lstat(link1File)
-		Expect(os.IsNotExist(err)).To(BeTrue(), "link1.txt should not exist on disk after pass 1")
-
-		// remaining should include link1 (the unresolved target of link2)
-		Expect(remaining).To(ContainElement(link1Name), "link1.txt should be in remaining after pass 1")
-		Expect(len(remaining)).To(Equal(1), "only link1.txt should be in remaining after pass 1")
-
-		// Second pass: Use the remaining list from first pass
-		filterPatterns = remaining
-		remaining, err = untarOnce(context.Background(), tmpDir, img, filterPatterns, state)
-		Expect(err).ToNot(HaveOccurred())
-
-		// After second pass: link1 should be created (it appears earlier in tar)
-		// link1 points to original.txt, which hasn't been extracted yet, so original is in remaining
-		_, link1Exists = state[link1Name]
-		_, link2Exists = state[link2Name]
-		_, originalExists = state[originalName]
-		Expect(link2Exists).To(BeTrue(), "link2.txt should still be in state after pass 2")
-		Expect(link1Exists).To(BeTrue(), "link1.txt should be in state after pass 2")
-		Expect(originalExists).To(BeFalse(), "original.txt should not be in state after pass 2")
-		Expect(len(state)).To(Equal(2), "state should only contain two extracted files")
-
-		_, err = os.Lstat(link1File)
-		Expect(err).ToNot(HaveOccurred(), "link1.txt should exist on disk after pass 2")
-
 		originalFile := filepath.Join(tmpDir, originalName)
-		_, err = os.Stat(originalFile)
-		Expect(os.IsNotExist(err)).To(BeTrue(), "original.txt should not exist on disk after pass 2")
 
-		// remaining should include original.txt (the unresolved target of link1)
-		Expect(remaining).To(ContainElement(originalName), "original.txt should be in remaining after pass 2")
-		Expect(len(remaining)).To(Equal(1), "only original.txt should be in remaining after pass 2")
+		_, err = os.Lstat(link2File)
+		Expect(err).ToNot(HaveOccurred(), "link2.txt should exist")
 
-		// Third pass: Use the remaining list from second pass
-		filterPatterns = remaining
-		remaining, err = untarOnce(context.Background(), tmpDir, img, filterPatterns, state)
-		Expect(err).ToNot(HaveOccurred())
-
-		// After third pass: all files should be created and resolved
-		_, link1Exists = state[link1Name]
-		_, link2Exists = state[link2Name]
-		_, originalExists = state[originalName]
-		Expect(link2Exists).To(BeTrue(), "link2.txt should still be in state after pass 3")
-		Expect(link1Exists).To(BeTrue(), "link1.txt should still be in state after pass 3")
-		Expect(originalExists).To(BeTrue(), "original.txt should be in state after pass 3")
-		Expect(len(state)).To(Equal(3), "state should only contain three extracted files")
+		_, err = os.Lstat(link1File)
+		Expect(err).ToNot(HaveOccurred(), "link1.txt should exist")
 
 		_, err = os.Stat(originalFile)
-		Expect(err).ToNot(HaveOccurred(), "original.txt should exist on disk after pass 3")
-
-		// remaining should be empty - all targets resolved
-		Expect(len(remaining)).To(Equal(0), "remaining should be empty after pass 3")
+		Expect(err).ToNot(HaveOccurred(), "original.txt should exist")
 
 		// Verify the complete symlink chain works
 		link2Content, err := os.ReadFile(link2File)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(link2Content).To(Equal(content), "reading through link2 should return original content")
+
+		link1Content, err := os.ReadFile(link1File)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(link1Content).To(Equal(content), "reading through link1 should return original content")
+	})
+
+	It("should extract files when parent directory is a symlink and child matches filter", func() {
+		// This tests the scenario where:
+		// - /usr/lib/sysimage/rpm is a symlink to ../../share/rpm
+		// - The actual file is at /usr/share/rpm/rpmdb.sqlite
+		// - The filter pattern matches /usr/lib/sysimage/rpm/rpmdb.sqlite (the symlinked path)
+		// - The file should be extracted along with the directory symlink
+
+		content := []byte("database content")
+		var buf bytes.Buffer
+
+		chain := []linkChainEntry{
+			{name: "usr/lib/sysimage/rpm", linkType: symlink, target: "../../share/rpm"},
+		}
+		err := writeTarballWithLinkChain(&buf, content, "usr/share/rpm/rpmdb.sqlite", chain)
+		Expect(err).ToNot(HaveOccurred())
+
+		img, err := createImageWithLayer(buf.Bytes())
+		Expect(err).ToNot(HaveOccurred())
+
+		// Extract using pattern that matches through the symlink
+		err = untar(context.Background(), tmpDir, img, []string{"usr/lib/sysimage/rpm/rpmdb.sqlite"})
+		Expect(err).ToNot(HaveOccurred())
+
+		// Verify the symlink was created
+		verifySymlinkExists(tmpDir, "usr/lib/sysimage/rpm", "usr/lib/sysimage/rpm")
+
+		// Verify extraction and readability through the symlink
+		verifyLinkChainExtraction(tmpDir, "usr/share/rpm/rpmdb.sqlite", "usr/lib/sysimage/rpm/rpmdb.sqlite", content)
+	})
+
+	It("should extract files through chained directory symlinks", func() {
+		// This tests the scenario where:
+		// - usr/lib/sysimage/rpm -> ../../../foo/bar/rpm (symlink to symlink)
+		// - foo/bar/rpm -> ../../usr/share/rpm (symlink to directory)
+		// - The actual file is at usr/share/rpm/rpmdb.sqlite
+		// - The filter pattern matches usr/lib/sysimage/rpm/rpmdb.sqlite
+		// - Both symlinks and the file should be extracted
+
+		content := []byte("chained symlink content")
+		var buf bytes.Buffer
+
+		chain := []linkChainEntry{
+			{name: "foo/bar/rpm", linkType: symlink, target: "../../usr/share/rpm"},
+			{name: "usr/lib/sysimage/rpm", linkType: symlink, target: "../../../foo/bar/rpm"},
+		}
+		err := writeTarballWithLinkChain(&buf, content, "usr/share/rpm/rpmdb.sqlite", chain)
+		Expect(err).ToNot(HaveOccurred())
+
+		img, err := createImageWithLayer(buf.Bytes())
+		Expect(err).ToNot(HaveOccurred())
+
+		// Extract using pattern that matches through the chained symlinks
+		err = untar(context.Background(), tmpDir, img, []string{"usr/lib/sysimage/rpm/rpmdb.sqlite"})
+		Expect(err).ToNot(HaveOccurred())
+
+		// Verify both symlinks were created
+		verifySymlinkExists(tmpDir, "foo/bar/rpm", "foo/bar/rpm")
+		verifySymlinkExists(tmpDir, "usr/lib/sysimage/rpm", "usr/lib/sysimage/rpm")
+
+		// Verify the actual file was extracted and we can read through both symlink paths
+		verifyLinkChainExtraction(tmpDir, "usr/share/rpm/rpmdb.sqlite", "usr/share/rpm/rpmdb.sqlite", content)
+		verifyLinkChainExtraction(tmpDir, "usr/share/rpm/rpmdb.sqlite", "foo/bar/rpm/rpmdb.sqlite", content)
+		verifyLinkChainExtraction(tmpDir, "usr/share/rpm/rpmdb.sqlite", "usr/lib/sysimage/rpm/rpmdb.sqlite", content)
+	})
+
+	It("should extract files through hardlinks to directory symlinks (OSTree pattern)", func() {
+		// This tests the OSTree container image pattern where:
+		// - sysroot/ostree/repo/objects/HASH.file is a symlink to ../../share/rpm
+		// - usr/lib/sysimage/rpm is a hardlink to sysroot/ostree/repo/objects/HASH.file
+		// - usr/share/rpm/rpmdb.sqlite is a regular file (or hardlink to ostree object)
+		// - The pattern matches usr/lib/sysimage/rpm/rpmdb.sqlite
+		// - Both the file and the hardlink-to-symlink chain should be extracted
+
+		content := []byte("rpm database content")
+		var buf bytes.Buffer
+
+		chain := []linkChainEntry{
+			{name: "sysroot/ostree/repo/objects/53/hash.file", linkType: symlink, target: "../../share/rpm"},
+			{name: "usr/lib/sysimage/rpm", linkType: hardlink, target: "sysroot/ostree/repo/objects/53/hash.file"},
+		}
+		err := writeTarballWithLinkChain(&buf, content, "usr/share/rpm/rpmdb.sqlite", chain)
+		Expect(err).ToNot(HaveOccurred())
+
+		img, err := createImageWithLayer(buf.Bytes())
+		Expect(err).ToNot(HaveOccurred())
+
+		// Extract using pattern that matches through the hardlink-to-symlink
+		err = untar(context.Background(), tmpDir, img, []string{"usr/lib/sysimage/rpm/rpmdb.sqlite"})
+		Expect(err).ToNot(HaveOccurred())
+
+		// Verify both links were extracted as symlinks (hardlink to symlink becomes symlink)
+		verifySymlinkExists(tmpDir, "sysroot/ostree/repo/objects/53/hash.file", "ostree object")
+		verifySymlinkExists(tmpDir, "usr/lib/sysimage/rpm", "hardlink to symlink")
+
+		// Verify extraction and readability through the chain
+		verifyLinkChainExtraction(tmpDir, "usr/share/rpm/rpmdb.sqlite", "usr/lib/sysimage/rpm/rpmdb.sqlite", content)
+	})
+
+	It("should extract files through hardlink -> hardlink -> symlink -> directory chain", func() {
+		// Test: hardlink1 -> hardlink2 -> symlink -> directory
+		// Pattern matches through hardlink1
+		content := []byte("test content")
+		var buf bytes.Buffer
+
+		chain := []linkChainEntry{
+			{name: "storage/symlink-to-dir", linkType: symlink, target: "../actual/dir"},
+			{name: "intermediate/link2", linkType: hardlink, target: "storage/symlink-to-dir"},
+			{name: "alias/link1", linkType: hardlink, target: "intermediate/link2"},
+		}
+		err := writeTarballWithLinkChain(&buf, content, "actual/dir/file.txt", chain)
+		Expect(err).ToNot(HaveOccurred())
+
+		img, err := createImageWithLayer(buf.Bytes())
+		Expect(err).ToNot(HaveOccurred())
+
+		// Extract using pattern that matches through the hardlink chain
+		err = untar(context.Background(), tmpDir, img, []string{"alias/link1/file.txt"})
+		Expect(err).ToNot(HaveOccurred())
+
+		verifyLinkChainExtraction(tmpDir, "actual/dir/file.txt", "alias/link1/file.txt", content)
+	})
+
+	It("should extract files through symlink -> hardlink -> symlink chain", func() {
+		// Test: symlink1 -> hardlink -> symlink2 -> directory
+		// Pattern matches through symlink1
+		content := []byte("test content")
+		var buf bytes.Buffer
+
+		chain := []linkChainEntry{
+			{name: "intermediate/sym2", linkType: symlink, target: "../real/location"},
+			{name: "middle/hlink", linkType: hardlink, target: "intermediate/sym2"},
+			{name: "alias/sym1", linkType: symlink, target: "../middle/hlink"},
+		}
+		err := writeTarballWithLinkChain(&buf, content, "real/location/file.txt", chain)
+		Expect(err).ToNot(HaveOccurred())
+
+		img, err := createImageWithLayer(buf.Bytes())
+		Expect(err).ToNot(HaveOccurred())
+
+		// Extract using pattern that matches through the chain
+		err = untar(context.Background(), tmpDir, img, []string{"alias/sym1/file.txt"})
+		Expect(err).ToNot(HaveOccurred())
+
+		verifyLinkChainExtraction(tmpDir, "real/location/file.txt", "alias/sym1/file.txt", content)
+	})
+
+	It("should extract files through alternating hardlink/symlink chain (hardlink -> symlink -> hardlink -> symlink -> directory)", func() {
+		// Test complex alternating chain where hardlinks point to symlinks
+		content := []byte("alternating chain content")
+		var buf bytes.Buffer
+
+		chain := []linkChainEntry{
+			{name: "level3/sym3", linkType: symlink, target: "../target"},
+			{name: "level2/hlink2", linkType: hardlink, target: "level3/sym3"},
+			{name: "level1/sym1", linkType: symlink, target: "../level2/hlink2"},
+			{name: "alias/hlink1", linkType: hardlink, target: "level1/sym1"},
+		}
+		err := writeTarballWithLinkChain(&buf, content, "target/data.db", chain)
+		Expect(err).ToNot(HaveOccurred())
+
+		img, err := createImageWithLayer(buf.Bytes())
+		Expect(err).ToNot(HaveOccurred())
+
+		// Extract using pattern that matches through the alternating chain
+		err = untar(context.Background(), tmpDir, img, []string{"alias/hlink1/data.db"})
+		Expect(err).ToNot(HaveOccurred())
+
+		verifyLinkChainExtraction(tmpDir, "target/data.db", "alias/hlink1/data.db", content)
 	})
 })
-
-// linkType a convenience type just to make the consuming functions more clear.
-type linkType = byte
-
-const (
-	hardlink linkType = tar.TypeLink
-	symlink  linkType = tar.TypeSymlink
-)
 
 // writeTarballWithLink writes a tar archive with a regular file and a hard
 // link. The ability to write a regular file allows for testing happy paths.
@@ -377,7 +488,7 @@ func writeTarballWithLink(out io.Writer, linkTypeFlag linkType, contents []byte,
 	}
 
 	linkHeader := &tar.Header{
-		Typeflag: linkTypeFlag,
+		Typeflag: byte(linkTypeFlag),
 		Name:     linkname,
 		Linkname: linkTarget,
 		Mode:     0o644,
@@ -464,4 +575,80 @@ func writeTarballWithMultiLayerLinks(out io.Writer, contents []byte, filename st
 	}
 
 	return nil
+}
+
+// linkChainEntry represents a single link in a chain of hardlinks/symlinks
+type linkChainEntry struct {
+	name     string
+	linkType linkType
+	target   string
+}
+
+// writeTarballWithLinkChain writes a tar archive with a regular file and a chain of hardlinks/symlinks.
+// The chain is specified as a slice of linkChainEntry, where each entry points to the next (or the final file).
+// Example: for chain [link1->link2, link2->file], pass entries for link1 and link2.
+func writeTarballWithLinkChain(out io.Writer, contents []byte, filename string, chain []linkChainEntry) error {
+	tw := tar.NewWriter(out)
+	defer tw.Close()
+
+	// Write the actual file first
+	fileHeader := &tar.Header{
+		Typeflag: tar.TypeReg,
+		Name:     filename,
+		Size:     int64(len(contents)),
+		Mode:     0o644,
+		Format:   tar.FormatPAX,
+	}
+	if err := tw.WriteHeader(fileHeader); err != nil {
+		return err
+	}
+	if _, err := tw.Write(contents); err != nil {
+		return err
+	}
+
+	// Write each link in the chain
+	for _, link := range chain {
+		linkHeader := &tar.Header{
+			Typeflag: byte(link.linkType),
+			Name:     link.name,
+			Linkname: link.target,
+			Mode:     0o777,
+			Format:   tar.FormatPAX,
+		}
+		if err := tw.WriteHeader(linkHeader); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// verifyLinkChainExtraction verifies that files were extracted correctly through a link chain.
+// It checks that the actual file exists with correct content, and that the file can be read
+// through the specified chain path.
+func verifyLinkChainExtraction(tmpDir string, actualFilePath, chainPath string, expectedContent []byte) {
+	// Verify the actual file was extracted
+	fullActualPath := filepath.Join(tmpDir, actualFilePath)
+	fileContent, err := os.ReadFile(fullActualPath)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(fileContent).To(Equal(expectedContent))
+
+	// Verify we can read through the chain
+	fullChainPath := filepath.Join(tmpDir, chainPath)
+	chainFileContent, err := os.ReadFile(fullChainPath)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(chainFileContent).To(Equal(expectedContent), "should be able to read file through link chain")
+}
+
+// verifySymlinkExists verifies that a symlink exists at the given path.
+// Returns the symlink target for further verification if needed.
+func verifySymlinkExists(tmpDir, symlinkPath, description string) string {
+	fullPath := filepath.Join(tmpDir, symlinkPath)
+	info, err := os.Lstat(fullPath)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(info.Mode()&os.ModeSymlink).To(Equal(os.ModeSymlink), description+" should be a symlink")
+
+	target, err := os.Readlink(fullPath)
+	Expect(err).ToNot(HaveOccurred())
+	return target
 }
