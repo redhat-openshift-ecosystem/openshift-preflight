@@ -8,7 +8,7 @@ require (
 	github.com/docker/cli v29.2.1+incompatible
 	github.com/glebarez/go-sqlite v1.22.0
 	github.com/go-logr/logr v1.4.3
-	github.com/google/go-containerregistry v0.21.1
+	github.com/google/go-containerregistry v0.21.2
 	github.com/knqyf263/go-rpmdb v0.1.1
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
@@ -23,9 +23,9 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
 	gotest.tools/v3 v3.5.2
-	k8s.io/api v0.35.1
+	k8s.io/api v0.35.2
 	k8s.io/apimachinery v0.35.2
-	k8s.io/client-go v0.35.1
+	k8s.io/client-go v0.35.2
 	sigs.k8s.io/controller-runtime v0.23.1
 	sigs.k8s.io/yaml v1.6.0
 )
