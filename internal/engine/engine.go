@@ -333,7 +333,7 @@ func generateBundleHash(ctx context.Context, bundlePath string) (string, error) 
 	slices.Sort(keys)
 
 	for _, k := range keys {
-		hashBuffer.WriteString(fmt.Sprintf("%s  %s\n", k, files[k]))
+		fmt.Fprintf(&hashBuffer, "%s  %s\n", k, files[k])
 	}
 
 	artifactsWriter := artifacts.WriterFromContext(ctx)
