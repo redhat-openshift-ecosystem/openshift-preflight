@@ -1,0 +1,5 @@
+rules:
+  # Silence this check until we start using GitHub environments
+  # https://docs.zizmor.sh/audits/#secrets-outside-env
+  secrets-outside-env:
+    disable: true
