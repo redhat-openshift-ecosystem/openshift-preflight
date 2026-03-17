@@ -215,5 +215,31 @@ spec:
 			Expect(result).To(BeFalse())
 		})
 	})
+	When("the CSV has empty relatedImages entries", func() {
+		It("should handle gracefully without panicking", func() {
+			csvContents := `kind: ClusterServiceVersion
+apiVersion: operators.coreos.com/v1alpha1
+spec:
+  install:
+    spec:
+      deployments:
+      - spec:
+          template:
+            spec:
+              containers:
+              - image: registry.example.io/foo/bar@sha256:f000432f07cd187469f0310e3ed9dcf9a5db2be14b8bab9c5293dd1ee8518176
+                name: the-operator
+  relatedImages:
+  - name: the-operator
+    image: registry.example.io/foo/bar@sha256:f000432f07cd187469f0310e3ed9dcf9a5db2be14b8bab9c5293dd1ee8518176
+  - name: ''
+    image: ''`
+			Expect(os.WriteFile(filepath.Join(imageRef.ImageFSPath, manifestsDir, clusterServiceVersionFilename), []byte(csvContents), 0o644)).To(Succeed())
+			result, err := certifiedImagesCheck.Validate(context.TODO(), imageRef)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(result).To(BeFalse())
+			Expect(certifiedImagesCheck.nonCertifiedImages).To(HaveLen(1))
+		})
+	})
 	AssertMetaData(certifiedImagesCheck)
 })
