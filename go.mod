@@ -15,7 +15,7 @@ require (
 	github.com/openshift/api v0.0.0-20251015135203-5d856d3e8354
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235
 	github.com/operator-framework/api v0.41.0
-	github.com/operator-framework/operator-manifest-tools v0.11.0
+	github.com/operator-framework/operator-manifest-tools v0.12.0
 	github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/afero v1.15.0
