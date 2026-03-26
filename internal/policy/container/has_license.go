@@ -97,5 +97,5 @@ func (p *HasLicenseCheck) Help() check.HelpText {
 }
 
 func (p *HasLicenseCheck) RequiredFilePatterns() []string {
-	return []string{filepath.Join(licensePath, "*")}
+	return []string{filepath.Join(licensePath, "**")}
 }
