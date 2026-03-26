@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
@@ -29,9 +30,11 @@ var _ check.Check = &HasLicenseCheck{}
 type HasLicenseCheck struct{}
 
 func (p *HasLicenseCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
+	logger := logr.FromContextOrDiscard(ctx)
 	licenseFileList, err := p.getDataToValidate(ctx, imgRef.ImageFSPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) || errors.Is(err, errLicensesNotADir) {
+			logger.Info(fmt.Sprintf("warning: licenses directory does not exist or all of its children are empty directories: %s", err))
 			return false, nil
 		}
 		return false, fmt.Errorf("could not get license file list: %v", err)
@@ -50,9 +53,19 @@ func (p *HasLicenseCheck) getDataToValidate(ctx context.Context, mountedPath str
 		return nil, fmt.Errorf("%s is not a directory: %w", licensePath, errLicensesNotADir)
 	}
 
-	files, err := os.ReadDir(fullPath)
+	var files []fs.DirEntry
+	err = filepath.WalkDir(fullPath, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		// Only include regular files, not directories
+		if !d.IsDir() {
+			files = append(files, d)
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("could not read directory %s: %w", licensePath, err)
+		return nil, fmt.Errorf("could not walk directory %s: %w", licensePath, err)
 	}
 	return files, nil
 }
@@ -61,17 +74,14 @@ func (p *HasLicenseCheck) getDataToValidate(ctx context.Context, mountedPath str
 func (p *HasLicenseCheck) validate(ctx context.Context, licenseFileList []fs.DirEntry) (bool, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 
-	nonZeroLength := false
-	for _, f := range licenseFileList {
+	nonZeroLength := slices.ContainsFunc(licenseFileList, func(f fs.DirEntry) bool {
 		info, err := f.Info()
 		if err != nil {
-			continue
+			return false
 		}
-		if info.Size() > 0 {
-			nonZeroLength = true
-			break
-		}
-	}
+		return info.Size() > 0
+	})
+
 	logger.V(log.DBG).Info("number of licenses found", "licenseCount", len(licenseFileList))
 	return len(licenseFileList) >= minLicenseFileCount && nonZeroLength, nil
 }
@@ -97,5 +107,5 @@ func (p *HasLicenseCheck) Help() check.HelpText {
 }
 
 func (p *HasLicenseCheck) RequiredFilePatterns() []string {
-	return []string{filepath.Join(licensePath, "*")}
+	return []string{filepath.Join(licensePath, "**")}
 }

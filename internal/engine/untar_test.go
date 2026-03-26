@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
@@ -87,6 +88,58 @@ var _ = Describe("Untar Directory Traversal Protection", func() {
 		fileContent, err := os.ReadFile(legitimateFile)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(fileContent).To(Equal(content))
+	})
+
+	It("should extract files in nested subdirectories when pattern ends with /**", func() {
+		// Some checks (e.g. HasModifiedFiles) require extraction of nested subdirectories
+		// https://github.com/redhat-openshift-ecosystem/openshift-preflight/pull/1393
+		var buf bytes.Buffer
+		tw := tar.NewWriter(&buf)
+
+		match_files := []string{
+			"a/b",
+			"a/c/d",
+			"a/e/f/g",
+			"a/h/i/j/k",
+		}
+
+		reject_files := []string{
+			"z",
+			"y/x",
+		}
+
+		content := []byte("foo")
+
+		for _, f := range slices.Concat(match_files, reject_files) {
+			err := tw.WriteHeader(&tar.Header{
+				Typeflag: tar.TypeReg,
+				Name:     f,
+				Size:     int64(len(content)),
+				Mode:     0o644,
+				Format:   tar.FormatPAX,
+			})
+			Expect(err).ToNot(HaveOccurred())
+			_, err = tw.Write(content)
+			Expect(err).ToNot(HaveOccurred())
+		}
+		Expect(tw.Close()).To(Succeed())
+
+		img, err := createImageWithLayer(buf.Bytes())
+		Expect(err).ToNot(HaveOccurred())
+
+		err = untar(context.Background(), tmpDir, img, []string{"a/**"})
+		Expect(err).ToNot(HaveOccurred())
+
+		for _, f := range match_files {
+			read, err := os.ReadFile(filepath.Join(tmpDir, f))
+			Expect(err).ToNot(HaveOccurred(), "expected %s to be extracted", f)
+			Expect(read).To(Equal(content))
+		}
+
+		for _, f := range reject_files {
+			_, err = os.Stat(filepath.Join(tmpDir, f))
+			Expect(os.IsNotExist(err)).To(BeTrue(), "expected %s not to be extracted", f)
+		}
 	})
 
 	DescribeTable("for (sym)links",

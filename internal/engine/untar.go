@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-logr/logr"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
@@ -109,7 +110,7 @@ func untarOnce(ctx context.Context, dst string, img v1.Image, filterPatterns []s
 		}
 
 		matches := slices.ContainsFunc(filterPatterns, func(p string) bool {
-			result, _ := filepath.Match(p, header.Name)
+			result, _ := doublestar.Match(p, header.Name)
 			return result
 		})
 		if !matches {
