@@ -109,8 +109,10 @@ func untarOnce(ctx context.Context, dst string, img v1.Image, filterPatterns []s
 		}
 
 		matches := slices.ContainsFunc(filterPatterns, func(p string) bool {
-			result, _ := filepath.Match(p, header.Name)
-			return result
+			if matched, _ := filepath.Match(p, header.Name); matched {
+				return true
+			}
+			return strings.HasSuffix(p, "/*") && strings.HasPrefix(header.Name, strings.TrimSuffix(p, "*"))
 		})
 		if !matches {
 			continue

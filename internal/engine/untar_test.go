@@ -89,6 +89,56 @@ var _ = Describe("Untar Directory Traversal Protection", func() {
 		Expect(fileContent).To(Equal(content))
 	})
 
+	It("should extract files in nested subdirectories when pattern ends with /*", func() {
+		// This reproduces the HasLicense bug: go-licenses generates files at
+		// paths like licenses/github.com/module/LICENSE which must match the
+		// pattern "licenses/*". filepath.Match("licenses/*", ...) only matches
+		// one level deep, so recursive prefix matching is required.
+		var buf bytes.Buffer
+		tw := tar.NewWriter(&buf)
+
+		files := []struct {
+			name    string
+			content []byte
+		}{
+			{"licenses/MIT.txt", []byte("MIT License")},
+			{"licenses/github.com/somemodule/LICENSE", []byte("Apache License")},
+			{"licenses/github.com/other/v2/NOTICE", []byte("Notice file")},
+			{"unrelated/file.txt", []byte("should not be extracted")},
+		}
+
+		for _, f := range files {
+			err := tw.WriteHeader(&tar.Header{
+				Typeflag: tar.TypeReg,
+				Name:     f.name,
+				Size:     int64(len(f.content)),
+				Mode:     0o644,
+				Format:   tar.FormatPAX,
+			})
+			Expect(err).ToNot(HaveOccurred())
+			_, err = tw.Write(f.content)
+			Expect(err).ToNot(HaveOccurred())
+		}
+		Expect(tw.Close()).To(Succeed())
+
+		img, err := createImageWithLayer(buf.Bytes())
+		Expect(err).ToNot(HaveOccurred())
+
+		err = untar(context.Background(), tmpDir, img, []string{"licenses/*"})
+		Expect(err).ToNot(HaveOccurred())
+
+		// All three license files should be extracted
+		for _, f := range files[:3] {
+			content, err := os.ReadFile(filepath.Join(tmpDir, f.name))
+			Expect(err).ToNot(HaveOccurred(), "expected %s to be extracted", f.name)
+			Expect(content).To(Equal(f.content))
+		}
+
+		// The unrelated file should NOT be extracted
+		_, err = os.Stat(filepath.Join(tmpDir, "unrelated/file.txt"))
+		Expect(os.IsNotExist(err)).To(BeTrue(), "unrelated/file.txt should not be extracted")
+	})
+
 	DescribeTable("for (sym)links",
 		func(linkType linkType, linkTarget string) {
 			content := []byte("placeholder")
