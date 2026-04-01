@@ -33,7 +33,7 @@ build-multi-arch-mac: $(addprefix build-mac-,$(ARCHITECTURES_MAC))
 define MAC_ARCHITECTURE_template
 .PHONY: build-mac-$(1)
 build-mac-$(1):
-	GOOS=darwin GOARCH=$(1) go build -o $(BINARY)-darwin-$(1) -trimpath -ldflags "-s -w -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) \
+	GOOS=darwin GOARCH=$(1) CGO_ENABLED=0 go build -o $(BINARY)-darwin-$(1) -trimpath -ldflags "-s -w -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) \
 				-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG)" cmd/preflight/main.go
 endef
 
