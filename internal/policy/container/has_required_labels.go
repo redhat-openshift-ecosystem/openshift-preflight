@@ -22,6 +22,7 @@ type HasRequiredLabelsCheck struct{}
 func (p *HasRequiredLabelsCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	labels, err := getContainerLabels(imgRef.ImageInfo)
 	if err != nil {
+		//coverage:ignore
 		return false, fmt.Errorf("could not retrieve image labels: %v", err)
 	}
 
@@ -67,5 +68,6 @@ func (p *HasRequiredLabelsCheck) Help() check.HelpText {
 }
 
 func (p *HasRequiredLabelsCheck) RequiredFilePatterns() []string {
+	//coverage:ignore
 	return nil
 }

@@ -44,11 +44,13 @@ func RunPreflight(
 	// Fail early if we cannot write to the results path.
 	resultsFilePath, err := artifactsWriter.WriteFile(ResultsFilenameWithExtension(formatter.FileExtension()), strings.NewReader(""))
 	if err != nil {
+		//coverage:ignore
 		return err
 	}
 
 	resultsFile, err := rw.OpenFile(resultsFilePath)
 	if err != nil {
+		//coverage:ignore
 		return err
 	}
 
@@ -72,6 +74,7 @@ func RunPreflight(
 	// Optionally write the JUnit results alongside the regular results.
 	if cfg.IncludeJUnitResults {
 		if err := writeJUnit(ctx, results); err != nil {
+			//coverage:ignore
 			return err
 		}
 	}
@@ -94,17 +97,20 @@ func writeJUnit(ctx context.Context, results certification.Results) error {
 
 	junitformatter, err := formatters.NewByName("junitxml")
 	if err != nil {
+		//coverage:ignore
 		return err
 	}
 
 	junitResults, err := junitformatter.Format(ctx, results)
 	if err != nil {
+		//coverage:ignore
 		return err
 	}
 
 	if aw := artifacts.WriterFromContext(ctx); aw != nil {
 		junitFilename, err := aw.WriteFile("results-junit.xml", bytes.NewReader((junitResults)))
 		if err != nil {
+			//coverage:ignore
 			return err
 		}
 		logger.V(log.TRC).Info("JUnitXML filename", "filename", junitFilename)

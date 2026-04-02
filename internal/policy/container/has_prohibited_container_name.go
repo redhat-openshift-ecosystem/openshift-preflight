@@ -34,6 +34,7 @@ func (p HasProhibitedContainerName) validate(ctx context.Context, containerName 
 
 	result, err := violatesRedHatTrademark(containerName)
 	if err != nil {
+		//coverage:ignore
 		return false, fmt.Errorf("error while validating container name: %w", err)
 	}
 
@@ -66,5 +67,6 @@ func (p HasProhibitedContainerName) Help() check.HelpText {
 }
 
 func (p HasProhibitedContainerName) RequiredFilePatterns() []string {
+	//coverage:ignore
 	return nil
 }

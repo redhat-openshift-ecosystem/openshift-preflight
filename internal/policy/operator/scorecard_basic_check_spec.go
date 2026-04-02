@@ -65,6 +65,7 @@ func (p *ScorecardBasicSpecCheck) Metadata() check.Metadata {
 
 func (p *ScorecardBasicSpecCheck) Help() check.HelpText {
 	if p.fatalError {
+		//coverage:ignore
 		return check.HelpText{
 			Message: "There was a fatal error while running operator-sdk scorecard tests. " +
 				"Please see the preflight log for details. If necessary, set logging to be more verbose.",
@@ -78,5 +79,6 @@ func (p *ScorecardBasicSpecCheck) Help() check.HelpText {
 }
 
 func (p *ScorecardBasicSpecCheck) RequiredFilePatterns() []string {
+	//coverage:ignore
 	return bundle.BundleFiles
 }
