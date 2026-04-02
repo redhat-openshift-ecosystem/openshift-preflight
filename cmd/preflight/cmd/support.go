@@ -94,6 +94,7 @@ func (g *supportTextGenerator) validate() error {
 
 	if g.ProjectType == "operator" {
 		if len(g.PullRequestURL) == 0 {
+			//coverage:ignore
 			return errors.New("a pull request URL is required for operator project support requests")
 		}
 

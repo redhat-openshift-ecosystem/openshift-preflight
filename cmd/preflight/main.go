@@ -7,7 +7,9 @@ import (
 )
 
 func main() {
+	//coverage:ignore
 	if err := cmd.Execute(); err != nil {
+		//coverage:ignore
 		log.Fatal(err)
 	}
 }

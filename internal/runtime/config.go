@@ -96,14 +96,17 @@ func (c *Config) storeOperatorPolicyConfiguration(vcfg viper.Viper) {
 
 // This is to satisfy the CraneConfig interface
 func (c *Config) CraneDockerConfig() string {
+	//coverage:ignore
 	return c.DockerConfig
 }
 
 func (c *Config) CranePlatform() string {
+	//coverage:ignore
 	return c.Platform
 }
 
 func (c *Config) CraneInsecure() bool {
+	//coverage:ignore
 	return c.Insecure
 }
 

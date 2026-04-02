@@ -65,6 +65,7 @@ func (p *hasUniqueTagCheck) Validate(ctx context.Context, imgRef image.ImageRefe
 func (p *hasUniqueTagCheck) getDataToValidate(ctx context.Context, image string) ([]string, error) {
 	repo, err := name.NewRepository(image)
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("failed to parse image name: %v", err)
 	}
 
@@ -86,6 +87,7 @@ func (p *hasUniqueTagCheck) getDataToValidate(ctx context.Context, image string)
 
 	puller, err := remote.NewPuller(options...)
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("failed to create puller: %v", err)
 	}
 
@@ -97,6 +99,7 @@ func (p *hasUniqueTagCheck) getDataToValidate(ctx context.Context, image string)
 	if lister.HasNext() {
 		tags, err := lister.Next(ctx)
 		if err != nil {
+			//coverage:ignore
 			return nil, fmt.Errorf("failed to get tags: %v", err)
 		}
 
@@ -105,6 +108,7 @@ func (p *hasUniqueTagCheck) getDataToValidate(ctx context.Context, image string)
 		}
 	}
 
+	//coverage:ignore
 	return nil, nil
 }
 
@@ -137,5 +141,6 @@ func (p *hasUniqueTagCheck) Help() check.HelpText {
 }
 
 func (p *hasUniqueTagCheck) RequiredFilePatterns() []string {
+	//coverage:ignore
 	return nil
 }

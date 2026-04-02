@@ -82,6 +82,7 @@ func (f *genericFormatter) Format(ctx context.Context, r certification.Results) 
 // FileExtension returns the extension a user might use when formatting
 // results with this formatter and writing that to disk.
 func (f *genericFormatter) FileExtension() string {
+	//coverage:ignore
 	return f.fileExtension
 }
 

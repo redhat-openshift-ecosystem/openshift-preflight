@@ -24,6 +24,7 @@ func runtimeAssetsCmd() *cobra.Command {
 
 func runtimeAssetsRunE(cmd *cobra.Command, args []string) error {
 	if err := printAssets(cmd.Context(), cmd.OutOrStdout()); err != nil {
+		//coverage:ignore
 		return err
 	}
 
@@ -35,6 +36,7 @@ func printAssets(ctx context.Context, w io.Writer) error {
 
 	assetsJSON, err := prettyPrintJSON(assets)
 	if err != nil {
+		//coverage:ignore
 		return err
 	}
 

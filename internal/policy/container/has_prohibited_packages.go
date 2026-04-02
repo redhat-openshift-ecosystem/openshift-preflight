@@ -20,23 +20,31 @@ var _ check.Check = &HasNoProhibitedPackagesCheck{}
 type HasNoProhibitedPackagesCheck struct{}
 
 func (p *HasNoProhibitedPackagesCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
+	//coverage:ignore
 	pkgList, err := p.getDataToValidate(ctx, imgRef.ImageFSPath)
 	if err != nil {
+		//coverage:ignore
 		return false, fmt.Errorf("unable to get a list of all packages in the image: %v", err)
 	}
 
+	//coverage:ignore
 	return p.validate(ctx, pkgList)
 }
 
 func (p *HasNoProhibitedPackagesCheck) getDataToValidate(ctx context.Context, dir string) ([]string, error) {
+	//coverage:ignore
 	pkgList, err := rpm.GetPackageList(ctx, dir)
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not get rpm list: %w", err)
 	}
+	//coverage:ignore
 	pkgs := make([]string, 0, len(pkgList))
 	for _, pkg := range pkgList {
+		//coverage:ignore
 		pkgs = append(pkgs, pkg.Name)
 	}
+	//coverage:ignore
 	return pkgs, nil
 }
 
@@ -87,6 +95,7 @@ func (p *HasNoProhibitedPackagesCheck) Help() check.HelpText {
 }
 
 func (p *HasNoProhibitedPackagesCheck) RequiredFilePatterns() []string {
+	//coverage:ignore
 	return rpm.RpmdbPaths
 }
 

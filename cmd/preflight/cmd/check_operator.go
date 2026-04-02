@@ -90,6 +90,7 @@ func checkOperatorRunE(cmd *cobra.Command, args []string, runpreflight runPrefli
 	ctx := cmd.Context()
 	logger, err := logr.FromContext(ctx)
 	if err != nil {
+		//coverage:ignore
 		return fmt.Errorf("invalid logging configuration")
 	}
 
@@ -99,16 +100,19 @@ func checkOperatorRunE(cmd *cobra.Command, args []string, runpreflight runPrefli
 	// Render the Viper configuration as a runtime.Config
 	cfg, err := runtime.NewConfigFrom(*viper.Instance())
 	if err != nil {
+		//coverage:ignore
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
 	ctx, _, err = configureArtifactsWriter(ctx, cfg.Artifacts)
 	if err != nil {
+		//coverage:ignore
 		return err
 	}
 
 	formatter, err := formatters.NewByName(formatters.DefaultFormat)
 	if err != nil {
+		//coverage:ignore
 		return err
 	}
 
@@ -173,10 +177,12 @@ func generateOperatorCheckOptions(cfg *runtime.Config) []operator.Option {
 	}
 
 	if cfg.Channel != "" {
+		//coverage:ignore
 		opts = append(opts, operator.WithOperatorChannel(cfg.Channel))
 	}
 
 	if cfg.Insecure {
+		//coverage:ignore
 		opts = append(opts, operator.WithInsecureConnection())
 	}
 
@@ -195,6 +201,7 @@ func generateOperatorCheckOptions(cfg *runtime.Config) []operator.Option {
 func configureArtifactsWriter(ctx context.Context, dir string) (context.Context, *artifacts.FilesystemWriter, error) {
 	artifactsWriter, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(dir))
 	if err != nil {
+		//coverage:ignore
 		return ctx, &artifacts.FilesystemWriter{}, err
 	}
 

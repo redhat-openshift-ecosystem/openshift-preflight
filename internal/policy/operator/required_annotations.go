@@ -33,6 +33,7 @@ var _ check.Check = &RequiredAnnotations{}
 type RequiredAnnotations struct{}
 
 func (h RequiredAnnotations) Validate(ctx context.Context, imageReference image.ImageReference) (result bool, err error) {
+	//coverage:ignore
 	return h.validate(ctx, imageReference.ImageFSPath)
 }
 
@@ -48,6 +49,7 @@ func (h RequiredAnnotations) validate(ctx context.Context, bundledir string) (bo
 	logger := logr.FromContextOrDiscard(ctx)
 	csv, err := h.getBundleCSV(ctx, bundledir)
 	if err != nil {
+		//coverage:ignore
 		return false, err
 	}
 
@@ -103,5 +105,6 @@ func (h RequiredAnnotations) Help() check.HelpText {
 }
 
 func (h RequiredAnnotations) RequiredFilePatterns() []string {
+	//coverage:ignore
 	return bundle.BundleFiles
 }

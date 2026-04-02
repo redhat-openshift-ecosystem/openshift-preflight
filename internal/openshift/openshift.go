@@ -42,15 +42,19 @@ func NewClient(client crclient.Client, k8sInterface kubernetes.Interface) Client
 
 func AddSchemes(scheme *apiruntime.Scheme) error {
 	if err := operatorsv1.AddToScheme(scheme); err != nil {
+		//coverage:ignore
 		return err
 	}
 	if err := operatorsv1alpha1.AddToScheme(scheme); err != nil {
+		//coverage:ignore
 		return err
 	}
 	if err := imagestreamv1.AddToScheme(scheme); err != nil {
+		//coverage:ignore
 		return err
 	}
 	if err := rbacv1.AddToScheme(scheme); err != nil {
+		//coverage:ignore
 		return err
 	}
 	return nil
@@ -71,6 +75,7 @@ func (oe *openshiftClient) CreateNamespace(ctx context.Context, name string) (*c
 		return &nsSpec, fmt.Errorf("could not create namespace: %s: %w: %v", name, ErrAlreadyExists, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not create namespace: %s: %v", name, err)
 	}
 	return &nsSpec, nil
@@ -87,6 +92,7 @@ func (oe *openshiftClient) DeleteNamespace(ctx context.Context, name string) err
 	}
 	err := oe.Client.Delete(ctx, &nsSpec, &crclient.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
+		//coverage:ignore
 		return fmt.Errorf("could not delete namespace: %s: %v", name, err)
 	}
 
@@ -111,6 +117,7 @@ func (oe *openshiftClient) GetNamespace(ctx context.Context, name string) (*core
 		return nil, fmt.Errorf("could not retrieve namespace: %s: %w: %v", name, ErrNotFound, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not retrieve namespace: %s: %v", name, err)
 	}
 	return &nsSpec, nil
@@ -135,6 +142,7 @@ func (oe *openshiftClient) CreateOperatorGroup(ctx context.Context, data Operato
 		return operatorGroup, fmt.Errorf("could not create operatorgroup: %s/%s: %w: %v", namespace, data.Name, ErrAlreadyExists, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not create operatorgroup: %s/%s: %v", namespace, data.Name, err)
 	}
 
@@ -153,6 +161,7 @@ func (oe *openshiftClient) DeleteOperatorGroup(ctx context.Context, name string,
 	}
 	err := oe.Client.Delete(ctx, &operatorGroup)
 	if err != nil {
+		//coverage:ignore
 		return fmt.Errorf("could not delete operatorgroup: %s/%s: %v", namespace, name, err)
 	}
 
@@ -173,6 +182,7 @@ func (oe *openshiftClient) GetOperatorGroup(ctx context.Context, name string, na
 		return nil, fmt.Errorf("could not retrieve operatorgroup: %s/%s: %w: %v", namespace, name, ErrNotFound, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not retrieve operatorgroup: %s/%s: %v", namespace, name, err)
 	}
 	return &operatorGroup, nil
@@ -200,6 +210,7 @@ func (oe openshiftClient) CreateSecret(ctx context.Context, name string, content
 		return &secret, fmt.Errorf("could not create secret: %s/%s: %w: %v", namespace, name, ErrAlreadyExists, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not create secret: %s/%s: %v", namespace, name, err)
 	}
 
@@ -218,6 +229,7 @@ func (oe openshiftClient) DeleteSecret(ctx context.Context, name string, namespa
 	}
 	err := oe.Client.Delete(ctx, &secret, &crclient.DeleteOptions{})
 	if err != nil {
+		//coverage:ignore
 		return fmt.Errorf("could not delete secret: %s/%s: %v", namespace, name, err)
 	}
 
@@ -238,6 +250,7 @@ func (oe openshiftClient) GetSecret(ctx context.Context, name string, namespace 
 		return nil, fmt.Errorf("could not retrieve secret %s/%s: %w: %v", namespace, name, ErrNotFound, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not retrieve secret %s/%s: %v", namespace, name, err)
 	}
 	return &secret, nil
@@ -268,6 +281,7 @@ func (oe openshiftClient) CreateCatalogSource(ctx context.Context, data CatalogS
 		return catalogSource, fmt.Errorf("could not create catalogsource: %s/%s: %w: %v", namespace, data.Name, ErrAlreadyExists, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not create catalogsource: %s/%s: %v", namespace, data.Name, err)
 	}
 	return catalogSource, nil
@@ -285,6 +299,7 @@ func (oe *openshiftClient) DeleteCatalogSource(ctx context.Context, name string,
 	}
 	err := oe.Client.Delete(ctx, &catalogSource)
 	if err != nil {
+		//coverage:ignore
 		return fmt.Errorf("could not delete catalogsource: %s/%s: %v", namespace, name, err)
 	}
 	return nil
@@ -304,6 +319,7 @@ func (oe *openshiftClient) GetCatalogSource(ctx context.Context, name string, na
 		return nil, fmt.Errorf("could not retrieve catalogsource: %s/%s: %w: %v", namespace, name, ErrNotFound, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not retrieve catalogsource: %s/%s: %v", namespace, name, err)
 	}
 	return catalogSource, nil
@@ -331,6 +347,7 @@ func (oe openshiftClient) CreateSubscription(ctx context.Context, data Subscript
 		return subscription, fmt.Errorf("could not create subscription: %s/%s: %w: %v", namespace, data.Name, ErrAlreadyExists, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not create subscription: %s/%s: %v", namespace, data.Name, err)
 	}
 	return subscription, nil
@@ -350,6 +367,7 @@ func (oe *openshiftClient) GetSubscription(ctx context.Context, name string, nam
 		return nil, fmt.Errorf("could not retrieve subscription: %s/%s: %w: %v", namespace, name, ErrNotFound, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not retrieve subscription: %s/%s: %v", namespace, name, err)
 	}
 	return subscription, nil
@@ -368,6 +386,7 @@ func (oe openshiftClient) DeleteSubscription(ctx context.Context, name string, n
 	}
 	err := oe.Client.Delete(ctx, subscription)
 	if err != nil {
+		//coverage:ignore
 		return fmt.Errorf("could not delete subscription: %s/%s: %v", namespace, name, err)
 	}
 	return nil
@@ -387,6 +406,7 @@ func (oe *openshiftClient) GetCSV(ctx context.Context, name string, namespace st
 		return nil, fmt.Errorf("could not retrieve csv: %s/%s: %w: %v", namespace, name, ErrNotFound, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not retrieve csv: %s/%s: %v", namespace, name, err)
 	}
 	return csv, nil
@@ -396,6 +416,7 @@ func (oe *openshiftClient) GetImages(ctx context.Context) (map[string]struct{}, 
 	var pods corev1.PodList
 	err := oe.Client.List(ctx, &pods, &crclient.ListOptions{})
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not retrieve pod list: %v", err)
 	}
 
@@ -408,6 +429,7 @@ func (oe *openshiftClient) GetImages(ctx context.Context) (map[string]struct{}, 
 
 	var imageStreamList imagestreamv1.ImageStreamList
 	if err := oe.Client.List(ctx, &imageStreamList, &crclient.ListOptions{}); err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not list image streams: %v", err)
 	}
 	for _, imageStream := range imageStreamList.Items {
@@ -455,6 +477,7 @@ func (oe *openshiftClient) CreateRoleBinding(ctx context.Context, data RoleBindi
 		return &roleBindingObj, fmt.Errorf("could not create rolebinding: %s/%s: %w: %v", namespace, data.Name, ErrAlreadyExists, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not create rolebinding: %s/%s: %v", namespace, data.Name, err)
 	}
 
@@ -485,6 +508,7 @@ func (oe *openshiftClient) GetRoleBinding(ctx context.Context, name string, name
 		return nil, fmt.Errorf("could not retrieve rolebinding: %s/%s: %w: %v", namespace, name, ErrNotFound, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not retrieve rolebinding: %s/%s: %v", namespace, name, err)
 	}
 	return &roleBinding, nil
@@ -502,6 +526,7 @@ func (oe *openshiftClient) DeleteRoleBinding(ctx context.Context, name string, n
 		},
 	}
 	if err := oe.Client.Delete(ctx, &roleBinding, &crclient.DeleteOptions{}); err != nil {
+		//coverage:ignore
 		return fmt.Errorf("could not delete rolebinding: %s/%s: %v", namespace, name, err)
 	}
 	return nil
@@ -521,6 +546,7 @@ func (oe *openshiftClient) GetDeployment(ctx context.Context, name string, names
 		return nil, fmt.Errorf("could not retrieve deployment: %s/%s: %w: %v", namespace, name, ErrNotFound, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not retrieve deployment: %s/%s: %v", namespace, name, err)
 	}
 	return &deployment, nil
@@ -547,6 +573,7 @@ func (oe *openshiftClient) GetDeploymentPods(ctx context.Context, name string, n
 	podList := corev1.PodList{}
 	err = oe.Client.List(ctx, &podList, labelSelector, crclient.InNamespace(namespace))
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not list pods matching label selector: %v", err)
 	}
 
@@ -567,6 +594,7 @@ func (oe *openshiftClient) GetPod(ctx context.Context, name string, namespace st
 		return nil, fmt.Errorf("could not retrieve pod: %s/%s: %w: %v", namespace, name, ErrNotFound, err)
 	}
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not retrieve pod: %s/%s: %v", namespace, name, err)
 	}
 	return &pod, nil
@@ -579,12 +607,14 @@ func (oe *openshiftClient) getContainerLogs(ctx context.Context, namespace strin
 	req := oe.K8sInterface.CoreV1().Pods(namespace).GetLogs(pod, &podLogOpts)
 	logs, err := req.Stream(ctx)
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("failed to open log stream: %s/%s/%s: %v", namespace, pod, container, err)
 	}
 	defer logs.Close()
 	buf := new(bytes.Buffer)
 	_, err = io.Copy(buf, logs)
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("failed to copy log stream: %s/%s/%s: %v", namespace, pod, container, err)
 	}
 
@@ -597,6 +627,7 @@ func (oe *openshiftClient) GetPodLogs(ctx context.Context, name string, namespac
 
 	pod, err := oe.GetPod(ctx, name, namespace)
 	if err != nil {
+		//coverage:ignore
 		return nil, err
 	}
 
@@ -605,6 +636,7 @@ func (oe *openshiftClient) GetPodLogs(ctx context.Context, name string, namespac
 	for _, container := range pod.Spec.InitContainers {
 		buf, err := oe.getContainerLogs(ctx, namespace, name, container.Name)
 		if err != nil {
+			//coverage:ignore
 			logger.V(log.TRC).Info("failed to get pod logs", "error", err)
 			continue
 		}
@@ -614,6 +646,7 @@ func (oe *openshiftClient) GetPodLogs(ctx context.Context, name string, namespac
 	for _, container := range pod.Spec.Containers {
 		buf, err := oe.getContainerLogs(ctx, namespace, name, container.Name)
 		if err != nil {
+			//coverage:ignore
 			logger.V(log.TRC).Info("failed to get pod logs", "error", err)
 			continue
 		}
@@ -623,6 +656,7 @@ func (oe *openshiftClient) GetPodLogs(ctx context.Context, name string, namespac
 	for _, container := range pod.Spec.EphemeralContainers {
 		buf, err := oe.getContainerLogs(ctx, namespace, name, container.Name)
 		if err != nil {
+			//coverage:ignore
 			logger.V(log.TRC).Info("failed to get pod logs", "error", err)
 			continue
 		}

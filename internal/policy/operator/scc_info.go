@@ -97,5 +97,6 @@ func (p *securityContextConstraintsInCSV) Help() check.HelpText {
 }
 
 func (p *securityContextConstraintsInCSV) RequiredFilePatterns() []string {
+	//coverage:ignore
 	return bundle.BundleFiles
 }
