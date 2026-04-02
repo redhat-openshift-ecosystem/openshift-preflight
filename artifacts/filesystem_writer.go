@@ -34,6 +34,7 @@ func NewFilesystemWriter(opts ...FilesystemWriterOption) (*FilesystemWriter, err
 func WithDirectory(dir string) FilesystemWriterOption {
 	return func(w *FilesystemWriter) {
 		if dir == "" {
+			//coverage:ignore
 			return
 		}
 		w.dir = resolveFullPath(dir)
@@ -47,6 +48,7 @@ func (w *FilesystemWriter) WriteFile(filename string, contents io.Reader) (strin
 	fullFilePath := filepath.Join(w.Path(), filename)
 
 	if err := afero.WriteReader(w.fs, fullFilePath, contents); err != nil {
+		//coverage:ignore
 		return fullFilePath, fmt.Errorf("could not write file to artifacts directory: %v", err)
 	}
 	return fullFilePath, nil

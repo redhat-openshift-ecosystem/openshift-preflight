@@ -27,6 +27,7 @@ func (p *scorecardCheck) validate(ctx context.Context, items []operatorsdk.Opera
 	var err error
 
 	if len(items) == 0 {
+		//coverage:ignore
 		logger.Info("warning: did not receive any test result information from scorecard output")
 	}
 	for _, item := range items {

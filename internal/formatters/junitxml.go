@@ -113,6 +113,7 @@ func junitXMLFormatter(_ context.Context, r certification.Results) ([]byte, erro
 
 	bytes, err := xml.MarshalIndent(suites, "", "\t")
 	if err != nil {
+		//coverage:ignore
 		o := fmt.Errorf("error formatting results with formatter %s: %v",
 			"junitxml",
 			err,

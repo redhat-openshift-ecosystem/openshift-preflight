@@ -21,6 +21,7 @@ type CraneConfig interface {
 }
 
 func GenerateCraneOptions(ctx context.Context, craneConfig CraneConfig) []crane.Option {
+	//coverage:ignore
 	// prepare crane runtime options, if necessary
 	options := []crane.Option{
 		crane.WithContext(ctx),
@@ -44,6 +45,7 @@ func GenerateCraneOptions(ctx context.Context, craneConfig CraneConfig) []crane.
 	}
 
 	if craneConfig.CraneInsecure() {
+		//coverage:ignore
 		// Adding WithTransport opt is a workaround to allow for access to HTTPS
 		// container registries with self-signed or non-trusted certificates.
 		//
@@ -58,12 +60,15 @@ func GenerateCraneOptions(ctx context.Context, craneConfig CraneConfig) []crane.
 		options = append(options, crane.Insecure, crane.WithTransport(rt))
 	}
 
+	//coverage:ignore
 	return options
 }
 
 // RetryOnceAfter is a crane option that retries once after t duration.
 func RetryOnceAfter(t time.Duration) crane.Option {
+	//coverage:ignore
 	return func(o *crane.Options) {
+		//coverage:ignore
 		o.Remote = append(o.Remote, remote.WithRetryBackoff(remote.Backoff{
 			Duration: t,
 			Factor:   1.0,

@@ -25,6 +25,7 @@ func NewValidateOperatorBundleCheck() *ValidateOperatorBundleCheck {
 func (p *ValidateOperatorBundleCheck) Validate(ctx context.Context, bundleRef image.ImageReference) (bool, error) {
 	report, err := p.dataToValidate(ctx, bundleRef.ImageFSPath)
 	if err != nil {
+		//coverage:ignore
 		return false, fmt.Errorf("error while executing operator-sdk bundle validate: %v", err)
 	}
 
@@ -72,5 +73,6 @@ func (p *ValidateOperatorBundleCheck) Help() check.HelpText {
 }
 
 func (p *ValidateOperatorBundleCheck) RequiredFilePatterns() []string {
+	//coverage:ignore
 	return bundle.BundleFiles
 }

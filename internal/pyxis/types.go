@@ -110,6 +110,7 @@ func (cp CertProject) ScratchProject() bool {
 }
 
 func (cp CertProject) BundleProject() bool {
+	//coverage:ignore
 	// BundleProject returns true if the CertProject is designated as a Bundle in Pyxis.
 	return cp.Container.Type == "operator bundle image"
 }

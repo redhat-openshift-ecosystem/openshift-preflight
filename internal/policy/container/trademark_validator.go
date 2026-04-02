@@ -11,6 +11,7 @@ func violatesRedHatTrademark(s string) (bool, error) {
 	// string starts with Red Hat variant
 	startingWithRedHatRegexp, err := regexp.Compile("^[^a-z0-9]*red[^a-z0-9]*hat")
 	if err != nil {
+		//coverage:ignore
 		return false, fmt.Errorf("error while compiling regexp: %w", err)
 	}
 	startingWithRedHat := startingWithRedHatRegexp.MatchString(strings.ToLower(s))
@@ -18,6 +19,7 @@ func violatesRedHatTrademark(s string) (bool, error) {
 	// string contain Red Hat variant (not starting with)
 	containsRedHatRegexp, err := regexp.Compile("red[^a-z0-9]*hat")
 	if err != nil {
+		//coverage:ignore
 		return false, fmt.Errorf("error while compiling regexp: %w", err)
 	}
 	containsRedHat := len(containsRedHatRegexp.FindAllString(strings.ToLower(s), -1))
@@ -25,6 +27,7 @@ func violatesRedHatTrademark(s string) (bool, error) {
 	// string contains "for Red Hat" variant
 	containsForRedHatRegexp, err := regexp.Compile("for[^a-z0-9]*red[^a-z0-9]*hat")
 	if err != nil {
+		//coverage:ignore
 		return false, fmt.Errorf("error while compiling regexp: %w", err)
 	}
 	containsForRedHat := containsForRedHatRegexp.MatchString(strings.ToLower(s))

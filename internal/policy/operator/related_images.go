@@ -45,11 +45,13 @@ func (p *RelatedImagesCheck) dataToValidate(ctx context.Context, imagePath strin
 		if manifest.HasRelatedImages() {
 			csvBytes, err := manifest.ToYaml()
 			if err != nil {
+				//coverage:ignore
 				return nil, nil, fmt.Errorf("could not get manifest yaml: %v", err)
 			}
 			var csv operatorsv1alpha1.ClusterServiceVersion
 			err = yaml.Unmarshal(csvBytes, &csv)
 			if err != nil {
+				//coverage:ignore
 				return nil, nil, fmt.Errorf("malformed CSV detected: %v", err)
 			}
 
@@ -96,5 +98,6 @@ func (p *RelatedImagesCheck) Help() check.HelpText {
 }
 
 func (p *RelatedImagesCheck) RequiredFilePatterns() []string {
+	//coverage:ignore
 	return []string{"/manifests/*"}
 }

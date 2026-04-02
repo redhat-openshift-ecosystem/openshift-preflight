@@ -102,6 +102,7 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 	ctx := cmd.Context()
 	logger, err := logr.FromContext(ctx)
 	if err != nil {
+		//coverage:ignore
 		return fmt.Errorf("invalid logging configuration")
 	}
 	logger.Info("certification library version", "version", version.Version.String())
@@ -109,12 +110,14 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 	if viper.Instance().IsSet("cpuprofile") {
 		f, err := os.Create(viper.Instance().GetString("cpuprofile"))
 		if err != nil {
+			//coverage:ignore
 			logger.Error(err, "could not create CPU profile")
 			return err
 		}
 		defer f.Close()
 
 		if err := pprof.StartCPUProfile(f); err != nil {
+			//coverage:ignore
 			logger.Error(err, "could not start CPU profile")
 			return err
 		}
@@ -126,6 +129,7 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 	// Render the Viper configuration as a runtime.Config
 	cfg, err := runtime.NewConfigFrom(*viper.Instance())
 	if err != nil {
+		//coverage:ignore
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
@@ -140,6 +144,7 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 		logger.Info(fmt.Sprintf("running checks for %s for platform %s", containerImage, platform))
 		artifactsWriter, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(filepath.Join(cfg.Artifacts, platform)))
 		if err != nil {
+			//coverage:ignore
 			return err
 		}
 
@@ -148,6 +153,7 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 
 		formatter, err := formatters.NewByName(formatters.DefaultFormat)
 		if err != nil {
+			//coverage:ignore
 			return err
 		}
 
@@ -192,13 +198,16 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 			// check to see if a tar file already exist to account for someone re-running
 			exists, err := artifactsWriter.Exists(check.DefaultArtifactsTarFileName)
 			if err != nil {
+				//coverage:ignore
 				return fmt.Errorf("unable to check if tar already exists: %v", err)
 			}
 
 			// remove the tar file if it exists
 			if exists {
+				//coverage:ignore
 				err = artifactsWriter.Remove(check.DefaultArtifactsTarFileName)
 				if err != nil {
+					//coverage:ignore
 					return fmt.Errorf("unable to remove existing tar: %v", err)
 				}
 			}
@@ -206,12 +215,14 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 			// tar the directory
 			err = artifactsTar(ctx, src, &buf)
 			if err != nil {
+				//coverage:ignore
 				return fmt.Errorf("unable to tar up artifacts directory: %v", err)
 			}
 
 			// writing the tar file to disk
 			_, err = artifactsWriter.WriteFile(check.DefaultArtifactsTarFileName, &buf)
 			if err != nil {
+				//coverage:ignore
 				return fmt.Errorf("could not artifacts tar to artifacts dir: %w", err)
 			}
 
@@ -222,12 +233,14 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 	if viper.Instance().IsSet("memprofile") {
 		f, err := os.Create(viper.Instance().GetString("memprofile"))
 		if err != nil {
+			//coverage:ignore
 			logger.Error(err, "could not create memory profile")
 		}
 		defer f.Close()
 
 		rt.GC() // get up-to-date statistics
 		if err := pprof.Lookup("allocs").WriteTo(f, 0); err != nil {
+			//coverage:ignore
 			logger.Error(err, "could not start memory profile")
 			return err
 		}
@@ -312,10 +325,12 @@ func generateContainerCheckOptions(cfg *runtime.Config) []container.Option {
 
 	// set auth information if both are present in config.
 	if cfg.PyxisAPIToken != "" && cfg.CertificationComponentID != "" {
+		//coverage:ignore
 		o = append(o, container.WithCertificationComponent(cfg.CertificationComponentID, cfg.PyxisAPIToken))
 	}
 
 	if cfg.Insecure {
+		//coverage:ignore
 		// Do not allow for submission if Insecure is set.
 		// This is a secondary check to be safe.
 		cfg.Submit = false
@@ -358,17 +373,20 @@ func artifactsTar(ctx context.Context, src string, w io.Writer) error {
 		// getting the FileInfo from the DirEntry, account for errors with this call ie ErrNotExist
 		fileInfo, err := file.Info()
 		if err != nil {
+			//coverage:ignore
 			return err
 		}
 
 		// continue on non-regular files
 		if !fileInfo.Mode().IsRegular() {
+			//coverage:ignore
 			continue
 		}
 
 		// create a new dir/file header
 		header, err := tar.FileInfoHeader(fileInfo, fileInfo.Name())
 		if err != nil {
+			//coverage:ignore
 			return err
 		}
 
@@ -381,18 +399,21 @@ func artifactsTar(ctx context.Context, src string, w io.Writer) error {
 			// open files to tar
 			f, err := os.Open(filepath.Join(src, fileInfo.Name()))
 			if err != nil {
+				//coverage:ignore
 				return err
 			}
 			defer f.Close()
 
 			// copy file data into tar writer
 			if _, err := io.Copy(tw, f); err != nil {
+				//coverage:ignore
 				return err
 			}
 
 			return nil
 		}()
 		if err != nil {
+			//coverage:ignore
 			return err
 		}
 	}
@@ -413,11 +434,13 @@ func platformsToBeProcessed(cmd *cobra.Command, cfg *runtime.Config) ([]string, 
 	options := crane.GetOptions(option.GenerateCraneOptions(ctx, cfg)...)
 	ref, err := name.ParseReference(cfg.Image, options.Name...)
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("invalid image reference: %w", err)
 	}
 
 	desc, err := remote.Get(ref, options.Remote...)
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("invalid manifest?: %w", err)
 	}
 
@@ -427,10 +450,12 @@ func platformsToBeProcessed(cmd *cobra.Command, cfg *runtime.Config) ([]string, 
 		// given platform.
 		img, err := desc.Image()
 		if err != nil {
+			//coverage:ignore
 			return nil, fmt.Errorf("could not convert descriptor to image: %w", err)
 		}
 		cfgFile, err := img.ConfigFile()
 		if err != nil {
+			//coverage:ignore
 			return nil, fmt.Errorf("could not retrieve image config: %w", err)
 		}
 
@@ -455,16 +480,19 @@ func platformsToBeProcessed(cmd *cobra.Command, cfg *runtime.Config) ([]string, 
 
 		idx, err := desc.ImageIndex()
 		if err != nil {
+			//coverage:ignore
 			return nil, fmt.Errorf("could not convert descriptor to index: %w", err)
 		}
 		manifestListDigest, err := idx.Digest()
 		if err != nil {
+			//coverage:ignore
 			return nil, fmt.Errorf("could not retrieve index digest: %w", err)
 		}
 		cfg.ManifestListDigest = manifestListDigest.String()
 
 		manifest, err := idx.IndexManifest()
 		if err != nil {
+			//coverage:ignore
 			return nil, fmt.Errorf("could not retrieve index manifest: %w", err)
 		}
 

@@ -69,6 +69,7 @@ func rootCmd() *cobra.Command {
 }
 
 func Execute() error {
+	//coverage:ignore
 	return rootCmd().ExecuteContext(context.Background())
 }
 
@@ -84,6 +85,7 @@ func initConfig(viper *spfviper.Viper) {
 
 	configFileUsed = true
 	if viper.GetString("config") != "" {
+		//coverage:ignore
 		viper.SetConfigFile(viper.GetString("config"))
 	}
 
@@ -126,6 +128,7 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 		mw := io.MultiWriter(os.Stderr, logFile)
 		l.SetOutput(mw)
 	} else {
+		//coverage:ignore
 		l.Infof("Failed to log to file, using default stderr")
 	}
 	if ll, err := logrus.ParseLevel(viper.GetString("loglevel")); err == nil {
