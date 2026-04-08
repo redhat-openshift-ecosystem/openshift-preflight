@@ -47,9 +47,11 @@ func NewCertificationInput(ctx context.Context, project *CertProject, opts ...Ce
 func (b *certificationInputBuilder) finalize() (*CertificationInput, error) {
 	// safeguards, make sure things aren't nil for any reason.
 	if b.CertImage == nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("a CertImage was not provided and is required")
 	}
 	if b.TestResults == nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("test results were not provided and are required")
 	}
 

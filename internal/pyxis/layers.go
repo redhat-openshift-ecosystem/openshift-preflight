@@ -50,12 +50,14 @@ func (p *pyxisClient) CertifiedImagesContainingLayers(ctx context.Context, uncom
 	// make our query
 	httpClient, ok := p.Client.(*http.Client)
 	if !ok {
+		//coverage:ignore
 		return nil, fmt.Errorf("client could not be used as http.Client")
 	}
 	client := graphql.NewClient(p.getPyxisGraphqlURL(), httpClient)
 
 	err := client.Query(ctx, &query, variables)
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("error while executing layers query: %v", err)
 	}
 

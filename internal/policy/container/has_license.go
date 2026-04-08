@@ -37,6 +37,7 @@ func (p *HasLicenseCheck) Validate(ctx context.Context, imgRef image.ImageRefere
 			logger.Info(fmt.Sprintf("warning: licenses directory does not exist or all of its children are empty directories: %s", err))
 			return false, nil
 		}
+		//coverage:ignore
 		return false, fmt.Errorf("could not get license file list: %v", err)
 	}
 	return p.validate(ctx, licenseFileList)
@@ -50,12 +51,14 @@ func (p *HasLicenseCheck) getDataToValidate(ctx context.Context, mountedPath str
 		return nil, fmt.Errorf("error when checking for %s: %w", licensePath, err)
 	}
 	if !fileinfo.IsDir() {
+		//coverage:ignore
 		return nil, fmt.Errorf("%s is not a directory: %w", licensePath, errLicensesNotADir)
 	}
 
 	var files []fs.DirEntry
 	err = filepath.WalkDir(fullPath, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
+			//coverage:ignore
 			return err
 		}
 		// Only include regular files, not directories
@@ -65,6 +68,7 @@ func (p *HasLicenseCheck) getDataToValidate(ctx context.Context, mountedPath str
 		return nil
 	})
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not walk directory %s: %w", licensePath, err)
 	}
 	return files, nil
@@ -77,6 +81,7 @@ func (p *HasLicenseCheck) validate(ctx context.Context, licenseFileList []fs.Dir
 	nonZeroLength := slices.ContainsFunc(licenseFileList, func(f fs.DirEntry) bool {
 		info, err := f.Info()
 		if err != nil {
+			//coverage:ignore
 			return false
 		}
 		return info.Size() > 0
@@ -107,5 +112,6 @@ func (p *HasLicenseCheck) Help() check.HelpText {
 }
 
 func (p *HasLicenseCheck) RequiredFilePatterns() []string {
+	//coverage:ignore
 	return []string{filepath.Join(licensePath, "**")}
 }

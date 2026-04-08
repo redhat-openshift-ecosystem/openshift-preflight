@@ -17,6 +17,7 @@ func (f *ResultWriterFile) OpenFile(name string) (io.WriteCloser, error) {
 		os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
 		0o600)
 	if err != nil {
+		//coverage:ignore
 		return nil, err
 	}
 

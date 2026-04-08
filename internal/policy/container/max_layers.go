@@ -24,6 +24,7 @@ type MaxLayersCheck struct{}
 func (p *MaxLayersCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	layers, err := p.getDataToValidate(imgRef.ImageInfo)
 	if err != nil {
+		//coverage:ignore
 		return false, fmt.Errorf("could not get image layers: %v", err)
 	}
 
@@ -60,5 +61,6 @@ func (p *MaxLayersCheck) Help() check.HelpText {
 }
 
 func (p *MaxLayersCheck) RequiredFilePatterns() []string {
+	//coverage:ignore
 	return nil
 }

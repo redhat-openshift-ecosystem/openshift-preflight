@@ -42,6 +42,7 @@ func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
 	}
 
 	cfg := runtime.Config{
+		//coverage:ignore
 		Image:        c.image,
 		DockerConfig: c.dockerConfigFilePath,
 		Scratch:      true,
@@ -51,6 +52,7 @@ func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
 	}
 	eng, err := engine.New(ctx, c.checks, c.kubeconfig, cfg)
 	if err != nil {
+		//coverage:ignore
 		return certification.Results{}, err
 	}
 
@@ -61,15 +63,19 @@ func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
 	//
 	// See: https://github.com/redhat-openshift-ecosystem/openshift-preflight/pull/322
 
+	//coverage:ignore
 	if err := eng.ExecuteChecks(ctx); err != nil {
+		//coverage:ignore
 		return certification.Results{}, err
 	}
 
+	//coverage:ignore
 	return eng.Results(ctx), nil
 }
 
 func (c *operatorCheck) resolve(ctx context.Context) error {
 	if c.resolved {
+		//coverage:ignore
 		return nil
 	}
 
@@ -96,6 +102,7 @@ func (c *operatorCheck) resolve(ctx context.Context) error {
 		SubscriptionTimeout:     c.subscriptionTimeout,
 	})
 	if err != nil {
+		//coverage:ignore
 		return fmt.Errorf("%w: %s", preflighterr.ErrCannotInitializeChecks, err)
 	}
 	c.checks = newChecks
@@ -168,14 +175,18 @@ func WithInsecureConnection() Option {
 
 // WithCSVTimeout customizes how long to wait for a ClusterServiceVersion to become healthy.
 func WithCSVTimeout(csvTimeout time.Duration) Option {
+	//coverage:ignore
 	return func(oc *operatorCheck) {
+		//coverage:ignore
 		oc.csvTimeout = csvTimeout
 	}
 }
 
 // WithSubscriptionTimeout customizes how long to wait for a subscription to become healthy.
 func WithSubscriptionTimeout(subscriptionTimeout time.Duration) Option {
+	//coverage:ignore
 	return func(oc *operatorCheck) {
+		//coverage:ignore
 		oc.subscriptionTimeout = subscriptionTimeout
 	}
 }

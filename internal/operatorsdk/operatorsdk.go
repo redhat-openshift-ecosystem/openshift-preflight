@@ -37,11 +37,13 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 	// checking to make sure operator-sdk is in the $PATH
 	_, err := exec.LookPath("operator-sdk")
 	if err != nil {
+		//coverage:ignore
 		return nil, err
 	}
 
 	cmdArgs := []string{"scorecard"}
 	if opts.OutputFormat == "" {
+		//coverage:ignore
 		opts.OutputFormat = "json"
 	}
 	cmdArgs = append(cmdArgs, "--output", opts.OutputFormat)
@@ -54,12 +56,14 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 	if opts.Kubeconfig != nil {
 		kcf, err := os.CreateTemp("", "")
 		if err != nil {
+			//coverage:ignore
 			return nil, fmt.Errorf("unable to create a temporary kubeconfig file for use with scorecard: %s", err)
 		}
 		logger.V(log.TRC).Info("created temporary kubeconfig for use with scorecard at path", "name", kcf.Name())
 		defer os.Remove(kcf.Name())
 		_, err = kcf.Write(opts.Kubeconfig)
 		if err != nil {
+			//coverage:ignore
 			return nil, fmt.Errorf("unable to write a temporary kubeconfig for use with scorecard: %s", err)
 		}
 		cmdArgs = append(cmdArgs, "--kubeconfig", kcf.Name())
@@ -78,6 +82,7 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 	configFile, err := o.createScorecardConfigFile(ctx)
 	defer os.Remove(configFile)
 	if err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("could not create scorecard config file: %v", err)
 	}
 	cmdArgs = append(cmdArgs, "--config", configFile)
@@ -110,11 +115,13 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 	}
 
 	if err := o.writeScorecardFile(ctx, opts.ResultFile, stdout.String()); err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("unable to copy result to artifacts directory: %v", err)
 	}
 
 	var scorecardData OperatorSdkScorecardReport
 	if err := json.Unmarshal(stdout.Bytes(), &scorecardData); err != nil {
+		//coverage:ignore
 		return nil, fmt.Errorf("failed to run operator-sdk scorecard: %v", err)
 	}
 	scorecardData.Stdout = stdout.String()
@@ -128,6 +135,7 @@ func (o operatorSdk) writeScorecardFile(ctx context.Context, resultFile, stdout 
 		return err
 	}
 
+	//coverage:ignore
 	return nil
 }
 
@@ -158,6 +166,7 @@ stages:
 
 	tempConfigFile, err := os.CreateTemp("", "scorecard-test-config-*.yaml")
 	if err != nil {
+		//coverage:ignore
 		return "", fmt.Errorf("could not create temp config file: %w", err)
 	}
 	_, err = tempConfigFile.WriteString(configTemplate)

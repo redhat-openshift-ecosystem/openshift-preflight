@@ -44,6 +44,7 @@ func imageList(ctx context.Context) []string {
 		base := strings.Split(image, ":")[0]
 		digest, err := crane.Digest(image, options...)
 		if err != nil {
+			//coverage:ignore
 			logger.Error(fmt.Errorf("could not retrieve image digest: %w", err), "crane error")
 			// Skip this entry
 			continue

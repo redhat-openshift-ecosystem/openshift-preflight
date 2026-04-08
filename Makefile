@@ -69,7 +69,13 @@ cover: go-ignore-cov
 	 $$(go list ./... | grep -v e2e) \
 	 -race \
 	 -cover -coverprofile=coverage.out
-	$(GO_IGNORE_COV) --file coverage.out
+	$(GO_IGNORE_COV) --file coverage.out --ignore-empty
+	@totalCoverage=$$(go tool cover -func=coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+'); \
+	if [ "$$totalCoverage" != "100.0" ]; then \
+		echo "Coverage is $${totalCoverage}%, expected 100.0%"; \
+		go tool cover -func=coverage.out | grep -v "100.0%"; \
+		exit 1; \
+	fi
 
 .PHONY: vet
 vet:

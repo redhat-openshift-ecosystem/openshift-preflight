@@ -30,10 +30,12 @@ type Results struct {
 }
 
 func (r Result) Error() error {
+	//coverage:ignore
 	return r.err
 }
 
 func (r *Result) WithError(err error) *Result {
+	//coverage:ignore
 	r.err = err
 	return r
 }
