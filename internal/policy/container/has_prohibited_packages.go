@@ -11,40 +11,45 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/rpm"
 
 	"github.com/go-logr/logr"
+	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 )
 
 var _ check.Check = &HasNoProhibitedPackagesCheck{}
 
 // HasProhibitedPackages evaluates that the image does not contain prohibited packages,
 // which refers to packages that are not redistributable without an appropriate license.
-type HasNoProhibitedPackagesCheck struct{}
+type HasNoProhibitedPackagesCheck struct {
+	getPackageList packageListFunc
+}
+
+// packageListFunc is the signature used to retrieve the RPM package list.
+type packageListFunc func(ctx context.Context, dir string) ([]*rpmdb.PackageInfo, error)
+
+func NewHasNoProhibitedPackagesCheck() *HasNoProhibitedPackagesCheck {
+	//coverage:ignore
+	return &HasNoProhibitedPackagesCheck{getPackageList: rpm.GetPackageList}
+}
 
 func (p *HasNoProhibitedPackagesCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
-	//coverage:ignore
 	pkgList, err := p.getDataToValidate(ctx, imgRef.ImageFSPath)
 	if err != nil {
-		//coverage:ignore
 		return false, fmt.Errorf("unable to get a list of all packages in the image: %v", err)
 	}
 
-	//coverage:ignore
 	return p.validate(ctx, pkgList)
 }
 
 func (p *HasNoProhibitedPackagesCheck) getDataToValidate(ctx context.Context, dir string) ([]string, error) {
-	//coverage:ignore
-	pkgList, err := rpm.GetPackageList(ctx, dir)
+	pkgList, err := p.getPackageList(ctx, dir)
 	if err != nil {
-		//coverage:ignore
 		return nil, fmt.Errorf("could not get rpm list: %w", err)
 	}
-	//coverage:ignore
+
 	pkgs := make([]string, 0, len(pkgList))
 	for _, pkg := range pkgList {
-		//coverage:ignore
 		pkgs = append(pkgs, pkg.Name)
 	}
-	//coverage:ignore
+
 	return pkgs, nil
 }
 
