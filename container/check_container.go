@@ -97,24 +97,20 @@ func (c *containerCheck) resolve(ctx context.Context) error {
 			)
 		}
 
-		//coverage:ignore
 		certProject, err := p.GetProject(ctx)
 		if err != nil {
 			//coverage:ignore
 			return fmt.Errorf("%w: could not retrieve project: %s", preflighterr.ErrCannotResolvePolicyException, err)
 		}
-		//coverage:ignore
 		logger.V(log.DBG).Info("certification project", "name", certProject.Name)
 
 		// checking to see if project is an operator bundle, to safeguard against users submitting containers to bundle projects
-		//coverage:ignore
 		if certProject.BundleProject() {
 			//coverage:ignore
 			return errors.New("bundle project detected: container submissions are not valid for bundle projects, please run the operator certification workflow instead")
 		}
 
 		// checking for policy exceptions
-		//coverage:ignore
 		override := lib.GetContainerPolicyExceptions(certProject)
 
 		c.policy = override
