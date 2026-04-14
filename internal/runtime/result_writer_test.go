@@ -3,6 +3,7 @@ package runtime
 import (
 	"os"
 	"path"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -29,6 +30,15 @@ var _ = Describe("Result Writers", func() {
 
 		BeforeEach(func() {
 			rw = &ResultWriterFile{}
+		})
+
+		Context("When OpenFile fails due to a non-existent directory", func() {
+			It("should return nil and an error", func() {
+				p := filepath.Join(resultWriterTestDir, "nonexistent", "subdir", "foo.txt")
+				f, err := rw.OpenFile(p)
+				Expect(err).To(HaveOccurred())
+				Expect(f).To(BeNil())
+			})
 		})
 
 		Context("When using the file-based result writer", func() {
