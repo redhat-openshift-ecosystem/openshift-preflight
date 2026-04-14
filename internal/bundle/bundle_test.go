@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/v2/dsl/table"
 	. "github.com/onsi/gomega"
 
+	rbacv1 "k8s.io/api/rbac/v1"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 
@@ -85,6 +87,90 @@ var _ = Describe("BundleValidateCheck", func() {
 					Expect(err).To(HaveOccurred())
 					Expect(annotations).To(BeNil())
 				})
+			})
+		})
+	})
+
+	Describe("hasSCCApiGroup", func() {
+		Context("when the rule contains security.openshift.io", func() {
+			It("should return true", func() {
+				rule := rbacv1.PolicyRule{
+					APIGroups: []string{"", "security.openshift.io"},
+				}
+				Expect(hasSCCApiGroup(rule)).To(BeTrue())
+			})
+		})
+
+		Context("when the rule does not contain security.openshift.io", func() {
+			It("should return false", func() {
+				rule := rbacv1.PolicyRule{
+					APIGroups: []string{"apps", ""},
+				}
+				Expect(hasSCCApiGroup(rule)).To(BeFalse())
+			})
+		})
+
+		Context("when the rule has no API groups", func() {
+			It("should return false", func() {
+				rule := rbacv1.PolicyRule{
+					APIGroups: []string{},
+				}
+				Expect(hasSCCApiGroup(rule)).To(BeFalse())
+			})
+		})
+	})
+
+	Describe("hasSCCResource", func() {
+		Context("when the rule contains securitycontextconstraints", func() {
+			It("should return true", func() {
+				rule := rbacv1.PolicyRule{
+					Resources: []string{"pods", "securitycontextconstraints"},
+				}
+				Expect(hasSCCResource(rule)).To(BeTrue())
+			})
+		})
+
+		Context("when the rule does not contain securitycontextconstraints", func() {
+			It("should return false", func() {
+				rule := rbacv1.PolicyRule{
+					Resources: []string{"pods", "deployments"},
+				}
+				Expect(hasSCCResource(rule)).To(BeFalse())
+			})
+		})
+
+		Context("when the rule has no resources", func() {
+			It("should return false", func() {
+				rule := rbacv1.PolicyRule{
+					Resources: []string{},
+				}
+				Expect(hasSCCResource(rule)).To(BeFalse())
+			})
+		})
+	})
+
+	Describe("GetSecurityContextConstraints", func() {
+		Context("when the bundle path is invalid", func() {
+			It("should return an error", func() {
+				sccs, err := GetSecurityContextConstraints(context.TODO(), "/nonexistent/path")
+				Expect(err).To(HaveOccurred())
+				Expect(sccs).To(BeNil())
+			})
+		})
+
+		Context("when the bundle has no SCC rules", func() {
+			It("should return nil", func() {
+				sccs, err := GetSecurityContextConstraints(context.TODO(), "./testdata/valid_bundle")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(sccs).To(BeNil())
+			})
+		})
+
+		Context("when the bundle has SCC rules", func() {
+			It("should return the SCC resource names", func() {
+				sccs, err := GetSecurityContextConstraints(context.TODO(), "./testdata/scc_bundle")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(sccs).To(ConsistOf("my-scc", "another-scc"))
 			})
 		})
 	})
