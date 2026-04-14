@@ -55,6 +55,17 @@ var _ = Describe("OperatorSdk", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
+	When("The Scorecard OutputFormat is empty", func() {
+		It("should default to json and succeed", func() {
+			operatorSdk := New("foo.image", fakeExecCommandSuccess)
+			opts := OperatorSdkScorecardOptions{
+				ResultFile:   "default-format.txt",
+				OutputFormat: "",
+			}
+			_, err := operatorSdk.Scorecard(testcontext, "foo.image", opts)
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
 	When("The Scorecard result is a failure", func() {
 		It("should fail", func() {
 			operatorSdk := New("foo.image", fakeExecCommandFailure)
