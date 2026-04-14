@@ -43,7 +43,6 @@ func (o operatorSdk) Scorecard(ctx context.Context, image string, opts OperatorS
 
 	cmdArgs := []string{"scorecard"}
 	if opts.OutputFormat == "" {
-		//coverage:ignore
 		opts.OutputFormat = "json"
 	}
 	cmdArgs = append(cmdArgs, "--output", opts.OutputFormat)
