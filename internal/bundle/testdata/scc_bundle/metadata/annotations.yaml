@@ -1,0 +1,4 @@
+annotations:
+  com.redhat.openshift.versions: "v4.6-v4.9"
+  operators.operatorframework.io.bundle.package.v1: testPackage
+  operators.operatorframework.io.bundle.channel.default.v1: testChannel
