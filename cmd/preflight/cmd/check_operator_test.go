@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 )
 
@@ -187,6 +188,36 @@ var _ = Describe("Check Operator", func() {
 		It("should succeed when all positional arg constraints and environment constraints are correct", func() {
 			err := checkOperatorPositionalArgs(checkOperatorCmd(mockRunPreflightReturnNil), posArgs)
 			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
+	Context("when generating operator check options", func() {
+		It("should include the channel option when Channel is set", func() {
+			cfg := &runtime.Config{
+				Channel: "stable",
+			}
+			baseOpts := generateOperatorCheckOptions(&runtime.Config{})
+			opts := generateOperatorCheckOptions(cfg)
+			Expect(opts).To(HaveLen(len(baseOpts) + 1))
+		})
+
+		It("should include the insecure option when Insecure is true", func() {
+			cfg := &runtime.Config{
+				Insecure: true,
+			}
+			baseOpts := generateOperatorCheckOptions(&runtime.Config{})
+			opts := generateOperatorCheckOptions(cfg)
+			Expect(opts).To(HaveLen(len(baseOpts) + 1))
+		})
+
+		It("should include both channel and insecure options when both are set", func() {
+			cfg := &runtime.Config{
+				Channel:  "stable",
+				Insecure: true,
+			}
+			baseOpts := generateOperatorCheckOptions(&runtime.Config{})
+			opts := generateOperatorCheckOptions(cfg)
+			Expect(opts).To(HaveLen(len(baseOpts) + 2))
 		})
 	})
 })

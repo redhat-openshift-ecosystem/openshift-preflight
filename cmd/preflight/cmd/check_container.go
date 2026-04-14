@@ -325,12 +325,10 @@ func generateContainerCheckOptions(cfg *runtime.Config) []container.Option {
 
 	// set auth information if both are present in config.
 	if cfg.PyxisAPIToken != "" && cfg.CertificationComponentID != "" {
-		//coverage:ignore
 		o = append(o, container.WithCertificationComponent(cfg.CertificationComponentID, cfg.PyxisAPIToken))
 	}
 
 	if cfg.Insecure {
-		//coverage:ignore
 		// Do not allow for submission if Insecure is set.
 		// This is a secondary check to be safe.
 		cfg.Submit = false

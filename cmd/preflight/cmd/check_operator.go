@@ -177,12 +177,10 @@ func generateOperatorCheckOptions(cfg *runtime.Config) []operator.Option {
 	}
 
 	if cfg.Channel != "" {
-		//coverage:ignore
 		opts = append(opts, operator.WithOperatorChannel(cfg.Channel))
 	}
 
 	if cfg.Insecure {
-		//coverage:ignore
 		opts = append(opts, operator.WithInsecureConnection())
 	}
 
