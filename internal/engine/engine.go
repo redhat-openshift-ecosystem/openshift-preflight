@@ -19,6 +19,8 @@ import (
 	"strings"
 	"time"
 
+	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
+
 	"github.com/go-logr/logr"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -336,19 +338,16 @@ func generateBundleHash(ctx context.Context, bundlePath string) (string, error) 
 			return fmt.Errorf("could not read bundle directory: %s: %w", path, err)
 		}
 		if d.Name() == "Dockerfile" {
-			//coverage:ignore
 			return nil
 		}
 		if d.IsDir() {
 			return nil
 		}
-		//coverage:ignore
 		filebytes, err := fs.ReadFile(fileSystem, path)
 		if err != nil {
 			//coverage:ignore
 			return fmt.Errorf("could not read file: %s: %w", path, err)
 		}
-		//coverage:ignore
 		md5sum := fmt.Sprintf("%x", md5.Sum(filebytes))
 		files[md5sum] = fmt.Sprintf("./%s", path)
 		return nil
@@ -358,7 +357,6 @@ func generateBundleHash(ctx context.Context, bundlePath string) (string, error) 
 	slices.Sort(keys)
 
 	for _, k := range keys {
-		//coverage:ignore
 		hashBuffer.WriteString(fmt.Sprintf("%s  %s\n", k, files[k]))
 	}
 
@@ -543,59 +541,7 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 	}
 
 	// covert rpm struct to pxyis struct
-	rpms := make([]pyxis.RPM, 0, len(pkgList))
-	rpmSuffixRegexp, err := regexp.Compile("(-[0-9].*)")
-	if err != nil {
-		//coverage:ignore
-		return fmt.Errorf("error while compiling regexp: %w", err)
-	}
-	pgpKeyIdRegexp, err := regexp.Compile(".*, Key ID (.*)")
-	if err != nil {
-		//coverage:ignore
-		return fmt.Errorf("error while compiling regexp: %w", err)
-	}
-	for _, packageInfo := range pkgList {
-		//coverage:ignore
-		var bgName, endChop, srpmNevra, pgpKeyID string
-
-		// accounting for the fact that not all packages have a source rpm
-		if len(packageInfo.SourceRpm) > 0 {
-			//coverage:ignore
-			bgName = getBgName(packageInfo.SourceRpm)
-			endChop = strings.TrimPrefix(strings.TrimSuffix(rpmSuffixRegexp.FindString(packageInfo.SourceRpm), ".rpm"), "-")
-
-			srpmNevra = fmt.Sprintf("%s-%d:%s", bgName, packageInfo.Epoch, endChop)
-		}
-
-		//coverage:ignore
-		if len(packageInfo.PGP) > 0 {
-			//coverage:ignore
-			matches := pgpKeyIdRegexp.FindStringSubmatch(packageInfo.PGP)
-			if matches != nil {
-				//coverage:ignore
-				pgpKeyID = matches[1]
-			} else {
-				//coverage:ignore
-				logger.V(log.DBG).Info("string did not match the format required", "pgp", packageInfo.PGP)
-				pgpKeyID = ""
-			}
-		}
-
-		pyxisRPM := pyxis.RPM{
-			//coverage:ignore
-			Architecture: packageInfo.Arch,
-			Gpg:          pgpKeyID,
-			Name:         packageInfo.Name,
-			Nvra:         fmt.Sprintf("%s-%s-%s.%s", packageInfo.Name, packageInfo.Version, packageInfo.Release, packageInfo.Arch),
-			Release:      packageInfo.Release,
-			SrpmName:     bgName,
-			SrpmNevra:    srpmNevra,
-			Summary:      packageInfo.Summary,
-			Version:      packageInfo.Version,
-		}
-
-		rpms = append(rpms, pyxisRPM)
-	}
+	rpms := convertToRPMs(ctx, pkgList)
 
 	rpmManifest := pyxis.RPMManifest{
 		RPMS: rpms,
@@ -619,6 +565,53 @@ func writeRPMManifest(ctx context.Context, containerFSPath string) error {
 	}
 
 	return nil
+}
+
+// convertToRPMs converts a list of rpmdb.PackageInfo to a list of pyxis.RPM structs.
+func convertToRPMs(ctx context.Context, pkgList []*rpmdb.PackageInfo) []pyxis.RPM {
+	logger := logr.FromContextOrDiscard(ctx)
+
+	rpms := make([]pyxis.RPM, 0, len(pkgList))
+	rpmSuffixRegexp := regexp.MustCompile("(-[0-9].*)")
+	pgpKeyIdRegexp := regexp.MustCompile(".*, Key ID (.*)")
+
+	for _, packageInfo := range pkgList {
+		var bgName, endChop, srpmNevra, pgpKeyID string
+
+		// accounting for the fact that not all packages have a source rpm
+		if len(packageInfo.SourceRpm) > 0 {
+			bgName = getBgName(packageInfo.SourceRpm)
+			endChop = strings.TrimPrefix(strings.TrimSuffix(rpmSuffixRegexp.FindString(packageInfo.SourceRpm), ".rpm"), "-")
+
+			srpmNevra = fmt.Sprintf("%s-%d:%s", bgName, packageInfo.Epoch, endChop)
+		}
+
+		if len(packageInfo.PGP) > 0 {
+			matches := pgpKeyIdRegexp.FindStringSubmatch(packageInfo.PGP)
+			if matches != nil {
+				pgpKeyID = matches[1]
+			} else {
+				logger.V(log.DBG).Info("string did not match the format required", "pgp", packageInfo.PGP)
+				pgpKeyID = ""
+			}
+		}
+
+		pyxisRPM := pyxis.RPM{
+			Architecture: packageInfo.Arch,
+			Gpg:          pgpKeyID,
+			Name:         packageInfo.Name,
+			Nvra:         fmt.Sprintf("%s-%s-%s.%s", packageInfo.Name, packageInfo.Version, packageInfo.Release, packageInfo.Arch),
+			Release:      packageInfo.Release,
+			SrpmName:     bgName,
+			SrpmNevra:    srpmNevra,
+			Summary:      packageInfo.Summary,
+			Version:      packageInfo.Version,
+		}
+
+		rpms = append(rpms, pyxisRPM)
+	}
+
+	return rpms
 }
 
 func sumLayerSizeBytes(layers []pyxis.Layer) int64 {
