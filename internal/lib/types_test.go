@@ -19,6 +19,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 )
 
 var _ = Describe("Pyxis Client Instantiation", func() {
@@ -183,6 +184,35 @@ var _ = Describe("The NoopSubmitter", func() {
 	})
 })
 
+var _ = Describe("BuildConnectURL", func() {
+	Context("when pyxis_env is not set", func() {
+		It("should return the prod URL", func() {
+			viper.Instance().Set("pyxis_env", "")
+			DeferCleanup(func() { viper.Instance().Set("pyxis_env", "") })
+			url := BuildConnectURL("12345")
+			Expect(url).To(Equal("https://connect.redhat.com/component/view/12345"))
+		})
+	})
+
+	Context("when pyxis_env is set to prod", func() {
+		It("should return the prod URL", func() {
+			viper.Instance().Set("pyxis_env", "prod")
+			DeferCleanup(func() { viper.Instance().Set("pyxis_env", "") })
+			url := BuildConnectURL("12345")
+			Expect(url).To(Equal("https://connect.redhat.com/component/view/12345"))
+		})
+	})
+
+	Context("when pyxis_env is set to a non-prod value", func() {
+		It("should return the environment-specific URL", func() {
+			viper.Instance().Set("pyxis_env", "stage")
+			DeferCleanup(func() { viper.Instance().Set("pyxis_env", "") })
+			url := BuildConnectURL("12345")
+			Expect(url).To(Equal("https://connect.stage.redhat.com/component/view/12345"))
+		})
+	})
+})
+
 var _ = Describe("Container Certification Submitter", func() {
 	Context("When using the containerCertificationSubmitter", func() {
 		var sbmt *ContainerCertificationSubmitter
@@ -293,6 +323,26 @@ var _ = Describe("Container Certification Submitter", func() {
 			It("should not throw an error", func() {
 				err := sbmt.Submit(testcontext)
 				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("and the artifact writer is missing from the context", func() {
+			It("should return an error about missing artifact writer", func() {
+				ctxNoWriter := context.Background()
+				err := sbmt.Submit(ctxNoWriter)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("artifact writer was either missing or was not supported"))
+			})
+		})
+
+		Context("and the artifact writer is not a FilesystemWriter", func() {
+			It("should return an error about unsupported artifact writer", func() {
+				mapWriter, err := artifacts.NewMapWriter()
+				Expect(err).ToNot(HaveOccurred())
+				ctxMapWriter := artifacts.ContextWithWriter(context.Background(), mapWriter)
+				err = sbmt.Submit(ctxMapWriter)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("artifact writer was either missing or was not supported"))
 			})
 		})
 
