@@ -20,7 +20,6 @@ type HasNoProhibitedLabelsCheck struct{}
 func (p *HasNoProhibitedLabelsCheck) Validate(ctx context.Context, imgRef image.ImageReference) (result bool, err error) {
 	labels, err := getContainerLabels(imgRef.ImageInfo)
 	if err != nil {
-		//coverage:ignore
 		return false, fmt.Errorf("could not retrieve image labels: %v", err)
 	}
 
@@ -34,7 +33,6 @@ func (p *HasNoProhibitedLabelsCheck) validate(ctx context.Context, labels map[st
 	for _, label := range trademarkLabels {
 		result, err := violatesRedHatTrademark(labels[label])
 		if err != nil {
-			//coverage:ignore
 			return false, fmt.Errorf("error while validating label: %w", err)
 		}
 

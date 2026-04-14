@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	. "github.com/onsi/ginkgo/v2"
@@ -57,6 +58,26 @@ var _ = Describe("HasProhibitedContainerName", func() {
 			It("should not pass Validate", func() {
 				ok, err := hasProhibitedContainerName.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeFalse())
+			})
+		})
+
+		Context("When violatesRedHatTrademark returns an error", func() {
+			var origValidator func(string) (bool, error)
+			BeforeEach(func() {
+				origValidator = violatesRedHatTrademark
+				violatesRedHatTrademark = func(_ string) (bool, error) {
+					return false, errors.New("trademark error")
+				}
+				imageRef.ImageRepository = "opdev/simple-demo-operator"
+			})
+			AfterEach(func() {
+				violatesRedHatTrademark = origValidator
+			})
+			It("should return an error", func() {
+				ok, err := hasProhibitedContainerName.Validate(context.TODO(), imageRef)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("error while validating container name"))
 				Expect(ok).To(BeFalse())
 			})
 		})
