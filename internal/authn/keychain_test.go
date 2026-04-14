@@ -17,10 +17,12 @@ package authn
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	craneauthn "github.com/google/go-containerregistry/pkg/authn"
@@ -69,6 +71,67 @@ func setupConfigFile(t *testing.T, content string) string {
 
 	// return the config dir so we can clean up
 	return cd
+}
+
+func TestAuthfileNotExist(t *testing.T) {
+	origCfg := keychain.dockercfg
+	defer func() { keychain.dockercfg = origCfg }()
+
+	keychain.dockercfg = "/does/not/exist/config.json"
+	keychain.ctx = context.TODO()
+
+	_, err := keychain.Resolve(testRegistry)
+	if err == nil {
+		t.Fatal("expected error for non-existent authfile, got nil")
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("expected os.ErrNotExist in error chain, got: %v", err)
+	}
+}
+
+func TestAuthfileOpenError(t *testing.T) {
+	origCfg := keychain.dockercfg
+	defer func() { keychain.dockercfg = origCfg }()
+
+	// Create a file that cannot be read (permission denied).
+	tmpdir, err := os.MkdirTemp("", "keychain_open_error")
+	if err != nil {
+		t.Fatalf("creating temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpdir)
+
+	p := filepath.Join(tmpdir, "config.json")
+	if err := os.WriteFile(p, []byte(`{}`), 0o000); err != nil {
+		t.Fatalf("write %q: %v", p, err)
+	}
+
+	keychain.dockercfg = p
+	keychain.ctx = context.TODO()
+
+	_, err = keychain.Resolve(testRegistry)
+	if err == nil {
+		t.Fatal("expected error for unreadable authfile, got nil")
+	}
+	if !strings.Contains(err.Error(), "could not open authfile") && !strings.Contains(err.Error(), "could not load authfile") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestAnonymousFallbackNoMatchingCreds(t *testing.T) {
+	origCfg := keychain.dockercfg
+	defer func() { keychain.dockercfg = origCfg }()
+
+	// Config file has creds for a different registry; target registry should get Anonymous.
+	cd := setupConfigFile(t, fmt.Sprintf(`{"auths": {"other.io": {"auth": %q}}}`, encode("foo", "bar")))
+	defer os.RemoveAll(filepath.Dir(cd))
+
+	auth, err := keychain.Resolve(testRegistry)
+	if err != nil {
+		t.Fatalf("Resolve() = %v", err)
+	}
+	if auth != craneauthn.Anonymous {
+		t.Errorf("expected Anonymous for unmatched registry, got %v", auth)
+	}
 }
 
 func TestNoConfig(t *testing.T) {
