@@ -109,6 +109,25 @@ var _ = Describe("ScorecardBasicCheck", func() {
 			})
 		})
 	})
+	Describe("When Operator Bundle Scorecard returns empty items", func() {
+		BeforeEach(func() {
+			fakeEngine = FakeOperatorSdk{
+				OperatorSdkReport: operatorsdk.OperatorSdkScorecardReport{
+					Stdout: "",
+					Stderr: "",
+					Items:  []operatorsdk.OperatorSdkScorecardItem{},
+				},
+			}
+			scorecardBasicCheck = *NewScorecardBasicSpecCheck(fakeEngine, "myns", "mysa", []byte("fake kubeconfig contents"), "20")
+		})
+		Context("When scorecard output has no test results", func() {
+			It("Should pass Validate and not return an error", func() {
+				ok, err := scorecardBasicCheck.Validate(testcontext, image.ImageReference{ImageURI: "dummy/image"})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
+			})
+		})
+	})
 	Describe("Checking that OperatorSdk errors are handled correctly", func() {
 		BeforeEach(func() {
 			fakeEngine = BadOperatorSdk{}
