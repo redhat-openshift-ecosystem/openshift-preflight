@@ -65,7 +65,6 @@ func (p *ScorecardOlmSuiteCheck) Metadata() check.Metadata {
 
 func (p *ScorecardOlmSuiteCheck) Help() check.HelpText {
 	if p.fatalError {
-		//coverage:ignore
 		return check.HelpText{
 			Message: "There was a fatal error while running operator-sdk scorecard tests. " +
 				"Please see the preflight log for details. If necessary, set logging to be more verbose.",

@@ -133,6 +133,16 @@ var _ = Describe("ScorecardBasicCheck", func() {
 			})
 		})
 	})
+	Describe("Help", func() {
+		Context("When fatalError is true", func() {
+			It("should return fatal error help text", func() {
+				scorecardBasicCheck.fatalError = true
+				help := scorecardBasicCheck.Help()
+				Expect(help.Message).To(ContainSubstring("fatal error"))
+				Expect(help.Suggestion).To(ContainSubstring("wait time"))
+			})
+		})
+	})
 	Describe("Checking that OperatorSdk errors are handled correctly", func() {
 		BeforeEach(func() {
 			fakeEngine = BadOperatorSdk{}
