@@ -64,6 +64,17 @@ var _ = Describe("Operator Check Execution", func() {
 			Expect(len(chk.checks)).To(Equal(9))
 		})
 
+		It("Should return nil on second resolve (already resolved)", func() {
+			ctx := context.TODO()
+			err := chk.resolve(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(chk.resolved).To(BeTrue())
+
+			// Second call should hit the early-return path
+			err = chk.resolve(ctx)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		It("Should list checks without issue", func() {
 			ctx := context.TODO()
 			policy, checks, err := chk.List(ctx)
