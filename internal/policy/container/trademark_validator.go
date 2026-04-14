@@ -7,7 +7,7 @@ import (
 )
 
 // violatesRedHatTrademark validates if a string meets specific "Red Hat" naming criteria
-func violatesRedHatTrademark(s string) (bool, error) {
+var violatesRedHatTrademark = func(s string) (bool, error) {
 	// string starts with Red Hat variant
 	startingWithRedHatRegexp, err := regexp.Compile("^[^a-z0-9]*red[^a-z0-9]*hat")
 	if err != nil {

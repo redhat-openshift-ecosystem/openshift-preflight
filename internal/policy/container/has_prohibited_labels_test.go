@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"errors"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
@@ -72,6 +73,41 @@ var _ = Describe("HasNoProhibitedLabelsCheck", func() {
 			It("should not pass Validate", func() {
 				ok, err := hasProhibitedLabelsCheck.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeFalse())
+			})
+		})
+
+		Context("When ConfigFile returns an error", func() {
+			BeforeEach(func() {
+				fakeImage := fakecranev1.FakeImage{
+					ConfigFileStub: func() (*cranev1.ConfigFile, error) {
+						return &cranev1.ConfigFile{}, errors.New("config error")
+					},
+				}
+				imageRef.ImageInfo = &fakeImage
+			})
+			It("should return an error", func() {
+				ok, err := hasProhibitedLabelsCheck.Validate(context.TODO(), imageRef)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("could not retrieve image labels"))
+				Expect(ok).To(BeFalse())
+			})
+		})
+		Context("When violatesRedHatTrademark returns an error", func() {
+			var origValidator func(string) (bool, error)
+			BeforeEach(func() {
+				origValidator = violatesRedHatTrademark
+				violatesRedHatTrademark = func(_ string) (bool, error) {
+					return false, errors.New("trademark error")
+				}
+			})
+			AfterEach(func() {
+				violatesRedHatTrademark = origValidator
+			})
+			It("should return an error", func() {
+				ok, err := hasProhibitedLabelsCheck.Validate(context.TODO(), imageRef)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("error while validating label"))
 				Expect(ok).To(BeFalse())
 			})
 		})

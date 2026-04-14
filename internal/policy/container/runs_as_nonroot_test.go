@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"errors"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
@@ -94,6 +95,23 @@ var _ = Describe("RunAsNonRoot", func() {
 			It("should not pass Validate", func() {
 				ok, err := runAsNonRoot.Validate(context.TODO(), imageRef)
 				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeFalse())
+			})
+		})
+
+		Context("When ConfigFile returns an error", func() {
+			BeforeEach(func() {
+				fakeImage := fakecranev1.FakeImage{
+					ConfigFileStub: func() (*cranev1.ConfigFile, error) {
+						return nil, errors.New("config error")
+					},
+				}
+				imageRef.ImageInfo = &fakeImage
+			})
+			It("should return an error", func() {
+				ok, err := runAsNonRoot.Validate(context.TODO(), imageRef)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("could not get validation data"))
 				Expect(ok).To(BeFalse())
 			})
 		})

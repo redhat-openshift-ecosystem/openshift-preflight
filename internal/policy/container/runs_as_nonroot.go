@@ -20,8 +20,7 @@ type RunAsNonRootCheck struct{}
 func (p *RunAsNonRootCheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
 	user, err := p.getDataToValidate(imgRef.ImageInfo)
 	if err != nil {
-		//coverage:ignore
-		return false, fmt.Errorf("could not get validation data: %v", err)
+		return false, fmt.Errorf("could not get validation data: %w", err)
 	}
 
 	return p.validate(ctx, user)
@@ -30,7 +29,6 @@ func (p *RunAsNonRootCheck) Validate(ctx context.Context, imgRef image.ImageRefe
 func (p *RunAsNonRootCheck) getDataToValidate(image cranev1.Image) (string, error) {
 	configFile, err := image.ConfigFile()
 	if err != nil {
-		//coverage:ignore
 		return "", fmt.Errorf("could not retrieve ConfigFile from Image: %w", err)
 	}
 	return configFile.Config.User, nil
