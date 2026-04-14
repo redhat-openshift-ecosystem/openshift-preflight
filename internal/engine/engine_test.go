@@ -12,6 +12,8 @@ import (
 	"net/url"
 	"os"
 
+	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
@@ -453,3 +455,169 @@ func writeTarball(out io.Writer, contents []byte, filename string, extraBytes ui
 
 	return nil
 }
+
+var _ = Describe("generateBundleHash", func() {
+	var bundleDir string
+
+	BeforeEach(func() {
+		var err error
+		bundleDir, err = os.MkdirTemp("", "bundle-hash-test-*")
+		Expect(err).ToNot(HaveOccurred())
+		DeferCleanup(os.RemoveAll, bundleDir)
+	})
+
+	Context("With a bundle directory containing files", func() {
+		BeforeEach(func() {
+			// Create a subdirectory and some files
+			err := os.MkdirAll(bundleDir+"/manifests", 0o755)
+			Expect(err).ToNot(HaveOccurred())
+			err = os.WriteFile(bundleDir+"/manifests/csv.yaml", []byte("apiVersion: v1"), 0o644)
+			Expect(err).ToNot(HaveOccurred())
+			err = os.WriteFile(bundleDir+"/manifests/crd.yaml", []byte("kind: CRD"), 0o644)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return a deterministic hash", func() {
+			hash1, err := generateBundleHash(context.TODO(), bundleDir)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hash1).ToNot(BeEmpty())
+
+			hash2, err := generateBundleHash(context.TODO(), bundleDir)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hash2).To(Equal(hash1))
+		})
+	})
+
+	Context("With a Dockerfile in the bundle", func() {
+		BeforeEach(func() {
+			err := os.WriteFile(bundleDir+"/Dockerfile", []byte("FROM scratch"), 0o644)
+			Expect(err).ToNot(HaveOccurred())
+			err = os.WriteFile(bundleDir+"/metadata.yaml", []byte("labels: {}"), 0o644)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should skip the Dockerfile", func() {
+			hash, err := generateBundleHash(context.TODO(), bundleDir)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hash).ToNot(BeEmpty())
+
+			// Hash should be the same as without the Dockerfile
+			hashWithoutDockerfile, err := generateBundleHash(context.TODO(), bundleDir)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hash).To(Equal(hashWithoutDockerfile))
+		})
+	})
+
+	Context("With an empty bundle directory", func() {
+		It("should return a hash of empty content", func() {
+			hash, err := generateBundleHash(context.TODO(), bundleDir)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hash).ToNot(BeEmpty())
+		})
+	})
+})
+
+var _ = Describe("convertToRPMs", func() {
+	epoch := 1
+
+	Context("With a package that has a source RPM and PGP key", func() {
+		It("should correctly map all fields", func() {
+			pkgList := []*rpmdb.PackageInfo{
+				{
+					Epoch:     &epoch,
+					Name:      "bash",
+					Version:   "5.1.8",
+					Release:   "2.el9",
+					Arch:      "x86_64",
+					SourceRpm: "bash-5.1.8-2.el9.src.rpm",
+					Summary:   "GNU Bourne Again shell",
+					PGP:       "RSA/SHA256, Mon 01 Jan 2024 12:00:00 AM UTC, Key ID 199e2f91fd431d51",
+				},
+			}
+
+			rpms := convertToRPMs(context.TODO(), pkgList)
+			Expect(rpms).To(HaveLen(1))
+			Expect(rpms[0].Architecture).To(Equal("x86_64"))
+			Expect(rpms[0].Gpg).To(Equal("199e2f91fd431d51"))
+			Expect(rpms[0].Name).To(Equal("bash"))
+			Expect(rpms[0].Nvra).To(Equal("bash-5.1.8-2.el9.x86_64"))
+			Expect(rpms[0].Release).To(Equal("2.el9"))
+			Expect(rpms[0].SrpmName).To(Equal("bash"))
+			Expect(rpms[0].Summary).To(Equal("GNU Bourne Again shell"))
+			Expect(rpms[0].Version).To(Equal("5.1.8"))
+			// SrpmNevra contains the Epoch pointer formatted with %d, which is the pointer address
+			Expect(rpms[0].SrpmNevra).To(ContainSubstring("bash-"))
+			Expect(rpms[0].SrpmNevra).To(ContainSubstring(":5.1.8-2.el9"))
+		})
+	})
+
+	Context("With a package that has no source RPM", func() {
+		It("should leave SrpmName and SrpmNevra empty", func() {
+			pkgList := []*rpmdb.PackageInfo{
+				{
+					Epoch:   &epoch,
+					Name:    "gpg-pubkey",
+					Version: "fd431d51",
+					Release: "4ae0493b",
+					Arch:    "(none)",
+					Summary: "gpg(Red Hat, Inc.)",
+				},
+			}
+
+			rpms := convertToRPMs(context.TODO(), pkgList)
+			Expect(rpms).To(HaveLen(1))
+			Expect(rpms[0].SrpmName).To(BeEmpty())
+			Expect(rpms[0].SrpmNevra).To(BeEmpty())
+		})
+	})
+
+	Context("With a package that has a PGP string not matching the expected format", func() {
+		It("should leave the Gpg field empty", func() {
+			pkgList := []*rpmdb.PackageInfo{
+				{
+					Epoch:     &epoch,
+					Name:      "bash",
+					Version:   "5.1.8",
+					Release:   "2.el9",
+					Arch:      "x86_64",
+					SourceRpm: "bash-5.1.8-2.el9.src.rpm",
+					Summary:   "GNU Bourne Again shell",
+					PGP:       "some-unrecognized-format",
+				},
+			}
+
+			rpms := convertToRPMs(context.TODO(), pkgList)
+			Expect(rpms).To(HaveLen(1))
+			Expect(rpms[0].Gpg).To(BeEmpty())
+		})
+	})
+
+	Context("With an empty package list", func() {
+		It("should return an empty slice", func() {
+			rpms := convertToRPMs(context.TODO(), []*rpmdb.PackageInfo{})
+			Expect(rpms).To(BeEmpty())
+		})
+	})
+
+	Context("With a complex source RPM name", func() {
+		It("should correctly parse the srpm name", func() {
+			pkgList := []*rpmdb.PackageInfo{
+				{
+					Epoch:     &epoch,
+					Name:      "python3-pip",
+					Version:   "21.0.1",
+					Release:   "6.el9",
+					Arch:      "noarch",
+					SourceRpm: "python-pip-21.0.1-6.el9.src.rpm",
+					Summary:   "A tool for installing packages",
+				},
+			}
+
+			rpms := convertToRPMs(context.TODO(), pkgList)
+			Expect(rpms).To(HaveLen(1))
+			Expect(rpms[0].SrpmName).To(Equal("python-pip"))
+			Expect(rpms[0].SrpmNevra).To(ContainSubstring("python-pip-"))
+			Expect(rpms[0].SrpmNevra).To(ContainSubstring(":21.0.1-6.el9"))
+		})
+	})
+})
