@@ -173,7 +173,6 @@ func WithCertificationProject(id, token string) Option {
 // An example might be the Scratch or Privileged flags on a project allowing for
 // the corresponding policy to be executed.
 func WithCertificationComponent(id, token string) Option {
-	//coverage:ignore
 	return withCertificationComponent(id, token)
 }
 

@@ -1,4 +1,3 @@
-//coverage:ignore file
 package option
 
 import (
@@ -60,15 +59,12 @@ func GenerateCraneOptions(ctx context.Context, craneConfig CraneConfig) []crane.
 		options = append(options, crane.Insecure, crane.WithTransport(rt))
 	}
 
-	//coverage:ignore
 	return options
 }
 
 // RetryOnceAfter is a crane option that retries once after t duration.
 func RetryOnceAfter(t time.Duration) crane.Option {
-	//coverage:ignore
 	return func(o *crane.Options) {
-		//coverage:ignore
 		o.Remote = append(o.Remote, remote.WithRetryBackoff(remote.Backoff{
 			Duration: t,
 			Factor:   1.0,

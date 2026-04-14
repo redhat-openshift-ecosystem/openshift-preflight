@@ -45,6 +45,15 @@ var _ = Describe("Container Check initialization", func() {
 			Expect(c.insecure).To(Equal(insecure))
 			Expect(c.konflux).To(Equal(konflux))
 		})
+		Context("with the WithCertificationComponent option", func() {
+			It("should set the project ID and token", func() {
+				c := NewCheck("placeholder",
+					WithCertificationComponent("mycomponent", "mytoken"),
+				)
+				Expect(c.certificationProjectID).To(Equal("mycomponent"))
+				Expect(c.pyxisToken).To(Equal("mytoken"))
+			})
+		})
 		Context("with the pyxisenv option", func() {
 			var env string
 			It("should resolve the env if valid", func() {

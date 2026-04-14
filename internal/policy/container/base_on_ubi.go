@@ -23,7 +23,6 @@ type layerHashChecker interface {
 }
 
 func NewBasedOnUbiCheck(layerHashChecker layerHashChecker) *BasedOnUBICheck {
-	//coverage:ignore
 	return &BasedOnUBICheck{LayerHashCheckEngine: layerHashChecker}
 }
 

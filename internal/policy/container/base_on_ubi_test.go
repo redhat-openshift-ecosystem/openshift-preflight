@@ -96,4 +96,13 @@ var _ = Describe("BaseOnUBI", func() {
 
 		AssertMetaData(&basedOnUbiCheck)
 	})
+
+	Describe("NewBasedOnUbiCheck", func() {
+		It("should return a non-nil check with the engine wired correctly", func() {
+			engine := &fakeLayerHashChecker{}
+			chk := NewBasedOnUbiCheck(engine)
+			Expect(chk).ToNot(BeNil())
+			Expect(chk.LayerHashCheckEngine).To(Equal(engine))
+		})
+	})
 })
