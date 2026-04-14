@@ -109,7 +109,6 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 	// Create the artifacts in Pyxis.
 	artifacts := certInput.Artifacts
 	for _, artifact := range artifacts {
-		//coverage:ignore
 		artifact.ImageID = certImage.ID
 		if _, err := p.createArtifact(ctx, &artifact); err != nil {
 			//coverage:ignore
