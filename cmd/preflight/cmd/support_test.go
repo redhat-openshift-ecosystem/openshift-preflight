@@ -16,6 +16,13 @@ var _ = Describe("support command tests", func() {
 			})
 		})
 	})
+	Context("When creating a support text generator for an operator project", func() {
+		It("should return an error when the pull request URL is empty", func() {
+			_, err := newSupportTextGenerator("operator", "000011112222", "")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("a pull request URL is required for operator project support requests"))
+		})
+	})
 	Context("When validating a pull request URL", func() {
 		urlNoScheme := "example.com"
 		urlNoHost := "https:///foo"
