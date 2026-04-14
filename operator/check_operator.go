@@ -75,7 +75,6 @@ func (c operatorCheck) Run(ctx context.Context) (certification.Results, error) {
 
 func (c *operatorCheck) resolve(ctx context.Context) error {
 	if c.resolved {
-		//coverage:ignore
 		return nil
 	}
 
