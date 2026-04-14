@@ -242,4 +242,8 @@ spec:
 		})
 	})
 	AssertMetaData(certifiedImagesCheck)
+
+	It("should return the expected RequiredFilePatterns", func() {
+		Expect(certifiedImagesCheck.RequiredFilePatterns()).To(Equal([]string{"/manifests/*"}))
+	})
 })

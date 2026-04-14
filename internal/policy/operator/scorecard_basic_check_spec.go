@@ -79,6 +79,5 @@ func (p *ScorecardBasicSpecCheck) Help() check.HelpText {
 }
 
 func (p *ScorecardBasicSpecCheck) RequiredFilePatterns() []string {
-	//coverage:ignore
 	return bundle.BundleFiles
 }

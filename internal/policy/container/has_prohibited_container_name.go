@@ -67,6 +67,5 @@ func (p HasProhibitedContainerName) Help() check.HelpText {
 }
 
 func (p HasProhibitedContainerName) RequiredFilePatterns() []string {
-	//coverage:ignore
 	return nil
 }

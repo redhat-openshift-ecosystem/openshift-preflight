@@ -93,6 +93,5 @@ func (p *BasedOnUBICheck) Help() check.HelpText {
 }
 
 func (p *BasedOnUBICheck) RequiredFilePatterns() []string {
-	//coverage:ignore
 	return nil
 }

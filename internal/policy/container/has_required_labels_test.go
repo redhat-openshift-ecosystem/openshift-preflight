@@ -82,4 +82,8 @@ var _ = Describe("HasRequiredLabels", func() {
 	})
 
 	AssertMetaData(&hasRequiredLabelsCheck)
+
+	It("should return nil for RequiredFilePatterns", func() {
+		Expect(hasRequiredLabelsCheck.RequiredFilePatterns()).To(BeNil())
+	})
 })

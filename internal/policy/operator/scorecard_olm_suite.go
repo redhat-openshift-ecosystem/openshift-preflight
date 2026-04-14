@@ -79,6 +79,5 @@ func (p *ScorecardOlmSuiteCheck) Help() check.HelpText {
 }
 
 func (p *ScorecardOlmSuiteCheck) RequiredFilePatterns() []string {
-	//coverage:ignore
 	return bundle.BundleFiles
 }

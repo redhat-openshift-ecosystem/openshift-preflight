@@ -129,6 +129,5 @@ func (p *certifiedImagesCheck) Help() check.HelpText {
 }
 
 func (p *certifiedImagesCheck) RequiredFilePatterns() []string {
-	//coverage:ignore
 	return []string{"/manifests/*"}
 }

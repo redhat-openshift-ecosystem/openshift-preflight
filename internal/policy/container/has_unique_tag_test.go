@@ -123,6 +123,10 @@ var _ = Describe("UniqueTag", func() {
 	})
 
 	AssertMetaData(&hasUniqueTagCheck)
+
+	It("should return nil for RequiredFilePatterns", func() {
+		Expect(hasUniqueTagCheck.RequiredFilePatterns()).To(BeNil())
+	})
 })
 
 func emptyImageTags() []string {
