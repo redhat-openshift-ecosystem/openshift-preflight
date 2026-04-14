@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"runtime"
+	goruntime "runtime"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
@@ -19,6 +19,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+	preruntime "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 
 	"github.com/go-logr/logr"
@@ -285,7 +286,7 @@ var _ = Describe("Check Container Command", func() {
 				Expect(err).ToNot(HaveOccurred())
 				DeferCleanup(os.RemoveAll, tmpDir)
 
-				platformDir := filepath.Join(tmpDir, runtime.GOARCH)
+				platformDir := filepath.Join(tmpDir, goruntime.GOARCH)
 				Expect(os.Mkdir(platformDir, 0o755)).Should(Succeed())
 
 				// creating test files on in the tmpDir so the tar function has files to tar
@@ -315,7 +316,7 @@ var _ = Describe("Check Container Command", func() {
 				Expect(err).ToNot(HaveOccurred())
 				DeferCleanup(os.RemoveAll, tmpDir)
 
-				platformDir := filepath.Join(tmpDir, runtime.GOARCH)
+				platformDir := filepath.Join(tmpDir, goruntime.GOARCH)
 				Expect(os.Mkdir(platformDir, 0o755)).Should(Succeed())
 
 				// creating test files on in the tmpDir so the tar function has files to tar
@@ -446,6 +447,47 @@ var _ = Describe("Check Container Command", func() {
 			info, err := os.Stat(f.Name())
 			Expect(err).ToNot(HaveOccurred())
 			Expect(info.Size()).ToNot(BeZero())
+		})
+	})
+
+	Context("when generating container check options", func() {
+		It("should include the certification component option when PyxisAPIToken and CertificationComponentID are set", func() {
+			cfg := &preruntime.Config{
+				PyxisAPIToken:            "mytoken",
+				CertificationComponentID: "myid",
+			}
+			baseOpts := generateContainerCheckOptions(&preruntime.Config{})
+			opts := generateContainerCheckOptions(cfg)
+			Expect(opts).To(HaveLen(len(baseOpts) + 1))
+		})
+
+		It("should include the insecure option when Insecure is true", func() {
+			cfg := &preruntime.Config{
+				Insecure: true,
+			}
+			baseOpts := generateContainerCheckOptions(&preruntime.Config{})
+			opts := generateContainerCheckOptions(cfg)
+			Expect(opts).To(HaveLen(len(baseOpts) + 1))
+		})
+
+		It("should set Submit to false when Insecure is true", func() {
+			cfg := &preruntime.Config{
+				Insecure: true,
+				Submit:   true,
+			}
+			generateContainerCheckOptions(cfg)
+			Expect(cfg.Submit).To(BeFalse())
+		})
+
+		It("should include both certification component and insecure options when both are set", func() {
+			cfg := &preruntime.Config{
+				PyxisAPIToken:            "mytoken",
+				CertificationComponentID: "myid",
+				Insecure:                 true,
+			}
+			baseOpts := generateContainerCheckOptions(&preruntime.Config{})
+			opts := generateContainerCheckOptions(cfg)
+			Expect(opts).To(HaveLen(len(baseOpts) + 2))
 		})
 	})
 })
