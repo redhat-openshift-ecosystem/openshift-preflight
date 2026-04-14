@@ -540,7 +540,6 @@ func (p *pyxisClient) updateTestResults(ctx context.Context, testResults *TestRe
 }
 
 func (p *pyxisClient) createArtifact(ctx context.Context, artifact *Artifact) (*Artifact, error) {
-	//coverage:ignore
 	logger := logr.FromContextOrDiscard(ctx)
 
 	b, err := json.Marshal(artifact)
@@ -548,14 +547,12 @@ func (p *pyxisClient) createArtifact(ctx context.Context, artifact *Artifact) (*
 		//coverage:ignore
 		return nil, fmt.Errorf("could not marshal artifact: %w", err)
 	}
-	//coverage:ignore
 	req, err := p.newRequestWithAPIToken(ctx, http.MethodPost, p.getPyxisURL(fmt.Sprintf("projects/certification/id/%s/artifacts", p.ProjectID)), bytes.NewReader(b))
 	if err != nil {
 		//coverage:ignore
 		return nil, fmt.Errorf("could not create new request: %w", err)
 	}
 
-	//coverage:ignore
 	logger.V(log.TRC).Info("pyxis URL", "url", req.URL)
 
 	resp, err := p.Client.Do(req)
@@ -564,7 +561,6 @@ func (p *pyxisClient) createArtifact(ctx context.Context, artifact *Artifact) (*
 		return nil, fmt.Errorf("could not create artifact in pyxis: %w", err)
 	}
 
-	//coverage:ignore
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
@@ -573,7 +569,6 @@ func (p *pyxisClient) createArtifact(ctx context.Context, artifact *Artifact) (*
 		return nil, fmt.Errorf("could not read body: %w", err)
 	}
 
-	//coverage:ignore
 	if ok := checkStatus(resp.StatusCode); !ok {
 		//coverage:ignore
 		return nil, fmt.Errorf(
@@ -582,14 +577,12 @@ func (p *pyxisClient) createArtifact(ctx context.Context, artifact *Artifact) (*
 			string(body))
 	}
 
-	//coverage:ignore
 	var newArtifact Artifact
 	if err := json.Unmarshal(body, &newArtifact); err != nil {
 		//coverage:ignore
 		return nil, fmt.Errorf("could not unmarshal body: %s: %w", string(body), err)
 	}
 
-	//coverage:ignore
 	return &newArtifact, nil
 }
 
