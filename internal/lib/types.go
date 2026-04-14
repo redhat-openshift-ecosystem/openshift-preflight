@@ -120,7 +120,6 @@ func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 	// not work here.
 	artifactWriter, ok := artifacts.WriterFromContext(ctx).(*artifacts.FilesystemWriter)
 	if artifactWriter == nil || !ok {
-		//coverage:ignore
 		return errors.New("the artifact writer was either missing or was not supported, so results cannot be submitted")
 	}
 
@@ -244,7 +243,6 @@ func BuildConnectURL(projectID string) string {
 
 	pyxisEnv := viper.Instance().GetString("pyxis_env")
 	if len(pyxisEnv) > 0 && pyxisEnv != "prod" {
-		//coverage:ignore
 		connectURL = fmt.Sprintf("https://connect.%s.redhat.com/component/view/%s", viper.Instance().GetString("pyxis_env"), projectID)
 	}
 
