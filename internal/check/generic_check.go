@@ -35,7 +35,6 @@ func (pd *genericCheckDefinition) Help() HelpText {
 }
 
 func (pd *genericCheckDefinition) RequiredFilePatterns() []string {
-	//coverage:ignore
 	return pd.requiredFilePatterns
 }
 

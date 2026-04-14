@@ -68,6 +68,5 @@ func (p *HasRequiredLabelsCheck) Help() check.HelpText {
 }
 
 func (p *HasRequiredLabelsCheck) RequiredFilePatterns() []string {
-	//coverage:ignore
 	return nil
 }

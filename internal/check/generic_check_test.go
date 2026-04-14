@@ -49,6 +49,9 @@ var _ = Describe("Generic check tests", func() {
 		It("should return the correct helpText", func() {
 			Expect(testCheck.Help().Message).To(Equal("test message"))
 		})
+		It("should return nil for RequiredFilePatterns when constructed with nil", func() {
+			Expect(testCheck.RequiredFilePatterns()).To(BeNil())
+		})
 		It("should execute the validator successfully", func() {
 			result, err := testCheck.Validate(context.TODO(), imgRef)
 			Expect(err).ToNot(HaveOccurred())
@@ -69,6 +72,19 @@ var _ = Describe("Generic check tests", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(result).To(BeFalse())
 			})
+		})
+	})
+	When("A generic check is created with RequiredFilePatterns", func() {
+		It("should return the provided patterns", func() {
+			patterns := []string{"/manifests/*", "/metadata/*"}
+			checkWithPatterns := NewGenericCheck(
+				"testname",
+				validatorFn,
+				metadata,
+				helpText,
+				patterns,
+			)
+			Expect(checkWithPatterns.RequiredFilePatterns()).To(Equal(patterns))
 		})
 	})
 })

@@ -63,4 +63,8 @@ var _ = Describe("HasProhibitedContainerName", func() {
 	})
 
 	AssertMetaData(&hasProhibitedContainerName)
+
+	It("should return nil for RequiredFilePatterns", func() {
+		Expect(hasProhibitedContainerName.RequiredFilePatterns()).To(BeNil())
+	})
 })

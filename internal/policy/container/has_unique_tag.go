@@ -141,6 +141,5 @@ func (p *hasUniqueTagCheck) Help() check.HelpText {
 }
 
 func (p *hasUniqueTagCheck) RequiredFilePatterns() []string {
-	//coverage:ignore
 	return nil
 }

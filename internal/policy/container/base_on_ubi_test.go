@@ -95,5 +95,9 @@ var _ = Describe("BaseOnUBI", func() {
 		})
 
 		AssertMetaData(&basedOnUbiCheck)
+
+		It("should return nil for RequiredFilePatterns", func() {
+			Expect(basedOnUbiCheck.RequiredFilePatterns()).To(BeNil())
+		})
 	})
 })

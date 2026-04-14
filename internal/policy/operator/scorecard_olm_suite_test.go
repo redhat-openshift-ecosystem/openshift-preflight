@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/bundle"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
 
@@ -86,6 +87,10 @@ var _ = Describe("ScorecardBasicCheck", func() {
 	})
 
 	AssertMetaData(&scorecardOlmSuiteCheck)
+
+	It("should return the expected RequiredFilePatterns", func() {
+		Expect(scorecardOlmSuiteCheck.RequiredFilePatterns()).To(Equal(bundle.BundleFiles))
+	})
 
 	Describe("Operator Bundle Scorecard", func() {
 		Context("When Operator Bundle Scorecard OLM Suite Check has a pass", func() {
