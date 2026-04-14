@@ -73,11 +73,9 @@ func (k *preflightKeychain) Resolve(target craneauthn.Resource) (craneauthn.Auth
 
 	r, err := os.Open(k.dockercfg)
 	if os.IsNotExist(err) {
-		//coverage:ignore
 		return nil, fmt.Errorf("could not find authfile: %s: %w", k.dockercfg, err)
 	}
 	if err != nil {
-		//coverage:ignore
 		return nil, fmt.Errorf("could not open authfile: %s: %v", k.dockercfg, err)
 	}
 
@@ -119,7 +117,6 @@ func (k *preflightKeychain) Resolve(target craneauthn.Resource) (craneauthn.Auth
 		}
 	}
 	if cfg == empty {
-		//coverage:ignore
 		return craneauthn.Anonymous, nil
 	}
 
