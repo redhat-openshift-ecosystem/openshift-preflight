@@ -29,6 +29,40 @@ var _ = Describe("Pyxis Builder tests", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	Context("When calling finalize on a certificationInputBuilder", func() {
+		Context("with a nil CertImage", func() {
+			It("should return an error", func() {
+				b := &certificationInputBuilder{
+					CertificationInput: CertificationInput{
+						CertProject: &CertProject{},
+						TestResults: &TestResults{},
+						CertImage:   nil,
+						RpmManifest: &RPMManifest{},
+					},
+				}
+				_, err := b.finalize()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("CertImage was not provided"))
+			})
+		})
+
+		Context("with a nil TestResults", func() {
+			It("should return an error", func() {
+				b := &certificationInputBuilder{
+					CertificationInput: CertificationInput{
+						CertProject: &CertProject{},
+						TestResults: nil,
+						CertImage:   &CertImage{},
+						RpmManifest: &RPMManifest{},
+					},
+				}
+				_, err := b.finalize()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("test results were not provided"))
+			})
+		})
+	})
+
 	Context("When preparing a new input builder", func() {
 		Context("with a nil CertProject value", func() {
 			It("should return an error", func() {
