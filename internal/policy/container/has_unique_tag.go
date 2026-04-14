@@ -65,7 +65,6 @@ func (p *hasUniqueTagCheck) Validate(ctx context.Context, imgRef image.ImageRefe
 func (p *hasUniqueTagCheck) getDataToValidate(ctx context.Context, image string) ([]string, error) {
 	repo, err := name.NewRepository(image)
 	if err != nil {
-		//coverage:ignore
 		return nil, fmt.Errorf("failed to parse image name: %v", err)
 	}
 

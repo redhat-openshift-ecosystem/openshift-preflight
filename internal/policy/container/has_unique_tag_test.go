@@ -120,6 +120,15 @@ var _ = Describe("UniqueTag", func() {
 				Expect(ok).To(BeFalse())
 			})
 		})
+
+		Context("When the image name is invalid", func() {
+			It("should return a parse error", func() {
+				ok, err := hasUniqueTagCheck.Validate(context.TODO(), image.ImageReference{ImageRegistry: "INVALID@@@", ImageRepository: "!!!bad", ImageTagOrSha: "sha256:12345"})
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("failed to"))
+				Expect(ok).To(BeFalse())
+			})
+		})
 	})
 
 	AssertMetaData(&hasUniqueTagCheck)
