@@ -20,7 +20,6 @@ type CraneConfig interface {
 }
 
 func GenerateCraneOptions(ctx context.Context, craneConfig CraneConfig) []crane.Option {
-	//coverage:ignore
 	// prepare crane runtime options, if necessary
 	options := []crane.Option{
 		crane.WithContext(ctx),
@@ -44,7 +43,6 @@ func GenerateCraneOptions(ctx context.Context, craneConfig CraneConfig) []crane.
 	}
 
 	if craneConfig.CraneInsecure() {
-		//coverage:ignore
 		// Adding WithTransport opt is a workaround to allow for access to HTTPS
 		// container registries with self-signed or non-trusted certificates.
 		//
