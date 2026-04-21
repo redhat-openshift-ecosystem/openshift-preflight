@@ -39,6 +39,72 @@ var _ = Describe("Link Path Resolution", func() {
 	)
 })
 
+var _ = Describe("untar pattern helpers", func() {
+	DescribeTable("expandLiteralPatternsWithDescendantGlob",
+		func(in, want []string) {
+			Expect(expandLiteralPatternsWithDescendantGlob(in)).To(Equal(want))
+		},
+		Entry("nil", nil, nil),
+		Entry("empty", []string{}, []string{}),
+		Entry("literal gets descendant glob", []string{"usr/share/licenses"}, []string{"usr/share/licenses", "usr/share/licenses/**"}),
+		Entry("glob patterns unchanged except clone order", []string{"licenses/**"}, []string{"licenses/**"}),
+		Entry("mixed literals and globs", []string{"a/**", "b"}, []string{"a/**", "b", "b/**"}),
+		Entry("does not duplicate child glob", []string{"x", "x/**"}, []string{"x", "x/**"}),
+		Entry("preserves empty string", []string{"", "y"}, []string{"", "y", "y/**"}),
+	)
+
+	DescribeTable("clearUnresolvedLinkTargetsForExtractedPath",
+		func(initial map[string]struct{}, extracted string, wantKeys []string) {
+			u := mapsCloneKeys(initial)
+			clearUnresolvedLinkTargetsForExtractedPath(u, extracted)
+			keys := mapsKeys(u)
+			slices.Sort(keys)
+			Expect(keys).To(Equal(wantKeys))
+		},
+		Entry("exact match removes key",
+			map[string]struct{}{"a/b": {}},
+			"a/b",
+			[]string{},
+		),
+		Entry("child path removes longest parent prefix",
+			map[string]struct{}{"usr/share/licenses": {}},
+			"usr/share/licenses/pkg/COPYING",
+			[]string{},
+		),
+		Entry("longest prefix wins when multiple match",
+			map[string]struct{}{"usr": {}, "usr/share/licenses": {}},
+			"usr/share/licenses/foo",
+			[]string{"usr"},
+		),
+		Entry("unrelated keys preserved",
+			map[string]struct{}{"other": {}, "usr/share/licenses": {}},
+			"usr/share/licenses/x",
+			[]string{"other"},
+		),
+		Entry("no-op when nothing matches",
+			map[string]struct{}{"only/here": {}},
+			"elsewhere/file",
+			[]string{"only/here"},
+		),
+	)
+})
+
+func mapsCloneKeys(m map[string]struct{}) map[string]struct{} {
+	out := make(map[string]struct{}, len(m))
+	for k := range m {
+		out[k] = struct{}{}
+	}
+	return out
+}
+
+func mapsKeys(m map[string]struct{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 var _ = Describe("Untar Directory Traversal Protection", func() {
 	var tmpDir string
 
@@ -88,6 +154,47 @@ var _ = Describe("Untar Directory Traversal Protection", func() {
 		fileContent, err := os.ReadFile(legitimateFile)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(fileContent).To(Equal(content))
+	})
+
+	It("should extract nested files when /licenses is a symlink to usr/share/licenses (tar paths under usr/share/licenses)", func() {
+		// Mirrors UBI/RHEL images: layer stores license files under usr/share/licenses/... while
+		// /licenses is a symlink to /usr/share/licenses. Nested paths must match after resolving
+		// the symlink target (including follow-up passes when the symlink appears after paths).
+		content := []byte("license text")
+		var buf bytes.Buffer
+		tw := tar.NewWriter(&buf)
+
+		nestedPath := "usr/share/licenses/demo/LICENSE"
+		err := tw.WriteHeader(&tar.Header{
+			Typeflag: tar.TypeReg,
+			Name:     nestedPath,
+			Size:     int64(len(content)),
+			Mode:     0o644,
+			Format:   tar.FormatPAX,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		_, err = tw.Write(content)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = tw.WriteHeader(&tar.Header{
+			Typeflag: tar.TypeSymlink,
+			Name:     "licenses",
+			Linkname: "/usr/share/licenses",
+			Mode:     0o777,
+			Format:   tar.FormatPAX,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(tw.Close()).To(Succeed())
+
+		img, err := createImageWithLayer(buf.Bytes())
+		Expect(err).ToNot(HaveOccurred())
+
+		err = untar(context.Background(), tmpDir, img, []string{"licenses/**"})
+		Expect(err).ToNot(HaveOccurred())
+
+		got, err := os.ReadFile(filepath.Join(tmpDir, nestedPath))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(got).To(Equal(content))
 	})
 
 	It("should extract files in nested subdirectories when pattern ends with /**", func() {
