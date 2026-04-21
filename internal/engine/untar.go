@@ -20,6 +20,60 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
+// expandLiteralPatternsWithDescendantGlob adds a "path/**" pattern for each pattern that has no
+// glob metacharacters, so a follow-up pass that only lists a symlink's target directory (e.g.
+// usr/share/licenses) still matches nested files in the tarball.
+//
+// Patterns containing `[` are skipped: we treat * ? [ as glob syntax; literal `[` in a path is rare.
+func expandLiteralPatternsWithDescendantGlob(patterns []string) []string {
+	if len(patterns) == 0 {
+		return patterns
+	}
+	out := slices.Clone(patterns)
+	for _, p := range patterns {
+		if p == "" || strings.ContainsAny(p, "*?[") {
+			continue
+		}
+		child := p + "/**"
+		if !slices.Contains(out, child) {
+			out = append(out, child)
+		}
+	}
+	return out
+}
+
+// clearUnresolvedLinkTargetsForExtractedPath removes entries from unresolved when an extracted
+// path satisfies them: either an exact key match, or the longest key that is a strict parent
+// directory prefix of extractedPath (directory symlink targets such as usr/share/licenses).
+func clearUnresolvedLinkTargetsForExtractedPath(unresolved map[string]struct{}, extractedPath string) {
+	var longestKey string
+	for k := range unresolved {
+		if extractedPath == k || strings.HasPrefix(extractedPath, k+"/") {
+			if len(k) > len(longestKey) {
+				longestKey = k
+			}
+		}
+	}
+	if longestKey != "" {
+		delete(unresolved, longestKey)
+	}
+}
+
+// appendSymlinkTargetPatterns appends the resolved symlink target and target/** to filterPatterns
+// when missing, so layer paths under the real directory (e.g. usr/share/licenses/...) match.
+func appendSymlinkTargetPatterns(filterPatterns []string, logger logr.Logger, resolvedTargetName string) []string {
+	nestedGlob := resolvedTargetName + "/**"
+	if !slices.Contains(filterPatterns, resolvedTargetName) {
+		logger.V(log.TRC).Info("adding symlink target path to filter patterns", "target", resolvedTargetName)
+		filterPatterns = append(filterPatterns, resolvedTargetName)
+	}
+	if !slices.Contains(filterPatterns, nestedGlob) {
+		logger.V(log.TRC).Info("adding symlink target descendant glob to filter patterns", "targetGlob", nestedGlob)
+		filterPatterns = append(filterPatterns, nestedGlob)
+	}
+	return filterPatterns
+}
+
 // untar takes a destination path, a container image, and a list of files or match patterns
 // which should be extracted out of the image.
 func untar(ctx context.Context, dst string, img v1.Image, requiredFilePatterns []string) error {
@@ -59,6 +113,7 @@ func untar(ctx context.Context, dst string, img v1.Image, requiredFilePatterns [
 // Uses os.Root to restrict extraction to dst.
 func untarOnce(ctx context.Context, dst string, img v1.Image, filterPatterns []string, state map[string]struct{}) (remaining []string, err error) {
 	logger := logr.FromContextOrDiscard(ctx)
+	filterPatterns = expandLiteralPatternsWithDescendantGlob(filterPatterns)
 	logger.V(log.TRC).Info("extracting from tar stream with filter patterns", "patterns", filterPatterns)
 
 	fs := mutate.Extract(img)
@@ -153,10 +208,8 @@ func untarOnce(ctx context.Context, dst string, img v1.Image, filterPatterns []s
 			filesProcessedInThisPass[header.Name] = struct{}{}
 			state[header.Name] = struct{}{}
 
-			// If the file being processed is the target of a symlink we encountered earlier in
-			// this pass, it will also be in unresolvedLinkTargets. Now that we've found it,
-			// remove it from the list.
-			delete(unresolvedLinkTargets, header.Name)
+			// Drop satisfied unresolved symlink targets (exact path or longest parent-directory key).
+			clearUnresolvedLinkTargetsForExtractedPath(unresolvedLinkTargets, header.Name)
 
 			// manually close here after each file operation; defering would cause each file close
 			// to wait until all operations have completed.
@@ -200,10 +253,7 @@ func untarOnce(ctx context.Context, dst string, img v1.Image, filterPatterns []s
 			filesProcessedInThisPass[header.Name] = struct{}{}
 			state[header.Name] = struct{}{}
 
-			// If the file being processed is the target of a symlink we encountered earlier in
-			// this pass, it will also be in unresolvedLinkTargets. Now that we've found it,
-			// remove it from the list.
-			delete(unresolvedLinkTargets, header.Name)
+			clearUnresolvedLinkTargetsForExtractedPath(unresolvedLinkTargets, header.Name)
 
 			resolvedTargetName := filepath.Clean(filepath.Join(filepath.Dir(header.Name), header.Linkname))
 
@@ -213,12 +263,9 @@ func untarOnce(ctx context.Context, dst string, img v1.Image, filterPatterns []s
 				continue
 			}
 
-			// If the target of the symlink is not already in the list of search patterns,
-			// add it to the list. We might get lucky and encounter it later in this pass.
-			if !slices.Contains(filterPatterns, resolvedTargetName) {
-				logger.V(log.TRC).Info("adding to the filter patterns for the current pass", "target", resolvedTargetName)
-				filterPatterns = append(filterPatterns, resolvedTargetName)
-			}
+			// Add the resolved target and target/** so nested layer paths match (e.g. /licenses ->
+			// /usr/share/licenses with files stored as usr/share/licenses/...).
+			filterPatterns = appendSymlinkTargetPatterns(filterPatterns, logger, resolvedTargetName)
 
 			// Also add the target of this symlink to the list of unresolved link targets,
 			// if not already present. It's possible that we've already passed the target
