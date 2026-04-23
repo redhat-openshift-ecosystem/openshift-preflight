@@ -227,6 +227,15 @@ git add internal/engine/engine.go internal/engine/engine_test.go
 git add .
 ```
 
+### GitHub Merge Strategy
+
+This repository uses **rebase** for merging PRs. Squash and merge commits are disabled.
+
+```bash
+# Merge a PR
+gh pr merge <number> --rebase
+```
+
 ## Key Architecture Notes
 
 - **Policies** (`internal/policy/`) define collections of checks for containers and operators
