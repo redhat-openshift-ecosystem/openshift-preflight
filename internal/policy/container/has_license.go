@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
@@ -22,6 +23,42 @@ const (
 )
 
 var errLicensesNotADir = errors.New("licenses is not a directory")
+
+// canonicalMountRoot returns a path comparable to filepath.EvalSymlinks results
+// (e.g. /var/... on macOS resolves to /private/var/...).
+func canonicalMountRoot(mountedPath string) string {
+	c := filepath.Clean(mountedPath)
+	if r, err := filepath.EvalSymlinks(c); err == nil && r != "" {
+		return filepath.Clean(r)
+	}
+	return c
+}
+
+// pathWithinMount reports whether resolved is the mount root or a path strictly
+// beneath it (prefix boundary safe, e.g. /tmp/img does not contain /tmp/image).
+func pathWithinMount(mount, resolved string) bool {
+	mount = filepath.Clean(mount)
+	resolved = filepath.Clean(resolved)
+	if resolved == mount {
+		return true
+	}
+	rel, err := filepath.Rel(mount, resolved)
+	if err != nil {
+		return false
+	}
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+}
+
+// resolvedDirEntry wraps a WalkDir DirEntry so Info() returns metadata from
+// os.Stat (the followed target) instead of the symlink's DirEntry metadata.
+type resolvedDirEntry struct {
+	fs.DirEntry
+	fi fs.FileInfo
+}
+
+func (r resolvedDirEntry) Info() (fs.FileInfo, error) {
+	return r.fi, nil
+}
 
 var _ check.Check = &HasLicenseCheck{}
 
@@ -45,6 +82,8 @@ func (p *HasLicenseCheck) Validate(ctx context.Context, imgRef image.ImageRefere
 
 //nolint:unparam // ctx is unused. Keep for future use.
 func (p *HasLicenseCheck) getDataToValidate(ctx context.Context, mountedPath string) ([]fs.DirEntry, error) {
+	logger := logr.FromContextOrDiscard(ctx)
+	mountRoot := canonicalMountRoot(mountedPath)
 	fullPath := filepath.Join(mountedPath, licensePath)
 	fileinfo, err := os.Stat(fullPath)
 	if err != nil {
@@ -55,16 +94,34 @@ func (p *HasLicenseCheck) getDataToValidate(ctx context.Context, mountedPath str
 		return nil, fmt.Errorf("%s is not a directory: %w", licensePath, errLicensesNotADir)
 	}
 
+	// WalkDir does not follow a symlink at the root; if /licenses is a symlink to a directory,
+	// Stat above follows it and IsDir is true, but the walk would otherwise treat the symlink
+	// itself as a non-directory "file". Resolve before walking.
+	walkRoot := fullPath
+	if rp, errSy := filepath.EvalSymlinks(fullPath); errSy == nil && rp != "" && pathWithinMount(mountRoot, rp) {
+		walkRoot = rp
+	}
+
 	var files []fs.DirEntry
-	err = filepath.WalkDir(fullPath, func(p string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(walkRoot, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			//coverage:ignore
 			return err
 		}
-		// Only include regular files, not directories
-		if !d.IsDir() {
-			files = append(files, d)
+		if d.IsDir() {
+			return nil
 		}
+		resolved, errEv := filepath.EvalSymlinks(p)
+		if errEv != nil || resolved == "" || !pathWithinMount(mountRoot, resolved) {
+			logger.V(log.DBG).Info("skipping broken or escaped link", "path", p, "error", errEv)
+			return nil
+		}
+		// Stat the same path we validated (resolved), not p, to avoid a symlink TOCTOU.
+		fi, errSt := os.Stat(resolved)
+		if errSt != nil || !fi.Mode().IsRegular() {
+			return nil
+		}
+		files = append(files, resolvedDirEntry{DirEntry: d, fi: fi})
 		return nil
 	})
 	if err != nil {
