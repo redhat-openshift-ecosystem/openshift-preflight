@@ -505,14 +505,6 @@ var _ = Describe("Untar Directory Traversal Protection", func() {
 	})
 })
 
-// linkType a convenience type just to make the consuming functions more clear.
-type linkType = byte
-
-const (
-	hardlink linkType = tar.TypeLink
-	symlink  linkType = tar.TypeSymlink
-)
-
 // writeTarballWithLink writes a tar archive with a regular file and a hard
 // link. The ability to write a regular file allows for testing happy paths.
 // note: this should only be used as a helper function in tests.
@@ -537,7 +529,7 @@ func writeTarballWithLink(out io.Writer, linkTypeFlag linkType, contents []byte,
 	}
 
 	linkHeader := &tar.Header{
-		Typeflag: linkTypeFlag,
+		Typeflag: byte(linkTypeFlag),
 		Name:     linkname,
 		Linkname: linkTarget,
 		Mode:     0o644,
