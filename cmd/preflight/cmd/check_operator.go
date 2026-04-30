@@ -6,6 +6,9 @@ import (
 	"io"
 	"os"
 
+	"github.com/go-logr/logr"
+	"github.com/spf13/cobra"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
@@ -14,9 +17,6 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/operator"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
-
-	"github.com/go-logr/logr"
-	"github.com/spf13/cobra"
 )
 
 func checkOperatorCmd(runpreflight runPreflight) *cobra.Command {

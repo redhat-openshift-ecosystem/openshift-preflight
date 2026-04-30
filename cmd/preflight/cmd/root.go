@@ -7,17 +7,17 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
-
 	"github.com/bombsimon/logrusr/v4"
 	"github.com/go-logr/logr"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	spfviper "github.com/spf13/viper"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 )
 
 var (

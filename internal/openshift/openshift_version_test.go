@@ -3,10 +3,10 @@ package openshift
 import (
 	"context"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 )
 
 var _ = Describe("OpenShift Version", func() {

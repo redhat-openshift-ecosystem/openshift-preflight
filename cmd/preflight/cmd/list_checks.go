@@ -6,9 +6,9 @@ import (
 	"io"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/engine"
-
 	"github.com/spf13/cobra"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/engine"
 )
 
 func listChecksCmd() *cobra.Command {

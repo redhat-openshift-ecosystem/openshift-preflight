@@ -11,14 +11,14 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/go-logr/logr"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
-
-	"github.com/go-logr/logr"
 )
 
 // ResultWriter defines methods associated with writing check results.

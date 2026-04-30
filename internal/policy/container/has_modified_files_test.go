@@ -6,17 +6,16 @@ import (
 	"io/fs"
 	"path"
 
-	"github.com/google/go-containerregistry/pkg/crane"
-	"github.com/spf13/afero"
-
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
-
 	"github.com/bombsimon/logrusr/v4"
 	"github.com/go-logr/logr"
+	"github.com/google/go-containerregistry/pkg/crane"
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 
 const (

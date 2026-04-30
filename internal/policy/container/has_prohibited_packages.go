@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-logr/logr"
+	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/rpm"
-
-	"github.com/go-logr/logr"
-	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 )
 
 var _ check.Check = &HasNoProhibitedPackagesCheck{}

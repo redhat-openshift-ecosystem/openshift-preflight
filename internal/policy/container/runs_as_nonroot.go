@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
-
 	"github.com/go-logr/logr"
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 
 var _ check.Check = &RunAsNonRootCheck{}

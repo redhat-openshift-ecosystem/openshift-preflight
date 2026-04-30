@@ -13,15 +13,6 @@ import (
 	"path/filepath"
 	goruntime "runtime"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
-	preruntime "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
-
 	"github.com/go-logr/logr"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -34,6 +25,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
+	preruntime "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 )
 
 func createPlatformImage(arch string, addlLayers int) cranev1.Image {

@@ -9,11 +9,11 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/go-logr/logr"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
-
-	"github.com/go-logr/logr"
 )
 
 func New(userProvidedScorecardImage string, cmdContext execContext) *operatorSdk {

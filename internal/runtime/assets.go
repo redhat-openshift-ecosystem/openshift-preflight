@@ -7,12 +7,11 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/google/go-containerregistry/pkg/crane"
+	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/authn"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
-
-	"github.com/google/go-containerregistry/pkg/crane"
-	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 // images maps the images use by preflight with their purpose.
