@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
-
 	. "github.com/onsi/ginkgo/v2/dsl/core"
 	. "github.com/onsi/gomega"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 
 var _ = Describe("Generic check tests", func() {

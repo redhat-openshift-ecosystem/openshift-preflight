@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	cranev1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
-
-	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 var _ check.Check = &BasedOnUBICheck{}

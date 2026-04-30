@@ -9,13 +9,13 @@ import (
 	"os"
 	"strings"
 
+	"github.com/go-logr/logr"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
-
-	"github.com/go-logr/logr"
 )
 
 type CheckConfig struct {

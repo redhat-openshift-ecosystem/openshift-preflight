@@ -6,10 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
-
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	preflighterr "github.com/redhat-openshift-ecosystem/openshift-preflight/errors"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/lib"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/runtime"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/test"
 )

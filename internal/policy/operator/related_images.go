@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
-
 	"github.com/go-logr/logr"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	mimage "github.com/operator-framework/operator-manifest-tools/pkg/image"
 	"github.com/operator-framework/operator-manifest-tools/pkg/pullspec"
 	"sigs.k8s.io/yaml"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 )
 
 var _ check.Check = &RelatedImagesCheck{}

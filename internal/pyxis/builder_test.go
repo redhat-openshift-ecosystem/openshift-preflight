@@ -7,11 +7,11 @@ import (
 	"os"
 	"path"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
-
 	. "github.com/onsi/ginkgo/v2/dsl/core"
 	. "github.com/onsi/gomega"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/formatters"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 )
 
 var _ = Describe("Pyxis Builder tests", func() {

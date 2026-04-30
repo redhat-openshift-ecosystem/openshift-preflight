@@ -65,9 +65,15 @@ linters:
       - examples$
 formatters:
   enable:
+    - gci
     - gofumpt
     - goimports
   settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/redhat-openshift-ecosystem/openshift-preflight)
     goimports:
       local-prefixes:
         - github.com/redhat-openshift-ecosystem/openshift-preflight

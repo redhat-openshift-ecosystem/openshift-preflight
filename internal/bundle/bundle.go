@@ -8,15 +8,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
-
 	"github.com/blang/semver"
 	"github.com/go-logr/logr"
 	"github.com/operator-framework/api/pkg/manifests"
 	"github.com/operator-framework/api/pkg/validation"
-
 	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/yaml"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 // This table signifies what the NEXT release of OpenShift will

@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
-
 	"github.com/go-logr/logr"
 	"github.com/google/go-containerregistry/pkg/name"
 	mimage "github.com/operator-framework/operator-manifest-tools/pkg/image"
 	"github.com/operator-framework/operator-manifest-tools/pkg/pullspec"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 )
 
 var _ check.Check = &certifiedImagesCheck{}

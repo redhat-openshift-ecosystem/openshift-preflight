@@ -8,9 +8,6 @@ import (
 	"maps"
 
 	"github.com/go-logr/logr"
-
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
-
 	imagestreamv1 "github.com/openshift/api/image/v1"
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -22,6 +19,8 @@ import (
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
 type openshiftClient struct {

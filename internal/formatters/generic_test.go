@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"gotest.tools/v3/assert"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
-
-	"gotest.tools/v3/assert"
 )
 
 func TestGenericJSONFormatter(t *testing.T) {

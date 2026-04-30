@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
-
 	"github.com/go-logr/logr"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
 )
 
 type scorecardCheck struct {

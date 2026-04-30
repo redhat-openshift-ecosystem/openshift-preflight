@@ -61,7 +61,7 @@ The `-run` value must match the `TestXxx` suite function name defined in the `*_
 
 ```bash
 make lint   # golangci-lint run --build-tags testing
-make fmt    # gofumpt -l -w . (must produce no diff)
+make fmt    # gofumpt -l -w . && golangci-lint fmt (must produce no diff)
 make vet    # go vet -tags testing ./...
 make tidy   # go mod tidy (must produce no diff)
 ```
@@ -72,12 +72,13 @@ All PRs must pass lint, fmt, vet, and tidy with no diffs.
 
 ### Formatting
 
-- Formatter: **gofumpt** (stricter than `gofmt`). Run `make fmt` before committing.
-- Do not manually format; let `gofumpt` handle it.
+- Formatters: **gofumpt** (stricter than `gofmt`) and **golangci-lint fmt**. Run `make fmt` before committing.
+- `make fmt` runs both `gofumpt -l -w .` and `golangci-lint fmt` to ensure consistent formatting and import organization.
+- Do not manually format; let the tooling handle it.
 
 ### Import Organization
 
-Three groups, separated by blank lines, enforced by `goimports` with local prefix:
+Three groups, separated by blank lines, enforced by `golangci-lint` (via the `goimports` linter with local prefix):
 
 ```go
 import (

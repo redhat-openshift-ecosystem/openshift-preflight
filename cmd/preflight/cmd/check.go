@@ -1,10 +1,10 @@
 package cmd
 
 import (
+	"github.com/spf13/cobra"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
-
-	"github.com/spf13/cobra"
 )
 
 func checkCmd() *cobra.Command {

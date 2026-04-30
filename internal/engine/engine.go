@@ -19,12 +19,11 @@ import (
 	"strings"
 	"time"
 
-	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
-
 	"github.com/go-logr/logr"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/cache"
+	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"

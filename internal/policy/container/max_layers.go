@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
+	cranev1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
-
-	"github.com/go-logr/logr"
-	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 const (

@@ -5,10 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/openshift"
-
 	fakecranev1 "github.com/google/go-containerregistry/pkg/v1/fake"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -18,6 +14,10 @@ import (
 	fakecg "k8s.io/client-go/kubernetes/fake"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/openshift"
 )
 
 var _ = Describe("DeployableByOLMCheck", func() {

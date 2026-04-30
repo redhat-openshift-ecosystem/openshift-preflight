@@ -6,16 +6,16 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
-
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	spfviper "github.com/spf13/viper"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 )
 
 // executeCommand is used for cobra command testing. It is effectively what's seen here:

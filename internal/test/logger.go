@@ -5,10 +5,9 @@ package test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo/v2"
-
 	"github.com/go-logr/logr"
 	"github.com/go-logr/logr/funcr"
+	. "github.com/onsi/ginkgo/v2"
 )
 
 func NewTestLoggerContext(ctx context.Context) context.Context {
