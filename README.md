@@ -79,6 +79,15 @@ For more detailed usage examples, see [Recipes](docs/RECIPES.md).
 For more information on how to configure the execution of `preflight`, see
 [CONFIG](docs/CONFIG.md)
 
+### AI Coding Assistant Integration
+
+For users working with AI coding assistants, this repository includes specialized guidance documentation to help with preflight workflows:
+
+- **Container Validation**: Located in `docs/skills/preflight-check-container/` - guides for running and debugging `preflight check container`
+- **Operator Validation**: Located in `docs/skills/preflight-check-operator/` - guides for running and debugging `preflight check operator`
+
+These documents provide structured guidance for certification workflows, debugging check failures, interpreting results, and submitting to Red Hat Partner Connect. They can be used as reference material or loaded into AI coding assistants that support skill/prompt libraries.
+
 ### Authenticating to Registries
 
 If a registry requires authentication, one must set the environment variable

@@ -63,6 +63,7 @@ linters:
       - third_party$
       - builtin$
       - examples$
+      - docs$
 formatters:
   enable:
     - gofumpt
@@ -77,3 +78,4 @@ formatters:
       - third_party$
       - builtin$
       - examples$
+      - docs$
