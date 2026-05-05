@@ -1,17 +1,17 @@
 module github.com/redhat-openshift-ecosystem/openshift-preflight
 
-go 1.25.7
+go 1.26.0
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/bombsimon/logrusr/v4 v4.1.0
-	github.com/docker/cli v29.4.1+incompatible
+	github.com/docker/cli v29.4.2+incompatible
 	github.com/glebarez/go-sqlite v1.22.0
 	github.com/go-logr/logr v1.4.3
 	github.com/google/go-containerregistry v0.21.5
 	github.com/knqyf263/go-rpmdb v0.1.1
-	github.com/onsi/ginkgo/v2 v2.28.1
+	github.com/onsi/ginkgo/v2 v2.28.2
 	github.com/onsi/gomega v1.39.1
 	github.com/openshift/api v0.0.0-20251015135203-5d856d3e8354
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235
@@ -24,9 +24,9 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
 	gotest.tools/v3 v3.5.2
-	k8s.io/api v0.35.4
-	k8s.io/apimachinery v0.35.4
-	k8s.io/client-go v0.35.4
+	k8s.io/api v0.36.0
+	k8s.io/apimachinery v0.36.0
+	k8s.io/client-go v0.36.0
 	sigs.k8s.io/controller-runtime v0.23.3
 	sigs.k8s.io/yaml v1.6.0
 )
@@ -43,7 +43,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/docker/docker-credential-helpers v0.9.4 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
+	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -126,16 +126,16 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20260202165425-ce8ad4cf556b // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260202165425-ce8ad4cf556b // indirect
 	google.golang.org/grpc v1.79.3 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.35.3 // indirect
 	k8s.io/apiserver v0.35.3 // indirect
 	k8s.io/component-base v0.35.3 // indirect
-	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20260127142750-a19766b6e2d4 // indirect
-	k8s.io/utils v0.0.0-20260108192941-914a6e750570 // indirect
+	k8s.io/klog/v2 v2.140.0 // indirect
+	k8s.io/kube-openapi v0.0.0-20260317180543-43fb72c5454a // indirect
+	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2 // indirect
 	modernc.org/libc v1.37.6 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
@@ -143,5 +143,5 @@ require (
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.34.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v6 v6.3.2-0.20260122202528-d9cc6641c482 // indirect
+	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
 )
