@@ -457,9 +457,13 @@ func platformsToBeProcessed(cmd *cobra.Command, cfg *runtime.Config) ([]string, 
 			return nil, fmt.Errorf("could not retrieve image config: %w", err)
 		}
 
-		// A specific arch was specified. This image does not contain that arch.
-		if cfgFile.Architecture != cfg.Platform && !platformChanged {
-			return nil, fmt.Errorf("cannot process image manifest of different arch without platform override")
+		// Validate that the image architecture matches the requested platform.
+		// cfg.Platform is always set (either from --platform flag or defaults to runtime arch).
+		// crane.WithPlatform() only selects from manifest lists - for single-arch images, it's
+		// ignored and crane pulls whatever exists. This validation catches that mismatch before
+		// running checks against the wrong architecture.
+		if cfgFile.Architecture != cfg.Platform {
+			return nil, fmt.Errorf("platform mismatch: requested %s but image is %s architecture", cfg.Platform, cfgFile.Architecture)
 		}
 
 		// At this point, we know that the original containerImagePlatform is correct, so
