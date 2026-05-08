@@ -141,7 +141,7 @@ var _ = Describe("Check Container Command", func() {
 			Expect(err).To(match)
 		},
 		Entry("image manifest, valid platform", "image", "amd64", Not(HaveOccurred()), true),
-		Entry("image manifest, different platform, modifier", "image", "none", Not(HaveOccurred()), true),
+		Entry("image manifest, different platform, modifier", "image", "none", HaveOccurred(), true),
 		Entry("image manifest, different platform, no modifier", "imageppc", "none", HaveOccurred(), false),
 		Entry("index manifest, valid platform", "index", "amd64", Not(HaveOccurred()), true),
 		Entry("index manifest, invalid platform", "index", "none", HaveOccurred(), true),
