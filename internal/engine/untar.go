@@ -20,58 +20,176 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
-// expandLiteralPatternsWithDescendantGlob adds a "path/**" pattern for each pattern that has no
-// glob metacharacters, so a follow-up pass that only lists a symlink's target directory (e.g.
-// usr/share/licenses) still matches nested files in the tarball.
-//
-// Patterns containing `[` are skipped: we treat * ? [ as glob syntax; literal `[` in a path is rare.
-func expandLiteralPatternsWithDescendantGlob(patterns []string) []string {
-	if len(patterns) == 0 {
-		return patterns
+// finishTarReadCloser drains and closes a tar layer reader, merging drain/close errors into err.
+func finishTarReadCloser(rc io.ReadCloser, err *error) {
+	_, drainErr := io.Copy(io.Discard, rc)
+	closeErr := rc.Close()
+
+	var errs []error
+	if *err != nil {
+		errs = append(errs, *err)
 	}
-	out := slices.Clone(patterns)
-	for _, p := range patterns {
-		if p == "" || strings.ContainsAny(p, "*?[") {
-			continue
-		}
-		child := p + "/**"
-		if !slices.Contains(out, child) {
-			out = append(out, child)
-		}
+	if drainErr != nil {
+		errs = append(errs, fmt.Errorf("failed to drain io reader: %w", drainErr))
 	}
-	return out
+	if closeErr != nil {
+		//coverage:ignore
+		errs = append(errs, fmt.Errorf("failed to close io reader: %w", closeErr))
+	}
+	switch len(errs) {
+	case 0:
+	case 1:
+		*err = errs[0]
+	default:
+		//coverage:ignore
+		*err = errors.Join(errs...)
+	}
 }
 
-// clearUnresolvedLinkTargetsForExtractedPath removes entries from unresolved when an extracted
-// path satisfies them: either an exact key match, or the longest key that is a strict parent
-// directory prefix of extractedPath (directory symlink targets such as usr/share/licenses).
-func clearUnresolvedLinkTargetsForExtractedPath(unresolved map[string]struct{}, extractedPath string) {
-	var longestKey string
-	for k := range unresolved {
-		if extractedPath == k || strings.HasPrefix(extractedPath, k+"/") {
-			if len(k) > len(longestKey) {
-				longestKey = k
+func validateRequiredFilePatterns(patterns []string) error {
+	for _, p := range patterns {
+		if !doublestar.ValidatePattern(p) {
+			return fmt.Errorf("invalid glob pattern: %q", p)
+		}
+	}
+	return nil
+}
+
+func pathMatchesAnyValidatedPattern(path string, patterns []string) bool {
+	return slices.ContainsFunc(patterns, func(p string) bool {
+		return doublestar.MatchUnvalidated(p, path)
+	})
+}
+
+// buildExtractionPlan decides which archive paths must be extracted given validated glob patterns.
+func buildExtractionPlan(
+	linkGraph LinkGraph,
+	allFiles map[string]struct{},
+	requiredFilePatterns []string,
+	logger logr.Logger,
+) []string {
+	// Build an alias map: canonical targets -> symlink paths that point at them.
+	linkAliases := linkGraph.BuildDirectoryAliasMap(logger)
+
+	neededFiles := make([]string, 0)
+	extractCtx := &extractionContext{
+		linkGraph:   linkGraph,
+		neededFiles: &neededFiles,
+		logger:      logger,
+	}
+
+	// Some paths match only via symlink aliases (e.g. pattern under /usr/lib/sysimage/rpm
+	// while the inode lives under /usr/share/rpm). When no ancestor is a symlink target,
+	// ExpandFilePathAliases yields only the canonical path, so we skip the expensive expansion.
+	for filePath := range allFiles {
+		var aliasedPaths []string
+		if pathMayHaveSymlinkAliasPaths(filePath, linkAliases) {
+			aliasedPaths = linkGraph.ExpandFilePathAliases(filePath, linkAliases)
+		} else {
+			aliasedPaths = []string{filePath}
+		}
+
+		for _, aliasPath := range aliasedPaths {
+			if !pathMatchesAnyValidatedPattern(aliasPath, requiredFilePatterns) {
+				continue
+			}
+			neededFiles = append(neededFiles, filePath)
+			visited := make(map[string]struct{})
+			extractCtx.addParentLinks(aliasPath, filePath, visited)
+			for _, sym := range linkAliases[filePath] {
+				if _, ok := visited[sym]; ok {
+					//coverage:ignore
+					continue
+				}
+				visited[sym] = struct{}{}
+				if node, ok := linkGraph[sym]; ok {
+					extractCtx.processLink(sym, node, "symlink to extracted file", filePath, visited)
+				}
+			}
+			break
+		}
+	}
+
+	filesToExtract := make(map[string]struct{})
+	// neededFiles lists matched archive paths plus link parents; addTransitiveDependencies
+	// closes over hardlink/symlink targets so the plan is self-consistent.
+	addTransitiveDependencies(neededFiles, linkGraph, allFiles, filesToExtract)
+
+	return slices.Collect(maps.Keys(filesToExtract))
+}
+
+func planExtraction(ctx context.Context, img v1.Image, requiredFilePatterns []string) (result []string, links LinkGraph, err error) {
+	logger := logr.FromContextOrDiscard(ctx)
+	logger.V(log.TRC).Info("planning extraction from tar stream")
+
+	if err := validateRequiredFilePatterns(requiredFilePatterns); err != nil {
+		return nil, nil, fmt.Errorf("invalid required file patterns: %w", err)
+	}
+
+	fs := mutate.Extract(img)
+	defer func() {
+		finishTarReadCloser(fs, &err)
+	}()
+
+	tr := tar.NewReader(fs)
+	linkGraph := make(LinkGraph, 0)
+
+	// Track all files that exist in the tar archive (as a set for quick lookup)
+	allFiles := make(map[string]struct{})
+
+	for {
+		header, err := tr.Next()
+
+		switch {
+		case err == io.EOF:
+			result = buildExtractionPlan(linkGraph, allFiles, requiredFilePatterns, logger)
+			return result, linkGraph, nil
+		case err != nil:
+			//coverage:ignore
+			return nil, nil, err
+		case header == nil:
+			//coverage:ignore
+			continue
+		}
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			//coverage:ignore
+			continue
+		case tar.TypeReg:
+			allFiles[header.Name] = struct{}{}
+		case tar.TypeSymlink:
+			allFiles[header.Name] = struct{}{}
+			resolvedTargetName := resolveRelativeLinkFrom(header.Name, header.Linkname)
+			dep, ok := linkGraph[resolvedTargetName]
+			if !ok {
+				dep = &linkNode{
+					Name: resolvedTargetName,
+					Deps: nil,
+				}
+			}
+			linkGraph[header.Name] = &linkNode{
+				Name:             header.Name,
+				Deps:             dep,
+				OriginalLinkname: header.Linkname,
+				Type:             tar.TypeSymlink,
+			}
+		case tar.TypeLink:
+			allFiles[header.Name] = struct{}{}
+			dep, ok := linkGraph[header.Linkname]
+			if !ok {
+				dep = &linkNode{
+					Name: header.Linkname,
+					Deps: nil,
+				}
+			}
+			linkGraph[header.Name] = &linkNode{
+				Name: header.Name,
+				Deps: dep,
+				Type: tar.TypeLink,
 			}
 		}
 	}
-	if longestKey != "" {
-		delete(unresolved, longestKey)
-	}
-}
-
-// appendSymlinkTargetPatterns appends the resolved symlink target and target/** to filterPatterns
-// when missing, so layer paths under the real directory (e.g. usr/share/licenses/...) match.
-func appendSymlinkTargetPatterns(filterPatterns []string, logger logr.Logger, resolvedTargetName string) []string {
-	nestedGlob := resolvedTargetName + "/**"
-	if !slices.Contains(filterPatterns, resolvedTargetName) {
-		logger.V(log.TRC).Info("adding symlink target path to filter patterns", "target", resolvedTargetName)
-		filterPatterns = append(filterPatterns, resolvedTargetName)
-	}
-	if !slices.Contains(filterPatterns, nestedGlob) {
-		logger.V(log.TRC).Info("adding symlink target descendant glob to filter patterns", "targetGlob", nestedGlob)
-		filterPatterns = append(filterPatterns, nestedGlob)
-	}
-	return filterPatterns
 }
 
 // untar takes a destination path, a container image, and a list of files or match patterns
@@ -80,63 +198,179 @@ func untar(ctx context.Context, dst string, img v1.Image, requiredFilePatterns [
 	logger := logr.FromContextOrDiscard(ctx)
 	logger.V(log.DBG).Info("exporting and flattening image")
 
-	// Extract all files matching the required file patterns.
-	state := make(map[string]struct{})
-	var err error
+	files, linkGraph, err := planExtraction(ctx, img, requiredFilePatterns)
+	if err != nil {
+		return fmt.Errorf("failed to build extraction plan: %w", err)
+	}
+	logger.V(log.DBG).Info("built list of files for extraction", "files", files, "count", len(files))
 
 	logger.V(log.DBG).Info("extracting container filesystem", "path", dst)
 
-	remaining := slices.Clone(requiredFilePatterns)
-
-	// In the case of symlinks, the targets may not be included in the original required file
-	// patterns, so make additional passes through the layers as needed to find them.
-	// Make at least one pass to validate the tar format, even if there are no required patterns.
-	for {
-		if remaining, err = untarOnce(ctx, dst, img, remaining, state); err != nil {
-			return fmt.Errorf("failed to extract tarball: %w", err)
-		}
-		if len(remaining) == 0 {
-			break
-		}
+	if err = runExtraction(ctx, dst, img, files, linkGraph); err != nil {
+		return fmt.Errorf("failed to extract tarball: %w", err)
 	}
 
 	return nil
 }
 
-// untarOnce takes a destination path, a container image, a list of files or match patterns
-// which should be extracted out of the image, and a map in which to store extraction progress/state.
-// The function returns a list of files that should be extracted in another invocation of
-// untarOnce along with an error if one was encountered.
-// A tar reader loops over the tarfile creating the file structure at
-// 'dst' along the way, and writing any files. This function uses a pre-allocated buffer to
-// reduce allocations and is not goroutine-safe.
+// sortHardlinksByDependencies sorts deferred hardlinks so that targets are created before
+// hardlinks that depend on them. Uses the link graph to determine dependencies.
+func sortHardlinksByDependencies(hardlinks []string, graph LinkGraph) ([]string, error) {
+	if len(hardlinks) == 0 {
+		return hardlinks, nil
+	}
+
+	// Build a set of hardlink names for quick lookup
+	hardlinkSet := make(map[string]struct{})
+	for _, hlName := range hardlinks {
+		hardlinkSet[hlName] = struct{}{}
+	}
+
+	// Build adjacency list and in-degree map for hardlinks only
+	inDegree := make(map[string]int)
+	adjList := make(map[string][]string)
+
+	for _, hlName := range hardlinks {
+		inDegree[hlName] = 0
+		adjList[hlName] = []string{}
+	}
+
+	// Build dependency graph
+	for _, hlName := range hardlinks {
+		if node, ok := graph[hlName]; ok && node.Deps != nil {
+			target := node.Deps.Name
+			// Only add edge if target is also a deferred hardlink
+			if _, isHardlink := hardlinkSet[target]; isHardlink {
+				adjList[target] = append(adjList[target], hlName)
+				inDegree[hlName]++
+			}
+		}
+	}
+
+	// Topological sort using Kahn's algorithm
+	queue := []string{}
+	for _, hlName := range hardlinks {
+		if inDegree[hlName] == 0 {
+			queue = append(queue, hlName)
+		}
+	}
+
+	var sorted []string
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+		sorted = append(sorted, current)
+
+		for _, neighbor := range adjList[current] {
+			inDegree[neighbor]--
+			if inDegree[neighbor] == 0 {
+				queue = append(queue, neighbor)
+			}
+		}
+	}
+
+	if len(sorted) != len(hardlinks) {
+		sortedSet := make(map[string]struct{}, len(sorted))
+		for _, s := range sorted {
+			//coverage:ignore
+			sortedSet[s] = struct{}{}
+		}
+		var remaining []string
+		for _, hl := range hardlinks {
+			if _, ok := sortedSet[hl]; !ok {
+				remaining = append(remaining, hl)
+			}
+		}
+		slices.Sort(remaining)
+		return nil, fmt.Errorf("cyclic hardlink dependency; could not order deferred hardlinks (remaining: %v)", remaining)
+	}
+
+	return sorted, nil
+}
+
+// addTransitiveDependencies follows the graph forwards from the given files and adds
+// files that the given files link to (potentially recursively).
+func addTransitiveDependencies(neededFiles []string, graph LinkGraph, allFiles map[string]struct{}, filesToExtract map[string]struct{}) {
+	// neededFiles and graph may contain virtual links (i.e. paths which do not
+	// exist in the tar stream, but match the filter patterns and would exist if
+	// the tar stream were fully extracted). The filesToExtract map should
+	// only contain real paths present in the tar stream, so filter out virtual
+	// paths before adding to the map.
+
+	visited := make(map[string]struct{})
+	for _, f := range neededFiles {
+		if _, seen := visited[f]; seen {
+			continue
+		}
+		visited[f] = struct{}{}
+
+		if _, exists := allFiles[f]; exists {
+			filesToExtract[f] = struct{}{}
+		}
+
+		// Consider what files would need to be recursively extracted in order
+		// for the matching file from neededFiles to resolve properly (not be
+		// a broken link)
+		walkGraphChain(f, graph, func(target string, deps *linkNode) bool {
+			if _, seen := visited[target]; seen {
+				return false
+			}
+			visited[target] = struct{}{}
+
+			if _, exists := allFiles[target]; exists {
+				filesToExtract[target] = struct{}{}
+			}
+			return true
+		})
+	}
+}
+
+// runExtraction extracts the specified files from the container image.
+// This function makes a single pass through the tar stream and handles hardlinks by
+// deferring their creation until after their targets are extracted.
+// The linkGraph is used to process deferred hardlinks in dependency order.
 // Uses os.Root to restrict extraction to dst.
-func untarOnce(ctx context.Context, dst string, img v1.Image, filterPatterns []string, state map[string]struct{}) (remaining []string, err error) {
+func runExtraction(ctx context.Context, dst string, img v1.Image, files []string, linkGraph LinkGraph) (err error) {
 	logger := logr.FromContextOrDiscard(ctx)
-	filterPatterns = expandLiteralPatternsWithDescendantGlob(filterPatterns)
-	logger.V(log.TRC).Info("extracting from tar stream with filter patterns", "patterns", filterPatterns)
+	logger.V(log.TRC).Info("extracting from tar stream")
+
+	// Build a set of all files to extract from the plan
+	filesToExtract := make(map[string]struct{})
+	for _, file := range files {
+		filesToExtract[file] = struct{}{}
+	}
 
 	fs := mutate.Extract(img)
 	defer func() {
-		// Drain any remaining data from the reader and capture any errors
-		_, drainErr := io.Copy(io.Discard, fs)
-		if drainErr != nil {
-			err = fmt.Errorf("failed to drain io reader: %w", drainErr)
-		}
-		fs.Close()
+		finishTarReadCloser(fs, &err)
 	}()
 
-	filesProcessedInThisPass := make(map[string]struct{})
-	unresolvedLinkTargets := make(map[string]struct{})
+	extractedFiles := make(map[string]struct{})
+	var deferredHardlinks []string
 
 	tr := tar.NewReader(fs)
 	dst = filepath.Clean(dst)
 	dstRoot, openErr := os.OpenRoot(dst)
 	if openErr != nil {
 		//coverage:ignore
-		return slices.Collect(maps.Keys(unresolvedLinkTargets)), fmt.Errorf("untar error, unable to open extraction destination %s: %w", dst, openErr)
+		return fmt.Errorf("untar error, unable to open extraction destination %s: %w", dst, openErr)
 	}
 	defer dstRoot.Close()
+
+	mkdirDone := make(map[string]struct{})
+	mkdirOnce := func(dir string) error {
+		if dir == "." || dir == "/" {
+			return nil
+		}
+		if _, ok := mkdirDone[dir]; ok {
+			return nil
+		}
+		if err := dstRoot.MkdirAll(dir, 0o755); err != nil && !os.IsExist(err) {
+			return err
+		}
+		mkdirDone[dir] = struct{}{}
+		return nil
+	}
 
 	// Buffer for io.CopyBuffer operations to reduce allocations
 	buf := make([]byte, 32*1024)
@@ -144,133 +378,169 @@ func untarOnce(ctx context.Context, dst string, img v1.Image, filterPatterns []s
 		header, err := tr.Next()
 
 		switch {
-		// if no more files are found return
 		case err == io.EOF:
-			logger.V(log.TRC).Info("extracted files", "files", filesProcessedInThisPass)
-			logger.V(log.TRC).Info("remaining files", "files", unresolvedLinkTargets)
-			return slices.Collect(maps.Keys(unresolvedLinkTargets)), nil
+			// At this point, all regular files and symlinks have been created, along with
+			// some hardlinks. Now create deferred hardlinks in dependency order.
+			orderedHardlinks, sortErr := sortHardlinksByDependencies(deferredHardlinks, linkGraph)
+			if sortErr != nil {
+				//coverage:ignore
+				return fmt.Errorf("deferred hardlink ordering: %w", sortErr)
+			}
 
-		// return any other error
+			for _, hlName := range orderedHardlinks {
+				// Look up the hardlink target from the graph
+				node, ok := linkGraph[hlName]
+				if !ok || node.Deps == nil {
+					//coverage:ignore
+					logger.V(log.DBG).Info("skipping deferred hardlink, no graph entry", "link", hlName)
+					continue
+				}
+				linkTarget := node.Deps.Name
+
+				if _, targetExists := extractedFiles[linkTarget]; !targetExists {
+					//coverage:ignore
+					logger.V(log.DBG).Info("skipping deferred hardlink, target not extracted", "link", hlName, "target", linkTarget)
+					continue
+				}
+
+				dirname := filepath.Dir(hlName)
+				if err := mkdirOnce(dirname); err != nil {
+					//coverage:ignore
+					return err
+				}
+
+				if err := dstRoot.Link(linkTarget, hlName); err != nil {
+					//coverage:ignore
+					logger.V(log.DBG).Info("error creating deferred hardlink, ignoring", "link", hlName, "linkedTo", linkTarget, "reason", err.Error())
+					continue
+				}
+
+				extractedFiles[hlName] = struct{}{}
+			}
+
+			logger.V(log.TRC).Info("extracted files", "files", extractedFiles, "count", len(extractedFiles))
+			return nil
+
 		case err != nil:
 			//coverage:ignore
-			logger.V(log.TRC).Info("extracted files", "files", filesProcessedInThisPass)
-			logger.V(log.TRC).Info("remaining files", "files", unresolvedLinkTargets)
-			return slices.Collect(maps.Keys(unresolvedLinkTargets)), err
+			logger.V(log.TRC).Info("error reading tar stream", "extractedCount", len(extractedFiles))
+			return err
 
-		// if the header is nil, just skip it (not sure how this happens)
 		case header == nil:
 			//coverage:ignore
 			continue
 		}
 
-		if _, ok := state[header.Name]; ok {
-			continue
-		}
-
-		matches := slices.ContainsFunc(filterPatterns, func(p string) bool {
-			result, _ := doublestar.Match(p, header.Name)
-			return result
-		})
-		if !matches {
+		// Skip files not in the extraction plan
+		if _, shouldExtract := filesToExtract[header.Name]; !shouldExtract {
 			continue
 		}
 
 		// check the file type
 		switch header.Typeflag {
-		// skip all directories, we'll only create the needed directory
-		// structure for the files/symlinks that need to be created
 		case tar.TypeDir:
 			//coverage:ignore
 			continue
 
-		// if it's a file create it
 		case tar.TypeReg:
 			dirname := filepath.Dir(header.Name)
-			if err := dstRoot.MkdirAll(dirname, 0o755); err != nil && !os.IsExist(err) {
-				return slices.Collect(maps.Keys(unresolvedLinkTargets)), err
+			if err := mkdirOnce(dirname); err != nil {
+				return err
 			}
 
 			// Mask non-permission bits, which are not supported by dstRoot.OpenFile
 			fileMode := os.FileMode(header.Mode & 0o777)
-			f, err := dstRoot.OpenFile(header.Name, os.O_CREATE|os.O_WRONLY, fileMode)
+			f, err := dstRoot.OpenFile(header.Name, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fileMode)
 			if err != nil {
 				//coverage:ignore
-				return slices.Collect(maps.Keys(unresolvedLinkTargets)), err
+				return err
 			}
 
-			// copy over contents
-			if _, err := io.CopyBuffer(f, tr, buf); err != nil {
+			_, copyErr := io.CopyBuffer(f, tr, buf)
+			closeErr := f.Close()
+			if copyErr != nil {
 				//coverage:ignore
-				f.Close()
-				return slices.Collect(maps.Keys(unresolvedLinkTargets)), err
+				return copyErr
+			}
+			if closeErr != nil {
+				//coverage:ignore
+				return closeErr
 			}
 
-			filesProcessedInThisPass[header.Name] = struct{}{}
-			state[header.Name] = struct{}{}
+			extractedFiles[header.Name] = struct{}{}
 
-			// Drop satisfied unresolved symlink targets (exact path or longest parent-directory key).
-			clearUnresolvedLinkTargetsForExtractedPath(unresolvedLinkTargets, header.Name)
-
-			// manually close here after each file operation; defering would cause each file close
-			// to wait until all operations have completed.
-			f.Close()
-
-		// if it's a link create it
-		case tar.TypeSymlink, tar.TypeLink:
-			// Create the new link's directory if it doesn't exist.
+		case tar.TypeSymlink:
+			// Symlinks can be created even if target doesn't exist
 			dirname := filepath.Dir(header.Name)
-			if err := dstRoot.MkdirAll(dirname, 0o755); err != nil && !os.IsExist(err) {
+			if err := mkdirOnce(dirname); err != nil {
 				//coverage:ignore
-				return slices.Collect(maps.Keys(unresolvedLinkTargets)), err
+				return err
 			}
 
-			linkFn := dstRoot.Link
-			if header.Typeflag == tar.TypeSymlink {
-				// for dstRoot, basepath enforcement is not done on
-				// oldname when symlinking, so we'll do it here instead.
-				linkFn = func(oldname, newname string) error {
-					// resolved the oldname relative to the new name
-					resolvedON, _ := resolveLinkPaths(oldname, newname)
-					// Identify extraction root traversal with post resolution
-					finalOldname := filepath.Join(dstRoot.Name(), resolvedON)
-					if finalOldname != dstRoot.Name() && !strings.HasPrefix(finalOldname, dstRoot.Name()+string(os.PathSeparator)) {
-						//coverage:ignore
-						return errors.New("link resolves to path outside of extraction root")
-					}
+			// for dstRoot, basepath enforcement is not done on
+			// oldname when symlinking, so we'll do it here instead.
+			resolvedON, _ := resolveLinkPaths(header.Linkname, header.Name)
+			// Identify extraction root traversal with post resolution
+			finalOldname := filepath.Join(dstRoot.Name(), resolvedON)
+			if finalOldname != dstRoot.Name() && !strings.HasPrefix(finalOldname, dstRoot.Name()+string(os.PathSeparator)) {
+				logger.V(log.DBG).Info("symlink resolves outside extraction root, ignoring", "link", header.Name, "target", header.Linkname)
+				continue
+			}
 
-					// otherwise, link the two. newname validation is done by dstRoot.
-					return dstRoot.Symlink(finalOldname, newname)
+			// A symlink may be reachable via one or more hardlinks. The relative target is resolved
+			// differently depending on which hardlink path is accessed.
+			var symlinkTarget string
+			if filepath.IsAbs(header.Linkname) {
+				// Absolute symlinks are converted to absolute within the extraction root
+				symlinkTarget = finalOldname
+			} else {
+				// Canonical relative path from the symlink's directory to the vetted target (POSIX
+				// resolves relative symlink targets from the link's parent directory, not dst root).
+				linkDirAbs := filepath.Join(dstRoot.Name(), filepath.Dir(header.Name))
+				cleanFinal := filepath.Clean(finalOldname)
+				relTarget, relErr := filepath.Rel(linkDirAbs, cleanFinal)
+				if relErr != nil {
+					//coverage:ignore
+					logger.V(log.DBG).Info("symlink relative path failed, ignoring", "link", header.Name, "target", header.Linkname, "reason", relErr.Error())
+					continue
 				}
+				if filepath.Clean(filepath.Join(linkDirAbs, relTarget)) != cleanFinal {
+					//coverage:ignore
+					logger.V(log.DBG).Info("symlink sanitized target mismatch, ignoring", "link", header.Name, "target", header.Linkname)
+					continue
+				}
+				symlinkTarget = relTarget
 			}
 
-			err := linkFn(header.Linkname, header.Name)
-			if err != nil {
+			if err := dstRoot.Symlink(symlinkTarget, header.Name); err != nil {
 				//coverage:ignore
-				logger.V(log.DBG).Info("error creating link, ignoring", "link", header.Name, "linkedTo", header.Linkname, "type", header.Typeflag, "reason", err.Error())
+				logger.V(log.DBG).Info("error creating symlink, ignoring", "link", header.Name, "linkedTo", header.Linkname, "reason", err.Error())
 				continue
 			}
 
-			filesProcessedInThisPass[header.Name] = struct{}{}
-			state[header.Name] = struct{}{}
+			extractedFiles[header.Name] = struct{}{}
 
-			clearUnresolvedLinkTargetsForExtractedPath(unresolvedLinkTargets, header.Name)
+		case tar.TypeLink:
+			// Hardlinks require the target to exist
+			// Check if target has been extracted already
+			if _, targetExists := extractedFiles[header.Linkname]; targetExists {
+				dirname := filepath.Dir(header.Name)
+				if err := mkdirOnce(dirname); err != nil {
+					//coverage:ignore
+					return err
+				}
 
-			resolvedTargetName := filepath.Clean(filepath.Join(filepath.Dir(header.Name), header.Linkname))
+				if err := dstRoot.Link(header.Linkname, header.Name); err != nil {
+					//coverage:ignore
+					logger.V(log.DBG).Info("error creating hardlink, ignoring", "link", header.Name, "linkedTo", header.Linkname, "reason", err.Error())
+					continue
+				}
 
-			// If the target of the symlink has already been processed (in this pass or an
-			// earlier pass), then no further action is needed.
-			if _, ok := state[resolvedTargetName]; ok {
-				continue
+				extractedFiles[header.Name] = struct{}{}
+			} else {
+				// Defer this hardlink until after we've seen all files
+				deferredHardlinks = append(deferredHardlinks, header.Name)
 			}
-
-			// Add the resolved target and target/** so nested layer paths match (e.g. /licenses ->
-			// /usr/share/licenses with files stored as usr/share/licenses/...).
-			filterPatterns = appendSymlinkTargetPatterns(filterPatterns, logger, resolvedTargetName)
-
-			// Also add the target of this symlink to the list of unresolved link targets,
-			// if not already present. It's possible that we've already passed the target
-			// on this pass, in which case this can only be resolved on another pass.
-			unresolvedLinkTargets[resolvedTargetName] = struct{}{}
 		}
 	}
 }
