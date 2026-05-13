@@ -40,14 +40,19 @@ endef
 $(foreach arch,$(ARCHITECTURES_MAC),$(eval $(call MAC_ARCHITECTURE_template,$(arch))))
 
 .PHONY: fmt
-fmt: gofumpt golangci-lint
+fmt: gofumpt
 	${GOFUMPT} -l -w .
-	$(GOLANGCI_LINT) fmt
+	go tool -modfile=tools/go.mod golangci-lint fmt
 	git diff --exit-code
 
 .PHONY: tidy
 tidy:
 	go mod tidy
+	git diff --exit-code
+
+.PHONY: tidy-tools
+tidy-tools:
+	go mod -modfile=tools/go.mod tidy
 	git diff --exit-code
 
 .PHONY: image-build
@@ -83,8 +88,8 @@ vet:
 	go vet -tags testing ./...
 
 .PHONY: lint
-lint: golangci-lint ## Run golangci-lint linter checks.
-	$(GOLANGCI_LINT) run --build-tags testing
+lint: ## Run golangci-lint linter checks.
+	go tool -modfile=tools/go.mod golangci-lint run --build-tags testing
 	
 .PHONY: test-e2e
 test-e2e:
@@ -119,12 +124,6 @@ clean:
 	$(foreach GOOS, $(PLATFORMS),\
 	$(foreach GOARCH, $(ARCHITECTURES_MAC),\
 	$(shell if [ -f "$(BINARY)-$(GOOS)-$(GOARCH)" ]; then rm -f $(BINARY)-$(GOOS)-$(GOARCH); fi)))
-
-GOLANGCI_LINT = $(shell pwd)/bin/golangci-lint
-GOLANGCI_LINT_VERSION ?= v2.8.0
-golangci-lint: $(GOLANGCI_LINT)
-$(GOLANGCI_LINT):
-	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION))
 
 GOFUMPT = $(shell pwd)/bin/gofumpt
 GOFUMPT_VERSION ?= v0.9.0
