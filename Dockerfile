@@ -13,6 +13,12 @@ ARG OS
 # which prohibits copying from `/tmp` during make build cmd
 USER root
 
+# Override UBI10 Go toolset microarchitecture defaults to maintain backward
+# compatibility with the same hardware baseline as UBI9-built releases.
+# See https://github.com/redhat-openshift-ecosystem/openshift-preflight/issues/1339
+ENV GOAMD64=v2
+ENV GOPPC64=power8
+
 # Build the preflight binary
 COPY . /go/src/preflight
 WORKDIR /go/src/preflight
