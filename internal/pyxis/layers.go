@@ -10,12 +10,46 @@ import (
 	"github.com/shurcooL/graphql"
 )
 
+// filterExcludedLayers removes layer hashes that are known to be common or
+// problematic when matching up against a base image.
+func filterExcludedLayers(uncompressedLayerHashes []cranev1.Hash) []cranev1.Hash {
+	excludedHashes := map[string]struct{}{
+		// This hash represents an empty layer, where the contents is only the
+		// tar end-of-stream marker 1kb of zeros (dd if=/dev/zero bs=1024
+		// count=1 2>/dev/null | sha256sum).
+		//
+		// Legacy build tools would add this before "empty_layer" became an
+		// option for operations like LABEL, ENV, etc. that did not modify the
+		// filesystem. There are also more modern cases where we see this behavior
+		// e.g. https://github.com/containers/buildah/issues/6860
+		//
+		// Because it is effectively an empty layer, we do not want to match
+		// against base images that also have an empty base layer as their final
+		// layer diff (any image can have an empty layer).
+		//
+		// For this reason, we will not send this to the backend to find an
+		// image that contains this layer
+		"sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef": {},
+	}
+
+	filtered := make([]cranev1.Hash, 0, len(uncompressedLayerHashes))
+	for _, layer := range uncompressedLayerHashes {
+		if _, isExcluded := excludedHashes[layer.String()]; !isExcluded {
+			filtered = append(filtered, layer)
+		}
+	}
+
+	return filtered
+}
+
 // CertifiedImagesContainingLayers takes uncompressedLayerHashes and queries to a Red Hat Pyxis,
 // returning existing certified images from registry.access.redhat.com that contain any of the
 // IDs as its uncompressed top layer id.
 func (p *pyxisClient) CertifiedImagesContainingLayers(ctx context.Context, uncompressedLayerHashes []cranev1.Hash) ([]CertImage, error) {
-	layerIds := make([]graphql.String, 0, len(uncompressedLayerHashes))
-	for _, layer := range uncompressedLayerHashes {
+	filteredHashes := filterExcludedLayers(uncompressedLayerHashes)
+
+	layerIds := make([]graphql.String, 0, len(filteredHashes))
+	for _, layer := range filteredHashes {
 		layerIds = append(layerIds, graphql.String(layer.String()))
 	}
 
