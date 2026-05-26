@@ -17,16 +17,14 @@ package authn
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
-	"strings"
-	"testing"
 
 	craneauthn "github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var (
@@ -37,33 +35,27 @@ var (
 )
 
 // setupConfigDir sets up an isolated configDir() for this test.
-func setupConfigDir(t *testing.T) string {
+func setupConfigDir() string {
 	tmpdir := os.Getenv("TEST_TMPDIR")
 	if tmpdir == "" {
 		var err error
 		tmpdir, err = os.MkdirTemp("", "keychain_test")
-		if err != nil {
-			t.Fatalf("creating temp dir: %v", err)
-		}
+		Expect(err).ToNot(HaveOccurred())
 	}
 
 	fresh++
 	p := filepath.Join(tmpdir, fmt.Sprintf("%d", fresh))
-	if err := os.Mkdir(p, 0o777); err != nil {
-		t.Fatalf("mkdir %q: %v", p, err)
-	}
+	Expect(os.Mkdir(p, 0o777)).To(Succeed())
 	return p
 }
 
 // setupConfigFile creates a docker config.json on disk and configures
 // the PreflightKeychain to use it. It returns the config directory
 // for cleanup purposes.
-func setupConfigFile(t *testing.T, content string) string {
-	cd := setupConfigDir(t)
+func setupConfigFile(content string) string {
+	cd := setupConfigDir()
 	p := filepath.Join(cd, "config.json")
-	if err := os.WriteFile(p, []byte(content), 0o600); err != nil {
-		t.Fatalf("write %q: %v", p, err)
-	}
+	Expect(os.WriteFile(p, []byte(content), 0o600)).To(Succeed())
 
 	// configure the keychain with the config provided.
 	keychain.dockercfg = p
@@ -73,193 +65,174 @@ func setupConfigFile(t *testing.T, content string) string {
 	return cd
 }
 
-func TestAuthfileNotExist(t *testing.T) {
-	origCfg := keychain.dockercfg
-	defer func() { keychain.dockercfg = origCfg }()
-
-	keychain.dockercfg = "/does/not/exist/config.json"
-	keychain.ctx = context.TODO()
-
-	_, err := keychain.Resolve(testRegistry)
-	if err == nil {
-		t.Fatal("expected error for non-existent authfile, got nil")
-	}
-	if !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("expected os.ErrNotExist in error chain, got: %v", err)
-	}
-}
-
-func TestAuthfileOpenError(t *testing.T) {
-	origCfg := keychain.dockercfg
-	defer func() { keychain.dockercfg = origCfg }()
-
-	// Create a file that cannot be read (permission denied).
-	tmpdir, err := os.MkdirTemp("", "keychain_open_error")
-	if err != nil {
-		t.Fatalf("creating temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpdir)
-
-	p := filepath.Join(tmpdir, "config.json")
-	if err := os.WriteFile(p, []byte(`{}`), 0o000); err != nil {
-		t.Fatalf("write %q: %v", p, err)
-	}
-
-	keychain.dockercfg = p
-	keychain.ctx = context.TODO()
-
-	_, err = keychain.Resolve(testRegistry)
-	if err == nil {
-		t.Fatal("expected error for unreadable authfile, got nil")
-	}
-	if !strings.Contains(err.Error(), "could not open authfile") && !strings.Contains(err.Error(), "could not load authfile") {
-		t.Errorf("unexpected error message: %v", err)
-	}
-}
-
-func TestAnonymousFallbackNoMatchingCreds(t *testing.T) {
-	origCfg := keychain.dockercfg
-	defer func() { keychain.dockercfg = origCfg }()
-
-	// Config file has creds for a different registry; target registry should get Anonymous.
-	cd := setupConfigFile(t, fmt.Sprintf(`{"auths": {"other.io": {"auth": %q}}}`, encode("foo", "bar")))
-	defer os.RemoveAll(filepath.Dir(cd))
-
-	auth, err := keychain.Resolve(testRegistry)
-	if err != nil {
-		t.Fatalf("Resolve() = %v", err)
-	}
-	if auth != craneauthn.Anonymous {
-		t.Errorf("expected Anonymous for unmatched registry, got %v", auth)
-	}
-}
-
-func TestNoConfig(t *testing.T) {
-	cd := setupConfigDir(t)
-	defer os.RemoveAll(filepath.Dir(cd))
-
-	auth, err := keychain.Resolve(testRegistry)
-	if err != nil {
-		t.Fatalf("Resolve() = %v", err)
-	}
-
-	if auth != craneauthn.Anonymous {
-		t.Errorf("expected Anonymous, got %v", auth)
-	}
-}
-
 func encode(user, pass string) string {
 	delimited := fmt.Sprintf("%s:%s", user, pass)
 	return base64.StdEncoding.EncodeToString([]byte(delimited))
 }
 
-func TestVariousPaths(t *testing.T) {
-	tests := []struct {
-		desc    string
-		content string
-		wantErr bool
-		target  craneauthn.Resource
-		cfg     *craneauthn.AuthConfig
-	}{{
-		desc:    "invalid config file",
-		target:  testRegistry,
-		content: `}{`,
-		wantErr: true,
-	}, {
-		desc:    "creds store does not exist",
-		target:  testRegistry,
-		content: `{"credsStore":"#definitely-does-not-exist"}`,
-		wantErr: true,
-	}, {
-		desc:    "valid config file",
-		target:  testRegistry,
-		content: fmt.Sprintf(`{"auths": {"test.io": {"auth": %q}}}`, encode("foo", "bar")),
-		cfg: &craneauthn.AuthConfig{
-			Username: "foo",
-			Password: "bar",
+var _ = Describe("PreflightKeychain", func() {
+	var origCfg string
+	var origCtx context.Context
+
+	BeforeEach(func() {
+		origCfg = keychain.dockercfg
+		origCtx = keychain.ctx
+	})
+
+	AfterEach(func() {
+		keychain.dockercfg = origCfg
+		keychain.ctx = origCtx
+	})
+
+	When("the authfile does not exist", func() {
+		It("should return an os.ErrNotExist error", func() {
+			keychain.dockercfg = "/does/not/exist/config.json"
+			keychain.ctx = context.TODO()
+
+			_, err := keychain.Resolve(testRegistry)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(os.ErrNotExist))
+		})
+	})
+
+	When("the authfile cannot be read", func() {
+		It("should return an error about opening the authfile", func() {
+			tmpdir, err := os.MkdirTemp("", "keychain_open_error")
+			Expect(err).ToNot(HaveOccurred())
+			DeferCleanup(os.RemoveAll, tmpdir)
+
+			p := filepath.Join(tmpdir, "config.json")
+			Expect(os.WriteFile(p, []byte(`{}`), 0o000)).To(Succeed())
+
+			keychain.dockercfg = p
+			keychain.ctx = context.TODO()
+
+			_, err = keychain.Resolve(testRegistry)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(SatisfyAny(
+				ContainSubstring("could not open authfile"),
+				ContainSubstring("could not load authfile"),
+			))
+		})
+	})
+
+	When("the config has no matching credentials", func() {
+		It("should return Anonymous", func() {
+			cd := setupConfigFile(fmt.Sprintf(`{"auths": {"other.io": {"auth": %q}}}`, encode("foo", "bar")))
+			DeferCleanup(os.RemoveAll, filepath.Dir(cd))
+
+			auth, err := keychain.Resolve(testRegistry)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(auth).To(Equal(craneauthn.Anonymous))
+		})
+	})
+
+	When("no config file is set", func() {
+		It("should return Anonymous", func() {
+			cd := setupConfigDir()
+			DeferCleanup(os.RemoveAll, cd)
+
+			auth, err := keychain.Resolve(testRegistry)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(auth).To(Equal(craneauthn.Anonymous))
+		})
+	})
+
+	DescribeTable("resolving credentials from various config files",
+		func(content string, wantErr bool, target craneauthn.Resource, expectedCfg *craneauthn.AuthConfig) {
+			cd := setupConfigFile(content)
+			DeferCleanup(os.RemoveAll, filepath.Dir(cd))
+
+			auth, err := keychain.Resolve(target)
+			if wantErr {
+				Expect(err).To(HaveOccurred())
+				return
+			}
+			Expect(err).ToNot(HaveOccurred())
+
+			cfg, err := auth.Authorization()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).To(Equal(expectedCfg))
 		},
-	}, {
-		desc:    "valid config file; default registry",
-		target:  defaultRegistry,
-		content: fmt.Sprintf(`{"auths": {"%s": {"auth": %q}}}`, craneauthn.DefaultAuthKey, encode("foo", "bar")),
-		cfg: &craneauthn.AuthConfig{
-			Username: "foo",
-			Password: "bar",
-		},
-	}, {
-		desc:    "valid config file as written by podman; default registry",
-		target:  defaultRegistry,
-		content: fmt.Sprintf(`{"auths": {"docker.io": {"auth": %q}}}`, encode("foo", "bar")),
-		cfg: &craneauthn.AuthConfig{
-			Username: "foo",
-			Password: "bar",
-		},
-	}, {
-		desc:   "valid config file; matches registry w/ v1",
-		target: testRegistry,
-		content: fmt.Sprintf(`{
+		Entry("invalid config file",
+			`}{`,
+			true,
+			testRegistry,
+			nil,
+		),
+		Entry("creds store does not exist",
+			`{"credsStore":"#definitely-does-not-exist"}`,
+			true,
+			testRegistry,
+			nil,
+		),
+		Entry("valid config file",
+			fmt.Sprintf(`{"auths": {"test.io": {"auth": %q}}}`, encode("foo", "bar")),
+			false,
+			testRegistry,
+			&craneauthn.AuthConfig{
+				Username: "foo",
+				Password: "bar",
+			},
+		),
+		Entry("valid config file; default registry",
+			fmt.Sprintf(`{"auths": {"%s": {"auth": %q}}}`, craneauthn.DefaultAuthKey, encode("foo", "bar")),
+			false,
+			defaultRegistry,
+			&craneauthn.AuthConfig{
+				Username: "foo",
+				Password: "bar",
+			},
+		),
+		Entry("valid config file as written by podman; default registry",
+			fmt.Sprintf(`{"auths": {"docker.io": {"auth": %q}}}`, encode("foo", "bar")),
+			false,
+			defaultRegistry,
+			&craneauthn.AuthConfig{
+				Username: "foo",
+				Password: "bar",
+			},
+		),
+		Entry("valid config file; matches registry w/ v1",
+			fmt.Sprintf(`{
 	  "auths": {
 		"http://test.io/v1/": {"auth": %q}
 	  }
 	}`, encode("baz", "quux")),
-		cfg: &craneauthn.AuthConfig{
-			Username: "baz",
-			Password: "quux",
-		},
-	}, {
-		desc:   "valid config file; matches registry w/ v2",
-		target: testRegistry,
-		content: fmt.Sprintf(`{
+			false,
+			testRegistry,
+			&craneauthn.AuthConfig{
+				Username: "baz",
+				Password: "quux",
+			},
+		),
+		Entry("valid config file; matches registry w/ v2",
+			fmt.Sprintf(`{
 	  "auths": {
 		"http://test.io/v2/": {"auth": %q}
 	  }
 	}`, encode("baz", "quux")),
-		cfg: &craneauthn.AuthConfig{
-			Username: "baz",
-			Password: "quux",
-		},
-	}, {
-		desc:   "valid config file; matches repo",
-		target: testRepo,
-		content: fmt.Sprintf(`{
+			false,
+			testRegistry,
+			&craneauthn.AuthConfig{
+				Username: "baz",
+				Password: "quux",
+			},
+		),
+		Entry("valid config file; matches repo",
+			fmt.Sprintf(`{
   "auths": {
     "test.io/my-repo": {"auth": %q},
     "test.io/another-repo": {"auth": %q},
     "test.io": {"auth": %q}
   }
 }`, encode("foo", "bar"), encode("bar", "baz"), encode("baz", "quux")),
-		cfg: &craneauthn.AuthConfig{
-			Username: "foo",
-			Password: "bar",
-		},
-	}}
-
-	for _, test := range tests {
-		t.Run(test.desc, func(t *testing.T) {
-			cd := setupConfigFile(t, test.content)
-			// For some reason, these tempdirs don't get cleaned up.
-			defer os.RemoveAll(filepath.Dir(cd))
-
-			auth, err := keychain.Resolve(test.target)
-			if test.wantErr {
-				if err == nil {
-					t.Fatal("wanted err, got nil")
-				} else if err != nil {
-					// success
-					return
-				}
-			}
-			if err != nil {
-				t.Fatalf("wanted nil, got err: %v", err)
-			}
-			cfg, err := auth.Authorization()
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if !reflect.DeepEqual(cfg, test.cfg) {
-				t.Errorf("got %+v, want %+v", cfg, test.cfg)
-			}
-		})
-	}
-}
+			false,
+			testRepo,
+			&craneauthn.AuthConfig{
+				Username: "foo",
+				Password: "bar",
+			},
+		),
+	)
+})

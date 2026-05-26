@@ -5,17 +5,16 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"strings"
-	"testing"
 	"time"
 
-	"gotest.tools/v3/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/certification"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 )
 
-func TestGenericJSONFormatter(t *testing.T) {
+var _ = Describe("Generic formatters", func() {
 	generateTestResults := func(image string, passed bool) certification.Results {
 		return certification.Results{
 			TestedImage:   image,
@@ -35,134 +34,95 @@ func TestGenericJSONFormatter(t *testing.T) {
 		}
 	}
 
-	testCases := []struct {
-		results              certification.Results
-		marshalIndentFailure bool
-		expectedErrString    string
-	}{
-		{
-			results:              generateTestResults("image1", true),
-			marshalIndentFailure: false,
-		},
-		{
-			results:              generateTestResults("image2", false),
-			marshalIndentFailure: false,
-		},
-		{
-			results:              generateTestResults("image3", true),
-			marshalIndentFailure: true, // failure to json.MarshalIndent
-			expectedErrString:    "this is an error",
-		},
-	}
-
-	for _, tc := range testCases {
-		// Patch the function if we expect an error
-		if tc.marshalIndentFailure {
-			jsonMarshalIndent = func(v any, prefix, indent string) ([]byte, error) {
-				return nil, errors.New("this is an error")
-			}
-		} else {
+	Describe("genericJSONFormatter", func() {
+		AfterEach(func() {
 			jsonMarshalIndent = json.MarshalIndent
-		}
+		})
 
-		// Run the function
-		funcOutput, err := genericJSONFormatter(context.TODO(), tc.results)
+		DescribeTable("formatting results as JSON",
+			func(image string, passed bool, marshalFailure bool, expectedErrSubstring string) {
+				results := generateTestResults(image, passed)
 
-		if err == nil {
-			// Marshal the response JSON back into an object
-			var testResponseObj UserResponse
-			assert.NilError(t, json.Unmarshal(funcOutput, &testResponseObj))
+				if marshalFailure {
+					jsonMarshalIndent = func(v any, prefix, indent string) ([]byte, error) {
+						return nil, errors.New("this is an error")
+					}
+				}
 
-			// Assertions
-			assert.Equal(t, tc.results.TestedImage, testResponseObj.Image)
-			assert.Equal(t, tc.results.PassedOverall, testResponseObj.Passed)
+				funcOutput, err := genericJSONFormatter(context.TODO(), results)
 
-			for index, i := range tc.results.Passed {
-				assert.Equal(t, i.Name(), testResponseObj.Results.Passed[index].Name)
-				assert.Equal(t, float64(i.ElapsedTime/time.Millisecond), testResponseObj.Results.Passed[index].ElapsedTime)
-			}
-			for index, i := range tc.results.Failed {
-				assert.Equal(t, i.Name(), testResponseObj.Results.Failed[index].Name)
-				assert.Equal(t, float64(i.ElapsedTime/time.Millisecond), testResponseObj.Results.Failed[index].ElapsedTime)
-			}
-		} else {
-			assert.Equal(t, true, strings.Contains(err.Error(), tc.expectedErrString))
-		}
-	}
-}
+				if marshalFailure {
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring(expectedErrSubstring))
+					return
+				}
 
-func TestGenericXMLFormatter(t *testing.T) {
-	generateTestResults := func(image string, passed bool) certification.Results {
-		return certification.Results{
-			TestedImage:   image,
-			PassedOverall: passed,
-			Passed: []certification.Result{
-				{
-					Check:       check.NewGenericCheck("passed1", nil, check.Metadata{}, check.HelpText{}, nil),
-					ElapsedTime: 1000 * time.Millisecond,
-				},
+				Expect(err).ToNot(HaveOccurred())
+
+				var testResponseObj UserResponse
+				Expect(json.Unmarshal(funcOutput, &testResponseObj)).To(Succeed())
+
+				Expect(testResponseObj.Image).To(Equal(results.TestedImage))
+				Expect(testResponseObj.Passed).To(Equal(results.PassedOverall))
+
+				for index, i := range results.Passed {
+					Expect(testResponseObj.Results.Passed[index].Name).To(Equal(i.Name()))
+					Expect(testResponseObj.Results.Passed[index].ElapsedTime).To(Equal(float64(i.ElapsedTime / time.Millisecond)))
+				}
+				for index, i := range results.Failed {
+					Expect(testResponseObj.Results.Failed[index].Name).To(Equal(i.Name()))
+					Expect(testResponseObj.Results.Failed[index].ElapsedTime).To(Equal(float64(i.ElapsedTime / time.Millisecond)))
+				}
 			},
-			Failed: []certification.Result{
-				{
-					Check:       check.NewGenericCheck("failed1", nil, check.Metadata{}, check.HelpText{}, nil),
-					ElapsedTime: 1001 * time.Millisecond,
-				},
-			},
-		}
-	}
+			Entry("with passing results", "image1", true, false, ""),
+			Entry("with failing results", "image2", false, false, ""),
+			Entry("when MarshalIndent fails", "image3", true, true, "this is an error"),
+		)
+	})
 
-	testCases := []struct {
-		results              certification.Results
-		marshalIndentFailure bool
-		expectedErrString    string
-	}{
-		{
-			results:              generateTestResults("image1", true),
-			marshalIndentFailure: false,
-		},
-		{
-			results:              generateTestResults("image2", false),
-			marshalIndentFailure: false,
-		},
-		{
-			results:              generateTestResults("image3", true),
-			marshalIndentFailure: true, // failure to xml.MarshalIndent
-			expectedErrString:    "this is an error",
-		},
-	}
-
-	for _, tc := range testCases {
-		// Patch the function if we expect an error
-		if tc.marshalIndentFailure {
-			xmlMarshalIndent = func(v any, prefix, indent string) ([]byte, error) {
-				return nil, errors.New("this is an error")
-			}
-		} else {
+	Describe("genericXMLFormatter", func() {
+		AfterEach(func() {
 			xmlMarshalIndent = xml.MarshalIndent
-		}
+		})
 
-		// Run the function
-		funcOutput, err := genericXMLFormatter(context.TODO(), tc.results)
+		DescribeTable("formatting results as XML",
+			func(image string, passed bool, marshalFailure bool, expectedErrSubstring string) {
+				results := generateTestResults(image, passed)
 
-		if err == nil {
-			// Marshal the response XML back into an object
-			var testResponseObj UserResponse
-			assert.NilError(t, xml.Unmarshal(funcOutput, &testResponseObj))
+				if marshalFailure {
+					xmlMarshalIndent = func(v any, prefix, indent string) ([]byte, error) {
+						return nil, errors.New("this is an error")
+					}
+				}
 
-			// Assertions
-			assert.Equal(t, tc.results.TestedImage, testResponseObj.Image)
-			assert.Equal(t, tc.results.PassedOverall, testResponseObj.Passed)
+				funcOutput, err := genericXMLFormatter(context.TODO(), results)
 
-			for index, i := range tc.results.Passed {
-				assert.Equal(t, i.Name(), testResponseObj.Results.Passed[index].Name)
-				assert.Equal(t, float64(i.ElapsedTime/time.Millisecond), testResponseObj.Results.Passed[index].ElapsedTime)
-			}
-			for index, i := range tc.results.Failed {
-				assert.Equal(t, i.Name(), testResponseObj.Results.Failed[index].Name)
-				assert.Equal(t, float64(i.ElapsedTime/time.Millisecond), testResponseObj.Results.Failed[index].ElapsedTime)
-			}
-		} else {
-			assert.Equal(t, true, strings.Contains(err.Error(), tc.expectedErrString))
-		}
-	}
-}
+				if marshalFailure {
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring(expectedErrSubstring))
+					return
+				}
+
+				Expect(err).ToNot(HaveOccurred())
+
+				var testResponseObj UserResponse
+				Expect(xml.Unmarshal(funcOutput, &testResponseObj)).To(Succeed())
+
+				Expect(testResponseObj.Image).To(Equal(results.TestedImage))
+				Expect(testResponseObj.Passed).To(Equal(results.PassedOverall))
+
+				for index, i := range results.Passed {
+					Expect(testResponseObj.Results.Passed[index].Name).To(Equal(i.Name()))
+					Expect(testResponseObj.Results.Passed[index].ElapsedTime).To(Equal(float64(i.ElapsedTime / time.Millisecond)))
+				}
+				for index, i := range results.Failed {
+					Expect(testResponseObj.Results.Failed[index].Name).To(Equal(i.Name()))
+					Expect(testResponseObj.Results.Failed[index].ElapsedTime).To(Equal(float64(i.ElapsedTime / time.Millisecond)))
+				}
+			},
+			Entry("with passing results", "image1", true, false, ""),
+			Entry("with failing results", "image2", false, false, ""),
+			Entry("when MarshalIndent fails", "image3", true, true, "this is an error"),
+		)
+	})
+})
