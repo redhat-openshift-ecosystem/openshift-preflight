@@ -23,6 +23,14 @@ import (
 )
 
 var _ = Describe("CLI Library function", func() {
+	var oldStdout io.Writer
+	BeforeEach(func() {
+		oldStdout = stdout
+		stdout = GinkgoWriter
+	})
+	AfterEach(func() {
+		stdout = oldStdout
+	})
 	When("invoking preflight using the CLI library", func() {
 		Context("without passing in an artifact writer ", func() {
 			It("should throw an error", func() {

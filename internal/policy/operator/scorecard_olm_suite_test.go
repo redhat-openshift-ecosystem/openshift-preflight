@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/bundle"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
+	test "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/test"
 )
 
 var _ = Describe("ScorecardBasicCheck", func() {
@@ -82,6 +83,7 @@ var _ = Describe("ScorecardBasicCheck", func() {
 		aw, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(tmpDir))
 		Expect(err).ToNot(HaveOccurred())
 		testcontext = artifacts.ContextWithWriter(context.Background(), aw)
+		testcontext = test.NewTestLoggerContext(testcontext)
 
 		DeferCleanup(os.RemoveAll, tmpDir)
 	})
