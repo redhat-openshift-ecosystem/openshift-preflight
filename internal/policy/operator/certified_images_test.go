@@ -11,6 +11,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
+	test "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/test"
 )
 
 type certifiedImageFinder struct{}
@@ -96,6 +97,7 @@ var _ = Describe("CertifiedImages", func() {
 		clusterServiceVersionFilename = "myoperator.clusterserviceversion.yaml"
 	)
 	var (
+		ctx                  context.Context
 		certifiedImagesCheck *certifiedImagesCheck
 		imageRef             image.ImageReference
 		csvContents          = `kind: ClusterServiceVersion
@@ -119,6 +121,7 @@ spec:
 	)
 
 	BeforeEach(func() {
+		ctx = test.NewTestLoggerContext(context.TODO())
 		certifiedImagesCheck = NewCertifiedImagesCheck(&certifiedImageFinder{})
 		tmpDir, err := os.MkdirTemp("", "certified-images-bundle-*")
 		Expect(err).ToNot(HaveOccurred())
@@ -133,7 +136,7 @@ spec:
 	})
 	When("given a good CSV", func() {
 		It("should succeed", func() {
-			result, err := certifiedImagesCheck.Validate(context.TODO(), imageRef)
+			result, err := certifiedImagesCheck.Validate(ctx, imageRef)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(result).To(BeTrue())
 			Expect(certifiedImagesCheck.nonCertifiedImages).To(HaveLen(0))
@@ -145,7 +148,7 @@ spec:
 		})
 		It("should fail", func() {
 			certifiedImagesCheck.imageFinder = &uncertifiedImageFinder{}
-			result, err := certifiedImagesCheck.Validate(context.TODO(), imageRef)
+			result, err := certifiedImagesCheck.Validate(ctx, imageRef)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(result).To(BeFalse())
 			Expect(certifiedImagesCheck.nonCertifiedImages).To(HaveLen(1))
@@ -157,7 +160,7 @@ spec:
 		})
 		It("should fail", func() {
 			certifiedImagesCheck.imageFinder = &missingImageFinder{}
-			result, err := certifiedImagesCheck.Validate(context.TODO(), imageRef)
+			result, err := certifiedImagesCheck.Validate(ctx, imageRef)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(result).To(BeFalse())
 			Expect(certifiedImagesCheck.nonCertifiedImages).To(HaveLen(1))
@@ -166,7 +169,7 @@ spec:
 	When("there is no CSV", func() {
 		It("should fail", func() {
 			Expect(os.RemoveAll(imageRef.ImageFSPath)).To(Succeed())
-			result, err := certifiedImagesCheck.Validate(context.TODO(), imageRef)
+			result, err := certifiedImagesCheck.Validate(ctx, imageRef)
 			Expect(err).To(HaveOccurred())
 			Expect(result).To(BeFalse())
 		})
@@ -178,7 +181,7 @@ apiVersion: operators.coreos.com/v1alpha1
 spec:
 `
 			Expect(os.WriteFile(filepath.Join(imageRef.ImageFSPath, manifestsDir, clusterServiceVersionFilename), []byte(csvContents), 0o644)).To(Succeed())
-			result, err := certifiedImagesCheck.Validate(context.TODO(), imageRef)
+			result, err := certifiedImagesCheck.Validate(ctx, imageRef)
 			Expect(err).To(HaveOccurred())
 			Expect(result).To(BeFalse())
 		})
@@ -198,7 +201,7 @@ spec:
               - image: registry.example.io/foo/bar:latest
                 name: the-operator`
 			Expect(os.WriteFile(filepath.Join(imageRef.ImageFSPath, manifestsDir, clusterServiceVersionFilename), []byte(csvContents), 0o644)).To(Succeed())
-			result, err := certifiedImagesCheck.Validate(context.TODO(), imageRef)
+			result, err := certifiedImagesCheck.Validate(ctx, imageRef)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(result).To(BeFalse())
 			Expect(certifiedImagesCheck.nonCertifiedImages).To(HaveLen(1))
@@ -210,7 +213,7 @@ spec:
 		})
 		It("should fail", func() {
 			certifiedImagesCheck.imageFinder = &badCertifiedImageFinder{}
-			result, err := certifiedImagesCheck.Validate(context.TODO(), imageRef)
+			result, err := certifiedImagesCheck.Validate(ctx, imageRef)
 			Expect(err).To(HaveOccurred())
 			Expect(result).To(BeFalse())
 		})
@@ -235,7 +238,7 @@ spec:
   - name: ''
     image: ''`
 			Expect(os.WriteFile(filepath.Join(imageRef.ImageFSPath, manifestsDir, clusterServiceVersionFilename), []byte(csvContents), 0o644)).To(Succeed())
-			result, err := certifiedImagesCheck.Validate(context.TODO(), imageRef)
+			result, err := certifiedImagesCheck.Validate(ctx, imageRef)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(result).To(BeFalse())
 			Expect(certifiedImagesCheck.nonCertifiedImages).To(HaveLen(1))

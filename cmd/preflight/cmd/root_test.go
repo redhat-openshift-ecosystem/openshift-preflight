@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -15,6 +16,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/cli"
+	test "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/test"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/viper"
 )
 
@@ -159,6 +161,7 @@ loglevel: configloglevel`
 		})
 		Context("with the offline flag", func() {
 			var tmpDir string
+			var oldStderr io.Writer
 			BeforeEach(func() {
 				var err error
 				tmpDir, err = os.MkdirTemp("", "prerun-artifacts-*")
@@ -177,9 +180,16 @@ loglevel: configloglevel`
 
 				viper.Instance().Set("offline", true)
 				DeferCleanup(viper.Instance().Set, "offline", false)
+
+				oldStderr = stderr
+				stderr = GinkgoWriter
+			})
+			AfterEach(func() {
+				stderr = oldStderr
 			})
 			It("should create the logfile in the artifacts directory", func() {
-				Expect(cmd.ExecuteContext(context.TODO())).To(Succeed())
+				ctx := test.NewTestLoggerContext(context.TODO())
+				Expect(cmd.ExecuteContext(ctx)).To(Succeed())
 				_, err := os.Stat(filepath.Join(tmpDir, "preflight.log"))
 				Expect(err).ToNot(HaveOccurred())
 			})

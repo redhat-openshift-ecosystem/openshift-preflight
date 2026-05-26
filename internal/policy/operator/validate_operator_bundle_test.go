@@ -7,13 +7,16 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
+	test "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/test"
 )
 
 var _ = Describe("BundleValidateCheck", func() {
 	var bundleValidateCheck ValidateOperatorBundleCheck
+	var ctx context.Context
 
 	BeforeEach(func() {
 		bundleValidateCheck = *NewValidateOperatorBundleCheck()
+		ctx = test.NewTestLoggerContext(context.TODO())
 	})
 
 	AssertMetaData(&bundleValidateCheck)
@@ -26,7 +29,7 @@ var _ = Describe("BundleValidateCheck", func() {
 				imageRef := image.ImageReference{
 					ImageFSPath: "./testdata/all_namespaces",
 				}
-				ok, err := bundleValidateCheck.Validate(context.TODO(), imageRef)
+				ok, err := bundleValidateCheck.Validate(ctx, imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
 			})
@@ -36,7 +39,7 @@ var _ = Describe("BundleValidateCheck", func() {
 				imageRef := image.ImageReference{
 					ImageFSPath: "./testdata/invalid_bundle",
 				}
-				ok, err := bundleValidateCheck.Validate(context.TODO(), imageRef)
+				ok, err := bundleValidateCheck.Validate(ctx, imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeFalse())
 			})

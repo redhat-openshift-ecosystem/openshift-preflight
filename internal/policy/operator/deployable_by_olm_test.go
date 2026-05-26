@@ -18,6 +18,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/openshift"
+	test "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/test"
 )
 
 var _ = Describe("DeployableByOLMCheck", func() {
@@ -56,6 +57,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		aw, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(tmpDir))
 		Expect(err).ToNot(HaveOccurred())
 		testcontext = artifacts.ContextWithWriter(context.Background(), aw)
+		testcontext = test.NewTestLoggerContext(testcontext)
 		DeferCleanup(os.RemoveAll, tmpDir)
 	})
 

@@ -23,6 +23,7 @@ import (
 var (
 	configFileUsed bool
 	logFiles       []*os.File
+	stderr         io.Writer = os.Stderr
 )
 
 func init() {
@@ -147,7 +148,7 @@ func preRunConfig(cmd *cobra.Command, args []string) {
 		artifactsLogFile, err := os.OpenFile(filepath.Join(artifacts, baseLogName), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 		if err == nil {
 			logFiles = append(logFiles, artifactsLogFile)
-			mw := io.MultiWriter(os.Stderr, logFile, artifactsLogFile)
+			mw := io.MultiWriter(stderr, logFile, artifactsLogFile)
 			l.SetOutput(mw)
 		}
 

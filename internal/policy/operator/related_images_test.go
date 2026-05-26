@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
+	test "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/test"
 )
 
 var _ = Describe("RelatedImages", func() {
@@ -17,6 +18,7 @@ var _ = Describe("RelatedImages", func() {
 		clusterServiceVersionFilename = "myoperator.clusterserviceversion.yaml"
 	)
 	var (
+		ctx                context.Context
 		relatedImagesCheck *RelatedImagesCheck
 		imageRef           image.ImageReference
 		csvContents        = `kind: ClusterServiceVersion
@@ -39,6 +41,7 @@ spec:
 	)
 
 	BeforeEach(func() {
+		ctx = test.NewTestLoggerContext(context.TODO())
 		relatedImagesCheck = &RelatedImagesCheck{}
 		tmpDir, err := os.MkdirTemp("", "related-images-bundle-*")
 		Expect(err).ToNot(HaveOccurred())
@@ -53,7 +56,7 @@ spec:
 	})
 	When("given a good CSV", func() {
 		It("should succeed", func() {
-			result, err := relatedImagesCheck.Validate(context.TODO(), imageRef)
+			result, err := relatedImagesCheck.Validate(ctx, imageRef)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(result).To(BeTrue())
 		})
@@ -61,7 +64,7 @@ spec:
 	When("there is no CSV", func() {
 		It("should fail", func() {
 			Expect(os.RemoveAll(imageRef.ImageFSPath)).To(Succeed())
-			result, err := relatedImagesCheck.Validate(context.TODO(), imageRef)
+			result, err := relatedImagesCheck.Validate(ctx, imageRef)
 			Expect(err).To(HaveOccurred())
 			Expect(result).To(BeFalse())
 		})
@@ -73,7 +76,7 @@ apiVersion: operators.coreos.com/v1alpha1
 spec:
 `
 			Expect(os.WriteFile(filepath.Join(imageRef.ImageFSPath, manifestsDir, clusterServiceVersionFilename), []byte(csvContents), 0o644)).To(Succeed())
-			result, err := relatedImagesCheck.Validate(context.TODO(), imageRef)
+			result, err := relatedImagesCheck.Validate(ctx, imageRef)
 			Expect(err).To(HaveOccurred())
 			Expect(result).To(BeFalse())
 		})
@@ -96,7 +99,7 @@ spec:
   - name: the-proxy
     image: registry.example.io/foo/proxy@sha256:5e33f9d095952866b9743cc8268fb740cce6d93439f00ce333a2de1e5974837e`
 			Expect(os.WriteFile(filepath.Join(imageRef.ImageFSPath, manifestsDir, clusterServiceVersionFilename), []byte(csvContents), 0o644)).To(Succeed())
-			result, err := relatedImagesCheck.Validate(context.TODO(), imageRef)
+			result, err := relatedImagesCheck.Validate(ctx, imageRef)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(result).To(BeTrue())
 		})

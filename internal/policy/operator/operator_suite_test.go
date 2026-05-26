@@ -3,6 +3,7 @@ package operator
 import (
 	"context"
 	"errors"
+	"log"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -19,6 +20,8 @@ import (
 )
 
 func TestOperator(t *testing.T) {
+	// This is only necessary because OperatorSDK uses the std Log.
+	log.SetOutput(GinkgoWriter)
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Operator Suite")
 }

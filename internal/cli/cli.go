@@ -23,6 +23,8 @@ type CheckConfig struct {
 	SubmitResults       bool
 }
 
+var stdout io.Writer = os.Stdout
+
 // RunPreflight executes checks, writes logs, results, and submits results if requested.
 func RunPreflight(
 	ctx context.Context,
@@ -55,7 +57,7 @@ func RunPreflight(
 	}
 
 	defer resultsFile.Close()
-	resultsOutputTarget := io.MultiWriter(os.Stdout, resultsFile)
+	resultsOutputTarget := io.MultiWriter(stdout, resultsFile)
 
 	// Execute Checks.
 	results, err := runChecks(ctx)
