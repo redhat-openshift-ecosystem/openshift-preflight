@@ -108,6 +108,17 @@ func (k *preflightKeychain) Resolve(target craneauthn.Resource) (craneauthn.Auth
 			key = craneauthn.DefaultAuthKey
 		}
 
+		// Check the auth configs map directly first. This works around an issue
+		// in docker/cli v29.5.0+ where GetAuthConfig normalizes registry names
+		// in a way that breaks lookups when credentials are stored under "docker.io"
+		// (as podman does) but looked up as "index.docker.io".
+		// See: https://github.com/docker/cli/blob/v29.5.1/cli/config/configfile/file.go#L152
+		if authCfg, ok := cf.GetAuthConfigs()[key]; ok && authCfg != empty {
+			cfg = authCfg
+			break
+		}
+
+		// Fall back to GetAuthConfig for credential helpers and other auth stores
 		cfg, err = cf.GetAuthConfig(key)
 		if err != nil {
 			return nil, fmt.Errorf("could not get auth config: %v", err)
