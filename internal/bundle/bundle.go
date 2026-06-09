@@ -35,9 +35,10 @@ var ocpToKubeVersion = map[string]string{
 	"4.20": "1.33",
 	"4.21": "1.34",
 	"4.22": "1.35",
+	"4.23": "1.36",
 }
 
-const latestReleasedVersion = "4.21"
+const latestReleasedVersion = "4.22"
 
 var BundleFiles = []string{
 	"/manifests/*",
