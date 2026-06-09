@@ -13,6 +13,12 @@ updates:
         dependency-type: "development"
       prod-dependencies:
         dependency-type: "production"
+  - package-ecosystem: "gomod"
+    directory: "/tools"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
