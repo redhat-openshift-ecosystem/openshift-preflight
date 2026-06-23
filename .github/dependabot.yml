@@ -9,10 +9,14 @@ updates:
     cooldown:
       default-days: 7
     groups:
-      dev-dependencies:
-        dependency-type: "development"
+      test-dependencies:
+        patterns:
+          - "github.com/onsi/ginkgo*"
+          - "github.com/onsi/gomega*"
       prod-dependencies:
-        dependency-type: "production"
+        exclude-patterns:
+          - "github.com/onsi/ginkgo*"
+          - "github.com/onsi/gomega*"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
