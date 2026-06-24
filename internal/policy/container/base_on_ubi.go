@@ -77,7 +77,7 @@ func (p *BasedOnUBICheck) Name() string {
 
 func (p *BasedOnUBICheck) Metadata() check.Metadata {
 	return check.Metadata{
-		Description:      "Checking if the container's base image is based upon the Red Hat Universal Base Image (UBI)",
+		Description:      "Checking if the container's base image is based upon the Red Hat Universal Base Image (UBI) or Red Hat Hardened Images (RHHI)",
 		Level:            "best",
 		KnowledgeBaseURL: certDocumentationURL,
 		CheckURL:         certDocumentationURL,
