@@ -3,15 +3,19 @@ ARG release_tag=0.0.0
 ARG ARCH=amd64
 ARG OS=linux
 
-FROM registry.access.redhat.com/ubi10/go-toolset:1.26 AS builder
+FROM registry.access.redhat.com/hi/go:1.26-builder AS builder
 ARG quay_expiration
 ARG release_tag
 ARG ARCH
 ARG OS
 
-# Switching to root user, since default users is 1001,
-# which prohibits copying from `/tmp` during make build cmd
-USER root
+# Define versions for dependencies
+ARG OPERATOR_SDK_VERSION=1.40.0
+
+# Install Operator SDK binray
+RUN curl --fail -Lo /usr/local/bin/operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk_linux_${ARCH} \
+    && chmod 755 /usr/local/bin/operator-sdk
+
 
 # Override UBI10 Go toolset microarchitecture defaults to maintain backward
 # compatibility with the same hardware baseline as UBI9-built releases.
@@ -24,8 +28,8 @@ COPY . /go/src/preflight
 WORKDIR /go/src/preflight
 RUN make build RELEASE_TAG=${release_tag}
 
-# ubi10:latest
-FROM registry.access.redhat.com/ubi10/ubi:latest
+# hardened image core-runtime:latest
+FROM registry.access.redhat.com/hi/core-runtime:latest
 ARG quay_expiration
 ARG release_tag
 ARG preflight_commit
@@ -51,18 +55,16 @@ LABEL quay.expires-after=${quay_expiration}
 LABEL ARCH=${ARCH}
 LABEL OS=${OS}
 
-# Define versions for dependencies
-ARG OPERATOR_SDK_VERSION=1.40.0
-
 # Add preflight binary
 COPY --from=builder /go/src/preflight/preflight /usr/local/bin/preflight
 
-# Install Operator SDK binray
-RUN curl --fail -Lo /usr/local/bin/operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk_linux_${ARCH} \
-    && chmod 755 /usr/local/bin/operator-sdk
+# Add operator-sdk binary
+COPY --from=builder /usr/local/bin/operator-sdk /usr/local/bin/operator-sdk
 
 #copy license
 COPY LICENSE /licenses/LICENSE
+
+USER 0
 
 ENTRYPOINT ["/usr/local/bin/preflight"]
 CMD ["--help"]
