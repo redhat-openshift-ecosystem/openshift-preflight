@@ -54,12 +54,23 @@ LABEL OS=${OS}
 # Define versions for dependencies
 ARG OPERATOR_SDK_VERSION=1.42.3
 
+# Install and verify Operator SDK binary
+# Verification follows https://sdk.operatorframework.io/docs/installation/#2-verify-the-downloaded-binary
+ARG OPERATOR_SDK_GPG_KEY=3B2F1481D146238080B346BB052996E2A20B5C7E
+RUN dnf install -y gnupg2 && dnf clean all \
+    && export OPERATOR_SDK_DL_URL=https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION} \
+    && curl --fail -Lo /usr/local/bin/operator-sdk ${OPERATOR_SDK_DL_URL}/operator-sdk_linux_${ARCH} \
+    && curl --fail -Lo /tmp/checksums.txt ${OPERATOR_SDK_DL_URL}/checksums.txt \
+    && curl --fail -Lo /tmp/checksums.txt.asc ${OPERATOR_SDK_DL_URL}/checksums.txt.asc \
+    && gpg --keyserver keyserver.ubuntu.com --recv-keys ${OPERATOR_SDK_GPG_KEY} \
+    && gpg -u "Operator SDK (release) <cncf-operator-sdk@cncf.io>" --verify /tmp/checksums.txt.asc \
+    && grep "operator-sdk_linux_${ARCH}" /tmp/checksums.txt | sed "s|operator-sdk_linux_${ARCH}|/usr/local/bin/operator-sdk|" | sha256sum -c - \
+    && chmod 755 /usr/local/bin/operator-sdk \
+    && rm -rf /tmp/checksums.txt /tmp/checksums.txt.asc "$HOME/.gnupg" \
+    && dnf remove -y gnupg2 && dnf clean all
+
 # Add preflight binary
 COPY --from=builder /go/src/preflight/preflight /usr/local/bin/preflight
-
-# Install Operator SDK binray
-RUN curl --fail -Lo /usr/local/bin/operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk_linux_${ARCH} \
-    && chmod 755 /usr/local/bin/operator-sdk
 
 #copy license
 COPY LICENSE /licenses/LICENSE
