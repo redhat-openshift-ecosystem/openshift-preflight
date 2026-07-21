@@ -149,6 +149,16 @@ go-ignore-cov: $(GO_IGNORE_COV)
 $(GO_IGNORE_COV):
 	$(call go-install-tool,$(GO_IGNORE_COV),github.com/quantumcycle/go-ignore-cov@$(GO_IGNORE_COV_VERSION))
 
+OPERATOR_SDK_GPG_FINGERPRINT ?= 3B2F1481D146238080B346BB052996E2A20B5C7E
+OPERATOR_SDK_GPG_KEYSERVER ?= keyserver.ubuntu.com
+.PHONY: update-operator-sdk-key
+update-operator-sdk-key: ## Fetch the Operator SDK GPG release signing key and save it locally.
+	gpg --keyserver $(OPERATOR_SDK_GPG_KEYSERVER) --recv-keys $(OPERATOR_SDK_GPG_FINGERPRINT)
+	@echo "Verifying imported key fingerprint..."
+	gpg --fingerprint $(OPERATOR_SDK_GPG_FINGERPRINT)
+	gpg --armor --export $(OPERATOR_SDK_GPG_FINGERPRINT) > keys/operator-sdk-release.asc
+	@echo "Key exported to keys/operator-sdk-release.asc"
+
 # go-get-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 define go-install-tool

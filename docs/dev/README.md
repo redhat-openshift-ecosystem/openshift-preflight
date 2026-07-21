@@ -55,3 +55,29 @@ Steps to build and run the container:
 or
 
 `podman run --privileged -v ${KUBECONFIG}:/kubeconfig -e KUBECONFIG=/kubeconfig -v /path/to/local/artifacts:/artifacts quay.io/myuser/preflight:<sha of commit> check operator <bundle to be checked>`
+
+## Updating the Operator SDK GPG Signing Key
+
+The Operator SDK release signing key is vendored at `keys/operator-sdk-release.asc`
+and used during the Docker build to verify the downloaded `operator-sdk` binary.
+If the Operator SDK project rotates their signing key, update this file using the
+Makefile target:
+
+```bash
+make update-operator-sdk-key
+```
+
+This fetches the key from `keyserver.ubuntu.com` using the fingerprint
+`3B2F1481D146238080B346BB052996E2A20B5C7E` and exports it to `keys/operator-sdk-release.asc`.
+
+If the key has been rotated to a new fingerprint:
+
+```bash
+make update-operator-sdk-key OPERATOR_SDK_GPG_FINGERPRINT=<new-fingerprint>
+```
+
+After updating the key, also update the fingerprint check in the `Dockerfile`
+and the `OPERATOR_SDK_GPG_FINGERPRINT` default in the `Makefile` to match.
+
+See the [Operator SDK installation docs](https://sdk.operatorframework.io/docs/installation/#2-verify-the-downloaded-binary)
+for the upstream verification reference.
