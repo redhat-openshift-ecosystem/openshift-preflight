@@ -361,8 +361,6 @@ var _ = Describe("Check Name Queries", func() {
 			"HasProhibitedContainerName",
 		}),
 		Entry("default operator policy", OperatorPolicy, []string{
-			"ScorecardBasicSpecCheck",
-			"ScorecardOlmSuiteCheck",
 			"DeployableByOLM",
 			"ValidateOperatorBundle",
 			"BundleImageRefsAreCertified",

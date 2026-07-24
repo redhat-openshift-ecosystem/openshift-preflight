@@ -22,7 +22,6 @@ func NewCheck(image, indeximage string, kubeconfig []byte, opts ...Option) *oper
 		image:               image,
 		kubeconfig:          kubeconfig,
 		indeximage:          indeximage,
-		scorecardWaitTime:   runtime.DefaultScorecardWaitTime,
 		csvTimeout:          runtime.DefaultCSVTimeout,
 		subscriptionTimeout: runtime.DefaultSubscriptionTimeout,
 	}
@@ -89,16 +88,12 @@ func (c *operatorCheck) resolve(ctx context.Context) error {
 
 	c.policy = policy.PolicyOperator
 	newChecks, err := engine.InitializeOperatorChecks(ctx, c.policy, engine.OperatorCheckConfig{
-		ScorecardImage:          c.scorecardImage,
-		ScorecardWaitTime:       c.scorecardWaitTime,
-		ScorecardNamespace:      c.scorecardNamespace,
-		ScorecardServiceAccount: c.scorecardServiceAccount,
-		IndexImage:              c.indeximage,
-		DockerConfig:            c.dockerConfigFilePath,
-		Channel:                 c.operatorChannel,
-		Kubeconfig:              c.kubeconfig,
-		CSVTimeout:              c.csvTimeout,
-		SubscriptionTimeout:     c.subscriptionTimeout,
+		IndexImage:          c.indeximage,
+		DockerConfig:        c.dockerConfigFilePath,
+		Channel:             c.operatorChannel,
+		Kubeconfig:          c.kubeconfig,
+		CSVTimeout:          c.csvTimeout,
+		SubscriptionTimeout: c.subscriptionTimeout,
 	})
 	if err != nil {
 		//coverage:ignore
@@ -115,13 +110,6 @@ func (c operatorCheck) List(ctx context.Context) (policy.Policy, []check.Check, 
 	return c.policy, c.checks, c.resolve(ctx)
 }
 
-// WithScorecardNamespace configures the namespace value to use for OperatorSDK Scorecard checks.
-func WithScorecardNamespace(ns string) Option {
-	return func(oc *operatorCheck) {
-		oc.scorecardNamespace = ns
-	}
-}
-
 // WithOperatorChannel configures the operator value to use when attempting to deploy the
 // operator under test.
 func WithOperatorChannel(ch string) Option {
@@ -134,33 +122,6 @@ func WithOperatorChannel(ch string) Option {
 func WithDockerConfigJSONFromFile(path string) Option {
 	return func(oc *operatorCheck) {
 		oc.dockerConfigFilePath = path
-	}
-}
-
-// WithScorecardWaitTime overrides the wait time passed to OperatorSDK Scorecard-based checks
-// The seconds value should be a string representation of a number of seconds without a suffix.
-func WithScorecardWaitTime(seconds string) Option {
-	return func(oc *operatorCheck) {
-		oc.scorecardWaitTime = seconds
-	}
-}
-
-// WithScorecardServiceAccount adjusts the service account used for OperatorSDK Scorecard-based
-// checks.
-func WithScorecardServiceAccount(sa string) Option {
-	return func(oc *operatorCheck) {
-		oc.scorecardServiceAccount = sa
-	}
-}
-
-// WithScorecardImage overrides the Operator-SDK Scorecard image value. This
-// option should ONLY be used in disconnected environments to overcome image
-// accessibility restrictions.
-//
-// Most users should omit this option.
-func WithScorecardImage(image string) Option {
-	return func(oc *operatorCheck) {
-		oc.scorecardImage = image
 	}
 }
 
@@ -196,16 +157,12 @@ type operatorCheck struct {
 	kubeconfig []byte
 	indeximage string
 	// optional
-	scorecardImage          string
-	scorecardNamespace      string
-	scorecardServiceAccount string
-	scorecardWaitTime       string
-	operatorChannel         string
-	dockerConfigFilePath    string
-	insecure                bool
-	checks                  []check.Check
-	resolved                bool
-	policy                  policy.Policy
-	csvTimeout              time.Duration
-	subscriptionTimeout     time.Duration
+	operatorChannel      string
+	dockerConfigFilePath string
+	insecure             bool
+	checks               []check.Check
+	resolved             bool
+	policy               policy.Policy
+	csvTimeout           time.Duration
+	subscriptionTimeout  time.Duration
 }

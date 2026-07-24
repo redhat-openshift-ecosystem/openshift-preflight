@@ -16,18 +16,9 @@ var _ = Describe("Operator Check initialization", func() {
 			kubeconfigContents := "kubeconfig contents"
 			kubeconfig := []byte(kubeconfigContents)
 			indeximage := "indeximage:latest"
-			scorecardImage := "scorecardimage:latest"
-			scorecardNamespace := "scorecardnamespace"
-			scorecardServiceAccount := "scorecardserviceaccount"
-			scorecardWaitTime := "scorecardwaittime"
 			operatorChannel := "operatorchannel"
 			dockerConfigFilePath := "dockerconfigfilepath"
-			insecure := true
 			c := NewCheck(image, indeximage, kubeconfig,
-				WithScorecardImage(scorecardImage),
-				WithScorecardNamespace(scorecardNamespace),
-				WithScorecardServiceAccount(scorecardServiceAccount),
-				WithScorecardWaitTime(scorecardWaitTime),
 				WithOperatorChannel(operatorChannel),
 				WithDockerConfigJSONFromFile(dockerConfigFilePath),
 				WithInsecureConnection(),
@@ -36,13 +27,9 @@ var _ = Describe("Operator Check initialization", func() {
 			Expect(c.kubeconfig).To(Equal(kubeconfig))
 			Expect(c.kubeconfig).To(Equal([]byte(kubeconfigContents)))
 			Expect(c.indeximage).To(Equal(indeximage))
-			Expect(c.scorecardImage).To(Equal(scorecardImage))
-			Expect(c.scorecardNamespace).To(Equal(scorecardNamespace))
-			Expect(c.scorecardServiceAccount).To(Equal(scorecardServiceAccount))
-			Expect(c.scorecardWaitTime).To(Equal(scorecardWaitTime))
 			Expect(c.operatorChannel).To(Equal(operatorChannel))
 			Expect(c.dockerConfigFilePath).To(Equal(dockerConfigFilePath))
-			Expect(c.insecure).To(Equal(insecure))
+			Expect(c.insecure).To(BeTrue(), "insecure flag should be true when WithInsecureConnection is used")
 		})
 	})
 })
@@ -61,7 +48,7 @@ var _ = Describe("Operator Check Execution", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(chk.policy).To(Equal("operator"))
 			Expect(chk.resolved).To(Equal(true))
-			Expect(len(chk.checks)).To(Equal(9))
+			Expect(len(chk.checks)).To(Equal(7), "resolve should populate chk.checks with all operator policy checks")
 		})
 
 		It("Should return nil on second resolve (already resolved)", func() {
@@ -80,7 +67,7 @@ var _ = Describe("Operator Check Execution", func() {
 			policy, checks, err := chk.List(ctx)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(policy).To(Equal("operator"))
-			Expect(len(checks)).To(Equal(9))
+			Expect(len(checks)).To(Equal(7), "chk.List should return all operator policy checks")
 		})
 	})
 
