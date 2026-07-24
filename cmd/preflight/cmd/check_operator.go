@@ -33,20 +33,21 @@ func checkOperatorCmd(runpreflight runPreflight) *cobra.Command {
 	}
 
 	viper := viper.Instance()
-	checkOperatorCmd.Flags().String("namespace", "", "The namespace to use when running OperatorSDK Scorecard. (env: PFLT_NAMESPACE)")
+	checkOperatorCmd.Flags().String("namespace", "", "Deprecated: this flag is no longer used.")
 	_ = viper.BindPFlag("namespace", checkOperatorCmd.Flags().Lookup("namespace"))
+	_ = checkOperatorCmd.Flags().MarkDeprecated("namespace", "scorecard integration has been removed, in favor of direct bundle validation")
 
-	checkOperatorCmd.Flags().String("serviceaccount", "", "The service account to use when running OperatorSDK Scorecard. (env: PFLT_SERVICEACCOUNT)")
+	checkOperatorCmd.Flags().String("serviceaccount", "", "Deprecated: this flag is no longer used.")
 	_ = viper.BindPFlag("serviceaccount", checkOperatorCmd.Flags().Lookup("serviceaccount"))
+	_ = checkOperatorCmd.Flags().MarkDeprecated("serviceaccount", "scorecard integration has been removed, in favor of direct bundle validation")
 
-	checkOperatorCmd.Flags().String("scorecard-image", "", "A uri that points to the scorecard image digest, used in disconnected environments.\n"+
-		"It should only be used in a disconnected environment. Use preflight runtime-assets on a connected \n"+
-		"workstation to generate the digest that needs to be mirrored. (env: PFLT_SCORECARD_IMAGE)")
+	checkOperatorCmd.Flags().String("scorecard-image", "", "Deprecated: scorecard integration has been removed.")
 	_ = viper.BindPFlag("scorecard_image", checkOperatorCmd.Flags().Lookup("scorecard-image"))
+	_ = checkOperatorCmd.Flags().MarkDeprecated("scorecard-image", "scorecard integration has been removed, in favor of direct bundle validation")
 
-	checkOperatorCmd.Flags().String("scorecard-wait-time", "", "A time value that will be passed to scorecard's --wait-time environment variable.\n"+
-		"(env: PFLT_SCORECARD_WAIT_TIME)")
+	checkOperatorCmd.Flags().String("scorecard-wait-time", "", "Deprecated: scorecard integration has been removed.")
 	_ = viper.BindPFlag("scorecard_wait_time", checkOperatorCmd.Flags().Lookup("scorecard-wait-time"))
+	_ = checkOperatorCmd.Flags().MarkDeprecated("scorecard-wait-time", "scorecard integration has been removed, in favor of direct bundle validation")
 
 	checkOperatorCmd.Flags().String("channel", "", "The name of the operator channel which is used by DeployableByOLM to deploy the operator.\n"+
 		"If empty, the default operator channel in bundle's annotations file is used.. (env: PFLT_CHANNEL)")
@@ -166,14 +167,6 @@ func checkOperatorPositionalArgs(cmd *cobra.Command, args []string) error {
 func generateOperatorCheckOptions(cfg *runtime.Config) []operator.Option {
 	opts := []operator.Option{
 		operator.WithDockerConfigJSONFromFile(cfg.DockerConfig),
-		// empty value is handled downstream for below options, so we always add them here.
-		operator.WithScorecardImage(cfg.ScorecardImage),
-		operator.WithScorecardServiceAccount(cfg.ServiceAccount),
-		operator.WithScorecardNamespace(cfg.Namespace),
-	}
-
-	if cfg.ScorecardWaitTime != "" {
-		opts = append(opts, operator.WithScorecardWaitTime(cfg.ScorecardWaitTime))
 	}
 
 	if cfg.Channel != "" {

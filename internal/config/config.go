@@ -37,10 +37,6 @@ type containerConfig interface {
 // operator certification.
 type operatorConfig interface {
 	IsBundle() bool
-	Namespace() string
-	ServiceAccount() string
-	ScorecardImage() string
-	ScorecardWaitTime() string
 	Channel() string
 	Kubeconfig() string
 	IndexImage() string

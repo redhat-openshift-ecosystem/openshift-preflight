@@ -83,7 +83,6 @@ var _ = Describe("cmd package utility functions", func() {
 			Context("and no envvars are set", func() {
 				It("should have defaults set correctly", func() {
 					initConfig(testViper)
-					Expect(testViper.GetString("namespace")).To(Equal(DefaultNamespace))
 					Expect(testViper.GetString("artifacts")).To(Equal(artifacts.DefaultArtifactsDir))
 					Expect(testViper.GetString("logfile")).To(Equal(DefaultLogFile))
 					Expect(testViper.GetString("loglevel")).To(Equal(DefaultLogLevel))
@@ -96,7 +95,6 @@ var _ = Describe("cmd package utility functions", func() {
 				})
 				It("should have overrides in place", func() {
 					initConfig(testViper)
-					Expect(testViper.GetString("namespace")).To(Equal(DefaultNamespace))
 					Expect(testViper.GetString("artifacts")).To(Equal(artifacts.DefaultArtifactsDir))
 					Expect(testViper.GetString("logfile")).To(Equal("/tmp/foo.log"))
 					Expect(testViper.GetString("loglevel")).To(Equal("trace"))

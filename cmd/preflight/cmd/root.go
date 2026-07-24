@@ -63,7 +63,6 @@ func rootCmd() *cobra.Command {
 
 	rootCmd.AddCommand(checkCmd())
 	rootCmd.AddCommand(listChecksCmd())
-	rootCmd.AddCommand(runtimeAssetsCmd())
 	rootCmd.AddCommand(supportCmd())
 
 	return rootCmd
@@ -100,13 +99,6 @@ func initConfig(viper *spfviper.Viper) {
 	viper.SetDefault("logfile", DefaultLogFile)
 	viper.SetDefault("loglevel", DefaultLogLevel)
 	viper.SetDefault("artifacts", artifacts.DefaultArtifactsDir)
-
-	// Set up cluster defaults
-	viper.SetDefault("namespace", DefaultNamespace)
-	viper.SetDefault("serviceaccount", DefaultServiceAccount)
-
-	// Set up scorecard wait time default
-	viper.SetDefault("scorecard_wait_time", runtime.DefaultScorecardWaitTime)
 
 	// Set up csv timout default
 	viper.SetDefault("csv_timeout", runtime.DefaultCSVTimeout)

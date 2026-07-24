@@ -33,10 +33,6 @@ type Config struct {
 	ManifestListDigest       string
 	Konflux                  bool
 	// Operator-Specific Fields
-	Namespace           string
-	ServiceAccount      string
-	ScorecardImage      string
-	ScorecardWaitTime   string
 	Channel             string
 	IndexImage          string
 	Kubeconfig          string
@@ -84,10 +80,6 @@ func (c *Config) storeContainerPolicyConfiguration(vcfg viper.Viper) {
 // items in viper, normalizes them, and stores them in Config.
 func (c *Config) storeOperatorPolicyConfiguration(vcfg viper.Viper) {
 	c.Kubeconfig = os.Getenv("KUBECONFIG")
-	c.Namespace = vcfg.GetString("namespace")
-	c.ServiceAccount = vcfg.GetString("serviceaccount")
-	c.ScorecardImage = vcfg.GetString("scorecard_image")
-	c.ScorecardWaitTime = vcfg.GetString("scorecard_wait_time")
 	c.Channel = vcfg.GetString("channel")
 	c.IndexImage = vcfg.GetString("indeximage")
 	c.CSVTimeout = vcfg.GetDuration("csv_timeout")
