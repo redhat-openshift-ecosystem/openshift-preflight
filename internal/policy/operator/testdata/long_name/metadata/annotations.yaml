@@ -1,0 +1,4 @@
+annotations:
+  com.redhat.openshift.versions: "v4.6-v4.9"
+  operators.operatorframework.io.bundle.package.v1: this-is-a-very-long-package-name-that-exceeds-fifty-chars
+  operators.operatorframework.io.bundle.channel.default.v1: testChannel

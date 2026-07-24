@@ -2,9 +2,17 @@ package operator
 
 import (
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 const (
+	// namespaceSuffixLen is the length of the random suffix appended to namespaces to avoid collisions
+	namespaceSuffixLen = 5
+	// targetSuffix is appended to the install namespace to form the target namespace
+	targetSuffix = "-target"
+	// maxAppNameLen keeps the target namespace within the K8s DNS label limit
+	maxAppNameLen = validation.DNS1035LabelMaxLength - namespaceSuffixLen - len("-") - len(targetSuffix)
+
 	// secretName is the K8s secret name which stores the auth keys for the private registry access
 	secretName = "registry-auth-keys"
 
