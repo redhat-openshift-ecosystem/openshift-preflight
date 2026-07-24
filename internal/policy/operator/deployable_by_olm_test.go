@@ -37,6 +37,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 		now := metav1.Now()
 		og.Status.LastUpdated = &now
 		deployableByOLMCheck = *NewDeployableByOlmCheck("test_indeximage", "", "", WithCSVTimeout(1*time.Second), WithSubscriptionTimeout(1*time.Second))
+		deployableByOLMCheck.namespaceSuffix = func(int) string { return "abcde" }
 		scheme := apiruntime.NewScheme()
 		Expect(openshift.AddSchemes(scheme)).To(Succeed())
 		Expect(appsv1.AddToScheme(scheme)).To(Succeed())
@@ -75,7 +76,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 
 				// changing the namespace since OwnNamespace operators CSV get applied to `InstallNamespace`
 				ownCSV := csv.DeepCopy()
-				ownCSV.Namespace = "p-testPackage"
+				ownCSV.Namespace = "p-testPackage-abcde"
 
 				scheme := apiruntime.NewScheme()
 				Expect(openshift.AddSchemes(scheme)).To(Succeed())
@@ -116,7 +117,7 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				badSub := sub
 				Expect(deployableByOLMCheck.client.Get(testcontext, crclient.ObjectKey{
 					Name:      "p-testPackage",
-					Namespace: "p-testPackage",
+					Namespace: "p-testPackage-abcde",
 				}, &badSub)).To(Succeed())
 				badSub.Status.InstalledCSV = ""
 				Expect(deployableByOLMCheck.client.Update(testcontext, &badSub, &crclient.UpdateOptions{})).To(Succeed())
@@ -156,6 +157,28 @@ var _ = Describe("DeployableByOLMCheck", func() {
 				ok, err := deployableByOLMCheck.Validate(testcontext, imageRef)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ok).To(BeTrue())
+			})
+		})
+	})
+
+	Describe("operatorMetadata namespace generation", func() {
+		Context("When namespaceSuffix returns a non-empty value", func() {
+			It("Should append the suffix to InstallNamespace and TargetNamespace", func() {
+				data, err := deployableByOLMCheck.operatorMetadata(testcontext, imageRef)
+				Expect(err).ToNot(HaveOccurred(), "failed to load operator metadata")
+				Expect(data.InstallNamespace).To(Equal("p-testPackage-abcde"), "install namespace should include the generated suffix")
+				Expect(data.TargetNamespace).To(Equal("p-testPackage-abcde-target"), "target namespace should derive from the suffixed install namespace")
+			})
+		})
+		Context("When appName exceeds the maximum length", func() {
+			It("Should truncate to keep namespaces within the 63-char DNS label limit", func() {
+				imageRef.ImageFSPath = "./testdata/long_name"
+				data, err := deployableByOLMCheck.operatorMetadata(testcontext, imageRef)
+				Expect(err).ToNot(HaveOccurred(), "failed to load operator metadata for long package name")
+				Expect(data.InstallNamespace).To(HaveLen(56), "install namespace should be truncated appName + suffix")
+				Expect(data.TargetNamespace).To(HaveLen(63), "target namespace should not exceed DNS label limit")
+				Expect(data.InstallNamespace).To(Equal("this-is-a-very-long-package-name-that-exceeds-fift-abcde"), "appName should be truncated to 50 chars before suffix")
+				Expect(data.TargetNamespace).To(Equal("this-is-a-very-long-package-name-that-exceeds-fift-abcde-target"), "target namespace should append -target to install namespace")
 			})
 		})
 	})

@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -69,6 +70,7 @@ type DeployableByOlmCheck struct {
 	validImages         bool
 	csvTimeout          time.Duration
 	subscriptionTimeout time.Duration
+	namespaceSuffix     func(int) string
 }
 
 func (p *DeployableByOlmCheck) initClient() error {
@@ -153,9 +155,10 @@ func NewDeployableByOlmCheck(
 	opts ...Option,
 ) *DeployableByOlmCheck {
 	c := &DeployableByOlmCheck{
-		dockerConfig: dockerConfig,
-		indexImage:   indexImage,
-		channel:      channel,
+		dockerConfig:    dockerConfig,
+		indexImage:      indexImage,
+		channel:         channel,
+		namespaceSuffix: rand.String,
 	}
 
 	for _, opt := range opts {
@@ -332,13 +335,18 @@ func (p *DeployableByOlmCheck) operatorMetadata(ctx context.Context, bundleRef i
 		deploymentNames = append(deploymentNames, deployment.Name)
 	}
 
+	namespace := appName[:min(len(appName), maxAppNameLen)]
+	if suffix := p.namespaceSuffix(namespaceSuffixLen); suffix != "" {
+		namespace = fmt.Sprintf("%s-%s", namespace, suffix)
+	}
+
 	return &operatorData{
 		CatalogImage:     catalogImage,
 		Channel:          channel,
 		PackageName:      packageName,
 		App:              appName,
-		InstallNamespace: appName,
-		TargetNamespace:  appName + "-target",
+		InstallNamespace: namespace,
+		TargetNamespace:  namespace + targetSuffix,
 		InstallModes:     installModes,
 		DeploymentNames:  deploymentNames,
 	}, nil

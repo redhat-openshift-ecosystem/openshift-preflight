@@ -101,7 +101,7 @@ var pod2 = corev1.Pod{
 var pod3 = corev1.Pod{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "pod3",
-		Namespace: "p-testPackage",
+		Namespace: "p-testPackage-abcde",
 		Labels: map[string]string{
 			"app": "testapp1",
 		},
@@ -131,7 +131,7 @@ var pods = corev1.PodList{
 var csv = operatorsv1alpha1.ClusterServiceVersion{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "csv-v0.0.0",
-		Namespace: "p-testPackage-target",
+		Namespace: "p-testPackage-abcde-target",
 	},
 	Spec: operatorsv1alpha1.ClusterServiceVersionSpec{},
 	Status: operatorsv1alpha1.ClusterServiceVersionStatus{
@@ -179,7 +179,7 @@ var secret = corev1.Secret{
 var sub = operatorsv1alpha1.Subscription{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "p-testPackage",
-		Namespace: "p-testPackage",
+		Namespace: "p-testPackage-abcde",
 	},
 	Status: operatorsv1alpha1.SubscriptionStatus{
 		InstalledCSV: "csv-v0.0.0",
@@ -189,7 +189,7 @@ var sub = operatorsv1alpha1.Subscription{
 var og = operatorsv1.OperatorGroup{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "p-testPackage",
-		Namespace: "p-testPackage",
+		Namespace: "p-testPackage-abcde",
 	},
 	Status: operatorsv1.OperatorGroupStatus{
 		LastUpdated: nil,
@@ -220,7 +220,7 @@ var isList = imagestreamv1.ImageStreamList{
 var deployment = appsv1.Deployment{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "memcached-operator-controller-manager",
-		Namespace: "p-testPackage",
+		Namespace: "p-testPackage-abcde",
 	},
 	Spec: appsv1.DeploymentSpec{
 		Selector: &metav1.LabelSelector{
