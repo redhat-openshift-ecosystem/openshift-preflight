@@ -149,7 +149,8 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to pull remote container: %v", err)
 	}
-	img = cache.Image(img, cache.NewFilesystemCache(imageTarPath))
+	layerCache := cache.NewFilesystemCache(imageTarPath)
+	img = cache.Image(img, layerCache)
 
 	containerFSPath := path.Join(tempdir, "fs")
 	if err := os.MkdirAll(containerFSPath, 0o755); err != nil && !os.IsExist(err) {
@@ -169,6 +170,14 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 	for i, pattern := range requiredFilePatterns {
 		//coverage:ignore
 		requiredFilePatterns[i] = strings.TrimLeft(pattern, "/")
+	}
+
+	// Actually pull the image (all layers) up front, rather than lazily streaming
+	// layer content from the registry during untar. This isolates registry/network
+	// flakiness to a single, retried step instead of surfacing as a hard failure
+	// partway through extracting files to disk.
+	if err := pullLayers(ctx, img, layerCache); err != nil {
+		return fmt.Errorf("failed to pull image layers: %w", err)
 	}
 
 	slices.Sort(requiredFilePatterns)
