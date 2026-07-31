@@ -174,8 +174,26 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 	slices.Sort(requiredFilePatterns)
 	requiredFilePatterns = slices.Compact(requiredFilePatterns)
 
-	if err := untar(ctx, containerFSPath, img, requiredFilePatterns); err != nil {
-		return err
+	// Retry untar on transient EOF errors caused by registry blob stream truncation.
+	const maxUntarRetries = 3
+	for attempt := 1; ; attempt++ {
+		if err := untar(ctx, containerFSPath, img, requiredFilePatterns); err != nil {
+			if attempt < maxUntarRetries && strings.Contains(err.Error(), "unexpected EOF") {
+				logger.Info("retrying image extraction after transient error", "attempt", attempt, "err", err)
+				if rmErr := os.RemoveAll(containerFSPath); rmErr != nil {
+					//coverage:ignore
+					return fmt.Errorf("failed to clean up extraction directory: %v", rmErr)
+				}
+				if mkErr := os.MkdirAll(containerFSPath, 0o755); mkErr != nil {
+					//coverage:ignore
+					return fmt.Errorf("failed to recreate extraction directory: %v", mkErr)
+				}
+				time.Sleep(time.Duration(attempt) * time.Second)
+				continue
+			}
+			return err
+		}
+		break
 	}
 
 	reference, err := name.ParseReference(c.image)
