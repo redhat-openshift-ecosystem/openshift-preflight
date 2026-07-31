@@ -178,17 +178,21 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 	const maxUntarRetries = 3
 	for attempt := 1; ; attempt++ {
 		if err := untar(ctx, containerFSPath, img, requiredFilePatterns); err != nil {
-			if attempt < maxUntarRetries && strings.Contains(err.Error(), "unexpected EOF") {
-				logger.Info("retrying image extraction after transient error", "attempt", attempt, "err", err)
+			if attempt < maxUntarRetries && errors.Is(err, io.ErrUnexpectedEOF) {
+				logger.Error(err, "retrying image extraction after transient error", "attempt", attempt)
 				if rmErr := os.RemoveAll(containerFSPath); rmErr != nil {
 					//coverage:ignore
-					return fmt.Errorf("failed to clean up extraction directory: %v", rmErr)
+					return fmt.Errorf("failed to clean up extraction directory: %w", rmErr)
 				}
 				if mkErr := os.MkdirAll(containerFSPath, 0o755); mkErr != nil {
 					//coverage:ignore
-					return fmt.Errorf("failed to recreate extraction directory: %v", mkErr)
+					return fmt.Errorf("failed to recreate extraction directory: %w", mkErr)
 				}
-				time.Sleep(time.Duration(attempt) * time.Second)
+				select {
+				case <-time.After(time.Duration(attempt) * time.Second):
+				case <-ctx.Done():
+					return fmt.Errorf("waiting to retry image extraction: %w", ctx.Err())
+				}
 				continue
 			}
 			return err
