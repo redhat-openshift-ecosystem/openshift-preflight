@@ -60,22 +60,6 @@ func (ro *ReadOnlyConfig) Submit() bool {
 	return ro.cfg.Submit
 }
 
-func (ro *ReadOnlyConfig) Namespace() string {
-	return ro.cfg.Namespace
-}
-
-func (ro *ReadOnlyConfig) ServiceAccount() string {
-	return ro.cfg.ServiceAccount
-}
-
-func (ro *ReadOnlyConfig) ScorecardImage() string {
-	return ro.cfg.ScorecardImage
-}
-
-func (ro *ReadOnlyConfig) ScorecardWaitTime() string {
-	return ro.cfg.ScorecardWaitTime
-}
-
 func (ro *ReadOnlyConfig) Channel() string {
 	return ro.cfg.Channel
 }

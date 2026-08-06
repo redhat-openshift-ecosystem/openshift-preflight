@@ -42,14 +42,6 @@ var _ = Describe("Viper to Runtime Config", func() {
 		baseViperCfg.Set("insecure", true)
 		expectedRuntimeCfg.Insecure = true
 
-		baseViperCfg.Set("namespace", "myns")
-		expectedRuntimeCfg.Namespace = "myns"
-		baseViperCfg.Set("serviceaccount", "mysa")
-		expectedRuntimeCfg.ServiceAccount = "mysa"
-		baseViperCfg.Set("scorecard_image", "myscorecardimage")
-		expectedRuntimeCfg.ScorecardImage = "myscorecardimage"
-		baseViperCfg.Set("scorecard_wait_time", "100")
-		expectedRuntimeCfg.ScorecardWaitTime = "100"
 		baseViperCfg.Set("channel", "mychannel")
 		expectedRuntimeCfg.Channel = "mychannel"
 		baseViperCfg.Set("indeximage", "myindeximage")
@@ -68,12 +60,12 @@ var _ = Describe("Viper to Runtime Config", func() {
 		})
 	})
 
-	It("should only have 26 struct keys for tests to be valid", func() {
+	It("should only have 24 struct keys for tests to be valid", func() {
 		// If this test fails, it means a developer has added or removed
 		// keys from runtime.Config, and so these tests may no longer be
 		// accurate in confirming that the derived configuration from viper
 		// matches.
 		keys := reflect.TypeOf(Config{}).NumField()
-		Expect(keys).To(Equal(28))
+		Expect(keys).To(Equal(24), "runtime.Config field count changed; update this test and the viper mapping tests above")
 	})
 })

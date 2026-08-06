@@ -1,9 +1,6 @@
 package operator
 
 import (
-	"context"
-	"errors"
-	"log"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -16,48 +13,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
 )
 
 func TestOperator(t *testing.T) {
-	// This is only necessary because OperatorSDK uses the std Log.
-	log.SetOutput(GinkgoWriter)
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Operator Suite")
-}
-
-type FakeOperatorSdk struct {
-	OperatorSdkReport   operatorsdk.OperatorSdkScorecardReport
-	OperatorSdkBVReport operatorsdk.OperatorSdkBundleValidateReport
-}
-
-func (f FakeOperatorSdk) BundleValidate(ctx context.Context, image string, opts operatorsdk.OperatorSdkBundleValidateOptions) (*operatorsdk.OperatorSdkBundleValidateReport, error) {
-	return &f.OperatorSdkBVReport, nil
-}
-
-func (f FakeOperatorSdk) Scorecard(ctx context.Context, image string, opts operatorsdk.OperatorSdkScorecardOptions) (*operatorsdk.OperatorSdkScorecardReport, error) {
-	return &f.OperatorSdkReport, nil
-}
-
-type BadOperatorSdk struct{}
-
-func (bose BadOperatorSdk) Scorecard(ctx context.Context, bundleImage string, opts operatorsdk.OperatorSdkScorecardOptions) (*operatorsdk.OperatorSdkScorecardReport, error) {
-	operatorSdkReport := operatorsdk.OperatorSdkScorecardReport{
-		Stdout: "Bad Stdout",
-		Stderr: "Bad Stderr",
-		Items:  []operatorsdk.OperatorSdkScorecardItem{},
-	}
-	return &operatorSdkReport, errors.New("the Operator Sdk Scorecard has failed")
-}
-
-func (bose BadOperatorSdk) BundleValidate(ctx context.Context, bundleImage string, opts operatorsdk.OperatorSdkBundleValidateOptions) (*operatorsdk.OperatorSdkBundleValidateReport, error) {
-	operatorSdkReport := operatorsdk.OperatorSdkBundleValidateReport{
-		Stdout:  "Bad Stdout",
-		Stderr:  "Bad Stderr",
-		Passed:  false,
-		Outputs: []operatorsdk.OperatorSdkBundleValidateOutput{},
-	}
-	return &operatorSdkReport, errors.New("the Operator Sdk Bundle Validate has failed")
 }
 
 var pod1 = corev1.Pod{

@@ -12,7 +12,6 @@ import (
 	"maps"
 	"net/http"
 	"os"
-	"os/exec"
 	"path"
 	"regexp"
 	"slices"
@@ -31,7 +30,6 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/openshift"
-	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/operatorsdk"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/option"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy"
 	containerpol "github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy/container"
@@ -639,11 +637,10 @@ func convertLabels(imageLabels map[string]string) []pyxis.Label {
 
 // OperatorCheckConfig contains configuration relevant to an individual check's execution.
 type OperatorCheckConfig struct {
-	ScorecardImage, ScorecardWaitTime, ScorecardNamespace, ScorecardServiceAccount string
-	IndexImage, DockerConfig, Channel                                              string
-	Kubeconfig                                                                     []byte
-	CSVTimeout                                                                     time.Duration
-	SubscriptionTimeout                                                            time.Duration
+	IndexImage, DockerConfig, Channel string
+	Kubeconfig                        []byte
+	CSVTimeout                        time.Duration
+	SubscriptionTimeout               time.Duration
 }
 
 // InitializeOperatorChecks returns opeartor checks for policy p give cfg.
@@ -651,8 +648,6 @@ func InitializeOperatorChecks(ctx context.Context, p policy.Policy, cfg Operator
 	switch p {
 	case policy.PolicyOperator:
 		return []check.Check{
-			operatorpol.NewScorecardBasicSpecCheck(operatorsdk.New(cfg.ScorecardImage, exec.Command), cfg.ScorecardNamespace, cfg.ScorecardServiceAccount, cfg.Kubeconfig, cfg.ScorecardWaitTime),
-			operatorpol.NewScorecardOlmSuiteCheck(operatorsdk.New(cfg.ScorecardImage, exec.Command), cfg.ScorecardNamespace, cfg.ScorecardServiceAccount, cfg.Kubeconfig, cfg.ScorecardWaitTime),
 			operatorpol.NewDeployableByOlmCheck(cfg.IndexImage, cfg.DockerConfig, cfg.Channel, operatorpol.WithCSVTimeout(cfg.CSVTimeout), operatorpol.WithSubscriptionTimeout(cfg.SubscriptionTimeout)),
 			operatorpol.NewValidateOperatorBundleCheck(),
 			operatorpol.NewCertifiedImagesCheck(pyxis.NewPyxisClient(

@@ -25,10 +25,6 @@ var _ = Describe("Runtime ReadOnlyConfig test", func() {
 			Submit:                   true,
 			Platform:                 "s390x",
 			Insecure:                 true,
-			Namespace:                "ns",
-			ServiceAccount:           "sa",
-			ScorecardImage:           "scorecardimg",
-			ScorecardWaitTime:        "waittime",
 			Channel:                  "channel",
 			IndexImage:               "indeximg",
 			Kubeconfig:               "kubeconfig",
@@ -51,10 +47,6 @@ var _ = Describe("Runtime ReadOnlyConfig test", func() {
 			Expect(cro.Submit()).To(Equal(true))
 			Expect(cro.Platform()).To(Equal("s390x"))
 			Expect(cro.Insecure()).To(BeTrue())
-			Expect(cro.Namespace()).To(Equal("ns"))
-			Expect(cro.ServiceAccount()).To(Equal("sa"))
-			Expect(cro.ScorecardImage()).To(Equal("scorecardimg"))
-			Expect(cro.ScorecardWaitTime()).To(Equal("waittime"))
 			Expect(cro.Channel()).To(Equal("channel"))
 			Expect(cro.IndexImage()).To(Equal("indeximg"))
 			Expect(cro.Kubeconfig()).To(Equal("kubeconfig"))
