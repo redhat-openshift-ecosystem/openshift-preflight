@@ -8,9 +8,13 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
 	"net/url"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/registry"
@@ -174,6 +178,47 @@ var _ = Describe("Execute Checks tests", func() {
 				engine.image = "does.not/exist/anywhere:ever"
 				err := engine.ExecuteChecks(testcontext)
 				Expect(err).To(HaveOccurred())
+			})
+		})
+		Context("a layer fails to download", func() {
+			var origDelay time.Duration
+
+			BeforeEach(func() {
+				// Speed up the retry backoff so this test doesn't have to wait
+				// through the real, production-sized delays.
+				origDelay = pullLayerRetryBaseDelay
+				pullLayerRetryBaseDelay = time.Millisecond
+				DeferCleanup(func() { pullLayerRetryBaseDelay = origDelay })
+
+				// Front the already-populated registry with a proxy that always
+				// fails blob (layer) GET requests, while still serving manifests
+				// normally, simulating a registry that returns the manifest fine
+				// but can't reliably serve layer content. A 400 is used (rather
+				// than, say, 500) because go-containerregistry's remote package
+				// retries a handful of "retryable" status codes on its own; we
+				// want to exercise our own retry logic here, not compound it
+				// with that built-in behavior.
+				target, err := url.Parse(s.URL)
+				Expect(err).ToNot(HaveOccurred())
+				proxy := httputil.NewSingleHostReverseProxy(target)
+				failingServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/blobs/") {
+						http.Error(w, "simulated blob fetch failure", http.StatusBadRequest)
+						return
+					}
+					proxy.ServeHTTP(w, r)
+				}))
+				DeferCleanup(failingServer.Close)
+
+				failingURL, err := url.Parse(failingServer.URL)
+				Expect(err).ToNot(HaveOccurred())
+				engine.image = fmt.Sprintf("%s/test/crane", failingURL.Host)
+			})
+
+			It("should return an error pulling image layers", func() {
+				err := engine.ExecuteChecks(testcontext)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("failed to pull image layers"))
 			})
 		})
 		Context("it is a bundle made with GNU tar layer", func() {
