@@ -12,15 +12,16 @@ import (
 
 // Config contains configuration details for running preflight.
 type Config struct {
-	Image          string
-	Policy         policy.Policy
-	ResponseFormat string
-	Bundle         bool
-	Scratch        bool
-	LogFile        string
-	Artifacts      string
-	WriteJUnit     bool
-	TempDir        string
+	Image           string
+	Policy          policy.Policy
+	ResponseFormat  string
+	Bundle          bool
+	Scratch         bool
+	LogFile         string
+	Artifacts       string
+	WriteJUnit      bool
+	ExitWithFailure bool
+	TempDir         string
 	// Container-Specific Fields
 	CertificationComponentID string
 	PyxisHost                string
@@ -61,6 +62,7 @@ func NewConfigFrom(vcfg viper.Viper) (*Config, error) {
 	cfg.DockerConfig = vcfg.GetString("dockerConfig")
 	cfg.Artifacts = vcfg.GetString("artifacts")
 	cfg.WriteJUnit = vcfg.GetBool("junit")
+	cfg.ExitWithFailure = vcfg.GetBool("exit_with_failure")
 	cfg.TempDir = vcfg.GetString("tempDir")
 	cfg.storeContainerPolicyConfiguration(vcfg)
 	cfg.storeOperatorPolicyConfiguration(vcfg)
