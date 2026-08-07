@@ -139,6 +139,7 @@ func checkOperatorRunE(cmd *cobra.Command, args []string, runpreflight runPrefli
 		cli.CheckConfig{
 			IncludeJUnitResults: cfg.WriteJUnit,
 			SubmitResults:       false, // operator results are not submitted.
+			ExitOnFailure:       cfg.ExitWithFailure,
 		},
 		formatter,
 		&runtime.ResultWriterFile{},
