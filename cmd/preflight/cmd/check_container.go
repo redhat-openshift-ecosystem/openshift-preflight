@@ -212,8 +212,11 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 				}
 			}
 
-			// tar the directory
-			err = artifactsTar(ctx, src, &buf)
+			// Include the logfile from the parent artifacts directory.
+			// The logfile lives at <artifacts>/preflight.log while per-platform
+			// artifacts are at <artifacts>/<platform>/, so we need to bring it in.
+			logFilePath := filepath.Join(cfg.Artifacts, filepath.Base(cfg.LogFile))
+			err = artifactsTar(ctx, src, &buf, logFilePath)
 			if err != nil {
 				//coverage:ignore
 				return fmt.Errorf("unable to tar up artifacts directory: %v", err)
@@ -343,10 +346,11 @@ func generateContainerCheckOptions(cfg *runtime.Config) []container.Option {
 }
 
 // artifactsTar takes a source path and a writer; a tar writer loops over the files in the source
-// directory, writes the appropriate header information and copies the file into the tar writer
+// directory, writes the appropriate header information and copies the file into the tar writer.
+// Additional file paths can be provided via extraFiles to include files from outside the source directory.
 //
 //nolint:unparam // ctx is unused. Keep for future use.
-func artifactsTar(ctx context.Context, src string, w io.Writer) error {
+func artifactsTar(ctx context.Context, src string, w io.Writer, extraFiles ...string) error {
 	// ensure the src actually exists before trying to tar it
 	if _, err := os.Stat(src); err != nil {
 		return fmt.Errorf("unable to tar files - %v", err.Error())
@@ -414,6 +418,38 @@ func artifactsTar(ctx context.Context, src string, w io.Writer) error {
 			//coverage:ignore
 			return err
 		}
+	}
+
+	for _, extraFile := range extraFiles {
+		fileInfo, err := os.Stat(extraFile)
+		if err != nil {
+			continue
+		}
+		if !fileInfo.Mode().IsRegular() {
+			continue
+		}
+
+		header, err := tar.FileInfoHeader(fileInfo, fileInfo.Name())
+		if err != nil {
+			//coverage:ignore
+			return err
+		}
+
+		if err := tw.WriteHeader(header); err != nil {
+			return err
+		}
+
+		f, err := os.Open(extraFile)
+		if err != nil {
+			//coverage:ignore
+			return err
+		}
+		if _, err := io.Copy(tw, f); err != nil {
+			f.Close()
+			//coverage:ignore
+			return err
+		}
+		f.Close()
 	}
 
 	return nil
