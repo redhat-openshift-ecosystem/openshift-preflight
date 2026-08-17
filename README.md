@@ -22,13 +22,6 @@ For the complete container and operator bundle certification workflow instructio
 
 For running the Preflight binary, the host or VM must have at least RHEL 8.5, CentOS 8.5 or Fedora 35 installed.
 
-The Preflight binary currently requires that you have the following tools installed,
-functional, and in your path.
-
-| Name             | Tool cli          | Minimum version |
-|----------------- |:-----------------:|----------------:|
-| OperatorSDK      | `operator-sdk`    |         v1.42.3 |
-
 See our [Vagrantfile](Vagrantfile) for more information on setting up a
 development environment. Some checks may also require access to an OpenShift
 cluster. which is not provided by the Vagrantfile
@@ -47,15 +40,18 @@ Usage:
   preflight [command]
 
 Available Commands:
-  check          Run checks for an operator or container
-  completion     Generate the autocompletion script for the specified shell
-  help           Help about any command
-  runtime-assets Returns information about assets used at runtime.
-  support        Submits a support request
+  check       Run checks for an operator or container
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  list-checks List all checks that will be executed for each policy
+  support     Creates a support request
 
 Flags:
-  -h, --help      help for preflight
-  -v, --version   version for preflight
+      --config string     A preflight config file. The default is config.yaml (env: PFLT_CONFIG)
+  -h, --help              help for preflight
+      --logfile string    Where the execution logfile will be written. (env: PFLT_LOGFILE)
+      --loglevel string   The verbosity of the preflight tool itself. Ex. warn, debug, trace, info, error. (env: PFLT_LOGLEVEL)
+  -v, --version           version for preflight
 
 Use "preflight [command] --help" for more information about a command.
 ```

@@ -1,18 +1,18 @@
 ---
 name: preflight-check-operator
-description: Guide users running preflight check operator for Red Hat OpenShift Operator Certification. Use when users want to validate operator bundles, debug check failures, understand OLM deployment issues, interpret scorecard results, build index images, or work with operator certification requirements. Trigger on mentions of preflight operator, operator bundle, OLM, scorecard, DeployableByOLM, operator certification, or index images.
+description: Guide users running preflight check operator for Red Hat OpenShift Operator Certification. Use when users want to validate operator bundles, debug check failures, understand OLM deployment issues, build index images, or work with operator certification requirements. Trigger on mentions of preflight operator, operator bundle, OLM, DeployableByOLM, operator certification, or index images.
 ---
 
 # Preflight Operator Check Skill
 
-Help end users run `preflight check operator` to validate their operator bundles for Red Hat OpenShift Operator Certification. This skill assists with running checks, building index images, debugging failures, interpreting scorecard results, and understanding operator certification requirements.
+Help end users run `preflight check operator` to validate their operator bundles for Red Hat OpenShift Operator Certification. This skill assists with running checks, building index images, debugging failures, results, and understanding operator certification requirements.
 
 ## When to Use This Skill
 
 Use this skill when users:
 - Want to validate an operator bundle for Red Hat OpenShift certification
 - Need help building or configuring index images with `opm`
-- Need to understand check failures or errors (especially DeployableByOLM, Scorecard)
+- Need to understand check failures or errors (especially DeployableByOLM)
 - Ask about specific operator checks (DeployableByOLM, ValidateOperatorBundle, CertifiedImages, etc.)
 - Need to interpret results, artifacts, or log files from operator validation
 - Have issues with KUBECONFIG, cluster access, or OLM deployment
@@ -67,20 +67,6 @@ preflight check operator registry.example.org/your-namespace/your-bundle:v1.0 \
   --serviceaccount=preflight-sa
 ```
 
-**Disconnected/air-gapped environment:**
-```bash
-# First, get the scorecard image digest on a connected machine
-preflight runtime-assets
-
-# Mirror the scorecard image to your disconnected registry
-# Then use it in disconnected environment
-export KUBECONFIG=/path/to/your/kubeconfig
-export PFLT_INDEXIMAGE=registry.internal/operators/your-index:v1.0
-preflight check operator registry.internal/operators/your-bundle:v1.0 \
-  --scorecard-image=registry.internal/scorecard@sha256:abc123... \
-  --docker-config=/path/to/config.json
-```
-
 ## Important Flags and Environment Variables
 
 ### Required
@@ -92,12 +78,6 @@ preflight check operator registry.internal/operators/your-bundle:v1.0 \
 
 ### Operator Configuration
 - `--channel` / `PFLT_CHANNEL`: Operator channel name for DeployableByOLM check (uses default channel from bundle annotations if empty)
-- `--namespace` / `PFLT_NAMESPACE`: Namespace for OperatorSDK Scorecard execution (default: "default")
-- `--serviceaccount` / `PFLT_SERVICEACCOUNT`: Service account for OperatorSDK Scorecard (default: "default")
-- `--scorecard-wait-time` / `PFLT_SCORECARD_WAIT_TIME`: Time value passed to scorecard's --wait-time
-
-### Disconnected Environments
-- `--scorecard-image` / `PFLT_SCORECARD_IMAGE`: URI pointing to scorecard image digest (for disconnected environments only)
 
 ### Output and Logging
 - `--artifacts` / `PFLT_ARTIFACTS`: Where artifacts are written (default: `artifacts/`)
@@ -145,7 +125,7 @@ export PFLT_DOCKERCONFIG=/path/to/docker/config.json
 After running preflight, check these locations:
 - **Results JSON**: `artifacts/results.json` - detailed pass/fail for each check
 - **Log file**: `preflight.log` (or custom location) - execution details
-- **Artifacts**: `artifacts/` directory - check-specific evidence and scorecard output
+- **Artifacts**: `artifacts/` directory - check-specific evidence
 
 ### Common Operator Checks
 
@@ -155,8 +135,6 @@ When debugging failures, understand what each check validates:
 |------------|---------|-----------------|
 | **DeployableByOLM** | Validates operator can be deployed via OLM | Index image not accessible, CSV issues, missing dependencies, cluster connectivity |
 | **ValidateOperatorBundle** | Runs `operator-sdk bundle validate` | Invalid bundle structure, missing required files, annotation errors |
-| **ScorecardBasicSpecCheck** | Runs OperatorSDK Scorecard basic tests | Operator doesn't install properly, status not updated, CRD validation issues |
-| **ScorecardOlmSuiteCheck** | Runs OperatorSDK Scorecard OLM suite | OLM-specific issues, bundle metadata problems, CSV validation failures |
 | **CertifiedImages** | Verifies all container images are Red Hat certified | Using non-certified base images or dependencies |
 | **RequiredAnnotations** | Checks for required bundle annotations | Missing annotations in metadata/annotations.yaml |
 | **RelatedImages** | Validates relatedImages in CSV | Missing or incorrect relatedImages section in ClusterServiceVersion |
@@ -167,7 +145,7 @@ When debugging failures, understand what each check validates:
 When a check fails:
 
 1. **Read the result message**: The `results.json` contains a `message` field with details
-2. **Check artifacts**: Look in `artifacts/` for check-specific evidence (scorecard output, logs)
+2. **Check artifacts**: Look in `artifacts/` for check-specific evidence (output, logs)
 3. **Review cluster logs**: For DeployableByOLM failures, check cluster events and pod logs
 4. **Use debug logging**: Run with `--loglevel=debug` or `--loglevel=trace`
 5. **Verify prerequisites**: Confirm KUBECONFIG, PFLT_INDEXIMAGE, and cluster access
@@ -226,46 +204,6 @@ oc get subscription -n <namespace>
 oc get csv -n <namespace>
 oc describe csv <csv-name> -n <namespace>
 ```
-
-### Scorecard Failures
-
-Scorecard checks run OperatorSDK tests against your operator.
-
-**Common issues:**
-
-1. **Timeout waiting for scorecard**
-   ```
-   Error: Scorecard timed out
-   ```
-   **Fix:** Increase wait time:
-   ```bash
-   preflight check operator <bundle> --scorecard-wait-time=300s
-   ```
-
-2. **Service account permissions**
-   ```
-   Error: ServiceAccount doesn't have required permissions
-   ```
-   **Fix:** Use a service account with appropriate RBAC:
-   ```bash
-   # Create service account with proper permissions
-   oc create serviceaccount preflight-sa -n preflight-testing
-   # Add necessary role bindings
-   oc create rolebinding preflight-admin --clusterrole=admin --serviceaccount=preflight-testing:preflight-sa -n preflight-testing
-   
-   preflight check operator <bundle> \
-     --namespace=preflight-testing \
-     --serviceaccount=preflight-sa
-   ```
-
-3. **Scorecard image not available (disconnected)**
-   ```
-   Error: Failed to pull scorecard image
-   ```
-   **Fix:** Use `preflight runtime-assets` on connected machine, mirror the image, then:
-   ```bash
-   preflight check operator <bundle> --scorecard-image=<internal-registry>/scorecard@sha256:...
-   ```
 
 ### ValidateOperatorBundle Failures
 
@@ -355,10 +293,7 @@ dockerConfig: /path/to/config.json
 loglevel: debug
 logfile: artifacts/preflight.log
 artifacts: artifacts
-namespace: preflight-testing
-serviceaccount: preflight-sa
 channel: stable
-scorecard_wait_time: 300s
 ```
 
 Then set environment variables and run:
@@ -427,36 +362,6 @@ $CONTAINER_TOOL run \
   quay.io/opdev/preflight:stable check operator registry.example.org/your-namespace/your-bundle:v1.0
 ```
 
-## Disconnected/Air-Gapped Environments
-
-### Step 1: Get Required Images (on connected machine)
-
-```bash
-# Get the scorecard image digest
-preflight runtime-assets
-```
-
-This outputs the scorecard image and other runtime assets that need to be mirrored.
-
-### Step 2: Mirror Images
-
-Mirror these images to your internal registry:
-- Scorecard image
-- Your operator bundle
-- Your index image
-- All images referenced in your operator's CSV
-
-### Step 3: Run Preflight (in disconnected environment)
-
-```bash
-export KUBECONFIG=/path/to/kubeconfig
-export PFLT_INDEXIMAGE=registry.internal/operators/my-index:v1.0
-preflight check operator registry.internal/operators/my-bundle:v1.0 \
-  --scorecard-image=registry.internal/scorecard@sha256:abc123... \
-  --docker-config=/path/to/config.json \
-  --loglevel=debug
-```
-
 ## Cluster Requirements
 
 ### Minimum Requirements
@@ -523,7 +428,6 @@ Operator checks differ from container checks:
 - **Requires cluster**: Must have access to OpenShift cluster with OLM
 - **Requires index image**: Must build index image containing bundle
 - **Tests deployment**: DeployableByOLM actually deploys the operator on the cluster
-- **Scorecard integration**: Runs OperatorSDK Scorecard tests
 - **More complex**: Operator certification has more moving parts than container certification
 
 ## When to Escalate
