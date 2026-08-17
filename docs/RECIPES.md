@@ -21,7 +21,7 @@ You will also need:
 - Your bundle image published to a container registry.
 - An Index Image containing your operator's new bundle published to a container
   registry.
-- A Kubeconfig for a user with cluster-admin privileges to an OpenShift 4.5+
+- A Kubeconfig for a user with cluster-admin privileges to an OpenShift 4.10+
   Cluster running Operator Lifecycle Manager.
 
 The `preflight` tool will use the above to execute the Operator policy against
