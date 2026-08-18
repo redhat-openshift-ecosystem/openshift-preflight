@@ -131,7 +131,7 @@ var _ = Describe("Untar Directory Traversal Protection", func() {
 			Expect(err).ToNot(HaveOccurred())
 			err = untar(context.Background(), tmpDir, img, []string{targetFilePath})
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("path escapes from parent"))
+			Expect(err.Error()).To(ContainSubstring("unsafe tar path"))
 		},
 		Entry("has a relative path with single dot-dot", "../malicious.txt"),
 		Entry("has a relative path with multiple dot-dots", "../../../malicious.txt"),
