@@ -57,5 +57,7 @@ COPY --from=builder /go/src/preflight/preflight /usr/local/bin/preflight
 #copy license
 COPY LICENSE /licenses/LICENSE
 
+USER 1001
+
 ENTRYPOINT ["/usr/local/bin/preflight"]
 CMD ["--help"]
