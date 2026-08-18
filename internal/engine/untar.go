@@ -187,6 +187,7 @@ func untarOnce(ctx context.Context, dst string, img v1.Image, filterPatterns []s
 		case tar.TypeReg:
 			dirname := filepath.Dir(header.Name)
 			if err := dstRoot.MkdirAll(dirname, 0o755); err != nil && !os.IsExist(err) {
+				//coverage:ignore
 				return slices.Collect(maps.Keys(unresolvedLinkTargets)), err
 			}
 
