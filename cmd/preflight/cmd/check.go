@@ -23,6 +23,9 @@ func checkCmd() *cobra.Command {
 	checkCmd.PersistentFlags().String("artifacts", "", "Where check-specific artifacts will be written. (env: PFLT_ARTIFACTS)")
 	_ = viper.BindPFlag("artifacts", checkCmd.PersistentFlags().Lookup("artifacts"))
 
+	checkCmd.PersistentFlags().Bool("exit-with-failure", false, "Exit with a non-zero status code when checks fail or encounter errors. (env: PFLT_EXIT_WITH_FAILURE)")
+	_ = viper.BindPFlag("exit_with_failure", checkCmd.PersistentFlags().Lookup("exit-with-failure"))
+
 	checkCmd.AddCommand(checkOperatorCmd(cli.RunPreflight))
 	checkCmd.AddCommand(checkContainerCmd(cli.RunPreflight))
 
