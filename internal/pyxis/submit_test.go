@@ -1,7 +1,10 @@
 package pyxis
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 
 	. "github.com/onsi/ginkgo/v2/dsl/core"
@@ -13,6 +16,7 @@ var _ = Describe("Pyxis Submit", func() {
 
 	var pyxisClient *pyxisClient
 	var certInput CertificationInput
+	var capturedArtifacts []Artifact
 	mux := http.NewServeMux()
 
 	// These go from most explicit to least explicit. They will be check that way by the ServeMux.
@@ -26,12 +30,29 @@ var _ = Describe("Pyxis Submit", func() {
 	mux.HandleFunc("/api/v1/images/id/updateImage/", pyxisImageHandler(ctx))
 	mux.HandleFunc("/api/v1/images", pyxisImageHandler(ctx))
 
+	// Wraps mux to record every artifact payload POSTed during a test, so tests can assert
+	// on what was actually sent to createArtifact instead of only the overall submission result.
+	artifactCapturingHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && r.URL.Path == "/api/v1/projects/certification/id/my-awesome-project-id/artifacts" {
+			body, err := io.ReadAll(r.Body)
+			if err == nil {
+				r.Body = io.NopCloser(bytes.NewReader(body))
+				var incoming Artifact
+				if json.Unmarshal(body, &incoming) == nil {
+					capturedArtifacts = append(capturedArtifacts, incoming)
+				}
+			}
+		}
+		mux.ServeHTTP(w, r)
+	})
+
 	BeforeEach(func() {
+		capturedArtifacts = nil
 		pyxisClient = NewPyxisClient(
 			"my.pyxis.host/api",
 			"my-spiffy-api-token",
 			"my-awesome-project-id",
-			&http.Client{Transport: localRoundTripper{handler: mux}},
+			&http.Client{Transport: localRoundTripper{handler: artifactCapturingHandler}},
 		)
 		certInput = CertificationInput{
 			CertProject: &CertProject{CertificationStatus: "Started"},
@@ -128,6 +149,33 @@ var _ = Describe("Pyxis Submit", func() {
 				Expect(certResults.CertProject.Container.Registry).Should(Equal(defaultRegistryAlias))
 				Expect(certResults.CertImage.Repositories[0].Registry).Should(Equal(defaultRegistryAlias))
 				Expect(certResults.TestResults).ToNot(BeNil())
+			})
+		})
+		Context("and artifacts are present", func() {
+			JustBeforeEach(func() {
+				certInput.Artifacts = []Artifact{
+					{Filename: "artifact-one.json", Content: "{}"},
+					{Filename: "artifact-two.json", Content: "{}"},
+				}
+			})
+			It("should set ImageID on each artifact and submit successfully", func() {
+				certResults, err := pyxisClient.SubmitResults(ctx, &certInput)
+				Expect(err).ToNot(HaveOccurred(), "artifact submission should not fail")
+				Expect(capturedArtifacts).To(HaveLen(2), "createArtifact should be called once per artifact")
+				for _, artifact := range capturedArtifacts {
+					Expect(artifact.ImageID).To(Equal(certResults.CertImage.ID), "each artifact payload should carry the certImage ID")
+				}
+			})
+		})
+		Context("and artifact creation fails", func() {
+			JustBeforeEach(func() {
+				certInput.Artifacts = []Artifact{{Filename: "artifact.json", Content: "{}"}}
+				pyxisClient.APIToken = "my-bad-artifact-api-token"
+			})
+			It("should return an error", func() {
+				certResults, err := pyxisClient.SubmitResults(ctx, &certInput)
+				Expect(err).To(HaveOccurred(), "createArtifact failure should propagate as an error")
+				Expect(certResults).To(BeNil(), "certResults should be nil when artifact creation fails")
 			})
 		})
 	})
