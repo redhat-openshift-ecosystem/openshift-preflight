@@ -18,7 +18,7 @@ require (
 	github.com/operator-framework/api v0.45.0
 	github.com/operator-framework/operator-manifest-tools v0.12.0
 	github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.0
 	github.com/spf13/afero v1.15.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
