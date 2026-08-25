@@ -66,6 +66,8 @@ func pyxisProjectHandler(ctx context.Context) http.HandlerFunc {
 			mustWrite(response, `{"_id":"deadb33f","certification_status":"Started","name":"My Index Docker IO Project","project_status":"Foo","type":"Containers","container":{"docker_config_json":"{}","type":"Containers","registry":"docker.io", "repository":"my/repo"}}`)
 		case request.Method == http.MethodPatch && request.Header["X-Api-Key"][0] == "my-error-project-api-token":
 			response.WriteHeader(http.StatusInternalServerError)
+		case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-bad-artifact-api-token":
+			response.WriteHeader(http.StatusInternalServerError)
 		case request.Method == http.MethodPost:
 			body, err := io.ReadAll(request.Body)
 			if err != nil {
