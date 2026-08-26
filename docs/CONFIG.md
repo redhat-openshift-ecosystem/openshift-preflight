@@ -10,6 +10,7 @@ The following configurables are available for the `preflight` tool.
 |`PFLT_LOGFILE`|env|Where the execution logfile will be written.|optional|[preflight.log](https://github.com/redhat-openshift-ecosystem/openshift-preflight/blob/main/cmd/defaults.go#L5)|
 |`PFLT_ARTIFACTS`|env|Where check-specific artifacts will be written.|optional|[artifacts/](https://github.com/redhat-openshift-ecosystem/openshift-preflight/blob/main/cmd/defaults.go#L7)|
 |`PFLT_JUNIT`|env|Will write results as JUnit XML.|optional|false|
+|`PFLT_EXIT_WITH_FAILURE`|env|Exit with a non-zero status code when checks fail (exit 2) or encounter errors (exit 1). Default behavior exits 0 regardless of check results.|optional|false|
 
 ## Operator Policy Configuration
 
