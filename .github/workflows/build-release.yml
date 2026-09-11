@@ -73,7 +73,7 @@ jobs:
       # with sigstore/fulcio when running outside of PRs.
       id-token: write
     needs: build-release
-    uses: ./.github/workflows/build-multiarch.yml
+    uses: $/.github/workflows/build-multiarch.yml
     with:
       name: ${{ needs.build-release.outputs.imageName }}
       tag: ${{ needs.build-release.outputs.imageVersion }}
@@ -88,7 +88,7 @@ jobs:
     # TODO: Set explicit permissions for this job.
     # zizmor: ignore[excessive-permissions]
     needs: build-release
-    uses: ./.github/workflows/release-artifacts.yml
+    uses: $/.github/workflows/release-artifacts.yml
     with:
       name: ${{ needs.build-release.outputs.imageName }}
       tag: ${{ needs.build-release.outputs.imageVersion }}
@@ -102,7 +102,7 @@ jobs:
     # TODO: Set explicit permissions for this job.
     # zizmor: ignore[excessive-permissions]
     needs: [build-release, extract-assets]
-    uses: ./.github/workflows/add-release-info-to-pyxis.yml
+    uses: $/.github/workflows/add-release-info-to-pyxis.yml
     if: "!github.event.release.prerelease"
     with:
       tag: ${{ needs.build-release.outputs.imageVersion }}
@@ -117,7 +117,7 @@ jobs:
     # TODO: Set explicit permissions for this job.
     # zizmor: ignore[excessive-permissions]
     needs: [build-release, build-multiarch]
-    uses: ./.github/workflows/copy-to-rhisv.yml
+    uses: $/.github/workflows/copy-to-rhisv.yml
     with:
       sourceImageName: ${{ needs.build-release.outputs.imageName }}
       sourceImageTag: ${{ needs.build-release.outputs.imageVersion }}
