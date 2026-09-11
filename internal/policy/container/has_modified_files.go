@@ -253,76 +253,105 @@ func (p *HasModifiedFilesCheck) validate(ctx context.Context, layerIDs []string,
 				// This is a net-new package file. Pass it.
 				continue
 			}
-			currentPackageVersion := ref.LayerPackageFiles[modifiedFile]
-			previousPackage := packageFiles[layerIDs[idx-1]].LayerPackages[previousPackageVersion]
-			currentPackage := ref.LayerPackages[currentPackageVersion]
+		currentPackageVersion := ref.LayerPackageFiles[modifiedFile]
+		previousPackage := packageFiles[layerIDs[idx-1]].LayerPackages[previousPackageVersion]
+		currentPackage := ref.LayerPackages[currentPackageVersion]
 
-			if previousPackageVersion == currentPackageVersion {
-				previousFileInfo := fileInfo{}
-				// Since the modified file will not necessarily be present in the immediately previous layer, we need
-				// to go backwards through the layers to look for the last time this file was in a layer, and get the
-				// mode from there.
-				for layerIdx := idx - 1; layerIdx > -1; layerIdx-- {
-					if pfi, found := packageFiles[layerIDs[layerIdx]].LayerFiles[modifiedFile]; found {
-						previousFileInfo.Mode = pfi.Mode
-						break
-					}
+		// Handle cross-architecture package additions (e.g. i686 installed alongside x86_64).
+		// When the file's owning package differs between layers only in architecture and
+		// the original architecture's package is still present, this is a legitimate addition.
+		if previousPackageVersion != currentPackageVersion &&
+			isCrossArchAddition(previousPackageVersion, currentPackageVersion, ref.LayerPackages) {
+			logger.V(log.DBG).Info("cross-architecture package addition detected, original package still present",
+				"file", modifiedFile,
+				"originalPackage", previousPackageVersion,
+				"additionalPackage", currentPackageVersion)
+			continue
+		}
+
+		if previousPackageVersion == currentPackageVersion {
+			previousFileInfo := fileInfo{}
+			// Since the modified file will not necessarily be present in the immediately previous layer, we need
+			// to go backwards through the layers to look for the last time this file was in a layer, and get the
+			// mode from there.
+			for layerIdx := idx - 1; layerIdx > -1; layerIdx-- {
+				if pfi, found := packageFiles[layerIDs[layerIdx]].LayerFiles[modifiedFile]; found {
+					previousFileInfo.Mode = pfi.Mode
+					break
 				}
-				setUIDRemoved := previousFileInfo.Mode&fs.ModeSetuid > 0 && modifiedFileInfo.Mode&fs.ModeSetuid == 0
-				setGIDRemoved := previousFileInfo.Mode&fs.ModeSetgid > 0 && modifiedFileInfo.Mode&fs.ModeSetgid == 0
+			}
+			setUIDRemoved := previousFileInfo.Mode&fs.ModeSetuid > 0 && modifiedFileInfo.Mode&fs.ModeSetuid == 0
+			setGIDRemoved := previousFileInfo.Mode&fs.ModeSetgid > 0 && modifiedFileInfo.Mode&fs.ModeSetgid == 0
 
-				// Something in the mode changed. The only thing we support is removal of setuid/setgid bits
-				if setUIDRemoved || setGIDRemoved {
-					logger.V(log.DBG).Info("setuid/setgid bit removed")
-					continue
-				}
-
-				if !strings.Contains(currentPackage.Release, packageDist) && packageDist != "unknown" {
-					// This means it's _probably_ not a RH package. If the file is changed, warn, but don't fail
-					logger.Info("WARN: an rpm-installed file was modified outside of rpm, but appears to be from a third-party. This could be a failure in the future")
-					continue
-				}
-
-				if currentPackage.Vendor != "Red Hat, Inc." && previousPackage.Vendor != "Red Hat, Inc." {
-					//coverage:ignore
-					// This means it's _probably_ not a RH package. If the file is changed, warn, but don't fail
-					logger.Info("WARN: an rpm-installed file was modified outside of rpm, but appears to be from a third-party. This could be a failure in the future")
-					continue
-				}
-
-				if currentPackage.InstallTime > previousPackage.InstallTime {
-					//coverage:ignore
-					// This _probably_ means that the package was either:
-					// a) explicitly rpm -e then rpm -i
-					// b) dnf reinstall
-					// This should not trigger. Going to trace log this, but not always report
-					logger.V(log.TRC).Info("package appears to have been re-installed or removed and installed in the same layer", "package", currentPackage.Name)
-					continue
-				}
-
-				// Nope, nope, nope. File was modified without using RPM
-				logger.Info("found disallowed modification in layer", "file", modifiedFile)
-				disallowedModifications = true
+			// Something in the mode changed. The only thing we support is removal of setuid/setgid bits
+			if setUIDRemoved || setGIDRemoved {
+				logger.V(log.DBG).Info("setuid/setgid bit removed")
 				continue
 			}
 
-			// Check that release contains the same arch, this is to ensure that a package did not get rebuilt with
-			// a different architecture
-			previousOsRelease := strings.Contains(previousPackage.Release, packageDist)
-			currentOsRelease := strings.Contains(currentPackage.Release, packageDist)
-
-			if previousOsRelease && !currentOsRelease {
-				logger.Info("mismatch in OS release", "file", modifiedFile)
-				disallowedModifications = true
+			if !strings.Contains(currentPackage.Release, packageDist) && packageDist != "unknown" {
+				// This means it's _probably_ not a RH package. If the file is changed, warn, but don't fail
+				logger.Info("WARN: an rpm-installed file was modified outside of rpm, but appears to be from a third-party. This could be a failure in the future")
 				continue
 			}
 
-			// Check that the architectures for previous version and current version of a given package match
-			if previousPackage.Arch != currentPackage.Arch {
-				logger.Info("mismatch in package architecture", "file", modifiedFile)
-				disallowedModifications = true
+			if currentPackage.Vendor != "Red Hat, Inc." && previousPackage.Vendor != "Red Hat, Inc." {
+				//coverage:ignore
+				// This means it's _probably_ not a RH package. If the file is changed, warn, but don't fail
+				logger.Info("WARN: an rpm-installed file was modified outside of rpm, but appears to be from a third-party. This could be a failure in the future")
 				continue
 			}
+
+			if currentPackage.InstallTime > previousPackage.InstallTime {
+				//coverage:ignore
+				// This _probably_ means that the package was either:
+				// a) explicitly rpm -e then rpm -i
+				// b) dnf reinstall
+				// This should not trigger. Going to trace log this, but not always report
+				logger.V(log.TRC).Info("package appears to have been re-installed or removed and installed in the same layer", "package", currentPackage.Name)
+				continue
+			}
+
+			// Check if a cross-architecture variant of this package was added in this layer,
+			// causing shared files to be rewritten without actual content changes.
+			if crossArchPackageAdded(ref.LayerPackages, packageFiles[layerIDs[idx-1]].LayerPackages, currentPackage) {
+				logger.V(log.DBG).Info("file modified during cross-architecture package installation",
+					"file", modifiedFile, "package", currentPackage.Name)
+				continue
+			}
+
+			// Nope, nope, nope. File was modified without using RPM
+			logger.Info("found disallowed modification in layer", "file", modifiedFile)
+			disallowedModifications = true
+			continue
+		}
+
+		// Check that release contains the same arch, this is to ensure that a package did not get rebuilt with
+		// a different architecture
+		previousOsRelease := strings.Contains(previousPackage.Release, packageDist)
+		currentOsRelease := strings.Contains(currentPackage.Release, packageDist)
+
+		if previousOsRelease && !currentOsRelease {
+			logger.Info("mismatch in OS release", "file", modifiedFile)
+			disallowedModifications = true
+			continue
+		}
+
+		// Check that the architectures for previous version and current version of a given package match
+		if previousPackage.Arch != currentPackage.Arch {
+			// Before failing, verify this isn't a cross-arch addition where both architectures
+			// now coexist. If the original package is still present, this is legitimate.
+			if _, stillPresent := ref.LayerPackages[previousPackageVersion]; stillPresent {
+				logger.V(log.DBG).Info("cross-architecture package coexistence detected",
+					"file", modifiedFile,
+					"previousArch", previousPackage.Arch,
+					"currentArch", currentPackage.Arch)
+				continue
+			}
+			logger.Info("mismatch in package architecture", "file", modifiedFile)
+			disallowedModifications = true
+			continue
+		}
 
 			// This appears like an update. This is allowed.
 			// No further action required
@@ -369,6 +398,41 @@ func extractPackageNameVersionRelease(pkgList []*rpmdb.PackageInfo) map[string]p
 		}
 	}
 	return pkgNameList
+}
+
+// isCrossArchAddition returns true if previousPkgVer and currentPkgVer refer to the same
+// package name/version/release but differ only in architecture, AND the original (previous)
+// package is still present in the current layer's packages. This indicates a cross-architecture
+// addition (e.g. i686 installed alongside x86_64) rather than a replacement.
+func isCrossArchAddition(previousPkgVer, currentPkgVer string, currentLayerPackages map[string]packageMeta) bool {
+	prevParts := strings.SplitN(previousPkgVer, "-", 4)
+	currParts := strings.SplitN(currentPkgVer, "-", 4)
+	if len(prevParts) != 4 || len(currParts) != 4 {
+		return false
+	}
+	if prevParts[0] != currParts[0] || prevParts[1] != currParts[1] || prevParts[2] != currParts[2] {
+		return false
+	}
+	if prevParts[3] == currParts[3] {
+		return false
+	}
+	_, stillPresent := currentLayerPackages[previousPkgVer]
+	return stillPresent
+}
+
+// crossArchPackageAdded returns true if a new architecture variant of the given package
+// was added in the current layer compared to the previous layer. This handles the case
+// where shared files are rewritten during cross-arch package installation without actual
+// content modification.
+func crossArchPackageAdded(currentPackages, previousPackages map[string]packageMeta, pkg packageMeta) bool {
+	for nvra, meta := range currentPackages {
+		if meta.Name == pkg.Name && meta.Version == pkg.Version && meta.Release == pkg.Release && meta.Arch != pkg.Arch {
+			if _, existedBefore := previousPackages[nvra]; !existedBefore {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // findRPMDB attempts to extract a valid RPMDB from layers in the order
