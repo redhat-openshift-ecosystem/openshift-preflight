@@ -37,7 +37,7 @@ jobs:
       id: build-image
       uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2.13
       with:
-        image: ${{ secrets.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}
+        image: ${{ env.IMAGE_NAME }}
         tags: ${{ env.SHA_SHORT }}-${{ matrix.platform }}-${{ matrix.architecture }}
         archs: ${{ matrix.architecture }}
         build-args: |
