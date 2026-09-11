@@ -221,3 +221,235 @@ var _ = DescribeTable("Checking overall pass/fail",
 	Entry("when passing true", true, "PASSED"),
 	Entry("when passing false", false, "FAILED"),
 )
+
+var _ = Describe("ExitOnFailure behavior", func() {
+	var oldStdout io.Writer
+	var testcontext context.Context
+	var testFormatter formatters.ResponseFormatter
+
+	BeforeEach(func() {
+		oldStdout = stdout
+		stdout = GinkgoWriter
+
+		tmpDir, err := os.MkdirTemp("", "exit-on-failure-*")
+		Expect(err).ToNot(HaveOccurred(), "should create temp directory")
+		DeferCleanup(os.RemoveAll, tmpDir)
+
+		artifactWriter, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(tmpDir))
+		Expect(err).ToNot(HaveOccurred(), "should create artifact writer")
+		testcontext = artifacts.ContextWithWriter(context.Background(), artifactWriter)
+
+		testFormatter, err = formatters.NewByName(formatters.DefaultFormat)
+		Expect(err).ToNot(HaveOccurred(), "should create formatter")
+	})
+
+	AfterEach(func() {
+		stdout = oldStdout
+	})
+
+	When("ExitOnFailure is enabled", func() {
+		It("should return ChecksFailedError when checks fail", func() {
+			err := RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) {
+				return certification.Results{
+					TestedImage:   "test-image",
+					PassedOverall: false,
+					Passed:        []certification.Result{},
+					Failed: []certification.Result{
+						{
+							Check: check.NewGenericCheck(
+								"failingCheck",
+								func(ctx context.Context, ir image.ImageReference) (bool, error) { return false, nil },
+								check.Metadata{},
+								check.HelpText{},
+								nil,
+							),
+							ElapsedTime: 1,
+						},
+					},
+					Errors: []certification.Result{},
+				}, nil
+			}, CheckConfig{ExitOnFailure: true}, testFormatter, &runtime.ResultWriterFile{}, nil)
+			Expect(err).To(HaveOccurred(), "should return an error when checks fail")
+			Expect(errors.Is(err, &ChecksFailedError{})).To(BeTrue(), "error should be ChecksFailedError")
+		})
+
+		It("should return ChecksErroredError when checks encounter errors", func() {
+			err := RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) {
+				return certification.Results{
+					TestedImage:   "test-image",
+					PassedOverall: false,
+					Passed:        []certification.Result{},
+					Failed:        []certification.Result{},
+					Errors: []certification.Result{
+						{
+							Check: check.NewGenericCheck(
+								"erroringCheck",
+								func(ctx context.Context, ir image.ImageReference) (bool, error) { return false, nil },
+								check.Metadata{},
+								check.HelpText{},
+								nil,
+							),
+							ElapsedTime: 1,
+						},
+					},
+				}, nil
+			}, CheckConfig{ExitOnFailure: true}, testFormatter, &runtime.ResultWriterFile{}, nil)
+			Expect(err).To(HaveOccurred(), "should return an error when checks error")
+			Expect(errors.Is(err, &ChecksErroredError{})).To(BeTrue(), "error should be ChecksErroredError")
+		})
+
+		It("should prioritize errors over failures", func() {
+			err := RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) {
+				return certification.Results{
+					TestedImage:   "test-image",
+					PassedOverall: false,
+					Passed:        []certification.Result{},
+					Failed: []certification.Result{
+						{
+							Check: check.NewGenericCheck(
+								"failingCheck",
+								func(ctx context.Context, ir image.ImageReference) (bool, error) { return false, nil },
+								check.Metadata{},
+								check.HelpText{},
+								nil,
+							),
+							ElapsedTime: 1,
+						},
+					},
+					Errors: []certification.Result{
+						{
+							Check: check.NewGenericCheck(
+								"erroringCheck",
+								func(ctx context.Context, ir image.ImageReference) (bool, error) { return false, nil },
+								check.Metadata{},
+								check.HelpText{},
+								nil,
+							),
+							ElapsedTime: 1,
+						},
+					},
+				}, nil
+			}, CheckConfig{ExitOnFailure: true}, testFormatter, &runtime.ResultWriterFile{}, nil)
+			Expect(err).To(HaveOccurred(), "should return an error")
+			Expect(errors.Is(err, &ChecksErroredError{})).To(BeTrue(), "errors should take priority over failures")
+		})
+
+		It("should return nil when all checks pass", func() {
+			err := RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) {
+				return certification.Results{
+					TestedImage:   "test-image",
+					PassedOverall: true,
+					Passed: []certification.Result{
+						{
+							Check: check.NewGenericCheck(
+								"passingCheck",
+								func(ctx context.Context, ir image.ImageReference) (bool, error) { return true, nil },
+								check.Metadata{},
+								check.HelpText{},
+								nil,
+							),
+							ElapsedTime: 1,
+						},
+					},
+					Failed: []certification.Result{},
+					Errors: []certification.Result{},
+				}, nil
+			}, CheckConfig{ExitOnFailure: true}, testFormatter, &runtime.ResultWriterFile{}, nil)
+			Expect(err).ToNot(HaveOccurred(), "should not return an error when all checks pass")
+		})
+	})
+
+	When("ExitOnFailure is disabled", func() {
+		It("should return nil even when checks fail", func() {
+			err := RunPreflight(testcontext, func(ctx context.Context) (certification.Results, error) {
+				return certification.Results{
+					TestedImage:   "test-image",
+					PassedOverall: false,
+					Passed:        []certification.Result{},
+					Failed: []certification.Result{
+						{
+							Check: check.NewGenericCheck(
+								"failingCheck",
+								func(ctx context.Context, ir image.ImageReference) (bool, error) { return false, nil },
+								check.Metadata{},
+								check.HelpText{},
+								nil,
+							),
+							ElapsedTime: 1,
+						},
+					},
+					Errors: []certification.Result{},
+				}, nil
+			}, CheckConfig{ExitOnFailure: false}, testFormatter, &runtime.ResultWriterFile{}, nil)
+			Expect(err).ToNot(HaveOccurred(), "should not return an error when ExitOnFailure is disabled")
+		})
+	})
+
+	When("results file is written before exit code", func() {
+		It("should write results even when ExitOnFailure returns an error", func() {
+			tmpDir, err := os.MkdirTemp("", "results-written-*")
+			Expect(err).ToNot(HaveOccurred(), "should create temp directory for results test")
+			DeferCleanup(os.RemoveAll, tmpDir)
+
+			artifactWriter, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(tmpDir))
+			Expect(err).ToNot(HaveOccurred(), "should create artifact writer for results test")
+			ctx := artifacts.ContextWithWriter(context.Background(), artifactWriter)
+
+			runErr := RunPreflight(ctx, func(ctx context.Context) (certification.Results, error) {
+				return certification.Results{
+					TestedImage:   "test-image",
+					PassedOverall: false,
+					Passed:        []certification.Result{},
+					Failed: []certification.Result{
+						{
+							Check: check.NewGenericCheck(
+								"failingCheck",
+								func(ctx context.Context, ir image.ImageReference) (bool, error) { return false, nil },
+								check.Metadata{},
+								check.HelpText{},
+								nil,
+							),
+							ElapsedTime: 1,
+						},
+					},
+					Errors: []certification.Result{},
+				}, nil
+			}, CheckConfig{ExitOnFailure: true}, testFormatter, &runtime.ResultWriterFile{}, nil)
+
+			Expect(runErr).To(HaveOccurred(), "should return exit-on-failure error")
+			resultsFile := filepath.Join(tmpDir, "results.json")
+			Expect(resultsFile).To(BeAnExistingFile(), "results file should exist even when returning failure error")
+		})
+	})
+})
+
+var _ = Describe("Error types", func() {
+	It("ChecksFailedError should have correct message", func() {
+		err := &ChecksFailedError{}
+		Expect(err.Error()).To(Equal("one or more checks failed"))
+	})
+
+	It("ChecksErroredError should have correct message", func() {
+		err := &ChecksErroredError{}
+		Expect(err.Error()).To(Equal("one or more checks encountered an error"))
+	})
+
+	It("errors.Is should match separate instances of ChecksFailedError", func() {
+		Expect(errors.Is(&ChecksFailedError{}, &ChecksFailedError{})).To(BeTrue(),
+			"separate ChecksFailedError instances should match via errors.Is")
+	})
+
+	It("errors.Is should match separate instances of ChecksErroredError", func() {
+		Expect(errors.Is(&ChecksErroredError{}, &ChecksErroredError{})).To(BeTrue(),
+			"separate ChecksErroredError instances should match via errors.Is")
+	})
+
+	It("errors.Is should not match across error types", func() {
+		var failedErr error = &ChecksFailedError{}
+		var erroredErr error = &ChecksErroredError{}
+		Expect(errors.Is(failedErr, &ChecksErroredError{})).To(BeFalse(),
+			"ChecksFailedError should not match ChecksErroredError")
+		Expect(errors.Is(erroredErr, &ChecksFailedError{})).To(BeFalse(),
+			"ChecksErroredError should not match ChecksFailedError")
+	})
+})
