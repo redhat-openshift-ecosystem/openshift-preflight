@@ -24,8 +24,8 @@ COPY . /go/src/preflight
 WORKDIR /go/src/preflight
 RUN make build RELEASE_TAG=${release_tag}
 
-# ubi10:latest
-FROM registry.access.redhat.com/ubi10/ubi:latest
+# ubi10-micro:latest
+FROM registry.access.redhat.com/ubi10/ubi-micro:latest
 ARG quay_expiration
 ARG release_tag
 ARG preflight_commit
@@ -53,6 +53,10 @@ LABEL OS=${OS}
 
 # Add preflight binary
 COPY --from=builder /go/src/preflight/preflight /usr/local/bin/preflight
+
+# UBI Micro does not include a CA trust store, which is required for registry
+# and Pyxis HTTPS connections.
+COPY --from=builder /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /etc/pki/tls/certs/ca-bundle.crt
 
 #copy license
 COPY LICENSE /licenses/LICENSE
