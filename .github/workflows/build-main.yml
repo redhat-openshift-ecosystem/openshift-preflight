@@ -115,7 +115,7 @@ jobs:
     # TODO: Set explicit permissions for this job.
     # zizmor: ignore[excessive-permissions]
     needs: build-main
-    uses: ./.github/workflows/build-multiarch.yml
+    uses: $/.github/workflows/build-multiarch.yml
     with:
       name: ${{ needs.build-main.outputs.imageName }}
       tag: ${{ needs.build-main.outputs.imageVersion }}
