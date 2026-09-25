@@ -33,6 +33,9 @@ const (
 
 	// imageRegistryService is the service name of the image registry
 	imageRegistryService = "image-registry.openshift-image-registry.svc"
+
+	// certDocumentationURL operator policy documentation url
+	certDocumentationURL = "https://access.redhat.com/documentation/en-us/red_hat_software_certification/latest/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operator-requirements_openshift-sw-cert-policy-products-managed"
 )
 
 var (
