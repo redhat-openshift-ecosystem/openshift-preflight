@@ -4,7 +4,41 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 )
+
+// TestReadResults_MissingFile proves a helpful error is returned when
+// results.json does not exist in dir, rather than a panic.
+func TestReadResults_MissingFile(t *testing.T) {
+	dir := t.TempDir()
+
+	if _, err := ReadResults(dir); err == nil {
+		t.Fatal("expected an error when results.json does not exist")
+	}
+}
+
+// TestReadResults_InvalidJSON proves malformed JSON is reported clearly.
+func TestReadResults_InvalidJSON(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, check.DefaultTestResultsFilename), []byte("not json"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := ReadResults(dir); err == nil {
+		t.Fatal("expected an error for invalid JSON")
+	}
+}
+
+// TestWriteResults_UnwritableDir proves a helpful error is returned when the
+// destination directory does not exist, rather than a panic.
+func TestWriteResults_UnwritableDir(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "does-not-exist")
+
+	if err := WriteResults(dir, &UserResponse{}); err == nil {
+		t.Fatal("expected an error when the destination directory does not exist")
+	}
+}
 
 func TestReadWriteResultsRoundTrip(t *testing.T) {
 	dir := t.TempDir()

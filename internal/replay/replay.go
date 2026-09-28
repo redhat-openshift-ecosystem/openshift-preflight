@@ -56,6 +56,12 @@ type Options struct {
 	// timeout when nil. Exposed primarily so tests can substitute a fake
 	// transport instead of hitting the network.
 	PyxisHTTPClient pyxis.HTTPClient
+
+	// PyxisClient is the client used when Submit is true. Defaults to
+	// lib.NewPyxisClient(PyxisHost, PyxisAPIToken, CertificationComponentID)
+	// when nil. Exposed primarily so tests can substitute a fake instead of
+	// hitting the network.
+	PyxisClient lib.PyxisClient
 }
 
 // Summary describes what happened during a replay-submit execution, for
@@ -85,6 +91,7 @@ func Run(ctx context.Context, opts Options) (*Summary, error) {
 		var err error
 		extractDir, err = os.MkdirTemp("", "preflight-replay-submit-")
 		if err != nil {
+			//coverage:ignore
 			return nil, fmt.Errorf("could not create temporary extraction directory: %w", err)
 		}
 	}
@@ -131,6 +138,7 @@ func Run(ctx context.Context, opts Options) (*Summary, error) {
 	ApplyBasedOnUbiResult(results, basedOnUbiPassed)
 
 	if err := WriteResults(extractDir, results); err != nil {
+		//coverage:ignore
 		return nil, err
 	}
 	logger.Info("results.json updated with revalidated BasedOnUbi outcome", "overallPassed", results.Passed)
@@ -213,11 +221,15 @@ func revalidateBasedOnUbi(ctx context.Context, checker layerHashChecker, diffIDs
 func submit(ctx context.Context, extractDir string, opts Options) error {
 	artifactWriter, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(extractDir))
 	if err != nil {
+		//coverage:ignore
 		return fmt.Errorf("could not create artifact writer for %s: %w", extractDir, err)
 	}
 	ctx = artifacts.ContextWithWriter(ctx, artifactWriter)
 
-	pc := lib.NewPyxisClient(ctx, opts.CertificationComponentID, opts.PyxisAPIToken, opts.PyxisHost)
+	pc := opts.PyxisClient
+	if pc == nil {
+		pc = lib.NewPyxisClient(ctx, opts.CertificationComponentID, opts.PyxisAPIToken, opts.PyxisHost)
+	}
 	if pc == nil {
 		return fmt.Errorf("pyxis-api-token, certification-component-id, and pyxis-host must all be set to submit results")
 	}

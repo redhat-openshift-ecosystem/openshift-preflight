@@ -96,6 +96,11 @@ func safeJoin(base, name string) (string, error) {
 	target := filepath.Join(base, cleanName)
 	cleanBase := filepath.Clean(base)
 	if target != cleanBase && !strings.HasPrefix(target, cleanBase+string(filepath.Separator)) {
+		// Defense in depth: filepath.Clean guarantees cleanName can't reach
+		// here without already being caught by the ".." check above, so this
+		// branch is unreachable through the public API, but kept in case
+		// that invariant ever changes.
+		//coverage:ignore
 		return "", fmt.Errorf("resulting path escapes destination directory")
 	}
 

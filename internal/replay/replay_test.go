@@ -3,12 +3,37 @@ package replay
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
 )
+
+// TestReadCertImage_MissingFile proves a helpful error is returned when
+// cert-image.json does not exist in dir, rather than a panic.
+func TestReadCertImage_MissingFile(t *testing.T) {
+	dir := t.TempDir()
+
+	if _, err := readCertImage(dir); err == nil {
+		t.Fatal("expected an error when cert-image.json does not exist")
+	}
+}
+
+// TestReadCertImage_InvalidJSON proves malformed JSON is reported clearly.
+func TestReadCertImage_InvalidJSON(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, check.DefaultCertImageFilename), []byte("not json"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := readCertImage(dir); err == nil {
+		t.Fatal("expected an error for invalid JSON")
+	}
+}
 
 func TestDiffIDsFromCertImage(t *testing.T) {
 	tests := []struct {

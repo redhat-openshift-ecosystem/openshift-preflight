@@ -74,6 +74,7 @@ func ReadResults(dir string) (*UserResponse, error) {
 func WriteResults(dir string, r *UserResponse) error {
 	b, err := json.MarshalIndent(r, "", "    ")
 	if err != nil {
+		//coverage:ignore
 		return fmt.Errorf("could not marshal %s: %w", check.DefaultTestResultsFilename, err)
 	}
 

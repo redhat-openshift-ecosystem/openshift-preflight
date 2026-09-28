@@ -2,6 +2,7 @@ package replay
 
 import (
 	"archive/tar"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -120,5 +121,121 @@ func TestExtractArtifactsTar_MissingSourceFile(t *testing.T) {
 	dest := t.TempDir()
 	if err := ExtractArtifactsTar(filepath.Join(dest, "does-not-exist.tar"), dest); err == nil {
 		t.Fatal("expected an error when the source tar does not exist, got nil")
+	}
+}
+
+func TestExtractArtifactsTar_DestDirIsFile(t *testing.T) {
+	root := t.TempDir()
+	tarPath := filepath.Join(root, "archive.tar")
+	dest := filepath.Join(root, "dest")
+
+	// Create dest as a regular file so os.MkdirAll(dest) fails.
+	if err := os.WriteFile(dest, []byte("not a directory"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	writeTar(t, tarPath, []tar.Header{
+		{Name: "foo.txt", Typeflag: tar.TypeReg, Mode: 0o644},
+	}, map[string]string{"foo.txt": "hi"})
+
+	if err := ExtractArtifactsTar(tarPath, dest); err == nil {
+		t.Fatal("expected an error when destDir is occupied by a regular file")
+	}
+}
+
+func TestExtractArtifactsTar_CorruptTar(t *testing.T) {
+	root := t.TempDir()
+	tarPath := filepath.Join(root, "corrupt.tar")
+	dest := filepath.Join(root, "dest")
+
+	// A tar header is 512 bytes; a short garbage file makes tar.Reader.Next()
+	// return a non-io.EOF error.
+	if err := os.WriteFile(tarPath, []byte("not a valid tar header, too short"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := ExtractArtifactsTar(tarPath, dest); err == nil {
+		t.Fatal("expected an error for a corrupt tar archive")
+	}
+}
+
+func TestExtractArtifactsTar_DirEntryCollidesWithFile(t *testing.T) {
+	root := t.TempDir()
+	tarPath := filepath.Join(root, "archive.tar")
+	dest := filepath.Join(root, "dest")
+
+	if err := os.MkdirAll(dest, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Pre-create "sub" as a regular file so the tar's directory entry "sub"
+	// can't be created.
+	if err := os.WriteFile(filepath.Join(dest, "sub"), []byte("occupied"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	writeTar(t, tarPath, []tar.Header{
+		{Name: "sub", Typeflag: tar.TypeDir, Mode: 0o755},
+	}, nil)
+
+	if err := ExtractArtifactsTar(tarPath, dest); err == nil {
+		t.Fatal("expected an error when a directory entry collides with an existing file")
+	}
+}
+
+func TestExtractArtifactsTar_RegEntryParentCollidesWithFile(t *testing.T) {
+	root := t.TempDir()
+	tarPath := filepath.Join(root, "archive.tar")
+	dest := filepath.Join(root, "dest")
+
+	if err := os.MkdirAll(dest, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Pre-create "sub" as a regular file so a nested entry's parent
+	// directory can't be created.
+	if err := os.WriteFile(filepath.Join(dest, "sub"), []byte("occupied"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	writeTar(t, tarPath, []tar.Header{
+		{Name: "sub/file.txt", Typeflag: tar.TypeReg, Mode: 0o644},
+	}, map[string]string{"sub/file.txt": "hi"})
+
+	if err := ExtractArtifactsTar(tarPath, dest); err == nil {
+		t.Fatal("expected an error when a regular entry's parent directory collides with an existing file")
+	}
+}
+
+func TestExtractArtifactsTar_RegEntryTargetIsDirectory(t *testing.T) {
+	root := t.TempDir()
+	tarPath := filepath.Join(root, "archive.tar")
+	dest := filepath.Join(root, "dest")
+
+	// "file.txt" already exists as a directory at the target path.
+	if err := os.MkdirAll(filepath.Join(dest, "file.txt"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	writeTar(t, tarPath, []tar.Header{
+		{Name: "file.txt", Typeflag: tar.TypeReg, Mode: 0o644},
+	}, map[string]string{"file.txt": "hi"})
+
+	if err := ExtractArtifactsTar(tarPath, dest); err == nil {
+		t.Fatal("expected an error when a regular entry's target already exists as a directory")
+	}
+}
+
+// errReader always fails, used to exercise writeRegularFile's io.Copy error path.
+type errReader struct{}
+
+func (errReader) Read(p []byte) (int, error) {
+	return 0, errors.New("simulated read failure")
+}
+
+func TestWriteRegularFile_CopyFails(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "file.txt")
+
+	if err := writeRegularFile(errReader{}, target, 0o644); err == nil {
+		t.Fatal("expected an error when the reader fails")
 	}
 }
