@@ -94,6 +94,8 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 	_ = viper.BindEnv("memprofile")
 	_ = viper.BindEnv("tempDir")
 
+	checkContainerCmd.AddCommand(replaySubmitCmd())
+
 	return checkContainerCmd
 }
 
