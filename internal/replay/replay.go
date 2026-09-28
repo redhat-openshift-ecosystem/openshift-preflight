@@ -3,9 +3,6 @@
 // disconnected environment, revalidating the BasedOnUbi check (which could
 // not reach Pyxis while offline) from a connected host, and submitting the
 // finalized results to Red Hat.
-//
-// See https://redhat.atlassian.net/browse/EDPP-331 and
-// https://redhat.atlassian.net/browse/CERTSA-71 for the originating requirements.
 package replay
 
 import (
@@ -17,9 +14,8 @@ import (
 	"path/filepath"
 	"time"
 
-	cranev1 "github.com/google/go-containerregistry/pkg/v1"
-
 	"github.com/go-logr/logr"
+	cranev1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/artifacts"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
@@ -70,7 +66,7 @@ type Summary struct {
 	Submitted       bool
 }
 
-// Run executes the replay-submit workflow described in EDPP-331/CERTSA-71:
+// Run executes the replay-submit workflow:
 //  1. Extract artifacts.tar into a working directory.
 //  2. Read cert-image.json to recover the image's uncompressed layer DiffIDs.
 //  3. Query Pyxis for a certified image (on registry.access.redhat.com) that

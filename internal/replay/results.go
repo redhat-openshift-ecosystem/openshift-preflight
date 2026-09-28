@@ -7,22 +7,20 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy/container"
 )
+
+// basedOnUbiCheck is used purely as a source of truth for the BasedOnUbi
+// check's Name/Description/Help/Suggestion/URLs, so the entry replay-submit
+// writes into results.json matches what a normal online run would have
+// produced, without duplicating that text here (and risking drift). It's
+// never Validate()'d - LayerHashCheckEngine is intentionally left nil.
+var basedOnUbiCheck = container.NewBasedOnUbiCheck(nil)
 
 // basedOnUbiCheckName mirrors the Name() of the BasedOnUbi check
 // (internal/policy/container.BasedOnUBICheck) so that we can find/replace its
 // entry inside a previously written results.json.
-const basedOnUbiCheckName = "BasedOnUbi"
-
-// basedOnUbiDescription and friends mirror the check.Metadata/HelpText
-// returned by internal/policy/container.BasedOnUBICheck so the replayed
-// entry looks the same as if it had been produced by a normal online run.
-const (
-	basedOnUbiDescription = "Checking if the container's base image is based upon the Red Hat Universal Base Image (UBI) or Red Hat Hardened Images (RHHI)"
-	basedOnUbiHelp        = "Check BasedOnUbi encountered an error. Please review the preflight.log file for more information."
-	basedOnUbiSuggestion  = "Change the FROM directive in your Dockerfile or Containerfile, for the latest list of images and details refer to: https://catalog.redhat.com/software/base-images"
-	basedOnUbiDocURL      = "https://access.redhat.com/documentation/en-us/red_hat_software_certification"
-)
+var basedOnUbiCheckName = basedOnUbiCheck.Name()
 
 // CheckInfo mirrors internal/formatters.checkExecutionInfo. It's re-declared
 // here (rather than imported) because the upstream type is unexported and
@@ -114,18 +112,21 @@ func removeByName(entries []CheckInfo, name string) []CheckInfo {
 func ApplyBasedOnUbiResult(r *UserResponse, passed bool) {
 	removeBasedOnUbi(r)
 
+	metadata := basedOnUbiCheck.Metadata()
+
 	entry := CheckInfo{
 		Name:        basedOnUbiCheckName,
-		Description: basedOnUbiDescription,
+		Description: metadata.Description,
 	}
 
 	if passed {
 		r.Results.Passed = append(r.Results.Passed, entry)
 	} else {
-		entry.Help = basedOnUbiHelp
-		entry.Suggestion = basedOnUbiSuggestion
-		entry.KnowledgeBaseURL = basedOnUbiDocURL
-		entry.CheckURL = basedOnUbiDocURL
+		help := basedOnUbiCheck.Help()
+		entry.Help = help.Message
+		entry.Suggestion = help.Suggestion
+		entry.KnowledgeBaseURL = metadata.KnowledgeBaseURL
+		entry.CheckURL = metadata.CheckURL
 		r.Results.Failed = append(r.Results.Failed, entry)
 	}
 

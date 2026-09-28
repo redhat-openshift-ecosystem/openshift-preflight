@@ -60,7 +60,7 @@ func buildFakeArtifactsTar(t *testing.T, dir string) string {
 				{
 					"name":         basedOnUbiCheckName,
 					"elapsed_time": 5.0,
-					"description":  basedOnUbiDescription,
+					"description":  basedOnUbiCheck.Metadata().Description,
 					"help":         "could not reach pyxis: no network",
 				},
 			},
