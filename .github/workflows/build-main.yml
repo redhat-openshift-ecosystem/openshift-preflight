@@ -47,12 +47,21 @@ jobs:
         dockerfiles: |
           ./Dockerfile
 
+    # Verify UBI Micro contains the tools required by the OpenShift CI step.
     - name: Run and Validate Image
       run: |
-        if ! podman run --rm "${IMAGE_WITH_TAG}" version; then
-            echo "Image validation failed. The 'podman run' command returned a non-zero exit code."
-            exit 1
-        fi
+        podman run --rm "${IMAGE_WITH_TAG}" version
+        podman run --rm --entrypoint /bin/bash "${IMAGE_WITH_TAG}" -ceu '
+          for tool in bash basename cp gzip mkdir mktemp tar; do
+            command -v "${tool}"
+          done
+          test -s /etc/pki/tls/certs/ca-bundle.crt
+          printf "preflight smoke test\n" > /tmp/preflight-smoke.txt
+          tar -czf /tmp/preflight-smoke.tar.gz -C /tmp preflight-smoke.txt
+          gzip -t /tmp/preflight-smoke.tar.gz
+          tar -tzf /tmp/preflight-smoke.tar.gz >/dev/null
+          test -s /tmp/preflight-smoke.tar.gz
+        '
       env:
         IMAGE_WITH_TAG: ${{ steps.build-image.outputs.image-with-tag }}
 
