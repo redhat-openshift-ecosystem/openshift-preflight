@@ -328,6 +328,16 @@ var _ = Describe("Check Container Command", func() {
 				names := tarEntryNames(tarPath)
 				Expect(names).To(ContainElement("preflight.log"))
 			})
+			It("should error when the top-level preflight log is missing", func() {
+				// Simulate root.go's preRunConfig never having written the
+				// top-level preflight.log (e.g. an unexpected early failure),
+				// so copyPreflightLogIntoDir has nothing to copy.
+				Expect(os.Remove(filepath.Join(tmpDir, "preflight.log"))).To(Succeed())
+
+				_, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnNil), logr.Discard(), src)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("unable to copy preflight log into artifacts directory"))
+			})
 		})
 		Context("when an existing artifacts.tar already on disk", func() {
 			BeforeEach(func() {
