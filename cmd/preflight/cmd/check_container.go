@@ -195,6 +195,17 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 			src := artifactsWriter.Path()
 			var buf bytes.Buffer
 
+			// The offline log file is written once to the top-level artifacts
+			// directory (see root.go's preRunConfig), not to this
+			// platform-specific directory, so it would otherwise be silently
+			// excluded from artifacts.tar below. Copy it in here so it's
+			// included - submit-offline-artifacts requires a preflight.log
+			// alongside cert-image.json/results.json/rpm-manifest.json in
+			// order to submit results to Red Hat.
+			if err := copyPreflightLogIntoDir(cfg.Artifacts, src, cfg.LogFile); err != nil {
+				return fmt.Errorf("unable to copy preflight log into artifacts directory: %w", err)
+			}
+
 			// check to see if a tar file already exist to account for someone re-running
 			exists, err := artifactsWriter.Exists(check.DefaultArtifactsTarFileName)
 			if err != nil {
@@ -414,6 +425,36 @@ func artifactsTar(ctx context.Context, src string, w io.Writer) error {
 			//coverage:ignore
 			return err
 		}
+	}
+
+	return nil
+}
+
+// copyPreflightLogIntoDir copies the preflight log file from artifactsDir
+// (where root.go's preRunConfig writes it once, at the top level, when
+// --offline is set) into dst (a platform-specific artifacts subdirectory),
+// so that a subsequent call to artifactsTar(dst, ...) includes it. logFile
+// is the configured "logfile" value (e.g. cfg.LogFile), which may include a
+// path - only its base name is used, matching root.go's own behavior.
+func copyPreflightLogIntoDir(artifactsDir, dst, logFile string) error {
+	logBase := filepath.Base(logFile)
+	src := filepath.Join(artifactsDir, logBase)
+
+	in, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("could not open preflight log %s: %w", src, err)
+	}
+	defer in.Close()
+
+	out, err := os.Create(filepath.Join(dst, logBase))
+	if err != nil {
+		return fmt.Errorf("could not create preflight log copy in %s: %w", dst, err)
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, in); err != nil {
+		//coverage:ignore
+		return fmt.Errorf("could not copy preflight log into %s: %w", dst, err)
 	}
 
 	return nil

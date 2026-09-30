@@ -281,8 +281,10 @@ var _ = Describe("Check Container Command", func() {
 
 	Context("when running the check container subcommand with a offline config provided", func() {
 		Context("with all of the required parameters", func() {
+			var tmpDir string
 			BeforeEach(func() {
-				tmpDir, err := os.MkdirTemp("", "preflight-submit-test-*")
+				var err error
+				tmpDir, err = os.MkdirTemp("", "preflight-submit-test-*")
 				Expect(err).ToNot(HaveOccurred())
 				DeferCleanup(os.RemoveAll, tmpDir)
 
@@ -298,6 +300,15 @@ var _ = Describe("Check Container Command", func() {
 				Expect(err).ToNot(HaveOccurred())
 				defer f2.Close()
 
+				// root.go's preRunConfig writes the offline log file once, at
+				// the top-level artifacts directory (not the per-platform
+				// directory tarred above) - simulate that here since these
+				// tests invoke checkContainerCmd directly, bypassing rootCmd's
+				// PersistentPreRun.
+				logFile, err := os.Create(filepath.Join(tmpDir, "preflight.log"))
+				Expect(err).ToNot(HaveOccurred())
+				defer logFile.Close()
+
 				viper.Instance().Set("artifacts", tmpDir)
 				DeferCleanup(viper.Instance().Set, "artifacts", artifacts.DefaultArtifactsDir)
 
@@ -308,6 +319,14 @@ var _ = Describe("Check Container Command", func() {
 				out, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnNil), logr.Discard(), src)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(out).ToNot(BeNil())
+			})
+			It("should include the preflight log in the resulting artifacts.tar", func() {
+				_, err := executeCommandWithLogger(checkContainerCmd(mockRunPreflightReturnNil), logr.Discard(), src)
+				Expect(err).ToNot(HaveOccurred())
+
+				tarPath := filepath.Join(tmpDir, goruntime.GOARCH, check.DefaultArtifactsTarFileName)
+				names := tarEntryNames(tarPath)
+				Expect(names).To(ContainElement("preflight.log"))
 			})
 		})
 		Context("when an existing artifacts.tar already on disk", func() {
@@ -332,6 +351,13 @@ var _ = Describe("Check Container Command", func() {
 				f3, err := os.Create(filepath.Join(tmpDir, check.DefaultArtifactsTarFileName))
 				Expect(err).ToNot(HaveOccurred())
 				defer f3.Close()
+
+				// root.go's preRunConfig writes the offline log file once, at
+				// the top-level artifacts directory - simulate that here (see
+				// the other offline Context above for more detail).
+				logFile, err := os.Create(filepath.Join(tmpDir, "preflight.log"))
+				Expect(err).ToNot(HaveOccurred())
+				defer logFile.Close()
 
 				viper.Instance().Set("artifacts", tmpDir)
 				DeferCleanup(viper.Instance().Set, "artifacts", artifacts.DefaultArtifactsDir)
@@ -390,6 +416,55 @@ var _ = Describe("Check Container Command", func() {
 			It("should continue and not tar any files", func() {
 				err := artifactsTar(context.Background(), tmpDir, &buf)
 				Expect(err).To(BeNil())
+			})
+		})
+	})
+
+	Context("when copyPreflightLogIntoDir is called directly", func() {
+		var artifactsDir, dstDir string
+		BeforeEach(func() {
+			var err error
+			artifactsDir, err = os.MkdirTemp("", "preflight-log-copy-test-*")
+			Expect(err).ToNot(HaveOccurred())
+			DeferCleanup(os.RemoveAll, artifactsDir)
+
+			dstDir, err = os.MkdirTemp("", "preflight-log-copy-dst-*")
+			Expect(err).ToNot(HaveOccurred())
+			DeferCleanup(os.RemoveAll, dstDir)
+		})
+		Context("and the source log file does not exist", func() {
+			It("should return an error", func() {
+				err := copyPreflightLogIntoDir(artifactsDir, dstDir, "preflight.log")
+				Expect(err).To(HaveOccurred())
+			})
+		})
+		Context("and the source log file exists", func() {
+			BeforeEach(func() {
+				Expect(os.WriteFile(filepath.Join(artifactsDir, "preflight.log"), []byte("some log content"), 0o644)).To(Succeed())
+			})
+			It("should copy it into dst", func() {
+				err := copyPreflightLogIntoDir(artifactsDir, dstDir, "preflight.log")
+				Expect(err).ToNot(HaveOccurred())
+
+				contents, err := os.ReadFile(filepath.Join(dstDir, "preflight.log"))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(contents)).To(Equal("some log content"))
+			})
+			It("should use only the base name of a logFile that includes a path", func() {
+				err := copyPreflightLogIntoDir(artifactsDir, dstDir, filepath.Join("some", "nested", "path", "preflight.log"))
+				Expect(err).ToNot(HaveOccurred())
+
+				_, err = os.ReadFile(filepath.Join(dstDir, "preflight.log"))
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+		Context("and dst does not exist", func() {
+			BeforeEach(func() {
+				Expect(os.WriteFile(filepath.Join(artifactsDir, "preflight.log"), []byte("some log content"), 0o644)).To(Succeed())
+			})
+			It("should return an error", func() {
+				err := copyPreflightLogIntoDir(artifactsDir, filepath.Join(dstDir, "does-not-exist"), "preflight.log")
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
