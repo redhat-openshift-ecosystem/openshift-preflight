@@ -48,7 +48,7 @@ on a disconnected host, copies it to a host with access to Red Hat services, and
 			if err := validateCertificationComponentID(cmd, args); err != nil {
 				return err
 			}
-			return validateSubmitOfflineArtifactsFlags(cmd, args)
+			return validateSubmitOfflineArtifactsFlags()
 		},
 		RunE: submitOfflineArtifactsRunE,
 	}
@@ -65,9 +65,9 @@ on a disconnected host, copies it to a host with access to Red Hat services, and
 // validateSubmitOfflineArtifactsFlags ensures the Pyxis credentials required
 // to submit are present, since submit-offline-artifacts always submits (there
 // is no dry-run mode). Legacy "ospid-" component ID normalization is already
-// handled by validateCertificationComponentID, which runs first as
-// checkContainerCmd's PersistentPreRunE.
-func validateSubmitOfflineArtifactsFlags(cmd *cobra.Command, args []string) error {
+// handled by validateCertificationComponentID, which is called explicitly
+// just before this in submitOfflineArtifactsCmd's PreRunE.
+func validateSubmitOfflineArtifactsFlags() error {
 	v := viper.Instance()
 
 	if v.GetString("certification_component_id") == "" {

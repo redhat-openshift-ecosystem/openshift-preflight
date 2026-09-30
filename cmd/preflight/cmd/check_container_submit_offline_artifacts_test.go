@@ -28,14 +28,14 @@ var _ = Describe("validateSubmitOfflineArtifactsFlags", func() {
 
 	It("errors when the certification component ID is missing", func() {
 		viper.Instance().Set("pyxis_api_token", "some-token")
-		err := validateSubmitOfflineArtifactsFlags(nil, nil)
+		err := validateSubmitOfflineArtifactsFlags()
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("certification component ID"))
 	})
 
 	It("errors when the pyxis API token is missing", func() {
 		viper.Instance().Set("certification_component_id", "abc123")
-		err := validateSubmitOfflineArtifactsFlags(nil, nil)
+		err := validateSubmitOfflineArtifactsFlags()
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("pyxis API Token"))
 	})
@@ -43,7 +43,7 @@ var _ = Describe("validateSubmitOfflineArtifactsFlags", func() {
 	It("succeeds when both are present", func() {
 		viper.Instance().Set("certification_component_id", "abc123")
 		viper.Instance().Set("pyxis_api_token", "some-token")
-		Expect(validateSubmitOfflineArtifactsFlags(nil, nil)).To(Succeed())
+		Expect(validateSubmitOfflineArtifactsFlags()).To(Succeed())
 	})
 })
 
