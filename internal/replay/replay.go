@@ -1,5 +1,5 @@
-// Package replay implements the "replay-submit" workflow: taking the
-// artifacts.tar produced by `preflight check container --offline` in a
+// Package replay implements the "submit-offline-artifacts" workflow: taking
+// the artifacts.tar produced by `preflight check container --offline` in a
 // disconnected environment, revalidating the BasedOnUbi check (which could
 // not reach Pyxis while offline) from a connected host, and submitting the
 // finalized results to Red Hat.
@@ -143,6 +143,18 @@ func Run(ctx context.Context, opts Options) (*Summary, error) {
 	}
 	logger.Info("results.json updated with revalidated BasedOnUbi outcome", "overallPassed", results.Passed)
 
+	// preflight.log (extracted above from opts.ArtifactsTarPath) still
+	// contains whatever BasedOnUbi logged during the original disconnected
+	// run - typically a network error, since Pyxis was unreachable offline.
+	// That entry is now stale/misleading relative to the outcome we just
+	// wrote to results.json above, so append a note recording what actually
+	// happened here, before this log is (optionally) submitted to Red Hat
+	// alongside the corrected results.
+	if err := appendRevalidationLogEntry(extractDir, basedOnUbiPassed); err != nil {
+		//coverage:ignore
+		return nil, err
+	}
+
 	summary := &Summary{
 		ExtractDir:      extractDir,
 		BasedOnUbiPased: basedOnUbiPassed,
@@ -159,6 +171,34 @@ func Run(ctx context.Context, opts Options) (*Summary, error) {
 	summary.Submitted = true
 
 	return summary, nil
+}
+
+// appendRevalidationLogEntry appends a note to preflight.log in dir recording
+// that BasedOnUbi was revalidated here and what the outcome was. The log was
+// extracted as-is from a disconnected preflight run, so it still contains
+// whatever BasedOnUbi logged at that time - typically a Pyxis connection
+// error, since Pyxis is unreachable while offline. Without this note, that
+// stale entry would be the only thing readers of the submitted log see for
+// BasedOnUbi, even though results.json (updated just before this is called)
+// reflects the real, revalidated outcome.
+func appendRevalidationLogEntry(dir string, basedOnUbiPassed bool) error {
+	f, err := os.OpenFile(filepath.Join(dir, "preflight.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return fmt.Errorf("could not open preflight.log to append revalidation note: %w", err)
+	}
+	defer f.Close()
+
+	_, err = fmt.Fprintf(f,
+		"time=%q level=info msg=\"submit-offline-artifacts: BasedOnUbi was revalidated from a connected host; this supersedes any earlier BasedOnUbi entry above, which was logged while offline\" passed=%v\n",
+		time.Now().Format(time.RFC3339),
+		basedOnUbiPassed,
+	)
+	if err != nil {
+		//coverage:ignore
+		return fmt.Errorf("could not append revalidation note to preflight.log: %w", err)
+	}
+
+	return nil
 }
 
 // readCertImage reads and unmarshals cert-image.json from dir.

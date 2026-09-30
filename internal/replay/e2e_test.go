@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
@@ -173,6 +174,36 @@ func fakePyxisGraphQLHandler(found bool) http.HandlerFunc {
 	}
 }
 
+// TestRun_CreatesOwnTempDirWhenExtractDirEmpty verifies that Run() creates
+// its own temporary extraction directory (via os.MkdirTemp) when
+// Options.ExtractDir is left empty, rather than requiring callers to always
+// supply one.
+func TestRun_CreatesOwnTempDirWhenExtractDirEmpty(t *testing.T) {
+	workDir := t.TempDir()
+	tarPath := buildFakeArtifactsTar(t, workDir)
+
+	fakeClient := &http.Client{Transport: localRoundTripper{handler: fakePyxisGraphQLHandler(true)}}
+
+	summary, err := Run(context.Background(), Options{
+		ArtifactsTarPath: tarPath,
+		// ExtractDir intentionally left empty.
+		PyxisHost:       "fake-pyxis.example.com",
+		PyxisHTTPClient: fakeClient,
+		Submit:          false,
+	})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	defer os.RemoveAll(summary.ExtractDir)
+
+	if summary.ExtractDir == "" {
+		t.Fatal("summary.ExtractDir is empty; Run() should have created and reported a temp directory")
+	}
+	if _, err := os.Stat(filepath.Join(summary.ExtractDir, check.DefaultTestResultsFilename)); err != nil {
+		t.Errorf("expected %s to have been extracted into the auto-created temp dir: %v", check.DefaultTestResultsFilename, err)
+	}
+}
+
 // TestRun_EndToEnd_BasedOnUbiPasses drives the full replay-submit pipeline -
 // extracting a fake offline artifacts.tar, querying a faked Pyxis that finds
 // a matching certified UBI layer, and verifying results.json on disk ends up
@@ -234,6 +265,24 @@ func TestRun_EndToEnd_BasedOnUbiPasses(t *testing.T) {
 	if !foundHasLicense {
 		t.Errorf("expected pre-existing HasLicense pass to be preserved, got %+v", got.Results.Passed)
 	}
+
+	// preflight.log, extracted as-is from the (fake) disconnected run, still
+	// says BasedOnUbi could not reach Pyxis. Run() must append a note
+	// documenting the real, revalidated outcome so that stale entry isn't
+	// the last/only word on BasedOnUbi in a log that might get submitted.
+	logContents, err := os.ReadFile(filepath.Join(extractDir, "preflight.log"))
+	if err != nil {
+		t.Fatalf("could not read preflight.log: %v", err)
+	}
+	if !strings.Contains(string(logContents), "fake preflight log") {
+		t.Errorf("expected the original offline log content to be preserved, got %q", logContents)
+	}
+	if !strings.Contains(string(logContents), "BasedOnUbi was revalidated") {
+		t.Errorf("expected a revalidation note appended to preflight.log, got %q", logContents)
+	}
+	if !strings.Contains(string(logContents), "passed=true") {
+		t.Errorf("expected the revalidation note to record passed=true, got %q", logContents)
+	}
 }
 
 // TestRun_EndToEnd_BasedOnUbiFails proves the failure path: when Pyxis finds
@@ -281,6 +330,24 @@ func TestRun_EndToEnd_BasedOnUbiFails(t *testing.T) {
 	}
 	if !foundFailed {
 		t.Errorf("expected BasedOnUbi in Failed, got %+v", got.Results.Failed)
+	}
+
+	logContents, err := os.ReadFile(filepath.Join(extractDir, "preflight.log"))
+	if err != nil {
+		t.Fatalf("could not read preflight.log: %v", err)
+	}
+	if !strings.Contains(string(logContents), "passed=false") {
+		t.Errorf("expected the revalidation note to record passed=false, got %q", logContents)
+	}
+}
+
+// TestAppendRevalidationLogEntry_MissingDir proves a helpful error is
+// returned when the extraction directory doesn't exist (e.g. was removed
+// out from under Run()), rather than a panic.
+func TestAppendRevalidationLogEntry_MissingDir(t *testing.T) {
+	err := appendRevalidationLogEntry(filepath.Join(t.TempDir(), "does-not-exist"), true)
+	if err == nil {
+		t.Fatal("expected an error when the extraction directory does not exist")
 	}
 }
 
