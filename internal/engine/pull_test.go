@@ -232,6 +232,26 @@ var _ = Describe("pullLayers", func() {
 		DeferCleanup(func() { pullLayerRetryBaseDelay = origDelay })
 	})
 
+	It("limits retry delays to the configured maximum", func() {
+		// Start above the maximum so the retry would wait too long without the limit.
+		pullLayerRetryBaseDelay = pullLayerRetryMaxDelay + time.Second
+
+		originalWait := pullLayerWait
+		var gotDelay time.Duration
+		// Record the delay and return immediately.
+		pullLayerWait = func(delay time.Duration) <-chan time.Time {
+			gotDelay = delay
+			return time.After(0)
+		}
+		DeferCleanup(func() { pullLayerWait = originalWait })
+
+		layer := newFakeLayer([]byte("hello"), 1)
+		err := pullLayerWithRetry(context.Background(), logr.Discard(), layer, &fakeCache{})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(gotDelay).To(Equal(pullLayerRetryMaxDelay))
+		Expect(layer.Calls()).To(Equal(2))
+	})
+
 	It("succeeds on the first attempt when the layer downloads cleanly", func() {
 		layer := newFakeLayer([]byte("hello"), 0)
 		img, err := mutate.AppendLayers(empty.Image, layer)
@@ -350,6 +370,16 @@ var _ = Describe("pullLayers", func() {
 		Expect(err.Error()).To(ContainSubstring("simulated connection reset mid-stream"))
 	})
 
+	It("reports bytes read when layer content does not match its digest", func() {
+		layer := newCorruptThenCleanLayer([]byte("hello"), []byte("bad"), 1)
+		diffID, err := layer.DiffID()
+		Expect(err).ToNot(HaveOccurred())
+
+		err = pullLayerOnce(layer, diffID)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("read 3 bytes"))
+	})
+
 	It("returns a wrapped error when a layer's DiffID cannot be determined", func() {
 		layer := diffIDErrLayer{Layer: static.NewLayer([]byte("hello"), types.DockerLayer)}
 		err := pullLayerWithRetry(context.Background(), logr.Discard(), layer, &fakeCache{})
@@ -407,11 +437,15 @@ var _ = Describe("pullLayers", func() {
 		}
 	})
 
-	It("logs but does not fail the retry when clearing the cache entry itself errors", func() {
+	It("returns an error when clearing the cache entry itself fails", func() {
 		layer := newFakeLayer([]byte("hello"), 1)
 		fc := &fakeCache{deleteErr: errors.New("simulated disk error clearing cache entry")}
 
-		Expect(pullLayerWithRetry(context.Background(), logr.Discard(), layer, fc)).To(Succeed())
+		err := pullLayerWithRetry(context.Background(), logr.Discard(), layer, fc)
+		Expect(err).To(HaveOccurred())
+		Expect(errors.Is(err, fc.deleteErr)).To(BeTrue())
+		Expect(err).To(MatchError(fc.deleteErr))
+		Expect(layer.Calls()).To(Equal(1))
 		Expect(fc.Deleted()).To(HaveLen(1))
 	})
 
