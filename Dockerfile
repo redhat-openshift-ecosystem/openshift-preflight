@@ -24,8 +24,27 @@ COPY . /go/src/preflight
 WORKDIR /go/src/preflight
 RUN make build RELEASE_TAG=${release_tag}
 
-# ubi10-micro:latest
-FROM registry.access.redhat.com/ubi10/ubi-micro:latest
+# Assemble runtime packages outside UBI Micro because it does not include a
+# package manager.
+FROM registry.access.redhat.com/ubi10/ubi-micro:latest AS runtime-base
+
+FROM registry.access.redhat.com/ubi10/ubi:latest AS runtime-packages
+COPY --from=runtime-base / /mnt/rootfs/
+
+# CA certificates enable HTTPS access to registries and Pyxis.
+# tar and gzip package Preflight artifacts for OpenShift CI.
+RUN dnf install -y \
+      --installroot=/mnt/rootfs \
+      --releasever=10 \
+      --setopt=install_weak_deps=False \
+      --nodocs \
+      ca-certificates \
+      gzip \
+      tar && \
+    dnf clean all --installroot=/mnt/rootfs && \
+    rm -rf /mnt/rootfs/var/cache/dnf /mnt/rootfs/var/cache/yum
+
+FROM runtime-base
 ARG quay_expiration
 ARG release_tag
 ARG preflight_commit
@@ -51,12 +70,11 @@ LABEL quay.expires-after=${quay_expiration}
 LABEL ARCH=${ARCH}
 LABEL OS=${OS}
 
+# Add the runtime packages installed for UBI Micro.
+COPY --from=runtime-packages /mnt/rootfs/ /
+
 # Add preflight binary
 COPY --from=builder /go/src/preflight/preflight /usr/local/bin/preflight
-
-# UBI Micro does not include a CA trust store, which is required for registry
-# and Pyxis HTTPS connections.
-COPY --from=builder /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /etc/pki/tls/certs/ca-bundle.crt
 
 #copy license
 COPY LICENSE /licenses/LICENSE
