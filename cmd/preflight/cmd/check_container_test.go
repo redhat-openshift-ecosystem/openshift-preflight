@@ -477,6 +477,24 @@ var _ = Describe("Check Container Command", func() {
 				Expect(err).To(HaveOccurred())
 			})
 		})
+		Context("and logFile has a custom, non-default name (e.g. --logfile custom.log)", func() {
+			BeforeEach(func() {
+				Expect(os.WriteFile(filepath.Join(artifactsDir, "custom.log"), []byte("custom log content"), 0o644)).To(Succeed())
+			})
+			It("should still write the destination as DefaultLogFile (preflight.log), with 0o600 permissions", func() {
+				err := copyPreflightLogIntoDir(artifactsDir, dstDir, "custom.log")
+				Expect(err).ToNot(HaveOccurred())
+
+				destPath := filepath.Join(dstDir, DefaultLogFile)
+				contents, err := os.ReadFile(destPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(contents)).To(Equal("custom log content"))
+
+				info, err := os.Stat(destPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(info.Mode().Perm()).To(Equal(os.FileMode(0o600)))
+			})
+		})
 	})
 	Context("when PFLT_KONFLUX env is set to true", func() {
 		BeforeEach(func() {

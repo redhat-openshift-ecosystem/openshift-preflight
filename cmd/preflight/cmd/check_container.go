@@ -195,13 +195,6 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 			src := artifactsWriter.Path()
 			var buf bytes.Buffer
 
-			// The offline log file is written once to the top-level artifacts
-			// directory (see root.go's preRunConfig), not to this
-			// platform-specific directory, so it would otherwise be silently
-			// excluded from artifacts.tar below. Copy it in here so it's
-			// included - submit-offline-artifacts requires a preflight.log
-			// alongside cert-image.json/results.json/rpm-manifest.json in
-			// order to submit results to Red Hat.
 			if err := copyPreflightLogIntoDir(cfg.Artifacts, src, cfg.LogFile); err != nil {
 				return fmt.Errorf("unable to copy preflight log into artifacts directory: %w", err)
 			}
@@ -435,10 +428,14 @@ func artifactsTar(ctx context.Context, src string, w io.Writer) error {
 // --offline is set) into dst (a platform-specific artifacts subdirectory),
 // so that a subsequent call to artifactsTar(dst, ...) includes it. logFile
 // is the configured "logfile" value (e.g. cfg.LogFile), which may include a
-// path - only its base name is used, matching root.go's own behavior.
+// path and/or a custom name set via --logfile - only its base name is used
+// to find the source file, matching root.go's own behavior. Regardless of
+// what logFile is named, the copy is always written as DefaultLogFile, since
+// submit-offline-artifacts (and other consumers of the tar) expect to find
+// preflight.log by that exact name.
 func copyPreflightLogIntoDir(artifactsDir, dst, logFile string) error {
-	logBase := filepath.Base(logFile)
-	src := filepath.Join(artifactsDir, logBase)
+	src := filepath.Join(artifactsDir, filepath.Base(logFile))
+	destinationPath := filepath.Join(dst, DefaultLogFile)
 
 	in, err := os.Open(src)
 	if err != nil {
@@ -446,7 +443,11 @@ func copyPreflightLogIntoDir(artifactsDir, dst, logFile string) error {
 	}
 	defer in.Close()
 
-	out, err := os.Create(filepath.Join(dst, logBase))
+	out, err := os.OpenFile(
+		destinationPath,
+		os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
+		0o600,
+	)
 	if err != nil {
 		return fmt.Errorf("could not create preflight log copy in %s: %w", dst, err)
 	}
