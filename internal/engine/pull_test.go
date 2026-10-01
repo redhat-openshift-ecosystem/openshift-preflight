@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // fakeLayer wraps a real, static v1.Layer so that Digest/DiffID/Size/MediaType
@@ -232,6 +233,28 @@ var _ = Describe("pullLayers", func() {
 		DeferCleanup(func() { pullLayerRetryBaseDelay = origDelay })
 	})
 
+	It("caps positive-jitter exponential retry delays", func() {
+		// Even the lowest jitter value must exceed the cap, so the clamp branch
+		// is exercised without depending on random output.
+		pullLayerRetryBaseDelay = 40 * time.Second
+		backoff := wait.Backoff{
+			Duration: pullLayerRetryBaseDelay,
+			Factor:   2,
+			Jitter:   pullLayerRetryJitter,
+			Steps:    pullLayerMaxAttempts - 1,
+			Cap:      pullLayerRetryMaxDelay,
+		}
+
+		for attempt := 1; attempt <= 10; attempt++ {
+			delay := backoff.Step()
+			if delay > pullLayerRetryMaxDelay {
+				delay = pullLayerRetryMaxDelay
+			}
+			Expect(delay).To(BeNumerically(">", 0))
+			Expect(delay).To(BeNumerically("<=", pullLayerRetryMaxDelay))
+		}
+	})
+
 	It("succeeds on the first attempt when the layer downloads cleanly", func() {
 		layer := newFakeLayer([]byte("hello"), 0)
 		img, err := mutate.AppendLayers(empty.Image, layer)
@@ -350,6 +373,16 @@ var _ = Describe("pullLayers", func() {
 		Expect(err.Error()).To(ContainSubstring("simulated connection reset mid-stream"))
 	})
 
+	It("reports bytes read when layer content does not match its digest", func() {
+		layer := newCorruptThenCleanLayer([]byte("hello"), []byte("bad"), 1)
+		diffID, err := layer.DiffID()
+		Expect(err).ToNot(HaveOccurred())
+
+		err = pullLayerOnce(layer, diffID)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("read 3 bytes"))
+	})
+
 	It("returns a wrapped error when a layer's DiffID cannot be determined", func() {
 		layer := diffIDErrLayer{Layer: static.NewLayer([]byte("hello"), types.DockerLayer)}
 		err := pullLayerWithRetry(context.Background(), logr.Discard(), layer, &fakeCache{})
@@ -407,11 +440,15 @@ var _ = Describe("pullLayers", func() {
 		}
 	})
 
-	It("logs but does not fail the retry when clearing the cache entry itself errors", func() {
+	It("returns an error when clearing the cache entry itself fails", func() {
 		layer := newFakeLayer([]byte("hello"), 1)
 		fc := &fakeCache{deleteErr: errors.New("simulated disk error clearing cache entry")}
 
-		Expect(pullLayerWithRetry(context.Background(), logr.Discard(), layer, fc)).To(Succeed())
+		err := pullLayerWithRetry(context.Background(), logr.Discard(), layer, fc)
+		Expect(err).To(HaveOccurred())
+		Expect(errors.Is(err, fc.deleteErr)).To(BeTrue())
+		Expect(err.Error()).To(ContainSubstring("failed to clear cached layer"))
+		Expect(layer.Calls()).To(Equal(1))
 		Expect(fc.Deleted()).To(HaveLen(1))
 	})
 

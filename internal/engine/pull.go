@@ -10,6 +10,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/cache"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
@@ -26,15 +27,20 @@ const (
 	// (remote.WithRetryBackoff, etc.) only retries the initial HTTP round trip; it
 	// does not retry a read that fails partway through streaming a layer's body.
 	// This is the layer of retry that covers that gap.
-	pullLayerMaxAttempts = 3
+	pullLayerMaxAttempts = 5
 	// pullLayerConcurrency bounds how many layers are pulled at the same time,
 	// mirroring crane's own default job concurrency.
 	pullLayerConcurrency = 4
+	// pullLayerRetryMaxDelay prevents a transient registry failure from causing
+	// an unbounded retry delay if the retry budget is increased later.
+	pullLayerRetryMaxDelay = 30 * time.Second
+	// pullLayerRetryJitter spreads concurrent retries over a small time window.
+	pullLayerRetryJitter = 0.2
 )
 
 // pullLayerRetryBaseDelay is the initial backoff delay between failed
-// attempts to pull a single layer. Subsequent attempts double this delay.
-// It's a var (rather than a const) so tests can shrink it.
+// attempts to pull a single layer. It's a var (rather than a const) so tests
+// can shrink it.
 var pullLayerRetryBaseDelay = 2 * time.Second
 
 // pullLayers eagerly downloads the full, uncompressed content of every layer in
@@ -84,7 +90,14 @@ func pullLayerWithRetry(ctx context.Context, logger logr.Logger, layer v1.Layer,
 		return fmt.Errorf("failed to determine layer diff id: %w", err)
 	}
 
-	delay := pullLayerRetryBaseDelay
+	retryBackoff := wait.Backoff{
+		Duration: pullLayerRetryBaseDelay,
+		Factor:   2,
+		Jitter:   pullLayerRetryJitter,
+		Steps:    pullLayerMaxAttempts - 1,
+		Cap:      pullLayerRetryMaxDelay,
+	}
+
 	var lastErr error
 	for attempt := 1; attempt <= pullLayerMaxAttempts; attempt++ {
 		if err := ctx.Err(); err != nil {
@@ -97,6 +110,7 @@ func pullLayerWithRetry(ctx context.Context, logger logr.Logger, layer v1.Layer,
 			if delErr := layerCache.Delete(diffID); delErr != nil && !errors.Is(delErr, cache.ErrNotFound) {
 				logger.V(log.DBG).Info("failed to clear cached layer after failed pull attempt",
 					"diffID", diffID.String(), "reason", delErr.Error())
+				return fmt.Errorf("failed to clear cached layer %s after failed pull attempt: %w", diffID, errors.Join(err, delErr))
 			}
 
 			reason := "failed to pull layer"
@@ -113,12 +127,13 @@ func pullLayerWithRetry(ctx context.Context, logger logr.Logger, layer v1.Layer,
 			logger.V(log.DBG).Info(reason+", will retry",
 				"diffID", diffID.String(), "attempt", attempt, "maxAttempts", pullLayerMaxAttempts, "reason", err.Error())
 
+			delay := min(retryBackoff.Step(), pullLayerRetryMaxDelay)
+
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
 			case <-time.After(delay):
 			}
-			delay *= 2
 			continue
 		}
 
@@ -137,13 +152,13 @@ func pullLayerOnce(layer v1.Layer, diffID v1.Hash) error {
 	}
 	defer rc.Close()
 
-	got, _, err := v1.SHA256(rc)
+	got, bytesRead, err := v1.SHA256(rc)
 	if err != nil {
 		return err
 	}
 
 	if got != diffID {
-		return fmt.Errorf("%w: computed %s, expected %s", errLayerContentMismatch, got, diffID)
+		return fmt.Errorf("%w: read %d bytes, computed %s, expected %s", errLayerContentMismatch, bytesRead, got, diffID)
 	}
 
 	return nil
