@@ -195,6 +195,10 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 			src := artifactsWriter.Path()
 			var buf bytes.Buffer
 
+			if err := copyPreflightLogIntoDir(cfg.Artifacts, src, cfg.LogFile); err != nil {
+				return fmt.Errorf("unable to copy preflight log into artifacts directory: %w", err)
+			}
+
 			// check to see if a tar file already exist to account for someone re-running
 			exists, err := artifactsWriter.Exists(check.DefaultArtifactsTarFileName)
 			if err != nil {
@@ -414,6 +418,44 @@ func artifactsTar(ctx context.Context, src string, w io.Writer) error {
 			//coverage:ignore
 			return err
 		}
+	}
+
+	return nil
+}
+
+// copyPreflightLogIntoDir copies the preflight log file from artifactsDir
+// (where root.go's preRunConfig writes it once, at the top level, when
+// --offline is set) into dst (a platform-specific artifacts subdirectory),
+// so that a subsequent call to artifactsTar(dst, ...) includes it. logFile
+// is the configured "logfile" value (e.g. cfg.LogFile), which may include a
+// path and/or a custom name set via --logfile - only its base name is used
+// to find the source file, matching root.go's own behavior. Regardless of
+// what logFile is named, the copy is always written as DefaultLogFile, since
+// submit-offline-artifacts (and other consumers of the tar) expect to find
+// preflight.log by that exact name.
+func copyPreflightLogIntoDir(artifactsDir, dst, logFile string) error {
+	src := filepath.Join(artifactsDir, filepath.Base(logFile))
+	destinationPath := filepath.Join(dst, DefaultLogFile)
+
+	in, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("could not open preflight log %s: %w", src, err)
+	}
+	defer in.Close()
+
+	out, err := os.OpenFile(
+		destinationPath,
+		os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
+		0o600,
+	)
+	if err != nil {
+		return fmt.Errorf("could not create preflight log copy in %s: %w", dst, err)
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, in); err != nil {
+		//coverage:ignore
+		return fmt.Errorf("could not copy preflight log into %s: %w", dst, err)
 	}
 
 	return nil
