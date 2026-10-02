@@ -47,6 +47,15 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 		Args:  checkContainerPositionalArgs,
 		// this fmt.Sprintf is in place to keep spacing consistent with cobras two spaces that's used in: Usage, Flags, etc
 		Example: fmt.Sprintf("  %s", "preflight check container quay.io/repo-name/container-name:version"),
+		// NOTE: this is intentionally PreRunE, not PersistentPreRunE. cobra
+		// only invokes the *nearest* PersistentPreRunE found by walking up
+		// from the actually-invoked command, so making this persistent would
+		// shadow rootCmd's own PersistentPreRun (which injects the logr
+		// logger into the context) for any deeper sub-command, such as
+		// submit-offline-artifacts - breaking logging for it entirely.
+		// Sub-commands that need this same certification-component-id
+		// validation call validateCertificationComponentID explicitly from
+		// their own PreRunE instead (see submitOfflineArtifactsCmd).
 		PreRunE: validateCertificationComponentID,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return checkContainerRunE(cmd, args, runpreflight)
@@ -73,19 +82,31 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 	// Make --submit mutually exclusive to --insecure
 	checkContainerCmd.MarkFlagsMutuallyExclusive("submit", "insecure")
 
-	flags.String("pyxis-api-token", "", "API token for Pyxis authentication (env: PFLT_PYXIS_API_TOKEN)")
-	_ = viper.BindPFlag("pyxis_api_token", flags.Lookup("pyxis-api-token"))
+	// These four are registered as PERSISTENT flags (rather than on the local
+	// `flags` set above) specifically so that sub-commands - namely
+	// submit-offline-artifacts - inherit the exact same flag objects and
+	// viper key bindings instead of needing their own duplicate flags/keys.
+	// Binding a second, independent flag object to these same viper keys
+	// from a sub-command would silently overwrite this binding for the
+	// lifetime of the process (command construction happens once at
+	// startup), breaking `check container --submit`, so any sub-command
+	// needing Pyxis credentials must reuse these persistent flags rather
+	// than declaring its own.
+	persistentFlags := checkContainerCmd.PersistentFlags()
 
-	flags.String("pyxis-host", "", fmt.Sprintf("Host to use for Pyxis submissions. This will override Pyxis Env. Only set this if you know what you are doing.\n"+
+	persistentFlags.String("pyxis-api-token", "", "API token for Pyxis authentication (env: PFLT_PYXIS_API_TOKEN)")
+	_ = viper.BindPFlag("pyxis_api_token", persistentFlags.Lookup("pyxis-api-token"))
+
+	persistentFlags.String("pyxis-host", "", fmt.Sprintf("Host to use for Pyxis submissions. This will override Pyxis Env. Only set this if you know what you are doing.\n"+
 		"If you do set it, it should include just the host, and the URI path. (env: PFLT_PYXIS_HOST)"))
-	_ = viper.BindPFlag("pyxis_host", flags.Lookup("pyxis-host"))
+	_ = viper.BindPFlag("pyxis_host", persistentFlags.Lookup("pyxis-host"))
 
-	flags.String("pyxis-env", check.DefaultPyxisEnv, "Env to use for Pyxis submissions.")
-	_ = viper.BindPFlag("pyxis_env", flags.Lookup("pyxis-env"))
+	persistentFlags.String("pyxis-env", check.DefaultPyxisEnv, "Env to use for Pyxis submissions.")
+	_ = viper.BindPFlag("pyxis_env", persistentFlags.Lookup("pyxis-env"))
 
-	flags.String("certification-component-id", "", fmt.Sprintf("Certification component ID from connect.redhat.com/component/view/{certification-component-id}/images\n"+
+	persistentFlags.String("certification-component-id", "", fmt.Sprintf("Certification component ID from connect.redhat.com/component/view/{certification-component-id}/images\n"+
 		"URL paramater. This value may differ from the component PID on the overview page. (env: PFLT_CERTIFICATION_COMPONENT_ID)"))
-	_ = viper.BindPFlag("certification_component_id", flags.Lookup("certification-component-id"))
+	_ = viper.BindPFlag("certification_component_id", persistentFlags.Lookup("certification-component-id"))
 
 	flags.String("platform", rt.GOARCH, "Architecture of image to pull. Defaults to runtime platform.")
 	_ = viper.BindPFlag("platform", flags.Lookup("platform"))
@@ -93,6 +114,8 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 	_ = viper.BindEnv("cpuprofile")
 	_ = viper.BindEnv("memprofile")
 	_ = viper.BindEnv("tempDir")
+
+	checkContainerCmd.AddCommand(submitOfflineArtifactsCmd())
 
 	return checkContainerCmd
 }
