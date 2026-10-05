@@ -206,6 +206,61 @@ func pyxisGraphqlLayerHandler(ctx context.Context) http.HandlerFunc {
 	}
 }
 
+func pyxisGraphqlCertifiedRepositoriesHandler(ctx context.Context) http.HandlerFunc {
+	logger := logr.FromContextOrDiscard(ctx)
+	return func(response http.ResponseWriter, request *http.Request) {
+		logger.V(log.TRC).Info("in the graphql CertifiedRepositories handler")
+		response.Header().Set("Content-Type", "application/json")
+		if request.Body != nil {
+			defer request.Body.Close()
+		}
+		mustWrite(response, `{
+		"data":{
+			"find_images":{
+				"error":null,
+				"total":1,
+				"page":0,
+				"data":[
+					{
+						"_id":"image-1",
+						"repositories":[
+							{
+								"registry":"registry.access.redhat.com",
+								"repository":"ubi9/ubi",
+								"edges":{
+									"repository":{
+										"error":null,
+										"data":{
+											"_id":"repo-1",
+											"registry":"registry.access.redhat.com",
+											"repository":"ubi9/ubi",
+											"eol_date":null,
+											"release_categories":["Generally Available"]
+										}
+									}
+								}
+							}
+						]
+					}
+				]
+			}
+		}
+	}`)
+	}
+}
+
+func pyxisGraphqlCertifiedRepositoriesErrorHandler(ctx context.Context) http.HandlerFunc {
+	logger := logr.FromContextOrDiscard(ctx)
+	return func(response http.ResponseWriter, request *http.Request) {
+		logger.V(log.TRC).Info("in the graphql CertifiedRepositories error handler")
+		response.Header().Set("Content-Type", "application/json")
+		if request.Body != nil {
+			defer request.Body.Close()
+		}
+		mustWrite(response, `{"data":{"find_images":{"error":null,"data":[{"_id":"image-1","repositories":[{"registry":"registry.access.redhat.com","repository":"ubi9/ubi","edges":{"repository":{"error":{"status":404,"detail":"repository not found"},"data":null}}}]}]}}}`)
+	}
+}
+
 func pyxisGraphqlFindImagesHandler(ctx context.Context) http.HandlerFunc {
 	logger := logr.FromContextOrDiscard(ctx)
 	return func(response http.ResponseWriter, request *http.Request) {

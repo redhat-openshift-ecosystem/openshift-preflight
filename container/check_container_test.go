@@ -86,7 +86,7 @@ var _ = Describe("Container Check Execution", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(chk.policy).To(Equal("container"))
 			Expect(chk.resolved).To(Equal(true))
-			Expect(len(chk.checks)).To(Equal(10))
+			Expect(len(chk.checks)).To(Equal(11))
 		})
 
 		It("Should list checks without issue", func() {
@@ -94,7 +94,7 @@ var _ = Describe("Container Check Execution", func() {
 			policy, checks, err := chk.List(ctx)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(policy).To(Equal("container"))
-			Expect(len(checks)).To(Equal(10))
+			Expect(len(checks)).To(Equal(11))
 		})
 
 		It("Should run without issue", func() {

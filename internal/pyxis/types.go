@@ -104,6 +104,14 @@ type CertProject struct {
 	Type                string    `json:"type,omitempty"` // required
 }
 
+type CertRepository struct {
+	ID                string     `json:"_id,omitempty"`
+	Registry          string     `json:"registry,omitempty"`
+	Repository        string     `json:"repository,omitempty"`
+	EOLDate           *time.Time `json:"eol_date,omitempty"`
+	ReleaseCategories []string   `json:"release_categories,omitempty"`
+}
+
 func (cp CertProject) ScratchProject() bool {
 	// ScratchProject returns true if the CertProject is designated Scratch in Pyxis.
 	return cp.Container.Type == "scratch" || cp.Container.OsContentType == "Scratch Image"
