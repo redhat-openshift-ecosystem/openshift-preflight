@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"archive/tar"
 	"errors"
 	"os"
 	"path/filepath"
@@ -30,4 +31,24 @@ type errWriter int
 
 func (errWriter) Write(p []byte) (n int, err error) {
 	return 0, errors.New("test error")
+}
+
+// tarEntryNames returns the base names of every entry in the tar file at
+// path, for asserting on artifacts.tar contents in tests.
+func tarEntryNames(path string) []string {
+	f, err := os.Open(path)
+	Expect(err).ToNot(HaveOccurred())
+	defer f.Close()
+
+	var names []string
+	tr := tar.NewReader(f)
+	for {
+		hdr, err := tr.Next()
+		if err != nil {
+			break
+		}
+		names = append(names, hdr.Name)
+	}
+
+	return names
 }
