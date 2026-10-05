@@ -78,7 +78,7 @@ func (p *pyxisClient) CertifiedImagesContainingLayers(ctx context.Context, uncom
 	// variables to feed to our graphql filter
 	variables := map[string]any{
 		"contImageLayers": layerIds,
-		"registries":      []graphql.String{"registry.access.redhat.com"},
+		"registries":      []graphql.String{accessRegistry},
 	}
 
 	// make our query
@@ -92,7 +92,7 @@ func (p *pyxisClient) CertifiedImagesContainingLayers(ctx context.Context, uncom
 	err := client.Query(ctx, &query, variables)
 	if err != nil {
 		//coverage:ignore
-		return nil, fmt.Errorf("error while executing layers query: %v", err)
+		return nil, fmt.Errorf("error while executing layers query: %w", err)
 	}
 
 	images := make([]CertImage, 0, len(query.FindImages.ContainerImage))

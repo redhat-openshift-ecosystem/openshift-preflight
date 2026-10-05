@@ -404,6 +404,7 @@ var _ = Describe("Check Name Queries", func() {
 			"HasModifiedFiles",
 			"BasedOnUbi",
 			"HasProhibitedContainerName",
+			"HasSupportedRedHatBaseImage",
 		}),
 		Entry("default operator policy", OperatorPolicy, []string{
 			"DeployableByOLM",
@@ -441,6 +442,7 @@ var _ = Describe("Check Name Queries", func() {
 			"HasModifiedFiles",
 			"BasedOnUbi",
 			"HasProhibitedContainerName",
+			"HasSupportedRedHatBaseImage",
 		}),
 		Entry("konflux container policy", KonfluxContainerPolicy, []string{
 			"HasLicense",
