@@ -60,7 +60,7 @@ on a disconnected host, copies it to a host with access to Red Hat services, and
 	flags := cmd.Flags()
 	viper := viper.Instance()
 
-	flags.String("extract-dir", "", "Directory to extract the artifacts tarball into. Defaults to a temporary directory.")
+	flags.String("extract-dir", "", "Directory to extract the artifacts tarball into. Defaults to the directory containing the tarball itself.")
 	_ = viper.BindPFlag("submit_offline_artifacts_extract_dir", flags.Lookup("extract-dir"))
 
 	return cmd

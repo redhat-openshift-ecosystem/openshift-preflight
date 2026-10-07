@@ -35,8 +35,13 @@ type Options struct {
 	// ArtifactsTarPath is the path to the artifacts.tar produced by
 	// `preflight check container --offline`.
 	ArtifactsTarPath string
-	// ExtractDir is where the tarball contents are extracted to. If empty, a
-	// temporary directory is created and used.
+	// ExtractDir is where the tarball contents are extracted to. If empty,
+	// defaults to the directory containing ArtifactsTarPath - the same
+	// directory `preflight check container --offline` already wrote
+	// cert-image.json/results.json/preflight.log into before taring them,
+	// so this intentionally overwrites those files in place with the
+	// (identical, until mutated below) extracted copies rather than hiding
+	// them in a temporary directory elsewhere.
 	ExtractDir string
 
 	// Pyxis / submission configuration - mirrors the flags already exposed
@@ -88,12 +93,15 @@ func Run(ctx context.Context, opts Options) (*Summary, error) {
 
 	extractDir := opts.ExtractDir
 	if extractDir == "" {
-		var err error
-		extractDir, err = os.MkdirTemp("", "preflight-replay-submit-")
-		if err != nil {
-			//coverage:ignore
-			return nil, fmt.Errorf("could not create temporary extraction directory: %w", err)
-		}
+		// Default to the directory the tarball itself lives in, since
+		// `check container --offline` already wrote cert-image.json,
+		// results.json, and preflight.log there before taring them up.
+		// Extracting back into that same directory means: when those
+		// original files are still present (e.g. the whole artifacts/
+		// directory was copied over, not just the tar), we update them
+		// directly in place instead of producing a second, hidden copy
+		// in a temporary directory the user has to go hunting for.
+		extractDir = filepath.Dir(opts.ArtifactsTarPath)
 	}
 
 	logger.Info("extracting artifacts tarball", "tar", opts.ArtifactsTarPath, "destination", extractDir)

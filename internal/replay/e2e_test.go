@@ -174,11 +174,11 @@ func fakePyxisGraphQLHandler(found bool) http.HandlerFunc {
 	}
 }
 
-// TestRun_CreatesOwnTempDirWhenExtractDirEmpty verifies that Run() creates
-// its own temporary extraction directory (via os.MkdirTemp) when
-// Options.ExtractDir is left empty, rather than requiring callers to always
-// supply one.
-func TestRun_CreatesOwnTempDirWhenExtractDirEmpty(t *testing.T) {
+// TestRun_DefaultsExtractDirToTarballDirectory verifies that Run() extracts
+// into the same directory the tarball itself lives in when Options.ExtractDir
+// is left empty, rather than hiding the extracted/updated files in a
+// temporary directory the caller would otherwise have to go looking for.
+func TestRun_DefaultsExtractDirToTarballDirectory(t *testing.T) {
 	workDir := t.TempDir()
 	tarPath := buildFakeArtifactsTar(t, workDir)
 
@@ -194,13 +194,78 @@ func TestRun_CreatesOwnTempDirWhenExtractDirEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
-	defer os.RemoveAll(summary.ExtractDir)
 
-	if summary.ExtractDir == "" {
-		t.Fatal("summary.ExtractDir is empty; Run() should have created and reported a temp directory")
+	if summary.ExtractDir != workDir {
+		t.Fatalf("summary.ExtractDir = %q, want %q (the tarball's own directory)", summary.ExtractDir, workDir)
 	}
 	if _, err := os.Stat(filepath.Join(summary.ExtractDir, check.DefaultTestResultsFilename)); err != nil {
-		t.Errorf("expected %s to have been extracted into the auto-created temp dir: %v", check.DefaultTestResultsFilename, err)
+		t.Errorf("expected %s to have been extracted alongside the tarball: %v", check.DefaultTestResultsFilename, err)
+	}
+}
+
+// TestRun_DefaultExtractDirUpdatesPreExistingFilesInPlace proves that when
+// the raw offline artifacts (cert-image.json/results.json/preflight.log) are
+// still sitting next to the tarball - exactly as `check container --offline`
+// leaves them, since it tars the same directory it wrote them into - Run()
+// overwrites/updates those exact files in place rather than writing a second,
+// separate copy elsewhere.
+func TestRun_DefaultExtractDirUpdatesPreExistingFilesInPlace(t *testing.T) {
+	workDir := t.TempDir()
+	tarPath := buildFakeArtifactsTar(t, workDir)
+
+	// Simulate the raw offline files already being present alongside the
+	// tarball (e.g. the whole artifacts/<platform>/ directory was copied
+	// over, not just artifacts.tar), with deliberately stale/sentinel
+	// content so we can tell whether Run() actually overwrote them.
+	stalePreflightLog := filepath.Join(workDir, "preflight.log")
+	if err := os.WriteFile(stalePreflightLog, []byte("STALE: should be overwritten\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	staleResults := filepath.Join(workDir, check.DefaultTestResultsFilename)
+	if err := os.WriteFile(staleResults, []byte(`{"image":"stale","passed":false}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	fakeClient := &http.Client{Transport: localRoundTripper{handler: fakePyxisGraphQLHandler(true)}}
+
+	summary, err := Run(context.Background(), Options{
+		ArtifactsTarPath: tarPath,
+		// ExtractDir intentionally left empty.
+		PyxisHost:       "fake-pyxis.example.com",
+		PyxisHTTPClient: fakeClient,
+		Submit:          false,
+	})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if summary.ExtractDir != workDir {
+		t.Fatalf("summary.ExtractDir = %q, want %q", summary.ExtractDir, workDir)
+	}
+
+	// results.json at the exact same path must now reflect the revalidated
+	// outcome - not the stale sentinel content pre-placed above.
+	got, err := ReadResults(workDir)
+	if err != nil {
+		t.Fatalf("ReadResults() error = %v", err)
+	}
+	if got.Image == "stale" {
+		t.Errorf("results.json still has the stale sentinel content; expected it to be overwritten in place")
+	}
+	if !got.Passed {
+		t.Errorf("results.json passed = false, want true")
+	}
+
+	// preflight.log at the exact same path must now contain the extracted
+	// offline log plus the revalidation note - not the stale sentinel.
+	logContents, err := os.ReadFile(stalePreflightLog)
+	if err != nil {
+		t.Fatalf("could not read preflight.log: %v", err)
+	}
+	if strings.Contains(string(logContents), "STALE") {
+		t.Errorf("preflight.log still has the stale sentinel content; expected it to be overwritten in place, got %q", logContents)
+	}
+	if !strings.Contains(string(logContents), "BasedOnUbi was revalidated") {
+		t.Errorf("expected a revalidation note appended to preflight.log, got %q", logContents)
 	}
 }
 
