@@ -21,6 +21,29 @@ import (
 type CheckConfig struct {
 	IncludeJUnitResults bool
 	SubmitResults       bool
+	ExitOnFailure       bool
+}
+
+// ChecksFailedError is returned when one or more checks have a "failed" result
+// and ExitOnFailure is enabled.
+type ChecksFailedError struct{}
+
+func (e *ChecksFailedError) Error() string { return "one or more checks failed" }
+
+func (e *ChecksFailedError) Is(target error) bool {
+	_, ok := target.(*ChecksFailedError)
+	return ok
+}
+
+// ChecksErroredError is returned when one or more checks encountered an error
+// during execution and ExitOnFailure is enabled.
+type ChecksErroredError struct{}
+
+func (e *ChecksErroredError) Error() string { return "one or more checks encountered an error" }
+
+func (e *ChecksErroredError) Is(target error) bool {
+	_, ok := target.(*ChecksErroredError)
+	return ok
 }
 
 var stdout io.Writer = os.Stdout
@@ -88,6 +111,15 @@ func RunPreflight(
 	}
 
 	logger.Info(fmt.Sprintf("Preflight result: %s", convertPassedOverall(results.PassedOverall)))
+
+	if cfg.ExitOnFailure {
+		if len(results.Errors) > 0 {
+			return &ChecksErroredError{}
+		}
+		if len(results.Failed) > 0 {
+			return &ChecksFailedError{}
+		}
+	}
 
 	return nil
 }
