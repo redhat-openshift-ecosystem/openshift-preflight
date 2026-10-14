@@ -262,6 +262,16 @@ var _ = Describe("Check Container Command", func() {
 				Expect(err).To(HaveOccurred())
 			})
 		})
+		Context("and bare \"ospid\" with no ID suffix is provided", func() {
+			BeforeEach(func() {
+				viper.Instance().Set("certification_component_id", "ospid")
+				DeferCleanup(viper.Instance().Set, "certification_component_id", "")
+			})
+			It("should throw an error rather than panic on an out-of-range index", func() {
+				err := validateCertificationComponentID(checkContainerCmd(mockRunPreflightReturnNil), []string{"foo"})
+				Expect(err).To(HaveOccurred())
+			})
+		})
 	})
 
 	Context("when running the check container subcommand with a logger provided", func() {
@@ -300,11 +310,9 @@ var _ = Describe("Check Container Command", func() {
 				Expect(err).ToNot(HaveOccurred())
 				defer f2.Close()
 
-				// root.go's preRunConfig writes the offline log file once, at
-				// the top-level artifacts directory (not the per-platform
-				// directory tarred above) - simulate that here since these
-				// tests invoke checkContainerCmd directly, bypassing rootCmd's
-				// PersistentPreRun.
+				// Simulate root.go's preRunConfig writing the offline log
+				// file once at the top-level artifacts directory, since
+				// these tests bypass rootCmd's PersistentPreRun.
 				logFile, err := os.Create(filepath.Join(tmpDir, "preflight.log"))
 				Expect(err).ToNot(HaveOccurred())
 				defer logFile.Close()
