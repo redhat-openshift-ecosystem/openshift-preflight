@@ -27,24 +27,13 @@ func NewBasedOnUbiCheck(layerHashChecker layerHashChecker) *BasedOnUBICheck {
 }
 
 func (p *BasedOnUBICheck) Validate(ctx context.Context, imgRef image.ImageReference) (bool, error) {
-	layerHashes, err := p.getImageLayers(imgRef.ImageInfo)
+	layerHashes, err := getImageLayers(imgRef.ImageInfo)
 	if err != nil {
 		//coverage:ignore
 		return false, fmt.Errorf("could not get image layers: %v", err)
 	}
 
 	return p.validate(ctx, layerHashes)
-}
-
-// getImageLayers returns the root filesystem DiffIDs of the image.
-func (p *BasedOnUBICheck) getImageLayers(image cranev1.Image) ([]cranev1.Hash, error) {
-	configFile, err := image.ConfigFile()
-	if err != nil {
-		//coverage:ignore
-		return nil, err
-	}
-
-	return configFile.RootFS.DiffIDs, nil
 }
 
 // certifiedImagesFound checks to make sure images exist in Red Hat Pyxis containing the uncompressed
