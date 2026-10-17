@@ -47,6 +47,8 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 		Args:  checkContainerPositionalArgs,
 		// this fmt.Sprintf is in place to keep spacing consistent with cobras two spaces that's used in: Usage, Flags, etc
 		Example: fmt.Sprintf("  %s", "preflight check container quay.io/repo-name/container-name:version"),
+		// PreRunE (not PersistentPreRunE) so this doesn't shadow rootCmd's
+		// PersistentPreRun for sub-commands like submit-offline-artifacts.
 		PreRunE: validateCertificationComponentID,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return checkContainerRunE(cmd, args, runpreflight)
@@ -73,19 +75,23 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 	// Make --submit mutually exclusive to --insecure
 	checkContainerCmd.MarkFlagsMutuallyExclusive("submit", "insecure")
 
-	flags.String("pyxis-api-token", "", "API token for Pyxis authentication (env: PFLT_PYXIS_API_TOKEN)")
-	_ = viper.BindPFlag("pyxis_api_token", flags.Lookup("pyxis-api-token"))
+	// Registered as persistent flags so sub-commands (e.g.
+	// submit-offline-artifacts) inherit the same flags/viper bindings.
+	persistentFlags := checkContainerCmd.PersistentFlags()
 
-	flags.String("pyxis-host", "", fmt.Sprintf("Host to use for Pyxis submissions. This will override Pyxis Env. Only set this if you know what you are doing.\n"+
+	persistentFlags.String("pyxis-api-token", "", "API token for Pyxis authentication (env: PFLT_PYXIS_API_TOKEN)")
+	_ = viper.BindPFlag("pyxis_api_token", persistentFlags.Lookup("pyxis-api-token"))
+
+	persistentFlags.String("pyxis-host", "", fmt.Sprintf("Host to use for Pyxis submissions. This will override Pyxis Env. Only set this if you know what you are doing.\n"+
 		"If you do set it, it should include just the host, and the URI path. (env: PFLT_PYXIS_HOST)"))
-	_ = viper.BindPFlag("pyxis_host", flags.Lookup("pyxis-host"))
+	_ = viper.BindPFlag("pyxis_host", persistentFlags.Lookup("pyxis-host"))
 
-	flags.String("pyxis-env", check.DefaultPyxisEnv, "Env to use for Pyxis submissions.")
-	_ = viper.BindPFlag("pyxis_env", flags.Lookup("pyxis-env"))
+	persistentFlags.String("pyxis-env", check.DefaultPyxisEnv, "Env to use for Pyxis submissions.")
+	_ = viper.BindPFlag("pyxis_env", persistentFlags.Lookup("pyxis-env"))
 
-	flags.String("certification-component-id", "", fmt.Sprintf("Certification component ID from connect.redhat.com/component/view/{certification-component-id}/images\n"+
+	persistentFlags.String("certification-component-id", "", fmt.Sprintf("Certification component ID from connect.redhat.com/component/view/{certification-component-id}/images\n"+
 		"URL paramater. This value may differ from the component PID on the overview page. (env: PFLT_CERTIFICATION_COMPONENT_ID)"))
-	_ = viper.BindPFlag("certification_component_id", flags.Lookup("certification-component-id"))
+	_ = viper.BindPFlag("certification_component_id", persistentFlags.Lookup("certification-component-id"))
 
 	flags.String("platform", rt.GOARCH, "Architecture of image to pull. Defaults to runtime platform.")
 	_ = viper.BindPFlag("platform", flags.Lookup("platform"))
@@ -93,6 +99,8 @@ func checkContainerCmd(runpreflight runPreflight) *cobra.Command {
 	_ = viper.BindEnv("cpuprofile")
 	_ = viper.BindEnv("memprofile")
 	_ = viper.BindEnv("tempDir")
+
+	checkContainerCmd.AddCommand(submitOfflineArtifactsCmd())
 
 	return checkContainerCmd
 }
@@ -309,6 +317,9 @@ func validateCertificationComponentID(cmd *cobra.Command, args []string) error {
 	}
 
 	if parts[0] == "ospid" {
+		if len(parts) < 2 {
+			return fmt.Errorf("certification component id: %s is improperly formatted see help command for instructions on obtaining proper value", certificationComponentID)
+		}
 		viper.Set("certification_component_id", parts[1])
 	}
 
@@ -423,16 +434,9 @@ func artifactsTar(ctx context.Context, src string, w io.Writer) error {
 	return nil
 }
 
-// copyPreflightLogIntoDir copies the preflight log file from artifactsDir
-// (where root.go's preRunConfig writes it once, at the top level, when
-// --offline is set) into dst (a platform-specific artifacts subdirectory),
-// so that a subsequent call to artifactsTar(dst, ...) includes it. logFile
-// is the configured "logfile" value (e.g. cfg.LogFile), which may include a
-// path and/or a custom name set via --logfile - only its base name is used
-// to find the source file, matching root.go's own behavior. Regardless of
-// what logFile is named, the copy is always written as DefaultLogFile, since
-// submit-offline-artifacts (and other consumers of the tar) expect to find
-// preflight.log by that exact name.
+// copyPreflightLogIntoDir copies the preflight log written by root.go's
+// preRunConfig into dst, a platform-specific artifacts subdirectory, so
+// artifactsTar(dst, ...) includes it, always named DefaultLogFile.
 func copyPreflightLogIntoDir(artifactsDir, dst, logFile string) error {
 	src := filepath.Join(artifactsDir, filepath.Base(logFile))
 	destinationPath := filepath.Join(dst, DefaultLogFile)
@@ -453,10 +457,9 @@ func copyPreflightLogIntoDir(artifactsDir, dst, logFile string) error {
 	}
 	defer out.Close()
 
-	// The mode passed to OpenFile above is only applied when O_CREATE causes
-	// a new file to be created; if destinationPath already existed (e.g. a
-	// re-run), its existing permissions are left as-is. Explicitly chmod so
-	// the permissions are always correct either way.
+	// OpenFile's mode only applies when O_CREATE creates a new file; a
+	// pre-existing destinationPath (e.g. a re-run) keeps its old permissions.
+	// Explicitly chmod so permissions are correct either way.
 	if err := out.Chmod(0o600); err != nil {
 		//coverage:ignore
 		return fmt.Errorf("could not set permissions on preflight log copy in %s: %w", dst, err)
@@ -508,26 +511,20 @@ func platformsToBeProcessed(cmd *cobra.Command, cfg *runtime.Config) ([]string, 
 			return nil, fmt.Errorf("could not retrieve image config: %w", err)
 		}
 
-		// Validate that the image architecture matches the requested platform.
-		// cfg.Platform is always set (either from --platform flag or defaults to runtime arch).
-		// crane.WithPlatform() only selects from manifest lists - for single-arch images, it's
-		// ignored and crane pulls whatever exists. This validation catches that mismatch before
-		// running checks against the wrong architecture.
+		// crane.WithPlatform() only selects from manifest lists; for single-arch
+		// images it's ignored and crane pulls whatever exists. Validate the
+		// image's actual architecture here to catch that mismatch.
 		if cfgFile.Architecture != cfg.Platform {
 			return nil, fmt.Errorf("platform mismatch: requested %s but image is %s architecture", cfg.Platform, cfgFile.Architecture)
 		}
 
-		// At this point, we know that the original containerImagePlatform is correct, so
-		// we can just return it and skip the below.
-		// While we could just let this fall through to the end, I'd rather short-circuit
-		// here, in case any further changes disrupt that logic flow.
+		// The original containerImagePlatform is confirmed correct, so return
+		// it directly rather than falling through to the manifest-list logic.
 		return containerImagePlatforms, nil
 	}
 
-	// If platform param is not changed, it means that a platform was not specified on the
-	// command line. Therefore, we should process all platforms in the manifest list.
-	// As long as what is poinged to is a manifest list. Otherwise, it will just be the
-	// currnt runtime platform.
+	// If --platform wasn't specified, process all platforms in the manifest
+	// list; otherwise just the current runtime platform.
 	if desc.MediaType.IsIndex() {
 		logger.V(log.DBG).Info("manifest list detected, checking all platforms in manifest")
 
@@ -549,10 +546,8 @@ func platformsToBeProcessed(cmd *cobra.Command, cfg *runtime.Config) ([]string, 
 			return nil, fmt.Errorf("could not retrieve index manifest: %w", err)
 		}
 
-		// Preflight was given a manifest list. --platform was not specified.
-		// Therefore, all platforms in the manifest list that we support
-		// for certification ie: {"arm64", "amd64", "ppc64le", "s390x"}, should be processed.
-		// Create a new slice since the original was for a single platform.
+		// --platform wasn't specified, so process every supported platform
+		// in the manifest list. Replace the single-platform slice.
 		containerImagePlatforms = make([]string, 0, len(manifest.Manifests))
 		for _, img := range manifest.Manifests {
 			if platformChanged && cfg.Platform != img.Platform.Architecture {
