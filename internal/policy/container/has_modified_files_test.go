@@ -395,7 +395,192 @@ var _ = Describe("HasModifiedFiles", func() {
 				Expect(ok).To(BeFalse())
 			})
 		})
-		When("release dist does not match installed OS", func() {
+		When("a cross-architecture package is added alongside the original", func() {
+		When("the file maps to the new architecture in the current layer (Path 1)", func() {
+			var pkgs map[string]packageFilesRef
+			BeforeEach(func() {
+				pkgs = deepCopyPackage(pkgRef)
+
+				// Simulate: base layer has foo-1.0-1.d9 as x86_64.
+				// New layer adds i686 variant. The shared file maps to i686 in the current layer
+				// due to map iteration order, but x86_64 is still present.
+				pkgSecondLayerPackages := pkgs["secondlayer"].LayerPackages
+				pkgSecondLayerPackages["foo-1.0-1.d9-i686"] = packageMeta{
+					Name:    "foo",
+					Version: "1.0",
+					Release: "1.d9",
+					Arch:    "i686",
+					Vendor:  "Red Hat, Inc.",
+				}
+				// Rename original to include arch in the key for clarity
+				delete(pkgSecondLayerPackages, "foo-1.0-1.d9")
+				pkgSecondLayerPackages["foo-1.0-1.d9-x86_64"] = packageMeta{
+					Name:    "foo",
+					Version: "1.0",
+					Release: "1.d9",
+					Arch:    "x86_64",
+					Vendor:  "Red Hat, Inc.",
+				}
+
+				pkgSecondLayerPackageFiles := pkgs["secondlayer"].LayerPackageFiles
+				// File now maps to i686 variant (simulating non-deterministic iteration)
+				pkgSecondLayerPackageFiles["this"] = "foo-1.0-1.d9-i686"
+
+				pkgSecondLayerFiles := pkgs["secondlayer"].LayerFiles
+				pkgSecondLayerFiles["this"] = fileInfo{Mode: fileMask}
+
+				pkgs["secondlayer"] = packageFilesRef{
+					LayerPackages:     pkgSecondLayerPackages,
+					LayerPackageFiles: pkgSecondLayerPackageFiles,
+					LayerFiles:        pkgSecondLayerFiles,
+					HasRPMDB:          true,
+				}
+
+				// Also update first layer to use arch-qualified key
+				pkgFirstLayerPackages := pkgs["firstlayer"].LayerPackages
+				delete(pkgFirstLayerPackages, "foo-1.0-1.d9")
+				pkgFirstLayerPackages["foo-1.0-1.d9-x86_64"] = packageMeta{
+					Name:    "foo",
+					Version: "1.0",
+					Release: "1.d9",
+					Arch:    "x86_64",
+					Vendor:  "Red Hat, Inc.",
+				}
+				pkgFirstLayerPackageFiles := pkgs["firstlayer"].LayerPackageFiles
+				pkgFirstLayerPackageFiles["this"] = "foo-1.0-1.d9-x86_64"
+				pkgs["firstlayer"] = packageFilesRef{
+					LayerPackages:     pkgFirstLayerPackages,
+					LayerPackageFiles: pkgFirstLayerPackageFiles,
+					LayerFiles:        pkgs["firstlayer"].LayerFiles,
+					HasRPMDB:          true,
+				}
+			})
+			It("should pass validate because the original arch is still present", func() {
+				ok, err := hasModifiedFiles.validate(context.Background(), layers, pkgs, dist)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
+			})
+		})
+		When("the file maps to the same architecture but is rewritten by cross-arch install (Path 2)", func() {
+			var pkgs map[string]packageFilesRef
+			BeforeEach(func() {
+				pkgs = deepCopyPackage(pkgRef)
+
+				// Simulate: both layers map file to x86_64 (consistent iteration),
+				// but the file appears in LayerFiles because installing i686 rewrites shared files.
+				pkgSecondLayerPackages := pkgs["secondlayer"].LayerPackages
+				delete(pkgSecondLayerPackages, "foo-1.0-1.d9")
+				pkgSecondLayerPackages["foo-1.0-1.d9-x86_64"] = packageMeta{
+					Name:    "foo",
+					Version: "1.0",
+					Release: "1.d9",
+					Arch:    "x86_64",
+					Vendor:  "Red Hat, Inc.",
+				}
+				// i686 variant added in this layer
+				pkgSecondLayerPackages["foo-1.0-1.d9-i686"] = packageMeta{
+					Name:    "foo",
+					Version: "1.0",
+					Release: "1.d9",
+					Arch:    "i686",
+					Vendor:  "Red Hat, Inc.",
+				}
+
+				pkgSecondLayerPackageFiles := pkgs["secondlayer"].LayerPackageFiles
+				pkgSecondLayerPackageFiles["this"] = "foo-1.0-1.d9-x86_64"
+
+				pkgSecondLayerFiles := pkgs["secondlayer"].LayerFiles
+				pkgSecondLayerFiles["this"] = fileInfo{Mode: fileMask}
+
+				pkgs["secondlayer"] = packageFilesRef{
+					LayerPackages:     pkgSecondLayerPackages,
+					LayerPackageFiles: pkgSecondLayerPackageFiles,
+					LayerFiles:        pkgSecondLayerFiles,
+					HasRPMDB:          true,
+				}
+
+				// First layer only has x86_64
+				pkgFirstLayerPackages := pkgs["firstlayer"].LayerPackages
+				delete(pkgFirstLayerPackages, "foo-1.0-1.d9")
+				pkgFirstLayerPackages["foo-1.0-1.d9-x86_64"] = packageMeta{
+					Name:    "foo",
+					Version: "1.0",
+					Release: "1.d9",
+					Arch:    "x86_64",
+					Vendor:  "Red Hat, Inc.",
+				}
+				pkgFirstLayerPackageFiles := pkgs["firstlayer"].LayerPackageFiles
+				pkgFirstLayerPackageFiles["this"] = "foo-1.0-1.d9-x86_64"
+				pkgs["firstlayer"] = packageFilesRef{
+					LayerPackages:     pkgFirstLayerPackages,
+					LayerPackageFiles: pkgFirstLayerPackageFiles,
+					LayerFiles:        pkgs["firstlayer"].LayerFiles,
+					HasRPMDB:          true,
+				}
+			})
+			It("should pass validate because cross-arch package was added", func() {
+				ok, err := hasModifiedFiles.validate(context.Background(), layers, pkgs, dist)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
+			})
+		})
+		When("the architecture truly changes without the original present", func() {
+			var pkgs map[string]packageFilesRef
+			BeforeEach(func() {
+				pkgs = deepCopyPackage(pkgRef)
+
+				// Simulate: original x86_64 is REMOVED and replaced with i686 only.
+				// This should still fail.
+				pkgSecondLayerPackages := pkgs["secondlayer"].LayerPackages
+				delete(pkgSecondLayerPackages, "foo-1.0-1.d9")
+				pkgSecondLayerPackages["foo-1.0-1.d9-i686"] = packageMeta{
+					Name:    "foo",
+					Version: "1.0",
+					Release: "1.d9",
+					Arch:    "i686",
+					Vendor:  "Red Hat, Inc.",
+				}
+
+				pkgSecondLayerPackageFiles := pkgs["secondlayer"].LayerPackageFiles
+				pkgSecondLayerPackageFiles["this"] = "foo-1.0-1.d9-i686"
+
+				pkgSecondLayerFiles := pkgs["secondlayer"].LayerFiles
+				pkgSecondLayerFiles["this"] = fileInfo{Mode: fileMask}
+
+				pkgs["secondlayer"] = packageFilesRef{
+					LayerPackages:     pkgSecondLayerPackages,
+					LayerPackageFiles: pkgSecondLayerPackageFiles,
+					LayerFiles:        pkgSecondLayerFiles,
+					HasRPMDB:          true,
+				}
+
+				// First layer uses arch-qualified key
+				pkgFirstLayerPackages := pkgs["firstlayer"].LayerPackages
+				delete(pkgFirstLayerPackages, "foo-1.0-1.d9")
+				pkgFirstLayerPackages["foo-1.0-1.d9-x86_64"] = packageMeta{
+					Name:    "foo",
+					Version: "1.0",
+					Release: "1.d9",
+					Arch:    "x86_64",
+					Vendor:  "Red Hat, Inc.",
+				}
+				pkgFirstLayerPackageFiles := pkgs["firstlayer"].LayerPackageFiles
+				pkgFirstLayerPackageFiles["this"] = "foo-1.0-1.d9-x86_64"
+				pkgs["firstlayer"] = packageFilesRef{
+					LayerPackages:     pkgFirstLayerPackages,
+					LayerPackageFiles: pkgFirstLayerPackageFiles,
+					LayerFiles:        pkgs["firstlayer"].LayerFiles,
+					HasRPMDB:          true,
+				}
+			})
+			It("should fail because original package is not present", func() {
+				ok, err := hasModifiedFiles.validate(context.Background(), layers, pkgs, dist)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeFalse())
+			})
+		})
+	})
+	When("release dist does not match installed OS", func() {
 			When("package is a net-new", func() {
 				When("a file is modified", func() {
 					var pkgs map[string]packageFilesRef
@@ -605,4 +790,84 @@ var _ = Describe("HasModifiedFiles", func() {
 	})
 
 	AssertMetaData(&hasModifiedFiles)
+
+	Describe("isCrossArchAddition", func() {
+		var currentLayerPackages map[string]packageMeta
+
+		BeforeEach(func() {
+			currentLayerPackages = map[string]packageMeta{
+				"libstdc++-8.5.0-20.el8-x86_64": {Name: "libstdc++", Version: "8.5.0", Release: "20.el8", Arch: "x86_64"},
+				"libstdc++-8.5.0-20.el8-i686":   {Name: "libstdc++", Version: "8.5.0", Release: "20.el8", Arch: "i686"},
+			}
+		})
+
+		It("should return true when same NVR, different arch, original still present", func() {
+			result := isCrossArchAddition("libstdc++-8.5.0-20.el8-x86_64", "libstdc++-8.5.0-20.el8-i686", currentLayerPackages)
+			Expect(result).To(BeTrue())
+		})
+
+		It("should return false when the original package is not in current layer", func() {
+			delete(currentLayerPackages, "libstdc++-8.5.0-20.el8-x86_64")
+			result := isCrossArchAddition("libstdc++-8.5.0-20.el8-x86_64", "libstdc++-8.5.0-20.el8-i686", currentLayerPackages)
+			Expect(result).To(BeFalse())
+		})
+
+		It("should return false when versions differ", func() {
+			result := isCrossArchAddition("libstdc++-8.5.0-20.el8-x86_64", "libstdc++-9.0.0-20.el8-i686", currentLayerPackages)
+			Expect(result).To(BeFalse())
+		})
+
+		It("should return false when names differ", func() {
+			result := isCrossArchAddition("glibc-2.28-20.el8-x86_64", "libstdc++-8.5.0-20.el8-i686", currentLayerPackages)
+			Expect(result).To(BeFalse())
+		})
+
+		It("should return false when architectures are the same", func() {
+			result := isCrossArchAddition("libstdc++-8.5.0-20.el8-x86_64", "libstdc++-8.5.0-20.el8-x86_64", currentLayerPackages)
+			Expect(result).To(BeFalse())
+		})
+
+		It("should return false with malformed package version strings", func() {
+			result := isCrossArchAddition("bad-format", "libstdc++-8.5.0-20.el8-i686", currentLayerPackages)
+			Expect(result).To(BeFalse())
+		})
+	})
+
+	Describe("crossArchPackageAdded", func() {
+		It("should return true when a new arch variant exists in current but not previous", func() {
+			current := map[string]packageMeta{
+				"foo-1.0-1.el8-x86_64": {Name: "foo", Version: "1.0", Release: "1.el8", Arch: "x86_64"},
+				"foo-1.0-1.el8-i686":   {Name: "foo", Version: "1.0", Release: "1.el8", Arch: "i686"},
+			}
+			previous := map[string]packageMeta{
+				"foo-1.0-1.el8-x86_64": {Name: "foo", Version: "1.0", Release: "1.el8", Arch: "x86_64"},
+			}
+			pkg := packageMeta{Name: "foo", Version: "1.0", Release: "1.el8", Arch: "x86_64"}
+			Expect(crossArchPackageAdded(current, previous, pkg)).To(BeTrue())
+		})
+
+		It("should return false when both arch variants existed before", func() {
+			current := map[string]packageMeta{
+				"foo-1.0-1.el8-x86_64": {Name: "foo", Version: "1.0", Release: "1.el8", Arch: "x86_64"},
+				"foo-1.0-1.el8-i686":   {Name: "foo", Version: "1.0", Release: "1.el8", Arch: "i686"},
+			}
+			previous := map[string]packageMeta{
+				"foo-1.0-1.el8-x86_64": {Name: "foo", Version: "1.0", Release: "1.el8", Arch: "x86_64"},
+				"foo-1.0-1.el8-i686":   {Name: "foo", Version: "1.0", Release: "1.el8", Arch: "i686"},
+			}
+			pkg := packageMeta{Name: "foo", Version: "1.0", Release: "1.el8", Arch: "x86_64"}
+			Expect(crossArchPackageAdded(current, previous, pkg)).To(BeFalse())
+		})
+
+		It("should return false when no other arch variant exists", func() {
+			current := map[string]packageMeta{
+				"foo-1.0-1.el8-x86_64": {Name: "foo", Version: "1.0", Release: "1.el8", Arch: "x86_64"},
+			}
+			previous := map[string]packageMeta{
+				"foo-1.0-1.el8-x86_64": {Name: "foo", Version: "1.0", Release: "1.el8", Arch: "x86_64"},
+			}
+			pkg := packageMeta{Name: "foo", Version: "1.0", Release: "1.el8", Arch: "x86_64"}
+			Expect(crossArchPackageAdded(current, previous, pkg)).To(BeFalse())
+		})
+	})
 })
