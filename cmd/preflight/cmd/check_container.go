@@ -182,6 +182,7 @@ func checkContainerRunE(cmd *cobra.Command, args []string, runpreflight runPrefl
 			cli.CheckConfig{
 				IncludeJUnitResults: cfg.WriteJUnit,
 				SubmitResults:       cfg.Submit,
+				ExitOnFailure:       cfg.ExitWithFailure,
 			},
 			formatter,
 			&runtime.ResultWriterFile{},
