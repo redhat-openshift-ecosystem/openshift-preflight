@@ -8,6 +8,7 @@ var (
 	projectName = "github.com/redhat-openshift-ecosystem/openshift-preflight"
 	version     = "unknown"
 	commit      = "unknown"
+	buildDate   = "unknown"
 )
 
 var Version = VersionContext{
@@ -24,4 +25,8 @@ type VersionContext struct {
 
 func (vc *VersionContext) String() string {
 	return fmt.Sprintf("%s <commit: %s>", vc.Version, vc.Commit)
+}
+
+func BuildDate() string {
+	return buildDate
 }

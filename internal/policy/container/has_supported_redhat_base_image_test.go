@@ -95,6 +95,50 @@ var _ = Describe("HasSupportedRedHatBaseImage", func() {
 		})
 	})
 
+	Describe("Checking the system clock against the binary build time", func() {
+		BeforeEach(func() {
+			finder.repositories = []pyxis.CertRepository{{
+				ReleaseCategories: []string{"Generally Available"},
+			}}
+		})
+
+		Context("when the system clock is before the binary build time", func() {
+			It("returns an error including both timestamps", func() {
+				hasSupportedBaseImage.buildDate = now.Add(time.Hour)
+
+				eolDate := now.Add(time.Minute)
+				finder.repositories[0].EOLDate = &eolDate
+
+				ok, err := hasSupportedBaseImage.Validate(context.Background(), imageRef)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("reads before binary build time"))
+				Expect(err.Error()).To(ContainSubstring(now.Format(time.RFC3339)))
+				Expect(err.Error()).To(ContainSubstring(hasSupportedBaseImage.buildDate.Format(time.RFC3339)))
+				Expect(ok).To(BeFalse())
+			})
+		})
+
+		Context("when the system clock is after the binary build time", func() {
+			It("does not return an error", func() {
+				hasSupportedBaseImage.buildDate = now.Add(-time.Hour)
+
+				ok, err := hasSupportedBaseImage.Validate(context.Background(), imageRef)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
+			})
+		})
+
+		Context("when the binary build date is unknown", func() {
+			It("does not return an error", func() {
+				hasSupportedBaseImage.buildDate = time.Time{}
+
+				ok, err := hasSupportedBaseImage.Validate(context.Background(), imageRef)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ok).To(BeTrue())
+			})
+		})
+	})
+
 	Context("when the Pyxis query fails", func() {
 		BeforeEach(func() {
 			finder.err = errors.New("pyxis is unavailable")

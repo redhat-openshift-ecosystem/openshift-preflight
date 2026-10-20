@@ -5,6 +5,7 @@ IMAGE_BUILDER?=podman
 IMAGE_REPO?=quay.io/opdev
 VERSION=$(shell git rev-parse HEAD)
 RELEASE_TAG ?= "0.0.0"
+BUILD_DATE=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 
 PLATFORMS=linux darwin
 ARCHITECTURES_LINUX=amd64 arm64 ppc64le s390x
@@ -19,7 +20,7 @@ GOPPC64 ?= power8
 
 .PHONY: build
 build:
-	CGO_ENABLED=0 GOAMD64=$(GOAMD64) GOPPC64=$(GOPPC64) go build -o $(BINARY) -trimpath -ldflags "-s -w -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG)" cmd/preflight/main.go
+	CGO_ENABLED=0 GOAMD64=$(GOAMD64) GOPPC64=$(GOPPC64) go build -o $(BINARY) -trimpath -ldflags "-s -w -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG) -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.buildDate=$(BUILD_DATE)" cmd/preflight/main.go
 	@ls | grep -e '^preflight$$' &> /dev/null
 
 .PHONY: build-multi-arch-linux
@@ -29,7 +30,8 @@ define LINUX_ARCHITECTURE_template
 .PHONY: build-linux-$(1)
 build-linux-$(1):
 	GOOS=linux GOARCH=$(1) CGO_ENABLED=0 GOAMD64=$(GOAMD64) GOPPC64=$(GOPPC64) go build -o $(BINARY)-linux-$(1) -trimpath -ldflags "-s -w -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) \
-				-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG)" cmd/preflight/main.go
+				-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG) \
+				-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.buildDate=$$(BUILD_DATE)" cmd/preflight/main.go
 endef
 
 $(foreach arch,$(ARCHITECTURES_LINUX),$(eval $(call LINUX_ARCHITECTURE_template,$(arch))))
@@ -41,7 +43,8 @@ define MAC_ARCHITECTURE_template
 .PHONY: build-mac-$(1)
 build-mac-$(1):
 	GOOS=darwin GOARCH=$(1) CGO_ENABLED=0 GOAMD64=$(GOAMD64) go build -o $(BINARY)-darwin-$(1) -trimpath -ldflags "-s -w -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=$(VERSION) \
-				-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG)" cmd/preflight/main.go
+				-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=$(RELEASE_TAG) \
+				-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.buildDate=$$(BUILD_DATE)" cmd/preflight/main.go
 endef
 
 $(foreach arch,$(ARCHITECTURES_MAC),$(eval $(call MAC_ARCHITECTURE_template,$(arch))))
@@ -68,12 +71,12 @@ image-push:
 .PHONY: test
 test:
 	go test -v -tags testing $$(go list ./... | grep -v e2e) \
-	-ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo"
+	-ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.buildDate=2026-01-01T00:00:00Z"
 
 .PHONY: cover
 cover: go-ignore-cov
 	go test -v -tags testing \
-	 -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo" \
+	 -ldflags "-X github.com/redhat-openshift-ecosystem/openshift-preflight/version.commit=bar -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.version=foo -X github.com/redhat-openshift-ecosystem/openshift-preflight/version.buildDate=2026-01-01T00:00:00Z" \
 	 $$(go list ./... | grep -v e2e) \
 	 -race \
 	 -cover -coverprofile=coverage.out
