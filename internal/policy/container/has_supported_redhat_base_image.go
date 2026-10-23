@@ -12,6 +12,7 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/check"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/image"
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/pyxis"
+	"github.com/redhat-openshift-ecosystem/openshift-preflight/version"
 )
 
 var _ check.Check = &HasSupportedRedHatBaseImageCheck{}
@@ -27,6 +28,7 @@ const (
 type HasSupportedRedHatBaseImageCheck struct {
 	CertifiedRepositoriesFinder certifiedRepositoriesFinder
 	now                         func() time.Time
+	buildDate                   time.Time
 }
 
 type certifiedRepositoriesFinder interface {
@@ -38,9 +40,15 @@ func NewHasSupportedRedHatBaseImageCheck(certifiedRepositoriesFinder certifiedRe
 		now = time.Now
 	}
 
+	// An empty or unparseable BuildDate (e.g. development builds via
+	// plain `go build`) leaves buildDate as the zero value, which
+	// disables the clock sanity check.
+	buildDate, _ := time.Parse(time.RFC3339, version.BuildDate())
+
 	return &HasSupportedRedHatBaseImageCheck{
 		CertifiedRepositoriesFinder: certifiedRepositoriesFinder,
 		now:                         now,
+		buildDate:                   buildDate,
 	}
 }
 
@@ -66,8 +74,17 @@ func (p *HasSupportedRedHatBaseImageCheck) validate(ctx context.Context, layerHa
 		return false, nil
 	}
 
-	now := p.now()
+	// Keep the current timestamp in UTC to match the build timestamp and
+	// keep log/error output consistent.
+	now := p.now().UTC()
 	logger.Info("evaluating repository end of life dates against current time", "now", now)
+
+	// The system clock reads before the time the preflight binary
+	// was built. The EOL dates cannot be trusted; fail the check.
+	if !p.buildDate.IsZero() && now.Before(p.buildDate) {
+		return false, fmt.Errorf("cannot evaluate repository end of life dates: system clock (%s) reads before binary build time (%s)",
+			now.Format(time.RFC3339), p.buildDate.Format(time.RFC3339))
+	}
 
 	for _, registry := range certRepositories {
 		// A supported repository is not EOL, not Deprecated, and is Generally Available.

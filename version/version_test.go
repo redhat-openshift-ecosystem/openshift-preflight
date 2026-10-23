@@ -12,6 +12,7 @@ var _ = Describe("version package utility", func() {
 	// Values assumed to be passed when calling make test.
 	ldflagVersionOverride := "foo"
 	ldflagCommitOverride := "bar"
+	ldflagBuildDateOverride := "2026-01-01T00:00:00Z"
 
 	// These tests validate that we can override the version and commit information successfully,
 	// and that our string representation includes that information.
@@ -19,6 +20,12 @@ var _ = Describe("version package utility", func() {
 		It("should contain the passed in version and commit information in internal data structures", func() {
 			Expect(Version.Version).To(Equal(ldflagVersionOverride))
 			Expect(Version.Commit).To(Equal(ldflagCommitOverride))
+		})
+	})
+
+	Context("When being passed build date information via ldflags", func() {
+		It("should expose the passed in build date via BuildDate()", func() {
+			Expect(BuildDate()).To(Equal(ldflagBuildDateOverride))
 		})
 	})
 
