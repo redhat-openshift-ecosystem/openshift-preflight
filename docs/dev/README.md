@@ -19,7 +19,7 @@ Install and have on your `PATH`:
 
 | Tool             |      CLI       | Min version |
 |------------------|:--------------:|------------:|
-| Go               |      `go`      |     v1.26.3 |
+| Go               |      `go`      |     v1.26.7 |
 | Make             |     `make`     |           - |
 | OperatorSDK      | `operator-sdk` |     v1.42.3 |
 | OPM              |     `opm`      |     v1.69.0 |
