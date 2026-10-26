@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/go-logr/logr"
 	"github.com/operator-framework/api/pkg/manifests"
 	"github.com/operator-framework/api/pkg/validation"
@@ -18,8 +18,15 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/log"
 )
 
-// This table signifies what the NEXT release of OpenShift will
-// deprecate, not what it matches up to.
+// ocpToKubeVersion maps an OpenShift version to the Kubernetes version
+// it ships with. It is used to select the k8s-version-dependent bundle
+// validators (e.g. deprecated API detection) that correspond to the
+// OpenShift version a partner targets in com.redhat.openshift.versions.
+// The table is intentionally forward-looking: the entry above
+// latestReleasedVersion is pre-seeded for the next, not-yet-released
+// OpenShift version so that its Kubernetes API deprecations are checked
+// before that version reaches GA. Note that some OpenShift versions share
+// a Kubernetes version (e.g. 4.23 and 5.0 both ship Kubernetes 1.36).
 var ocpToKubeVersion = map[string]string{
 	"4.9":  "1.22",
 	"4.10": "1.23",
@@ -36,9 +43,11 @@ var ocpToKubeVersion = map[string]string{
 	"4.21": "1.34",
 	"4.22": "1.35",
 	"4.23": "1.36",
+	"5.0":  "1.36",
+	"5.1":  "1.37",
 }
 
-const latestReleasedVersion = "4.22"
+const latestReleasedVersion = "5.0"
 
 var BundleFiles = []string{
 	"/manifests/*",

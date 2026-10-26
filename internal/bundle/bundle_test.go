@@ -3,7 +3,11 @@ package bundle
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"os"
+	"path/filepath"
 
+	"github.com/blang/semver/v4"
 	. "github.com/onsi/ginkgo/v2/dsl/core"
 	. "github.com/onsi/ginkgo/v2/dsl/table"
 	. "github.com/onsi/gomega"
@@ -13,6 +17,23 @@ import (
 )
 
 var _ = Describe("BundleValidateCheck", func() {
+	// unmappedOCPVersion returns an OpenShift version guaranteed to have
+	// no entry in ocpToKubeVersion, so specs that use it do not go stale
+	// as new versions are added to the map with each release.
+	unmappedOCPVersion := func() string {
+		var latest semver.Version
+		for v := range ocpToKubeVersion {
+			parsed, err := semver.ParseTolerant(v)
+			if err != nil {
+				continue
+			}
+			if parsed.GT(latest) {
+				latest = parsed
+			}
+		}
+		return fmt.Sprintf("%d.%d", latest.Major, latest.Minor+1)
+	}
+
 	Describe("Bundle validation", func() {
 		Context("the annotations file is valid", func() {
 			It("should pass", func() {
@@ -53,6 +74,31 @@ var _ = Describe("BundleValidateCheck", func() {
 					ImageFSPath: "./testdata/invalid_bundle",
 				}
 				report, err := Validate(context.Background(), imageRef.ImageFSPath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(report).ToNot(BeNil())
+			})
+		})
+
+		Context("the annotations file specifies a version with no Kubernetes version mapping", func() {
+			It("should pass without k8s-version-dependent checks", func() {
+				// Derive a version guaranteed to be absent from
+				// ocpToKubeVersion so this spec does not go stale as
+				// new versions are added with each release.
+				unmapped := unmappedOCPVersion()
+
+				tmpDir, err := os.MkdirTemp("", "preflight-unmapped-bundle-*")
+				Expect(err).ToNot(HaveOccurred())
+				DeferCleanup(func() { _ = os.RemoveAll(tmpDir) })
+				Expect(os.CopyFS(tmpDir, os.DirFS("./testdata/valid_bundle"))).To(Succeed())
+
+				annotations := fmt.Sprintf(`annotations:
+  com.redhat.openshift.versions: "v%s"
+  operators.operatorframework.io.bundle.package.v1: testPackage
+  operators.operatorframework.io.bundle.channel.default.v1: testChannel
+`, unmapped)
+				Expect(os.WriteFile(filepath.Join(tmpDir, "metadata", "annotations.yaml"), []byte(annotations), 0o600)).To(Succeed())
+
+				report, err := Validate(context.Background(), tmpDir)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(report).ToNot(BeNil())
 			})
@@ -189,18 +235,20 @@ var _ = Describe("BundleValidateCheck", func() {
 		Entry("exactly 4.8", "=v4.8", "4.8", true),
 		Entry("exactly 4.9", "=v4.9", "4.9", true),
 		Entry("range 4.6 to 4.9", "v4.6-v4.9", "4.9", true),
-		Entry(">= 4.8", "v4.8", latestReleasedVersion, true),
-		Entry(">= 4.9", "v4.9", latestReleasedVersion, true),
-		Entry(">= 4.11", "v4.11", latestReleasedVersion, true),
-		Entry(">= 4.15", "v4.15", latestReleasedVersion, true),
-		Entry(">= 4.16, which is more than released", "v4.16", latestReleasedVersion, true),
-		Entry(">= 4.17, which is more than released", "v4.17", latestReleasedVersion, true),
-		Entry(">= 4.18, which is more than released", "v4.18", latestReleasedVersion, true),
-		Entry(">= 4.19, which is more than released", "v4.19", latestReleasedVersion, true),
-		Entry(">= 4.20, which is more than released", "v4.20", latestReleasedVersion, true),
-		Entry(">= 4.21, which is more than released", "v4.21", latestReleasedVersion, true),
-		Entry(">= 4.22, which is more than released", "v4.22", latestReleasedVersion, true),
-		Entry(">= 4.23, which is more than released", "v4.23", "4.23", true),
+		Entry(">= 4.8, older than latest released, resolves to latest released", "v4.8", latestReleasedVersion, true),
+		Entry(">= 4.9, older than latest released, resolves to latest released", "v4.9", latestReleasedVersion, true),
+		Entry(">= 4.11, older than latest released, resolves to latest released", "v4.11", latestReleasedVersion, true),
+		Entry(">= 4.15, older than latest released, resolves to latest released", "v4.15", latestReleasedVersion, true),
+		Entry(">= 4.16, older than latest released, resolves to latest released", "v4.16", latestReleasedVersion, true),
+		Entry(">= 4.17, older than latest released, resolves to latest released", "v4.17", latestReleasedVersion, true),
+		Entry(">= 4.18, older than latest released, resolves to latest released", "v4.18", latestReleasedVersion, true),
+		Entry(">= 4.19, older than latest released, resolves to latest released", "v4.19", latestReleasedVersion, true),
+		Entry(">= 4.20, older than latest released, resolves to latest released", "v4.20", latestReleasedVersion, true),
+		Entry(">= 4.21, older than latest released, resolves to latest released", "v4.21", latestReleasedVersion, true),
+		Entry(">= 4.22, older than latest released, resolves to latest released", "v4.22", latestReleasedVersion, true),
+		Entry(">= 4.23, older than latest released, resolves to latest released", "v4.23", latestReleasedVersion, true),
+		Entry(">= 5.0, equal to latest released, resolves to latest released", "v5.0", latestReleasedVersion, true),
+		Entry(">= 5.1, newer than latest released, passes through", "v5.1", "5.1", true),
 		Entry("begins = with error", "=foo", "", false),
 		Entry("bare version with error", "vfoo", "", false),
 		Entry("range with error", "v4.6-vfoo", "", false),
