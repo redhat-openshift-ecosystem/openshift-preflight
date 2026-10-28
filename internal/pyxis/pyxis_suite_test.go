@@ -99,6 +99,14 @@ func pyxisImageHandler(ctx context.Context) http.HandlerFunc {
 			mustWrite(response, `{"_id":"updateImage","certified":true,"deleted":false,"image_id":"123456789abc"}`)
 		case request.Method == http.MethodPatch && request.Header["X-Api-Key"][0] == "my-update-image-failure-api-token":
 			response.WriteHeader(http.StatusInternalServerError)
+		case request.Method == http.MethodPatch && request.Header["X-Api-Key"][0] == "my-finalize-failure-api-token":
+			response.WriteHeader(http.StatusInternalServerError)
+		case request.Method == http.MethodPatch && request.Header["X-Api-Key"][0] == "my-certified-image-500-api-token":
+			response.WriteHeader(http.StatusInternalServerError)
+		case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-certified-image-500-api-token":
+			response.WriteHeader(http.StatusConflict)
+		case request.Method == http.MethodGet && request.Header["X-Api-Key"][0] == "my-certified-image-500-api-token":
+			mustWrite(response, `{"data":[{"_id":"blah","certified":true,"deleted":false,"image_id":"123456789abc"}]}`)
 		case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-image-409-api-token":
 			response.WriteHeader(http.StatusConflict)
 		case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-bad-401-image-api-token":
@@ -114,6 +122,33 @@ func pyxisImageHandler(ctx context.Context) http.HandlerFunc {
 			response.WriteHeader(http.StatusInternalServerError)
 		case request.Header["X-Api-Key"][0] == "my-index-docker-io-project-api-token":
 			mustWrite(response, `{"_id": "blah", "architecture": "amd64", "object_type": "containerImage", "repositories": [ {"published": false, "registry": "docker.io", "repository": "my/repo", "tags": [{"name": "docker_io_v3"}]}]}`)
+		case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-deleted-image-api-token":
+			response.WriteHeader(http.StatusConflict)
+		case request.Method == http.MethodGet && request.Header["X-Api-Key"][0] == "my-deleted-image-api-token":
+			// Mirrors Pyxis: the soft-deleted record is returned before the active one.
+			mustWrite(response, `{"data":[{"_id":"deletedImage","certified":true,"deleted":true,"image_id":"123456789abc"},{"_id":"updateImage","certified":false,"deleted":false,"image_id":"123456789abc"}]}`)
+		case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-trailing-deleted-image-api-token":
+			response.WriteHeader(http.StatusConflict)
+		case request.Method == http.MethodGet && request.Header["X-Api-Key"][0] == "my-trailing-deleted-image-api-token":
+			// The active record is neither first nor last, so returning either end
+			// of the slice would select a deleted image.
+			mustWrite(response, `{"data":[{"_id":"deletedImageOld","certified":true,"deleted":true,"image_id":"123456789abc"},{"_id":"updateImage","certified":false,"deleted":false,"image_id":"123456789abc"},{"_id":"deletedImageNew","certified":true,"deleted":true,"image_id":"123456789abc"}]}`)
+		case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-all-deleted-image-api-token":
+			response.WriteHeader(http.StatusConflict)
+		case request.Method == http.MethodGet && request.Header["X-Api-Key"][0] == "my-all-deleted-image-api-token":
+			mustWrite(response, `{"data":[{"_id":"deletedImage","certified":true,"deleted":true,"image_id":"123456789abc"}]}`)
+		case request.Method == http.MethodPost && request.Header["X-Api-Key"][0] == "my-empty-image-api-token":
+			response.WriteHeader(http.StatusConflict)
+		case request.Method == http.MethodGet && request.Header["X-Api-Key"][0] == "my-empty-image-api-token":
+			mustWrite(response, `{"data":[]}`)
+		case request.Method == http.MethodPatch:
+			// echo the patch payload back so callers can decode the updated image
+			body, err := io.ReadAll(request.Body)
+			if err != nil {
+				response.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			mustWrite(response, string(body))
 		case request.Method == http.MethodPost:
 			mustWrite(response, responseString)
 		default:
