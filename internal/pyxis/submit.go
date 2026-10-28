@@ -4,31 +4,48 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
+	"github.com/go-logr/logr"
 	"github.com/google/go-containerregistry/pkg/name"
 )
 
 var defaultRegistryAlias = "docker.io"
 
 // SubmitResults takes certInput and sends requests to Pyxis to create or update entries
-// based on certInput.
+// based on certInput. certInput is not modified.
+//
+// The image is created without its certification status, and that status is applied
+// via updateImage only after the RPM manifest, artifacts, and test results have been
+// submitted. Pyxis' auto-publish reacts to the certified flag, so deferring it prevents
+// a later failure in this flow from publishing an image with incomplete data. If the
+// image is already certified (e.g. a previous submission succeeded), the update is
+// skipped since Pyxis rejects updates to published images.
 func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *CertificationInput) (*CertificationResults, error) {
 	var err error
 
-	certImage := certInput.CertImage
+	// Work on copies of the input so callers can safely reuse it. The flow below
+	// clears and re-applies the image's certified flag and normalizes registries.
+	certImageCopy := *certInput.CertImage
+	certImageCopy.Repositories = slices.Clone(certInput.CertImage.Repositories)
+	certImage := &certImageCopy
+
 	// You must have an existing repository.
 	if len(certImage.Repositories) == 0 {
 		return nil, fmt.Errorf("certImage has not been properly populated")
 	}
 
 	// Create the test results, so we can fail fast if version check throws error.
-	testResults := certInput.TestResults
+	testResultsCopy := *certInput.TestResults
+	testResults := &testResultsCopy
+
 	testResults, err = p.createTestResults(ctx, testResults)
 	if err != nil {
 		return nil, fmt.Errorf("could not create test results: %v", err)
 	}
 
-	certProject := certInput.CertProject
+	certProjectCopy := *certInput.CertProject
+	certProject := &certProjectCopy
 
 	// Submission effectively starts the certification process, so switch
 	// the status to reflect this if needed. This only needs to be done for net new projects.
@@ -59,8 +76,11 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 	// in the event that it exists. createImage will wipe it otherwise.
 	originalImageDigest := certImage.DockerImageDigest
 
-	// store the certification status for this execution, in case a previous execution failed and we need to patch the image
-	certified := certInput.CertImage.Certified
+	// Pyxis' auto-publish reacts to the certified flag, so keep it out of the
+	// initial image creation and apply it only after all supporting data is
+	// submitted (see the updateImage call at the end of this function).
+	certified := certImage.Certified
+	certImage.Certified = false
 
 	// normalizing index.docker.io to docker.io for the certImage
 	certImage.Repositories[0].Registry = normalizeDockerRegistry(certImage.Repositories[0].Registry)
@@ -75,26 +95,14 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 		if err != nil {
 			return nil, fmt.Errorf("could not get image: %v", err)
 		}
-
-		// checking to see if the original value is certified and the previous value is not certified,
-		// this would indicate that a partner is running preflight again, and during the first run there was a timeout/error
-		// in a check that interacts with pyxis and we need to correct the certified value for the image
-		if certified && !certImage.Certified {
-			// change the certified value to `true`
-			certImage.Certified = certified
-
-			certImage, err = p.updateImage(ctx, certImage)
-			if err != nil {
-				return nil, fmt.Errorf("could not update image: %v", err)
-			}
-		}
 	}
 
 	if !certProject.ScratchProject() {
 		// Create the RPM manifest, or get it if it already exists.
-		rpmManifest := certInput.RpmManifest
+		// Work on a copy so linking the image ID doesn't mutate the caller's input.
+		rpmManifest := *certInput.RpmManifest
 		rpmManifest.ImageID = certImage.ID
-		_, err = p.createRPMManifest(ctx, rpmManifest)
+		_, err = p.createRPMManifest(ctx, &rpmManifest)
 		if err != nil {
 			if !errors.Is(err, ErrPyxis409StatusCode) {
 				return nil, fmt.Errorf("could not create rpm manifest: %v", err)
@@ -123,12 +131,36 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 		return nil, fmt.Errorf("could not update test results: %v", err)
 	}
 
+	// All supporting data is now in place, so apply the certification status.
+	// This is the write that can trigger auto-publish in Pyxis, hence last.
+	if certified {
+		certImage, err = p.certifyImage(ctx, certImage)
+		if err != nil {
+			return nil, fmt.Errorf("could not update image certification status: %v. "+
+				"All test results and image data were submitted successfully; re-running "+
+				"preflight check container with --submit will complete the submission", err)
+		}
+	}
+
 	// Return the results with up-to-date information.
 	return &CertificationResults{
 		CertProject: certProject,
 		CertImage:   certImage,
 		TestResults: testResults,
 	}, nil
+}
+
+// certifyImage applies the certified flag to an image, which is the write that can
+// trigger auto-publish in Pyxis. An already-certified image is returned unchanged,
+// since the flag is already applied and Pyxis rejects updates to published images.
+func (p *pyxisClient) certifyImage(ctx context.Context, certImage *CertImage) (*CertImage, error) {
+	if certImage.Certified {
+		logr.FromContextOrDiscard(ctx).Info("Image is already certified; skipping certification update", "image_id", certImage.ID)
+		return certImage, nil
+	}
+	certImage.Certified = true
+
+	return p.updateImage(ctx, certImage)
 }
 
 // normalizeDockerRegistry sets registry to the value we get from certImage from crane and then normalizes
