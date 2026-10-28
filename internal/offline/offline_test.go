@@ -110,6 +110,64 @@ func (f *fakeLayerHashChecker) CertifiedImagesContainingLayers(ctx context.Conte
 	return f.images, f.err
 }
 
+// fakeProjectFetcher is a test double for projectFetcher.
+type fakeProjectFetcher struct {
+	project *pyxis.CertProject
+	err     error
+}
+
+func (f *fakeProjectFetcher) GetProject(ctx context.Context) (*pyxis.CertProject, error) {
+	return f.project, f.err
+}
+
+func TestIsScratchProject(t *testing.T) {
+	tests := []struct {
+		name    string
+		client  projectFetcher
+		want    bool
+		wantErr bool
+	}{
+		{
+			name:   "scratch project",
+			client: &fakeProjectFetcher{project: &pyxis.CertProject{Container: pyxis.Container{Type: "scratch"}}},
+			want:   true,
+		},
+		{
+			name:   "non-scratch project",
+			client: &fakeProjectFetcher{project: &pyxis.CertProject{Container: pyxis.Container{Type: "container"}}},
+			want:   false,
+		},
+		{
+			name:    "pyxis query fails",
+			client:  &fakeProjectFetcher{err: errors.New("network unreachable")},
+			wantErr: true,
+		},
+		{
+			name:    "nil project with no error",
+			client:  &fakeProjectFetcher{project: nil},
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := isScratchProject(context.Background(), test.client)
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("expected an error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != test.want {
+				t.Errorf("isScratchProject() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
 func TestRevalidateBasedOnUbi(t *testing.T) {
 	hash, err := cranev1.NewHash("sha256:02f151e07d44d20fac36bab4b8e0dab4b7d81e6da75a4a3f30ab476e9c0ac2e5")
 	if err != nil {

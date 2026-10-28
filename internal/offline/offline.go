@@ -1,6 +1,5 @@
-// Package offline implements the "submit-offline-artifacts" workflow:
-// revalidating checks that couldn't complete offline from a connected host,
-// and submitting the finalized results to Red Hat.
+// Package offline implements submit-offline-artifacts: revalidate offline
+// checks from a connected host and submit finalized results to Red Hat.
 package offline
 
 import (
@@ -29,15 +28,35 @@ type layerHashChecker interface {
 	CertifiedImagesContainingLayers(ctx context.Context, uncompressedLayerHashes []cranev1.Hash) ([]pyxis.CertImage, error)
 }
 
+// projectFetcher is satisfied by *pyxis.pyxisClient for isScratchProject tests.
+type projectFetcher interface {
+	GetProject(ctx context.Context) (*pyxis.CertProject, error)
+}
+
+// deferredRevalidator revalidates one deferred check against Pyxis.
+type deferredRevalidator func(ctx context.Context, layers layerHashChecker, diffIDs []cranev1.Hash) (bool, error)
+
+// deferredCheck is a check that needs Pyxis and cannot finish offline.
+type deferredCheck struct {
+	check      check.Check
+	revalidate deferredRevalidator
+}
+
+// deferredChecks are revalidated on submit-offline-artifacts, or removed
+// entirely when the project has a scratch exception. Add new entries here
+// (e.g. HasSupportedRedHatBaseImage / EOL) as they gain offline deferral.
+var deferredChecks = []deferredCheck{
+	{check: basedOnUbiCheck, revalidate: revalidateBasedOnUbi},
+}
+
 // Options configures a submit-offline-artifacts execution.
 type Options struct {
 	// ArtifactsTarPath is the path to the artifacts.tar produced by
 	// `preflight check container --offline`.
 	ArtifactsTarPath string
 
-	// LogFile is this invocation's own --logfile/PFLT_LOGFILE, submitted
-	// alongside the results instead of the preflight.log extracted from
-	// ArtifactsTarPath. Defaults to "preflight.log" if empty.
+	// LogFile is this run's --logfile/PFLT_LOGFILE (not the extracted one).
+	// Defaults to "preflight.log" if empty.
 	LogFile string
 
 	// Pyxis / submission configuration - mirrors the flags already exposed
@@ -46,9 +65,8 @@ type Options struct {
 	PyxisAPIToken            string
 	CertificationComponentID string
 
-	// PyxisHTTPClient is used for check revalidation queries against Pyxis.
-	// Defaults to a real *http.Client with a 60s timeout when nil; exposed
-	// so tests can substitute a fake transport.
+	// PyxisHTTPClient is used for Pyxis revalidation queries. Defaults to a
+	// 60s *http.Client when nil; tests may inject a fake transport.
 	PyxisHTTPClient pyxis.HTTPClient
 
 	// PyxisClient is used to submit the finalized results. Defaults to
@@ -68,16 +86,18 @@ type CheckOutcome struct {
 type Summary struct {
 	ExtractDir string
 	Submitted  bool
-	// Revalidated holds the outcome of each check that was revalidated
-	// during this run. More checks will be appended here as they are wired in.
+
+	// ScratchExempt is true when CertProject.ScratchProject() holds;
+	// deferredChecks are then removed instead of revalidated.
+	ScratchExempt bool
+
+	// Revalidated is the outcome of each deferred check revalidated this run
+	// (empty when ScratchExempt, since those checks were removed).
 	Revalidated []CheckOutcome
 }
 
-// Run extracts artifacts.tar, revalidates the checks that couldn't complete
-// offline against Pyxis, updates results.json with the outcomes, and submits
-// the finalized artifacts the same way `check container --submit` does. The
-// temporary extraction directory is always removed before Run returns,
-// regardless of outcome.
+// Run extracts artifacts.tar, revalidates offline-incomplete checks, updates
+// results.json, submits, then always removes the temp extraction directory.
 func Run(ctx context.Context, opts Options) (*Summary, error) {
 	extractDir, summary, err := run(ctx, opts)
 	if extractDir != "" {
@@ -89,14 +109,12 @@ func Run(ctx context.Context, opts Options) (*Summary, error) {
 	return summary, err
 }
 
-// run implements Run's logic without cleaning up extractDir, so tests can
-// inspect the extracted/updated artifacts after a run completes. Run is a
-// thin wrapper around this that always removes extractDir afterward.
+// run is Run without cleaning up extractDir, so tests can inspect artifacts.
 func run(ctx context.Context, opts Options) (extractDir string, summary *Summary, err error) {
 	logger := logr.FromContextOrDiscard(ctx)
 
-	// Always a fresh temp dir, never the tarball's own directory, so a
-	// failed rerun can't clobber a previously-validated results.json.
+	// Fresh temp dir (not the tarball's dir) so a failed rerun can't clobber
+	// a previously-validated results.json.
 	extractDir, err = os.MkdirTemp("", "preflight-submit-offline-artifacts-")
 	if err != nil {
 		//coverage:ignore
@@ -131,32 +149,52 @@ func run(ctx context.Context, opts Options) (extractDir string, summary *Summary
 		httpClient,
 	)
 
-	basedOnUbiPassed, err := revalidateBasedOnUbi(ctx, pyxisClient, diffIDs)
+	// Offline can't see policy exceptions, so deferred checks always err for
+	// scratch projects under the default policy; remove or revalidate here.
+	scratchExempt, err := isScratchProject(ctx, pyxisClient)
 	if err != nil {
 		return extractDir, nil, err
 	}
-	logger.Info("revalidated check", "check", basedOnUbiCheck.Name(), "passed", basedOnUbiPassed)
 
 	results, err := ReadResults(extractDir)
 	if err != nil {
 		return extractDir, nil, err
 	}
 
-	ApplyCheckResult(results, basedOnUbiCheck, basedOnUbiPassed)
+	summary = &Summary{
+		ExtractDir:    extractDir,
+		ScratchExempt: scratchExempt,
+	}
+
+	if scratchExempt {
+		for _, dc := range deferredChecks {
+			logger.Info("scratch exception; removing deferred check instead of revalidating",
+				"check", dc.check.Name())
+			RemoveCheckResult(results, dc.check)
+		}
+	} else {
+		for _, dc := range deferredChecks {
+			passed, revalidateErr := dc.revalidate(ctx, pyxisClient, diffIDs)
+			if revalidateErr != nil {
+				return extractDir, nil, revalidateErr
+			}
+			logger.Info("revalidated deferred check", "check", dc.check.Name(), "passed", passed)
+			ApplyCheckResult(results, dc.check, passed)
+			summary.Revalidated = append(summary.Revalidated, CheckOutcome{
+				Name:   dc.check.Name(),
+				Passed: passed,
+			})
+		}
+	}
 
 	if err := WriteResults(extractDir, results); err != nil {
 		//coverage:ignore
 		return extractDir, nil, err
 	}
-	logger.Info("results.json updated with revalidated check outcomes", "overallPassed", results.Passed)
-
-	summary = &Summary{
-		ExtractDir: extractDir,
-		Revalidated: []CheckOutcome{{
-			Name:   basedOnUbiCheck.Name(),
-			Passed: basedOnUbiPassed,
-		}},
-	}
+	logger.Info("results.json updated with deferred check outcomes",
+		"overallPassed", results.Passed,
+		"scratchExempt", scratchExempt,
+	)
 
 	if err := submit(ctx, extractDir, opts); err != nil {
 		return extractDir, summary, err
@@ -181,9 +219,7 @@ func readCertImage(dir string) (*pyxis.CertImage, error) {
 	return &certImage, nil
 }
 
-// diffIDsFromCertImage recovers the image's uncompressed layer DiffIDs by
-// parsing cert-image.json's raw_config field, the same layer data a live
-// image's ConfigFile() would provide online.
+// diffIDsFromCertImage recovers uncompressed layer DiffIDs from raw_config.
 func diffIDsFromCertImage(certImage *pyxis.CertImage) ([]cranev1.Hash, error) {
 	if certImage.RawConfig == "" {
 		return nil, fmt.Errorf("%s did not contain raw_config", check.DefaultCertImageFilename)
@@ -201,9 +237,20 @@ func diffIDsFromCertImage(certImage *pyxis.CertImage) ([]cranev1.Hash, error) {
 	return configFile.RootFS.DiffIDs, nil
 }
 
-// revalidateBasedOnUbi mirrors internal/policy/container.BasedOnUBICheck.validate:
-// an image is considered based on UBI if Pyxis returns at least one certified
-// image on registry.access.redhat.com containing one of the given layers.
+// isScratchProject reports whether the project has a scratch exception.
+func isScratchProject(ctx context.Context, client projectFetcher) (bool, error) {
+	certProject, err := client.GetProject(ctx)
+	if err != nil {
+		return false, fmt.Errorf("could not retrieve certification project: %w", err)
+	}
+	if certProject == nil {
+		return false, fmt.Errorf("no certification project was returned from pyxis")
+	}
+
+	return certProject.ScratchProject(), nil
+}
+
+// revalidateBasedOnUbi is the deferredRevalidator for BasedOnUbi.
 func revalidateBasedOnUbi(ctx context.Context, checker layerHashChecker, diffIDs []cranev1.Hash) (bool, error) {
 	certImages, err := checker.CertifiedImagesContainingLayers(ctx, diffIDs)
 	if err != nil {

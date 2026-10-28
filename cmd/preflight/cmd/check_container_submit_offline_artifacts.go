@@ -121,6 +121,7 @@ func submitOfflineArtifactsRunE(cmd *cobra.Command, args []string) error {
 	logger.Info("submit-offline-artifacts complete",
 		"extractDir", summary.ExtractDir,
 		"submitted", summary.Submitted,
+		"scratchExempt", summary.ScratchExempt,
 		"revalidated", summary.Revalidated,
 	)
 
