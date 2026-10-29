@@ -268,7 +268,7 @@ This creates `artifacts.tar.gz` containing all artifacts for submission via othe
 
 1. **Start without --submit**: Test iteratively until all checks pass, then submit
 2. **Use debug logging**: When debugging, use `--loglevel=debug` or `--loglevel=trace`
-3. **Understand the policies**: Review Red Hat certification requirements at https://access.redhat.com/documentation/en-us/red_hat_software_certification
+3. **Understand the policies**: Review Red Hat certification requirements at https://docs.redhat.com/en/documentation/red_hat_software_certification/latest/plan-requirements_for_container_images
 4. **Check artifacts**: The `artifacts/` directory contains valuable debugging information
 5. **Multi-arch testing**: If shipping multi-arch images, test all platforms before submitting
 6. **Authentication**: Always provide docker config, even for public images (rate limits)
