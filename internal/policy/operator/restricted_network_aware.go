@@ -108,7 +108,7 @@ func (p FollowsRestrictedNetworkEnablementGuidelines) Metadata() check.Metadata 
 func (p FollowsRestrictedNetworkEnablementGuidelines) Help() check.HelpText {
 	return check.HelpText{
 		Message:    "Check for the implementation of guidelines indicating operator readiness for environments with restricted networking.",
-		Suggestion: "If consumers of your operator may need to do so on a restricted network, implement the guidelines outlines in OCP documentation for your cluster version, such as https://docs.openshift.com/container-platform/4.11/operators/operator_sdk/osdk-generating-csvs.html#olm-enabling-operator-for-restricted-network_osdk-generating-csvs for OCP 4.11",
+		Suggestion: "If consumers of your operator may need to do so on a restricted network, implement the guidelines outlines in OCP documentation for your cluster version, such as https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/disconnected_environments/olm-restricted-networks",
 	}
 }
 
