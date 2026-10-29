@@ -35,7 +35,7 @@ const (
 	imageRegistryService = "image-registry.openshift-image-registry.svc"
 
 	// certDocumentationURL operator policy documentation url
-	certDocumentationURL = "https://access.redhat.com/documentation/en-us/red_hat_software_certification/latest/html-single/red_hat_openshift_software_certification_policy_guide/index#con-operator-requirements_openshift-sw-cert-policy-products-managed"
+	certDocumentationURL = "https://docs.redhat.com/en/documentation/red_hat_software_certification/latest/plan-operator_certification_requirements"
 )
 
 var (

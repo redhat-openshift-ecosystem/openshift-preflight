@@ -71,8 +71,8 @@ func (p *securityContextConstraintsInCSV) Metadata() check.Metadata {
 	return check.Metadata{
 		Description:      "Evaluates the csv and logs a message if a non default security context constraint is needed by the operator",
 		Level:            "optional",
-		KnowledgeBaseURL: "https://redhat-connect.gitbook.io/certified-operator-guide/troubleshooting-and-resources/sccs", // Placeholder
-		CheckURL:         "https://redhat-connect.gitbook.io/certified-operator-guide/troubleshooting-and-resources/sccs", // Placeholder
+		KnowledgeBaseURL: "https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/authentication_and_authorization/managing-pod-security-policies",
+		CheckURL:         "https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/authentication_and_authorization/managing-pod-security-policies",
 	}
 }
 
