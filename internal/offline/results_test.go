@@ -97,6 +97,71 @@ func TestReadWriteResultsRoundTrip(t *testing.T) {
 	}
 }
 
+func TestRemoveCheckResult_RemovesFromAllBuckets(t *testing.T) {
+	r := &formatters.UserResponse{
+		Passed: false,
+		Results: formatters.ResultsText{
+			Errors:   []formatters.CheckExecutionInfo{{Name: basedOnUbiCheckName}},
+			Passed:   []formatters.CheckExecutionInfo{{Name: "HasLicense"}},
+			Failed:   []formatters.CheckExecutionInfo{{Name: "HasUniqueTag"}},
+			Warnings: []formatters.CheckExecutionInfo{{Name: "SomeWarningCheck"}},
+		},
+	}
+
+	RemoveCheckResult(r, basedOnUbiCheck)
+
+	for _, bucket := range [][]formatters.CheckExecutionInfo{r.Results.Passed, r.Results.Failed, r.Results.Errors, r.Results.Warnings} {
+		for _, entry := range bucket {
+			if entry.Name == basedOnUbiCheckName {
+				t.Errorf("expected %s to be removed entirely, found it in %+v", basedOnUbiCheckName, entry)
+			}
+		}
+	}
+
+	// Unrelated entries in every bucket must survive untouched.
+	if len(r.Results.Passed) != 1 || r.Results.Passed[0].Name != "HasLicense" {
+		t.Errorf("unexpected Passed entries: %+v", r.Results.Passed)
+	}
+	if len(r.Results.Failed) != 1 || r.Results.Failed[0].Name != "HasUniqueTag" {
+		t.Errorf("unexpected Failed entries: %+v", r.Results.Failed)
+	}
+	if len(r.Results.Warnings) != 1 || r.Results.Warnings[0].Name != "SomeWarningCheck" {
+		t.Errorf("unexpected Warnings entries: %+v", r.Results.Warnings)
+	}
+}
+
+func TestRemoveCheckResult_RecalculatesPassedToTrue(t *testing.T) {
+	r := &formatters.UserResponse{
+		Passed: false,
+		Results: formatters.ResultsText{
+			Errors: []formatters.CheckExecutionInfo{{Name: basedOnUbiCheckName}},
+			Passed: []formatters.CheckExecutionInfo{{Name: "HasLicense"}},
+		},
+	}
+
+	RemoveCheckResult(r, basedOnUbiCheck)
+
+	if !r.Passed {
+		t.Errorf("Passed (overall) = false, want true once the only error is removed")
+	}
+}
+
+func TestRemoveCheckResult_KeepsPassedFalseWhenOtherFailuresRemain(t *testing.T) {
+	r := &formatters.UserResponse{
+		Passed: false,
+		Results: formatters.ResultsText{
+			Errors: []formatters.CheckExecutionInfo{{Name: basedOnUbiCheckName}},
+			Failed: []formatters.CheckExecutionInfo{{Name: "HasUniqueTag"}},
+		},
+	}
+
+	RemoveCheckResult(r, basedOnUbiCheck)
+
+	if r.Passed {
+		t.Errorf("Passed (overall) = true, want false because HasUniqueTag is still failing")
+	}
+}
+
 func TestApplyCheckResult_MovesFromErrorsToPassed(t *testing.T) {
 	r := &formatters.UserResponse{
 		Passed: false,
