@@ -165,6 +165,29 @@ var _ = Describe("Execute Checks tests", func() {
 			Expect(engine.results.Warned).To(HaveLen(1))
 			Expect(engine.results.CertificationHash).To(BeEmpty())
 		})
+		Context("a warn-level check returns an error", func() {
+			BeforeEach(func() {
+				engine.checks = []check.Check{
+					check.NewGenericCheck(
+						"warnCheckError",
+						func(context.Context, image.ImageReference) (bool, error) {
+							return false, errors.New("warnCheckError")
+						},
+						check.Metadata{Level: check.LevelWarn},
+						check.HelpText{},
+						nil,
+					),
+				}
+			})
+
+			It("reports a warning without failing the overall result", func() {
+				err := engine.ExecuteChecks(testcontext)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(engine.results.Errors).To(BeEmpty())
+				Expect(engine.results.Warned).To(HaveLen(1))
+				Expect(engine.results.PassedOverall).To(BeTrue())
+			})
+		})
 		Context("it is a bundle", func() {
 			It("should succeed and generate a bundle hash", func() {
 				engine.isBundle = true
