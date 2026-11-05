@@ -244,8 +244,17 @@ func (c *craneEngine) ExecuteChecks(ctx context.Context) error {
 		checkElapsedTime := time.Since(checkStartTime)
 
 		if err != nil {
-			logger.WithValues("result", "ERROR", "err", err.Error()).Info("check completed")
 			result := certification.Result{Check: executedCheck, ElapsedTime: checkElapsedTime}
+
+			// A warn-level check is not enforced, so an error should surface as
+			// a warning rather than failing the overall result.
+			if executedCheck.Metadata().Level == check.LevelWarn {
+				logger.WithValues("result", "WARNING", "err", err.Error()).Info("check completed")
+				c.results.Warned = appendUnlessOptional(c.results.Warned, result)
+				continue
+			}
+
+			logger.WithValues("result", "ERROR", "err", err.Error()).Info("check completed")
 			c.results.Errors = appendUnlessOptional(c.results.Errors, *result.WithError(err))
 			continue
 		}
