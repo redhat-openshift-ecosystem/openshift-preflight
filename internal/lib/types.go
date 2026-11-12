@@ -62,16 +62,22 @@ type ContainerCertificationSubmitter struct {
 	Pyxis                  PyxisClient
 	DockerConfig           string
 	PreflightLogFile       string
+	// CertProject, when set, is used instead of calling GetProject again so
+	// callers that already looked the project up can reuse that snapshot.
+	CertProject *pyxis.CertProject
 }
 
 func (s *ContainerCertificationSubmitter) Submit(ctx context.Context) error {
 	logger := logr.FromContextOrDiscard(ctx)
 	logger.Info("preparing results that will be submitted to Red Hat")
 
-	// get the project info from pyxis
-	certProject, err := s.Pyxis.GetProject(ctx)
-	if err != nil {
-		return fmt.Errorf("could not retrieve project: %w", err)
+	certProject := s.CertProject
+	if certProject == nil {
+		var err error
+		certProject, err = s.Pyxis.GetProject(ctx)
+		if err != nil {
+			return fmt.Errorf("could not retrieve project: %w", err)
+		}
 	}
 
 	// Ensure that a certProject was returned. In theory we would expect pyxis
