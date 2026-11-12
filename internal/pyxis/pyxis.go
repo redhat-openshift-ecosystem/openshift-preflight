@@ -140,7 +140,20 @@ func (p *pyxisClient) getImage(ctx context.Context, dockerImageDigest string) (*
 		return nil, fmt.Errorf("could not unmarshal body: %s: %w", string(body), err)
 	}
 
-	return &data.Data[0], nil
+	if len(data.Data) == 0 {
+		return nil, fmt.Errorf("no image found for digest %s", dockerImageDigest)
+	}
+
+	// A digest can have more than one image record: a soft-deleted record from a
+	// previous submission alongside the active one. Return the active record so
+	// test results and the certified flag are applied to the image the user sees.
+	for i := range data.Data {
+		if !data.Data[i].Deleted {
+			return &data.Data[i], nil
+		}
+	}
+
+	return nil, fmt.Errorf("no active image found for digest %s", dockerImageDigest)
 }
 
 // updateImage updates a given certification image based on how the image is built in the `submit` flow
