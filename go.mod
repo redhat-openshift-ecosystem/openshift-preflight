@@ -6,7 +6,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.10.4
 	github.com/bombsimon/logrusr/v4 v4.2.0
-	github.com/docker/cli v29.9.3+incompatible
+	github.com/docker/cli v29.10.0+incompatible
 	github.com/glebarez/go-sqlite v1.23.0
 	github.com/go-logr/logr v1.4.4
 	github.com/google/go-containerregistry v0.22.1
@@ -27,7 +27,7 @@ require (
 	k8s.io/api v0.37.2
 	k8s.io/apimachinery v0.37.2
 	k8s.io/client-go v0.37.2
-	sigs.k8s.io/controller-runtime v0.25.2
+	sigs.k8s.io/controller-runtime v0.25.3
 	sigs.k8s.io/yaml v1.6.0
 )
 
