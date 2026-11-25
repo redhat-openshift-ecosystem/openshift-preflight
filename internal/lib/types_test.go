@@ -289,6 +289,20 @@ var _ = Describe("Container Certification Submitter", func() {
 			})
 		})
 
+		Context("and a CertProject was provided by the caller", func() {
+			BeforeEach(func() {
+				fakePC.setSRFuncSubmitSuccessfully("", "")
+				// Would fail the submission if GetProject were still called.
+				fakePC.getProjectsFunc = gpFuncReturnError
+				project := fakePC.baseProject("")
+				sbmt.CertProject = &project
+			})
+			It("should reuse it instead of calling GetProject", func() {
+				err := sbmt.Submit(testcontext)
+				Expect(err).ToNot(HaveOccurred(), "Submit should reuse the caller-provided CertProject without calling GetProject")
+			})
+		})
+
 		Context("and the provided docker config cannot be read from disk", func() {
 			It("should throw an error", func() {
 				err := os.Remove(dockerConfigPath)

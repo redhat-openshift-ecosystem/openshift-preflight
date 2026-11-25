@@ -13,15 +13,11 @@ import (
 	"github.com/redhat-openshift-ecosystem/openshift-preflight/internal/policy/container"
 )
 
-// basedOnUbiCheck is used purely as a source of truth for the BasedOnUbi
-// check's Name/Description/Help/Suggestion/URLs, so the entry written into
-// results.json matches what a normal online run would produce. It's never
-// Validate()'d - LayerHashCheckEngine is intentionally left nil.
+// basedOnUbiCheck supplies Name/Description/Help for results.json entries.
+// Never Validate()'d; LayerHashCheckEngine is intentionally nil.
 var basedOnUbiCheck = container.NewBasedOnUbiCheck(nil)
 
-// basedOnUbiCheckName mirrors the Name() of the BasedOnUbi check
-// (internal/policy/container.BasedOnUBICheck) so that we can find/replace its
-// entry inside a previously written results.json.
+// basedOnUbiCheckName is basedOnUbiCheck.Name() for test assertions.
 var basedOnUbiCheckName = basedOnUbiCheck.Name()
 
 // ReadResults reads and unmarshals results.json from dir.
@@ -39,10 +35,7 @@ func ReadResults(dir string) (*formatters.UserResponse, error) {
 	return &r, nil
 }
 
-// WriteResults marshals r and writes it back to results.json in dir,
-// overwriting whatever was there previously, using the same
-// artifacts.ArtifactWriter the rest of preflight writes artifacts with.
-// Formatting mirrors preflight's own indented JSON output.
+// WriteResults writes r to results.json in dir via artifacts.ArtifactWriter.
 func WriteResults(dir string, r *formatters.UserResponse) error {
 	b, err := json.MarshalIndent(r, "", "    ")
 	if err != nil {
@@ -63,10 +56,8 @@ func WriteResults(dir string, r *formatters.UserResponse) error {
 	return nil
 }
 
-// removeCheckByName drops any existing entry named name from every result
-// bucket (errors/failed/passed/warnings). We expect it under Errors (Pyxis
-// was unreachable), but scrub every bucket in case a user re-runs
-// submit-offline-artifacts against already-revalidated results.
+// removeCheckByName drops name from every result bucket (errors/failed/
+// passed/warnings), covering offline errors and re-run already-replayed cases.
 func removeCheckByName(r *formatters.UserResponse, name string) {
 	r.Results.Errors = removeByName(r.Results.Errors, name)
 	r.Results.Failed = removeByName(r.Results.Failed, name)
@@ -102,11 +93,14 @@ func findCheckByName(r *formatters.UserResponse, name string) (formatters.CheckE
 	return formatters.CheckExecutionInfo{}, false
 }
 
-// ApplyCheckResult removes any prior entry for c from r, inserts a fresh one
-// reflecting the outcome of revalidating c, and recalculates the top-level
-// Passed field. Generic over any check.Check for reuse by future checks.
-// ElapsedTime from the prior entry is preserved so results.json stays closer
-// to what an online run would have written for that check.
+// RemoveCheckResult drops c from r and recalculates Passed.
+func RemoveCheckResult(r *formatters.UserResponse, c check.Check) {
+	removeCheckByName(r, c.Name())
+	r.Passed = len(r.Results.Failed) == 0 && len(r.Results.Errors) == 0
+}
+
+// ApplyCheckResult replaces c's entry with a revalidated outcome, preserves
+// ElapsedTime, and recalculates Passed. Generic for future checks.
 func ApplyCheckResult(r *formatters.UserResponse, c check.Check, passed bool) {
 	prior, _ := findCheckByName(r, c.Name())
 	removeCheckByName(r, c.Name())

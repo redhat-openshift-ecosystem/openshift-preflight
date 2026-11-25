@@ -51,8 +51,9 @@ type Options struct {
 	// so tests can substitute a fake transport.
 	PyxisHTTPClient pyxis.HTTPClient
 
-	// PyxisClient is used to submit the finalized results. Defaults to
-	// lib.NewPyxisClient(...) when nil; exposed for tests to fake.
+	// PyxisClient is used to look up the certification project and submit the
+	// finalized results. Defaults to a pyxis client built from the host/token
+	// options (using PyxisHTTPClient) when nil; exposed for tests to fake.
 	PyxisClient lib.PyxisClient
 }
 
@@ -131,34 +132,56 @@ func run(ctx context.Context, opts Options) (extractDir string, summary *Summary
 		httpClient,
 	)
 
-	basedOnUbiPassed, err := revalidateBasedOnUbi(ctx, pyxisClient, diffIDs)
-	if err != nil {
-		return extractDir, nil, err
+	// pc looks the project up and submits; tests inject a fake here.
+	var pc lib.PyxisClient = pyxisClient
+	if opts.PyxisClient != nil {
+		pc = opts.PyxisClient
 	}
-	logger.Info("revalidated check", "check", basedOnUbiCheck.Name(), "passed", basedOnUbiPassed)
+
+	// One project lookup for both finalization and submission. Offline runs
+	// can't see policy exceptions, so BasedOnUbi always errs under the default
+	// policy; scratch projects remove it, others revalidate it.
+	certProject, err := pc.GetProject(ctx)
+	if err != nil {
+		return extractDir, nil, fmt.Errorf("could not retrieve certification project: %w", err)
+	}
+	if certProject == nil {
+		return extractDir, nil, fmt.Errorf("no certification project was returned from pyxis")
+	}
 
 	results, err := ReadResults(extractDir)
 	if err != nil {
 		return extractDir, nil, err
 	}
 
-	ApplyCheckResult(results, basedOnUbiCheck, basedOnUbiPassed)
+	summary = &Summary{ExtractDir: extractDir}
+
+	if certProject.ScratchProject() {
+		logger.Info("scratch exception; removing BasedOnUbi instead of revalidating")
+		RemoveCheckResult(results, basedOnUbiCheck)
+	} else {
+		passed, revalidateErr := revalidateBasedOnUbi(ctx, pyxisClient, diffIDs)
+		if revalidateErr != nil {
+			return extractDir, nil, revalidateErr
+		}
+		logger.Info("revalidated check", "check", basedOnUbiCheck.Name(), "passed", passed)
+		ApplyCheckResult(results, basedOnUbiCheck, passed)
+		summary.Revalidated = []CheckOutcome{{
+			Name:   basedOnUbiCheck.Name(),
+			Passed: passed,
+		}}
+	}
 
 	if err := WriteResults(extractDir, results); err != nil {
 		//coverage:ignore
 		return extractDir, nil, err
 	}
-	logger.Info("results.json updated with revalidated check outcomes", "overallPassed", results.Passed)
+	logger.Info("results.json updated with revalidated check outcomes",
+		"overallPassed", results.Passed,
+		"scratch", certProject.ScratchProject(),
+	)
 
-	summary = &Summary{
-		ExtractDir: extractDir,
-		Revalidated: []CheckOutcome{{
-			Name:   basedOnUbiCheck.Name(),
-			Passed: basedOnUbiPassed,
-		}},
-	}
-
-	if err := submit(ctx, extractDir, opts); err != nil {
+	if err := submit(ctx, extractDir, opts, pc, certProject); err != nil {
 		return extractDir, summary, err
 	}
 	summary.Submitted = true
@@ -215,18 +238,15 @@ func revalidateBasedOnUbi(ctx context.Context, checker layerHashChecker, diffIDs
 
 // submit reuses lib.ContainerCertificationSubmitter so results are sent the
 // same way `check container --submit` sends them, reading from extractDir.
-func submit(ctx context.Context, extractDir string, opts Options) error {
+// certProject is the snapshot already used for finalization; Submit must not
+// look the project up again.
+func submit(ctx context.Context, extractDir string, opts Options, pc lib.PyxisClient, certProject *pyxis.CertProject) error {
 	artifactWriter, err := artifacts.NewFilesystemWriter(artifacts.WithDirectory(extractDir))
 	if err != nil {
 		//coverage:ignore
 		return fmt.Errorf("could not create artifact writer for %s: %w", extractDir, err)
 	}
 	ctx = artifacts.ContextWithWriter(ctx, artifactWriter)
-
-	pc := opts.PyxisClient
-	if pc == nil {
-		pc = lib.NewPyxisClient(ctx, opts.CertificationComponentID, opts.PyxisAPIToken, opts.PyxisHost)
-	}
 
 	logFile := opts.LogFile
 	if logFile == "" {
@@ -237,6 +257,7 @@ func submit(ctx context.Context, extractDir string, opts Options) error {
 		CertificationProjectID: opts.CertificationComponentID,
 		Pyxis:                  pc,
 		PreflightLogFile:       logFile,
+		CertProject:            certProject,
 	}
 
 	return submitter.Submit(ctx)
