@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -24,11 +23,11 @@ var defaultRegistryAlias = "docker.io"
 func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *CertificationInput) (*CertificationResults, error) {
 	var err error
 
-	// Work on copies of the input so callers can safely reuse it. The flow below
-	// clears and re-applies the image's certified flag and normalizes registries.
-	certImageCopy := *certInput.CertImage
-	certImageCopy.Repositories = slices.Clone(certInput.CertImage.Repositories)
-	certImage := &certImageCopy
+	// Work on an independent copy so the caller can safely reuse the input. The
+	// flow below clears and re-applies the image's certified flag, normalizes
+	// registries, and links submitted data to the image.
+	input := certInput.DeepCopy()
+	certImage := input.CertImage
 
 	// You must have an existing repository.
 	if len(certImage.Repositories) == 0 {
@@ -36,17 +35,13 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 	}
 
 	// Create the test results, so we can fail fast if version check throws error.
-	testResultsCopy := *certInput.TestResults
-	testResults := &testResultsCopy
-
+	testResults := input.TestResults
 	testResults, err = p.createTestResults(ctx, testResults)
 	if err != nil {
 		return nil, fmt.Errorf("could not create test results: %v", err)
 	}
 
-	certProjectCopy := *certInput.CertProject
-	certProject := &certProjectCopy
-
+	certProject := input.CertProject
 	// Submission effectively starts the certification process, so switch
 	// the status to reflect this if needed. This only needs to be done for net new projects.
 	// Existing projects that are in "In Progress" can stay "In Progress" until they moved to "Published" which is triggered
@@ -99,10 +94,10 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 
 	if !certProject.ScratchProject() {
 		// Create the RPM manifest, or get it if it already exists.
-		// Work on a copy so linking the image ID doesn't mutate the caller's input.
-		rpmManifest := *certInput.RpmManifest
+		// Link the image ID on the independent input copy.
+		rpmManifest := input.RpmManifest
 		rpmManifest.ImageID = certImage.ID
-		_, err = p.createRPMManifest(ctx, &rpmManifest)
+		_, err = p.createRPMManifest(ctx, rpmManifest)
 		if err != nil {
 			if !errors.Is(err, ErrPyxis409StatusCode) {
 				return nil, fmt.Errorf("could not create rpm manifest: %v", err)
@@ -115,11 +110,10 @@ func (p *pyxisClient) SubmitResults(ctx context.Context, certInput *Certificatio
 	}
 
 	// Create the artifacts in Pyxis.
-	artifacts := certInput.Artifacts
-	for _, artifact := range artifacts {
-		artifact.ImageID = certImage.ID
-		if _, err := p.createArtifact(ctx, &artifact); err != nil {
-			return nil, fmt.Errorf("could not create artifact: %s: %v", artifact.Filename, err)
+	for i := range input.Artifacts {
+		input.Artifacts[i].ImageID = certImage.ID
+		if _, err := p.createArtifact(ctx, &input.Artifacts[i]); err != nil {
+			return nil, fmt.Errorf("could not create artifact: %s: %v", input.Artifacts[i].Filename, err)
 		}
 	}
 
